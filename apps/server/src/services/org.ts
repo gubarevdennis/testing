@@ -5,7 +5,6 @@ import { hashPassword, passwordProblems } from '../auth/passwords.js';
 import { revokeUserSessions } from '../auth/sessions.js';
 import { bumpAclEpoch, canManagePeople, isOrgAdmin, type AuthUser } from '../acl/engine.js';
 import { DEFAULT_SPACE_POLICY, keyBetween, type Level, type SpaceKind, type SpaceVisibility } from '@kb/shared';
-import { createPage } from './pages.js';
 
 export const DEFAULT_ORG_SETTINGS = {
   requireMfa: false,

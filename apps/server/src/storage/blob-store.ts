@@ -134,9 +134,7 @@ export class FsBlobStore implements BlobStore {
 
   async hash(key: string) {
     const h = createHash('sha256');
-    await pipeline(createReadStream(this.path(key)), async function* (src) {
-      for await (const c of src) h.update(c as Buffer);
-    });
+    for await (const c of createReadStream(this.path(key))) h.update(c as Buffer);
     return h.digest('hex');
   }
 

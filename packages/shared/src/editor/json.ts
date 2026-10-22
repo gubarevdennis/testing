@@ -106,7 +106,7 @@ export interface BlockInfo {
 }
 
 function fingerprint(n: PMNode): string {
-  const { content, ...rest } = n;
+  const { content: _content, ...rest } = n;
   const own = TEXTBLOCKS.has(n.type) ? JSON.stringify(n.content ?? []) : '';
   return JSON.stringify(rest) + own;
 }

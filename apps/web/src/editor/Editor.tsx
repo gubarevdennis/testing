@@ -50,7 +50,10 @@ function setYTitle(t: Y.Text, next: string) {
   while (s < cur.length && s < next.length && cur[s] === next[s]) s++;
   let ec = cur.length;
   let en = next.length;
-  while (ec > s && en > s && cur[ec - 1] === next[en - 1]) (ec--, en--);
+  while (ec > s && en > s && cur[ec - 1] === next[en - 1]) {
+    ec--;
+    en--;
+  }
   t.doc!.transact(() => {
     if (ec > s) t.delete(s, ec - s);
     if (en > s) t.insert(s, next.slice(s, en));
@@ -459,8 +462,14 @@ function FindBar({ editor, onClose }: { editor: TEditor; onClose(): void }) {
           editor.commands.setFindQuery(e.target.value);
         }}
         onKeyDown={(e) => {
-          if (e.key === 'Enter') (e.preventDefault(), editor.commands.findStep(e.shiftKey ? -1 : 1));
-          if (e.key === 'Escape') (e.preventDefault(), onClose(), editor.commands.focus());
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            editor.commands.findStep(e.shiftKey ? -1 : 1);
+          } else if (e.key === 'Escape') {
+            e.preventDefault();
+            onClose();
+            editor.commands.focus();
+          }
         }}
       />
       <span className="small muted find-count" aria-live="polite">

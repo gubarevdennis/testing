@@ -120,7 +120,8 @@ export function FileView({ node, selected, editor, updateAttributes }: NodeViewP
           ) : /^audio\//.test(a.mime) ? (
             <audio src={`/api/v1/attachments/${a.attachmentId}/content`} controls preload="metadata" />
           ) : (
-            <iframe title={a.name} src={`/api/v1/attachments/${a.attachmentId}/content`} sandbox="allow-same-origin" />
+            // PDFs need the browser viewer (refuses sandboxed frames); the server sends a script-free CSP for them
+            a.mime === 'application/pdf' ? <iframe title={a.name} src={`/api/v1/attachments/${a.attachmentId}/content`} /> : <iframe title={a.name} src={`/api/v1/attachments/${a.attachmentId}/content`} sandbox="" />
           )}
         </div>
       )}

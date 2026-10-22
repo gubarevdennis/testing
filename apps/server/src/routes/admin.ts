@@ -33,7 +33,7 @@ export async function adminRoutes(app: FastifyInstance, s: Services) {
         [user.orgId, like, qs.status ?? null, qs.kind ?? null, qs.groupId ?? null, qs.offset, qs.limit, qs.role ?? null],
       )
     ).rows;
-    return { users: rows.map(({ total, ...r }) => r), total: rows[0]?.total ?? 0 };
+    return { users: rows.map(({ total: _total, ...r }) => r), total: rows[0]?.total ?? 0 };
   });
 
   /** User card: profile, memberships, manager and primary department names. */

@@ -17,7 +17,7 @@ import type { PMNode, PMMark } from './json.js';
 import { ensureBlockIds, hasMergedCells, walk } from './json.js';
 import { sanitizeHref } from './url.js';
 import { newId } from './ids.js';
-import { CALLOUT_VARIANTS, type CalloutVariant } from './nodes/callout.js';
+import { type CalloutVariant } from './nodes/callout.js';
 
 export interface ConversionWarning {
   code: string;

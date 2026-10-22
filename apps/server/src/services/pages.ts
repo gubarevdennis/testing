@@ -44,13 +44,6 @@ export async function getPage(q: Queryable, id: string): Promise<PageRow | null>
   return r.rows[0] ?? null;
 }
 
-async function siblingKeys(q: Queryable, spaceId: string, parentId: string | null): Promise<string[]> {
-  const r = await q.query(
-    `select sort_key from pages where space_id = $1 and parent_id is not distinct from $2 and deleted_at is null order by sort_key collate "C"`,
-    [spaceId, parentId],
-  );
-  return r.rows.map((x) => x.sort_key);
-}
 
 /** Computes a sort key for placing a node relative to a sibling (before/after) or at the end. */
 export async function placementKey(q: Queryable, spaceId: string, parentId: string | null, place: { beforeId?: string | null; afterId?: string | null; position?: 'start' | 'end' }): Promise<string> {

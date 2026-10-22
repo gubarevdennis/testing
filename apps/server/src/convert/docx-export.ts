@@ -260,7 +260,8 @@ export async function docToDocx(doc: PMNode, opts: DocxExportOptions): Promise<{
           warn('image-missing', 'Некоторые изображения недоступны и заменены текстовыми ссылками');
           return [new Paragraph({ children: [new TextRun({ text: `[изображение: ${n.attrs?.alt || n.attrs?.caption || 'без описания'}]`, italics: true })] })];
         }
-        let { data, width, height } = img;
+        const { width, height } = img;
+        let data = img.data;
         let type: 'png' | 'jpg' | 'gif' = img.mime === 'image/jpeg' ? 'jpg' : img.mime === 'image/gif' ? 'gif' : 'png';
         if (!['image/png', 'image/jpeg', 'image/gif'].includes(img.mime)) {
           data = await sharp(data).png().toBuffer();

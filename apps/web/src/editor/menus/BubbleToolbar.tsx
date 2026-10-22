@@ -113,13 +113,8 @@ export function BubbleToolbar({ editor, onComment }: { editor: Editor; onComment
     <BubbleMenu
       editor={editor}
       pluginKey="kbBubble"
-      options={{ placement: 'top', offset: 8, flip: true, shift: { padding: 8 } }}
-      shouldShow={({ editor: e, state, from, to }) => {
-        if (!e.isEditable || from === to) return false;
-        if (state.selection instanceof NodeSelection || state.selection instanceof CellSelection) return false;
-        if (e.isActive('codeBlock') || e.isActive('mermaid')) return false;
-        return state.doc.textBetween(from, to, ' ', '￼').trim().length > 0 || e.isActive('link');
-      }}
+      options={BUBBLE_OPTIONS}
+      shouldShow={bubbleShouldShow}
       className="bubble-toolbar"
     >
       {linkMode ? (
@@ -131,8 +126,14 @@ export function BubbleToolbar({ editor, onComment }: { editor: Editor; onComment
             value={href}
             onChange={(e) => setHref(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === 'Enter') (e.preventDefault(), applyLink());
-              if (e.key === 'Escape') (e.preventDefault(), setLinkMode(false), editor.commands.focus());
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                applyLink();
+              } else if (e.key === 'Escape') {
+                e.preventDefault();
+                setLinkMode(false);
+                editor.commands.focus();
+              }
             }}
             aria-label="Адрес ссылки"
             aria-invalid={!!href.trim() && !sanitizeHref(/^[a-z]+:/i.test(href.trim()) ? href.trim() : 'https://' + href.trim())}

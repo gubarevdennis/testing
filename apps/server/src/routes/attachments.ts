@@ -9,7 +9,7 @@ import type { Readable } from 'node:stream';
 import { tx } from '../db/pool.js';
 import { actorOf, parse, requireUser, type Services } from '../app.js';
 import { requirePage, pageAccess, type AuthUser } from '../acl/engine.js';
-import { streamToTemp, blobKey } from '../storage/blob-store.js';
+import { streamToTemp } from '../storage/blob-store.js';
 import { inspectFile, sanitizeSvgFile, scanForViruses, safeFilename, createAttachment, registerBlob, makeImageDerivatives, isInlineSafe, derivedKey, removeTemp, IMAGE_MIME } from '../services/attachments.js';
 import { audit, auditStandalone } from '../services/audit.js';
 import { badRequest, conflict, forbidden, notFound, tooLarge, unprocessable } from '../lib/errors.js';
@@ -49,7 +49,12 @@ function contentDisposition(kind: 'inline' | 'attachment', filename: string) {
 /** Streams a stored object with Range support and safe headers (user content never executes in our origin). */
 async function sendObject(s: Services, req: FastifyRequest, reply: FastifyReply, key: string, mime: string, size: number, filename: string, disposition: 'inline' | 'attachment', etag: string) {
   reply.header('x-content-type-options', 'nosniff');
-  reply.header('content-security-policy', "default-src 'none'; img-src 'self' data:; style-src 'unsafe-inline'; sandbox");
+  // User content must never run scripts in our origin. PDFs need the browser's built-in viewer, which refuses
+  // sandboxed documents, so they get a script-free policy without the sandbox flag (embeddable only by us).
+  reply.header(
+    'content-security-policy',
+    mime === 'application/pdf' ? "default-src 'none'; object-src 'self'; img-src 'self' data:; style-src 'unsafe-inline'; frame-ancestors 'self'" : "default-src 'none'; img-src 'self' data:; style-src 'unsafe-inline'; sandbox",
+  );
   reply.header('cache-control', 'private, max-age=300');
   reply.header('etag', `"${etag}"`);
   reply.header('accept-ranges', 'bytes');
