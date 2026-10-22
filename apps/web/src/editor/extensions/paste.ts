@@ -1,7 +1,8 @@
 import { Extension } from '@tiptap/core';
 import { Plugin, PluginKey } from '@tiptap/pm/state';
 import { Slice, Fragment } from '@tiptap/pm/model';
-import { looksLikeTsv, parseTsv, rowsToTable, markdownToDoc, sanitizeHref } from '@kb/shared';
+import { looksLikeTsv, parseTsv, rowsToTable, sanitizeHref } from '@kb/shared';
+import { markdownNow } from '../../lib/markdown';
 
 const MD_HINTS = [/^#{1,6}\s/m, /^\s*[-*+]\s+\S/m, /^\s*\d+[.)]\s+\S/m, /^```/m, /^\s*>\s/m, /^\|.+\|\s*$/m, /\*\*[^*\n]+\*\*/, /\[[^\]\n]+\]\([^)\s]+\)/, /^\s*[-*]\s\[[ xX]\]\s/m];
 
@@ -60,9 +61,10 @@ export const SmartPaste = Extension.create({
               view.dispatch(view.state.tr.replaceSelectionWith(table).scrollIntoView());
               return true;
             }
-            if (text && looksLikeMarkdown(text)) {
+            const md = markdownNow();
+            if (text && md && looksLikeMarkdown(text)) {
               try {
-                const { doc } = markdownToDoc(text);
+                const { doc } = md.markdownToDoc(text);
                 const node = view.state.schema.nodeFromJSON(doc);
                 view.dispatch(view.state.tr.replaceSelection(new Slice(node.content, 0, 0)).scrollIntoView());
                 return true;

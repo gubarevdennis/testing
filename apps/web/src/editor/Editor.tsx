@@ -3,7 +3,8 @@ import { EditorContent, useEditor } from '@tiptap/react';
 import type { Editor as TEditor } from '@tiptap/core';
 import * as Y from 'yjs';
 import { ChevronDown, ChevronUp, X, Download } from 'lucide-react';
-import { TITLE_NAME, colorForUser, docToMarkdown, type PresenceUser } from '@kb/shared';
+import { TITLE_NAME, colorForUser, type PresenceUser } from '@kb/shared';
+import { loadMarkdown } from '../lib/markdown';
 import { yXmlFragmentToProsemirrorJSON } from '@tiptap/y-tiptap';
 import { openCollab, type CollabSession } from '../sync/collab';
 import { clientExtensions } from './clientExtensions';
@@ -111,7 +112,8 @@ export function EditorSkeleton() {
 
 /** Shown when the server rejected changes or the page became unavailable: local work can always be saved. */
 function FatalBanner({ fatal, session }: { fatal: { code: string; message: string }; session: CollabSession }) {
-  const download = () => {
+  const download = async () => {
+    const { docToMarkdown } = await loadMarkdown();
     const json = yXmlFragmentToProsemirrorJSON(session.doc.getXmlFragment('default'));
     const title = session.doc.getText(TITLE_NAME).toString() || 'Страница';
     const { markdown } = docToMarkdown(json as any, { markers: true, frontMatter: { title } });
@@ -148,6 +150,8 @@ function EditorInner(p: Props & { session: CollabSession }) {
   const [embed, setEmbed] = useState(false);
   const [math, setMath] = useState<{ kind: 'inline' | 'block'; pos: number; latex: string } | null>(null);
   const [findOpen, setFindOpen] = useState(false);
+  const [flash, setFlash] = useState<{ top: number; left: number; width: number; height: number; id: string } | null>(null);
+  const wrapRef = useRef<HTMLDivElement>(null);
   const user = useMemo(() => ({ name: p.user.name, color: colorForUser(p.user.id) }), [p.user]);
 
   useEffect(() => {
@@ -174,6 +178,12 @@ function EditorInner(p: Props & { session: CollabSession }) {
     },
     [p.spaceId, p.pageId],
   );
+
+  useEffect(() => {
+    // warm up the Markdown converter in the background (Markdown paste, copy as Markdown)
+    const t = setTimeout(() => void loadMarkdown(), 1500);
+    return () => clearTimeout(t);
+  }, []);
 
   const ctxRef = useRef<CommandContext>(null as any);
   const editor = useEditor(
@@ -252,8 +262,14 @@ function EditorInner(p: Props & { session: CollabSession }) {
       const el = document.getElementById(p.scrollToBlock!) ?? editor.view.dom.querySelector(`[data-block-id="${CSS.escape(p.scrollToBlock!)}"]`);
       if (el) {
         el.scrollIntoView({ block: 'center' });
-        el.classList.add('kb-flash');
-        setTimeout(() => el.classList.remove('kb-flash'), 2200);
+        // highlight as an overlay: ProseMirror owns the node's DOM and would drop an added class
+        const wrap = wrapRef.current;
+        if (wrap) {
+          const r = el.getBoundingClientRect();
+          const w = wrap.getBoundingClientRect();
+          setFlash({ top: r.top - w.top, left: r.left - w.left, width: r.width, height: r.height, id: p.scrollToBlock! });
+          setTimeout(() => setFlash(null), 2400);
+        }
         clearInterval(t);
       } else if (++tries > 40) clearInterval(t);
     }, 100);
@@ -262,8 +278,9 @@ function EditorInner(p: Props & { session: CollabSession }) {
 
   useEffect(() => {
     const onFind = () => setFindOpen(true);
-    const onCopyMd = () => {
+    const onCopyMd = async () => {
       if (!editor) return;
+      const { docToMarkdown } = await loadMarkdown();
       const { from, to, empty } = editor.state.selection;
       const json = empty ? editor.getJSON() : { type: 'doc', content: editor.state.doc.slice(from, to).content.toJSON() ?? [] };
       const { markdown } = docToMarkdown(json as any, { markers: false });
@@ -304,7 +321,8 @@ function EditorInner(p: Props & { session: CollabSession }) {
   useEffect(() => autosize(titleRef.current), [title]);
 
   return (
-    <div className={'editor-wrap' + (p.wide ? ' wide' : '')}>
+    <div ref={wrapRef} className={'editor-wrap' + (p.wide ? ' wide' : '')}>
+      {flash && <div className="kb-flash-overlay" data-block={flash.id} style={{ top: flash.top - 4, left: flash.left - 6, width: flash.width + 12, height: flash.height + 8 }} aria-hidden />}
       {findOpen && editor && <FindBar editor={editor} onClose={() => setFindOpen(false)} />}
       <textarea
         ref={titleRef}
@@ -319,7 +337,10 @@ function EditorInner(p: Props & { session: CollabSession }) {
         onKeyDown={(e) => {
           if (e.key === 'Enter' || (e.key === 'ArrowDown' && e.currentTarget.selectionStart === e.currentTarget.value.length)) {
             e.preventDefault();
-            editor?.chain().focus('start').run();
+            if (!editor) return;
+            // focus synchronously (the focus command is deferred to the next frame and would drop fast keystrokes)
+            editor.view.focus();
+            editor.commands.setTextSelection(1);
           }
         }}
       />

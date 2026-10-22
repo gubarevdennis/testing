@@ -33,6 +33,7 @@ import {
   toLocalInput,
   useDebounced,
   useGroups,
+  useUserDetail,
   USER_STATUS,
 } from './common';
 
@@ -59,23 +60,27 @@ export function UsersSection() {
   const [offset, setOffset] = useState(0);
   const [dialog, setDialog] = useState<DialogState>(null);
   const dq = useDebounced(q.trim(), 300);
-  useEffect(() => setOffset(0), [dq, status, kind, groupId]);
+  useEffect(() => setOffset(0), [dq, status, kind, role, groupId]);
   const groups = useGroups();
 
   const params = new URLSearchParams({ q: dq, offset: String(offset), limit: String(LIMIT) });
   if (status) params.set('status', status);
-  if (kind) params.set('kind', kind);
+  // «Гость» is a kind, not an org role; other values map to the server-side role filter.
+  if (role === 'guest') params.set('kind', 'guest');
+  else if (kind) params.set('kind', kind);
+  if (role && role !== 'guest') params.set('role', role);
   if (groupId) params.set('groupId', groupId);
   const list = useQuery({
     queryKey: ['admin', 'users', params.toString()],
     queryFn: () => get<{ users: AdminUser[]; total: number | string }>('/api/v1/admin/users?' + params.toString()),
     placeholderData: keepPreviousData,
   });
-  // The server has no role filter: the role filter applies to the loaded page.
-  const users = (list.data?.users ?? []).filter((u) => !role || (role === 'guest' ? u.kind === 'guest' : u.org_role === role && u.kind !== 'guest'));
+  const users = list.data?.users ?? [];
   const total = Number(list.data?.total ?? 0);
   const refresh = () => {
     qc.invalidateQueries({ queryKey: ['admin', 'users'] });
+    qc.invalidateQueries({ queryKey: ['admin', 'user'] });
+    qc.invalidateQueries({ queryKey: ['admin', 'owned-pages'] });
     qc.invalidateQueries({ queryKey: ['admin', 'groups'] });
   };
 
@@ -191,7 +196,7 @@ export function UsersSection() {
           <option value="employee">Только сотрудники</option>
           <option value="guest">Только гости</option>
         </select>
-        <select className="select" aria-label="Роль" value={role} onChange={(e) => setRole(e.target.value)} title="Фильтр по роли применяется к загруженной странице списка">
+        <select className="select" aria-label="Роль" value={role} onChange={(e) => setRole(e.target.value)}>
           <option value="">Все роли</option>
           {Object.entries(ROLE_LABEL).map(([k, v]) => (
             <option key={k} value={k}>
@@ -302,7 +307,6 @@ export function UsersSection() {
             </table>
           </div>
           <Pager offset={offset} limit={LIMIT} total={total} onChange={setOffset} />
-          {role && <p className="muted small">Фильтр по роли применяется к текущей странице списка.</p>}
         </>
       )}
 
@@ -779,15 +783,11 @@ function EditUserDialog({ user, groups, isAdmin, isOwner, onClose, onSaved }: { 
   const [manager, setManager] = useState<DirectoryUser | null>(null);
   const [managerChanged, setManagerChanged] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const currentManager = useQuery({
-    queryKey: ['admin', 'user-name', user.manager_id],
-    queryFn: () => get<{ users: AdminUser[] }>(`/api/v1/admin/users?limit=500`).then((r) => r.users.find((u) => u.id === user.manager_id) ?? null),
-    enabled: !!user.manager_id,
-    staleTime: 60_000,
-  });
+  const detail = useUserDetail(user.id);
+  const d = detail.data?.user;
   useEffect(() => {
-    if (!managerChanged && currentManager.data) setManager({ id: currentManager.data.id, name: currentManager.data.name, email: currentManager.data.email });
-  }, [currentManager.data, managerChanged]);
+    if (!managerChanged && d?.manager_id) setManager({ id: d.manager_id, name: d.manager_name ?? '—', email: '' });
+  }, [d?.manager_id, d?.manager_name, managerChanged]);
   const depts = groups.filter((g) => g.kind === 'department');
   const roles = ['member', 'people_admin', 'auditor', 'admin', ...(isOwner || user.org_role === 'owner' ? ['owner'] : [])];
 
@@ -849,7 +849,17 @@ function EditUserDialog({ user, groups, isAdmin, isOwner, onClose, onSaved }: { 
             {error}
           </div>
         )}
-        <div className="muted small">{user.email}</div>
+        <div className="muted small">
+          {user.email}
+          {d && (
+            <>
+              {' · '}создан {relTime(d.created_at)}
+              {d.primary_group_name ? ` · основной отдел: ${d.primary_group_name}` : ''}
+              {` · владелец страниц: ${d.owned_pages}`}
+            </>
+          )}
+        </div>
+        {detail.isError && <div className="field-error">Не удалось загрузить сведения о руководителе: {errMsg(detail.error)}</div>}
         <div className="field">
           <label htmlFor="eu-name">Имя</label>
           <input id="eu-name" className="input" value={name} onChange={(e) => setName(e.target.value)} />
@@ -916,6 +926,12 @@ function StatusDialog({ user, status, onClose, onDone }: { user: AdminUser; stat
   const [ack, setAck] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const deactivate = status === 'deactivated';
+  const owned = useQuery({
+    queryKey: ['admin', 'owned-pages', user.id],
+    queryFn: () => post<{ changes: unknown[]; ownedPages: number }>(`/api/v1/admin/users/${user.id}/transfer-preview`, { removeGroupIds: [], addGroupIds: [] }),
+    enabled: deactivate,
+  });
+  const ownedPages = owned.data?.ownedPages;
   const m = useMutation({
     mutationFn: () => post(`/api/v1/admin/users/${user.id}/status`, { status, reason, transferTo: deactivate && transferTo ? transferTo.id : undefined }),
     onSuccess: () => {
@@ -956,13 +972,23 @@ function StatusDialog({ user, status, onClose, onDone }: { user: AdminUser; stat
             {deactivate && <li>Временные доступы пользователя будут отозваны.</li>}
             {deactivate && (
               <li>
-                Документы вне личного пространства, владельцем которых является {user.name}:{' '}
-                {transferTo ? (
-                  <>
-                    перейдут во владение <b>{transferTo.name}</b>.
-                  </>
+                {owned.isLoading ? (
+                  <span className="muted">Подсчёт документов во владении…</span>
+                ) : owned.isError ? (
+                  <span className="field-error">Не удалось подсчитать документы во владении: {errMsg(owned.error)}</span>
+                ) : ownedPages === 0 ? (
+                  <>Документов вне личного пространства во владении {user.name} нет — передавать нечего.</>
                 ) : (
-                  <b>останутся без передачи владельца.</b>
+                  <>
+                    Документы вне личного пространства во владении {user.name} (<b>{ownedPages ?? '?'}</b>):{' '}
+                    {transferTo ? (
+                      <>
+                        перейдут во владение <b>{transferTo.name}</b>.
+                      </>
+                    ) : (
+                      <b>останутся без передачи владельца.</b>
+                    )}
+                  </>
                 )}
               </li>
             )}
@@ -974,7 +1000,8 @@ function StatusDialog({ user, status, onClose, onDone }: { user: AdminUser; stat
         {deactivate && (
           <div className="field">
             <label htmlFor="st-transfer">Передать владение документами</label>
-            <UserPicker id="st-transfer" value={transferTo} onChange={setTransferTo} excludeIds={[user.id]} placeholder="Выберите нового владельца (рекомендуется)" />
+            <UserPicker id="st-transfer" value={transferTo} onChange={setTransferTo} excludeIds={[user.id]} placeholder={ownedPages ? 'Выберите нового владельца (рекомендуется)' : 'Выберите нового владельца'} />
+            {!!ownedPages && !transferTo && <div className="field-hint">Рекомендуется назначить нового владельца для {ownedPages} стр.</div>}
           </div>
         )}
         <div className="field">
@@ -1002,7 +1029,7 @@ function TransferDialog({ user, groups, onClose, onDone, groupName }: { user: Ad
   useEffect(() => setPreview(null), [remove.join(), add.join()]);
   const candidates = groups.filter((g) => !current.includes(g.id));
   const prev = useMutation({
-    mutationFn: () => post<{ changes: Array<{ spaceId: string; name: string; from: string; to: string }> }>(`/api/v1/admin/users/${user.id}/transfer-preview`, { removeGroupIds: remove, addGroupIds: add }),
+    mutationFn: () => post<{ changes: Array<{ spaceId: string; name: string; from: string; to: string }>; ownedPages?: number }>(`/api/v1/admin/users/${user.id}/transfer-preview`, { removeGroupIds: remove, addGroupIds: add }),
     onSuccess: (r) => {
       setPreview(r.changes);
       setError(null);

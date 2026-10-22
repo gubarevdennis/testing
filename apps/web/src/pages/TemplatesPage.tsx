@@ -28,6 +28,23 @@ interface Template {
   updated_at: string;
   favorite: boolean;
   recommended: boolean;
+  default_title?: string | null;
+}
+
+/** Minimal starting structure for a template created from scratch. */
+function skeletonDoc(name: string, description: string): DocNode {
+  const p = (text: string): DocNode => ({ type: 'paragraph', content: text ? [{ type: 'text', text }] : undefined });
+  const h = (level: number, text: string): DocNode => ({ type: 'heading', attrs: { level }, content: [{ type: 'text', text }] });
+  return {
+    type: 'doc',
+    content: [
+      { type: 'callout', attrs: { variant: 'info', icon: null }, content: [p(description || `Шаблон «${name}». Замените подсказки своим содержанием.`)] },
+      h(2, 'Цель'),
+      p('Кратко опишите назначение документа.'),
+      h(2, 'Содержание'),
+      p(''),
+    ],
+  };
 }
 
 const spaceLabel = (s: Space) => (s.isPersonal ? 'Личное пространство' : s.name);
@@ -89,7 +106,7 @@ function CreateFromTemplateDialog({ template, onClose, defaultSpace }: { templat
   const navigate = useNavigate();
   const [spaceId, setSpaceId] = useState(defaultSpace);
   const [parentId, setParentId] = useState<string | null>(null);
-  const [title, setTitle] = useState(template.name);
+  const [title, setTitle] = useState(template.default_title || template.name);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const submit = async () => {
@@ -97,7 +114,7 @@ function CreateFromTemplateDialog({ template, onClose, defaultSpace }: { templat
     setBusy(true);
     setError(null);
     try {
-      const p = await createPage(spaceId, parentId, { templateId: template.id, title: title.trim() || template.name });
+      const p = await createPage(spaceId, parentId, { templateId: template.id, title: title.trim() || template.default_title || template.name });
       onClose();
       navigate(`/p/${p.id}`);
     } catch (e) {
@@ -206,10 +223,12 @@ function PreviewDialog({ template, onClose, onUse }: { template: Template; onClo
 
 function NewTemplateDialog({ onClose, onCreated, categories }: { onClose(): void; onCreated(): void; categories: string[] }) {
   const me = useMe();
-  const navigate = useNavigate();
   const spaces = useSpaces();
   const isAdmin = me.user.orgRole === 'owner' || me.user.orgRole === 'admin';
   const manageable = (spaces.data?.spaces ?? []).filter((s) => s.member && s.actions?.manage_space && !s.isPersonal);
+  const [mode, setMode] = useState<'blank' | 'page'>('blank');
+  const [defaultTitle, setDefaultTitle] = useState('');
+  const [icon, setIcon] = useState('');
   const [pageQuery, setPageQuery] = useState('');
   const [page, setPage] = useState<{ pageId: string; title: string; icon: string | null } | null>(null);
   const [name, setName] = useState('');
@@ -224,27 +243,25 @@ function NewTemplateDialog({ onClose, onCreated, categories }: { onClose(): void
   }, [spaces.data]);
   const sugg = useQuery({
     queryKey: ['search-suggest', pageQuery],
-    enabled: pageQuery.trim().length > 0 && !page,
+    enabled: mode === 'page' && pageQuery.trim().length > 0 && !page,
     queryFn: ({ signal }) => get<{ suggestions: Array<{ pageId: string; title: string; icon: string | null }> }>(`/api/v1/search/suggest?q=${encodeURIComponent(pageQuery.trim())}`, signal),
   });
   const canCreate = isAdmin || manageable.length > 0;
-  const blank = async () => {
-    if (!me.personalSpaceId) return;
-    try {
-      const p = await createPage(me.personalSpaceId, null, { title: 'Новый шаблон' });
-      onClose();
-      navigate(`/p/${p.id}`);
-      toast.info('Оформите страницу и сохраните её как шаблон через меню страницы');
-    } catch (e) {
-      toast.error(e instanceof ApiError ? e.message : 'Не удалось создать страницу');
-    }
-  };
   const submit = async () => {
-    if (!page || !name.trim() || !scope) return;
+    if ((mode === 'page' && !page) || !name.trim() || !scope) return;
     setBusy(true);
     setError(null);
     try {
-      await post('/api/v1/templates', { pageId: page.pageId, name: name.trim(), description, category: category.trim() || 'Пространство', spaceId: scope === 'org' ? null : scope });
+      const source = mode === 'page' && page ? { pageId: page.pageId } : { content: skeletonDoc(name.trim(), description.trim()) };
+      await post('/api/v1/templates', {
+        ...source,
+        name: name.trim(),
+        description,
+        category: category.trim() || 'Пространство',
+        icon: icon.trim() || undefined,
+        title: defaultTitle.trim() || undefined,
+        spaceId: scope === 'org' ? null : scope,
+      });
       toast.success('Шаблон создан');
       onCreated();
       onClose();
@@ -264,7 +281,7 @@ function NewTemplateDialog({ onClose, onCreated, categories }: { onClose(): void
           <button className="btn" onClick={onClose}>
             Отмена
           </button>
-          <button className="btn primary" disabled={!canCreate || !page || !name.trim() || !scope || busy} aria-busy={busy} onClick={submit}>
+          <button className="btn primary" disabled={!canCreate || (mode === 'page' && !page) || !name.trim() || !scope || busy} aria-busy={busy} onClick={submit}>
             {busy && <span className="spinner" />} Создать шаблон
           </button>
         </>
@@ -276,7 +293,24 @@ function NewTemplateDialog({ onClose, onCreated, categories }: { onClose(): void
         </div>
       ) : (
         <div className="col" style={{ gap: 12 }}>
-          <p className="muted small">Шаблон создаётся из готовой страницы: её содержимое и свойства копируются, сама страница не меняется.</p>
+          <fieldset className="space-fieldset">
+            <legend className="field-label">Основа шаблона</legend>
+            <div className="space-radio">
+              <label className="checkbox">
+                <input type="radio" name="nt-mode" checked={mode === 'blank'} onChange={() => setMode('blank')} />
+                <span>
+                  <b>С нуля</b> <span className="muted small">— базовая структура: пояснение, «Цель», «Содержание»</span>
+                </span>
+              </label>
+              <label className="checkbox">
+                <input type="radio" name="nt-mode" checked={mode === 'page'} onChange={() => setMode('page')} />
+                <span>
+                  <b>Из существующей страницы</b> <span className="muted small">— содержимое и свойства копируются, страница не меняется</span>
+                </span>
+              </label>
+            </div>
+          </fieldset>
+          {mode === 'page' && (
           <div className="field">
             <label htmlFor="nt-page">Страница-образец</label>
             {page ? (
@@ -314,14 +348,17 @@ function NewTemplateDialog({ onClose, onCreated, categories }: { onClose(): void
                 {pageQuery && sugg.data && !sugg.data.suggestions.length && <span className="field-hint">Страницы не найдены</span>}
               </>
             )}
-            {me.personalSpaceId && (
-              <span className="field-hint">
-                Нет подходящей страницы?{' '}
-                <button type="button" className="btn ghost sm" onClick={blank}>
-                  Начать с пустой страницы
-                </button>
-              </span>
-            )}
+          </div>
+          )}
+          <div className="row" style={{ gap: 12, alignItems: 'flex-end' }}>
+            <div className="field" style={{ width: 72 }}>
+              <label htmlFor="nt-icon">Иконка</label>
+              <input id="nt-icon" className="input" value={icon} placeholder="📄" maxLength={8} onChange={(e) => setIcon(e.target.value)} />
+            </div>
+            <div className="field grow">
+              <label htmlFor="nt-dtitle">Название новых страниц</label>
+              <input id="nt-dtitle" className="input" value={defaultTitle} placeholder="По умолчанию — название шаблона" maxLength={300} onChange={(e) => setDefaultTitle(e.target.value)} />
+            </div>
           </div>
           <div className="field">
             <label htmlFor="nt-name">Название шаблона</label>

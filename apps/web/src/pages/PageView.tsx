@@ -117,6 +117,12 @@ function PageLoaded({ page, crumbs, block, justCreated }: { page: PageDto; crumb
     return () => clearTimeout(t);
   }, [liveTitle, qc, page.spaceId]);
 
+  useEffect(() => {
+    const open = () => setRightPanel('history');
+    window.addEventListener('kb:open-history', open);
+    return () => window.removeEventListener('kb:open-history', open);
+  }, [setRightPanel]);
+
   const setPanel = (p: Panel) => setRightPanel(panel === p ? null : p);
   const patchPage = async (body: Record<string, unknown>, ok?: string) => {
     try {

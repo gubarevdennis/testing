@@ -339,6 +339,9 @@ export async function purgePages(q: Tx, actor: AuditActor, pageIds: string[], re
   // Order: dependent rows first. Blobs are garbage collected separately once unreferenced.
   const ids = pageIds;
   await q.query('update pages set published_revision_id = null where id = any($1::uuid[])', [ids]);
+  await q.query('update pages set collection_id = null where collection_id in (select id from collections where page_id = any($1::uuid[]))', [ids]);
+  await q.query('delete from collections where page_id = any($1::uuid[])', [ids]);
+  await q.query('delete from upload_sessions where page_id = any($1::uuid[])', [ids]);
   for (const t of ['doc_updates', 'doc_state', 'page_events', 'comments', 'approvals', 'favorites', 'recent_views', 'notifications', 'search_index', 'share_links'])
     await q.query(`delete from ${t} where page_id = any($1::uuid[])`, [ids]);
   await q.query('delete from page_revisions where page_id = any($1::uuid[])', [ids]);
@@ -349,6 +352,23 @@ export async function purgePages(q: Tx, actor: AuditActor, pageIds: string[], re
   await q.query('delete from pages where id = any($1::uuid[])', [ids]);
   await audit(q, actor, { action: 'page.purge', targetType: 'page', targetId: ids.length === 1 ? ids[0] : null, details: { count: ids.length, ids: ids.slice(0, 100), reason } });
   return ids.length;
+}
+
+/** Permanently deletes a space from the trash together with all its pages (org admins; legal holds are respected). */
+export async function purgeSpace(q: Tx, actor: AuditActor, spaceId: string, orgId: string) {
+  const sp = (await q.query('select * from spaces where id = $1 and org_id = $2 for update', [spaceId, orgId])).rows[0];
+  if (!sp || !sp.deleted_at) throw notFound('Пространство не найдено в корзине');
+  if (sp.legal_hold) throw forbidden('Пространство на юридическом удержании и не может быть удалено окончательно');
+  await lockTree(q, orgId);
+  const ids = (await q.query('select id from pages where space_id = $1', [spaceId])).rows.map((r) => r.id);
+  const pages = await purgePages(q, actor, ids, 'space purge');
+  await q.query(`update templates set space_id = null, deleted_at = coalesce(deleted_at, now()) where space_id = $1`, [spaceId]);
+  await q.query(`delete from grants where resource_type = 'space' and resource_id = $1`, [spaceId]);
+  await q.query(`delete from access_requests where resource_type = 'space' and resource_id = $1`, [spaceId]);
+  await q.query('delete from spaces where id = $1', [spaceId]);
+  await audit(q, actor, { action: 'space.purge', targetType: 'space', targetId: spaceId, details: { name: sp.name, pages } });
+  await bumpAclEpoch(q, orgId);
+  return pages;
 }
 
 /** Remaps attachment ids inside document JSON (used by duplication and import). */

@@ -3,7 +3,7 @@ import type { Editor } from '@tiptap/core';
 import { NodeSelection, TextSelection } from '@tiptap/pm/state';
 import { useRef, useState } from 'react';
 import { GripVertical, Plus, Copy, Trash2, Link2, ArrowUp, ArrowDown, MessageSquarePlus, FileDown, Repeat2, Palette } from 'lucide-react';
-import { docToMarkdown } from '@kb/shared';
+import { loadMarkdown } from '../../lib/markdown';
 import { Menu } from '../../components/ui/Menu';
 import { Tooltip } from '../../components/ui/Tooltip';
 import { duplicateBlock, deleteBlock, moveBlock } from '../extensions/blockOps';
@@ -92,8 +92,9 @@ export function BlockHandle({ editor, pageId, onComment }: { editor: Editor; pag
         id: 'md',
         label: 'Копировать как Markdown',
         icon: <FileDown size={15} />,
-        onSelect: () => {
+        onSelect: async () => {
           if (!c) return;
+          const { docToMarkdown } = await loadMarkdown();
           const { markdown } = docToMarkdown({ type: 'doc', content: [c.node.toJSON()] } as any, { markers: false });
           navigator.clipboard.writeText(markdown).then(() => toast.success('Скопировано в формате Markdown'));
         },

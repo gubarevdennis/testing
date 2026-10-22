@@ -20,6 +20,10 @@ interface CommentDto {
   createdAt: string;
   updatedAt: string | null;
   mine: boolean;
+  /** Mentioned user ids. */
+  mentions?: string[];
+  /** Author, or full access to the page. */
+  canDelete?: boolean;
 }
 interface Thread {
   id: string;
@@ -31,6 +35,9 @@ interface Thread {
 }
 
 type Filter = 'open' | 'resolved' | 'all';
+
+/** Names of people picked in the mention picker (id → name), used to render mentions by id. */
+const knownNames = new Map<string, string>();
 
 /** Unsent replies survive collapsing a thread or closing the panel (per browser tab). */
 const replyDrafts = new Map<string, string>();
@@ -66,6 +73,8 @@ export function CommentsPanel({
   }, [refetch]);
 
   const threads = q.data?.threads ?? [];
+  const names = new Map(knownNames);
+  for (const t of threads) for (const c of t.comments) names.set(c.author.id, c.author.name);
   const openCount = threads.filter((t) => !t.resolvedAt).length;
   const resolvedCount = threads.length - openCount;
   const visible = threads.filter((t) => (filter === 'all' ? true : filter === 'open' ? !t.resolvedAt : !!t.resolvedAt));
@@ -158,6 +167,7 @@ export function CommentsPanel({
             onReplyOpen={() => setReplyOpen(t.id)}
             act={act}
             refetch={refetch}
+            names={names}
           />
         ))}
       </div>
@@ -176,6 +186,7 @@ function ThreadCard({
   onReplyOpen,
   act,
   refetch,
+  names,
 }: {
   t: Thread;
   pageId: string;
@@ -187,6 +198,7 @@ function ThreadCard({
   onReplyOpen(): void;
   act(fn: () => Promise<unknown>, ok?: string): Promise<boolean>;
   refetch(): Promise<unknown>;
+  names: Map<string, string>;
 }) {
   const [editing, setEditing] = useState<string | null>(null);
   const resolved = !!t.resolvedAt;
@@ -234,7 +246,7 @@ function ThreadCard({
                 {c.updatedAt && !c.deleted && new Date(c.updatedAt).getTime() - new Date(c.createdAt).getTime() > 1000 && ' · изменено'}
               </span>
               <span className="spacer grow" />
-              {c.mine && !c.deleted && canComment && editing !== c.id && (
+              {!c.deleted && editing !== c.id && ((c.mine && canComment) || (c.canDelete ?? c.mine)) && (
                 <Menu
                   label="Действия с комментарием"
                   placement="bottom-end"
@@ -244,8 +256,8 @@ function ThreadCard({
                     </button>
                   )}
                   items={[
-                    { id: 'edit', label: 'Изменить', onSelect: () => setEditing(c.id) },
-                    {
+                    ...(c.mine && canComment ? [{ id: 'edit', label: 'Изменить', onSelect: () => setEditing(c.id) }] : []),
+                    ...((c.canDelete ?? c.mine) ? [{
                       id: 'del',
                       label: 'Удалить',
                       danger: true,
@@ -253,7 +265,7 @@ function ThreadCard({
                         const ok = await confirm({ title: 'Удалить комментарий?', body: 'Комментарий исчезнет из обсуждения. Ответы других участников сохранятся.', confirmLabel: 'Удалить', danger: true });
                         if (ok) act(() => del('/api/v1/comments/' + c.id), 'Комментарий удалён');
                       },
-                    },
+                    }] : []),
                   ]}
                 />
               )}
@@ -273,7 +285,7 @@ function ThreadCard({
                 }}
               />
             ) : (
-              <div className="cm-text">{renderText(c.text)}</div>
+              <div className="cm-text">{renderText(c.text, c.mentions ?? [], names)}</div>
             )}
           </div>
         </div>
@@ -306,9 +318,20 @@ function ThreadCard({
   );
 }
 
-/** Highlights "@Имя Фамилия" mentions inside plain comment text. */
-function renderText(text: string): ReactNode {
-  const re = /@[\p{Lu}][\p{L}-]*(?: [\p{Lu}][\p{L}-]*)?/gu;
+function escapeRe(x: string) {
+  return x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/**
+ * Highlights mentions: "@Name" for every mentioned user id whose name is known; mentions whose name is
+ * unknown (e.g. the person was renamed) fall back to a generic "@Имя Фамилия" pattern.
+ */
+function renderText(text: string, mentions: string[], names: Map<string, string>): ReactNode {
+  if (!mentions.length) return text;
+  const known = mentions.map((id) => names.get(id)).filter((n): n is string => !!n);
+  const alts = [...new Set(known)].sort((a, b) => b.length - a.length).map((n) => '@' + escapeRe(n));
+  if (known.length < mentions.length) alts.push('@[\\p{Lu}][\\p{L}-]*(?: [\\p{Lu}][\\p{L}-]*)?');
+  const re = new RegExp(alts.join('|'), 'gu');
   const out: ReactNode[] = [];
   let last = 0;
   for (const m of text.matchAll(re)) {
@@ -378,6 +401,7 @@ function Composer({
     const caret = ta.current.selectionStart;
     const next = text.slice(0, mq.start) + '@' + u.name + ' ' + text.slice(caret);
     setText(next);
+    knownNames.set(u.id, u.name);
     setMentions((m) => (m.some((x) => x.id === u.id) ? m : [...m, { id: u.id, name: u.name }]));
     setMq(null);
     const pos = mq.start + u.name.length + 2;

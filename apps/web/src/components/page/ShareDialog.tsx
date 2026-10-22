@@ -1,6 +1,6 @@
 import '../../styles/panels.css';
 import { useState } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link2, Trash2, X, HelpCircle, Clock, Lock, Globe2 } from 'lucide-react';
 import { get, put, del, post, ApiError } from '../../api/client';
 import type { PageDto } from '../../api/types';
@@ -47,6 +47,49 @@ interface AccessResponse {
   publicLinks: Array<{ id: string; created_at: string; expires_at: string | null }>;
 }
 
+interface AudiencePreview {
+  added: Array<{ id: string; name: string; level: string }>;
+  addedCount: number;
+  removed: Array<{ id: string; name: string; level: string }>;
+  removedCount: number;
+  subjects?: { widens: boolean };
+}
+
+function people(n: number) {
+  const m10 = n % 10;
+  const m100 = n % 100;
+  if (m10 === 1 && m100 !== 11) return `${n} человек`;
+  if (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) return `${n} человека`;
+  return `${n} человек`;
+}
+
+/** Names of people gaining / losing access (server sends at most 50 of each). */
+function PreviewList({ p }: { p: AudiencePreview }) {
+  return (
+    <div className="col" style={{ gap: 6 }}>
+      {p.addedCount > 0 && (
+        <div>
+          <b>Доступ получат {people(p.addedCount)}:</b>
+          <div className="share-preview-names">
+            {p.added.map((x) => x.name).join(', ')}
+            {p.addedCount > p.added.length ? ` и ещё ${p.addedCount - p.added.length}` : ''}
+          </div>
+        </div>
+      )}
+      {p.removedCount > 0 && (
+        <div>
+          <b>Потеряют доступ {people(p.removedCount)}:</b>
+          <div className="share-preview-names">
+            {p.removed.map((x) => x.name).join(', ')}
+            {p.removedCount > p.removed.length ? ` и ещё ${p.removedCount - p.removed.length}` : ''}
+          </div>
+        </div>
+      )}
+      {!p.addedCount && !p.removedCount && <div className="muted">Состав людей с доступом не изменится.</div>}
+    </div>
+  );
+}
+
 const RANK: Record<string, number> = { none: 0, view: 1, comment: 2, edit: 3, full: 4 };
 const GRANT_LEVELS = ['view', 'comment', 'edit', 'full'] as const;
 const VIA_LABEL: Record<string, string> = { space: 'из пространства', 'inherited-page': 'от родительской страницы', group: 'через группу', org: 'для всей организации', direct: 'выдан напрямую' };
@@ -77,6 +120,21 @@ export function ShareDialog({ page, open, onClose }: { page: PageDto; open: bool
   const [explainOpen, setExplainOpen] = useState(false);
   const [requestOpen, setRequestOpen] = useState(false);
 
+  const previews = useQueries({
+    queries: (canManage ? picked : []).map((p) => {
+      const subjectId = p.type === 'user' ? p.user.id : p.group.id;
+      return {
+        queryKey: ['access-preview', page.id, p.type, subjectId, newLevel],
+        queryFn: () => post<AudiencePreview>(`/api/v1/pages/${page.id}/access/preview`, { subjectType: p.type, subjectId, level: newLevel }),
+        staleTime: 15_000,
+        retry: false,
+      };
+    }),
+  });
+  const previewLoading = previews.some((x) => x.isLoading);
+  const previewAdded = previews.reduce((n, x) => n + (x.data?.addedCount ?? 0), 0);
+  const previewNames = [...new Set(previews.flatMap((x) => x.data?.added.map((a) => a.name) ?? []))];
+
   const refresh = () => {
     qc.invalidateQueries({ queryKey: ['page-access', page.id] });
     qc.invalidateQueries({ predicate: (x) => x.queryKey.includes(page.id) && x.queryKey[0] !== 'page-access' });
@@ -90,16 +148,16 @@ export function ShareDialog({ page, open, onClose }: { page: PageDto; open: bool
       return true;
     } catch (e) {
       if (e instanceof ApiError && e.code === 'audience_change') {
-        const currentUsers = new Set((data?.audience ?? []).filter((a) => a.level !== 'none').map((a) => a.subjectType + ':' + a.subjectId)).size;
+        const preview = (e.details?.preview ?? null) as AudiencePreview | null;
         const ok = await confirm({
           title: 'Открыть доступ всей организации?',
           body: (
             <div className="col" style={{ gap: 8 }}>
               <p>
                 Страницу «{page.title || 'Без названия'}» смогут {body.level === 'view' ? 'просматривать' : body.level === 'comment' ? 'просматривать и комментировать' : 'редактировать'} <b>все сотрудники организации</b>
-                {page.inheritPermissions ? ', а также все её подстраницы, которые наследуют права' : ''}.
+                {page.inheritPermissions ? ', а также все её подстраницы, которые наследуют права' : ''}. Страница появится в поиске у всех сотрудников.
               </p>
-              <p className="muted">Сейчас доступ есть у {currentUsers} {currentUsers === 1 ? 'получателя' : 'получателей'} (людей, групп или правил). Страница появится в поиске у всех сотрудников. Гости доступ не получат.</p>
+              {preview ? <PreviewList p={preview} /> : <p className="muted">Гости доступ не получат.</p>}
             </div>
           ),
           confirmLabel: 'Открыть всем',
@@ -303,6 +361,21 @@ export function ShareDialog({ page, open, onClose }: { page: PageDto; open: bool
                   {busy && <span className="spinner" />} Выдать доступ
                 </button>
               </div>
+              {picked.length > 0 && (
+                <div className="kb-meta" aria-live="polite" style={{ marginTop: 4 }}>
+                  {previewLoading ? (
+                    'Считаем, кто получит доступ…'
+                  ) : previewAdded > 0 ? (
+                    <span title={previewNames.join(', ')}>
+                      Доступ к странице впервые получат {picked.length > 1 ? 'до ' : ''}
+                      {people(previewAdded)}
+                      {previewNames.length ? `: ${previewNames.slice(0, 5).join(', ')}${previewAdded > 5 ? '…' : ''}` : ''}
+                    </span>
+                  ) : previews.some((x) => x.data) ? (
+                    'Новых людей с доступом не появится — изменится только уровень доступа.'
+                  ) : null}
+                </div>
+              )}
               {picked.some((p) => p.type === 'user' && p.user.kind === 'guest') && newLevel === 'full' && <div className="field-error">Гостю нельзя выдать полный доступ.</div>}
             </>
           )}

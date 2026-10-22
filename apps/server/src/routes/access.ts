@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { LEVELS } from '@kb/shared';
 import { tx } from '../db/pool.js';
 import { actorOf, parse, requireUser, type Services } from '../app.js';
-import { accessForPages, accessForSpaces, pageAudience, requirePage, canManagePeople, isOrgAdmin, canReadAudit, type AuthUser } from '../acl/engine.js';
+import { accessForPages, accessForSpaces, pageAudience, previewGrantAudience, requirePage, canManagePeople, isOrgAdmin, canReadAudit, type AuthUser } from '../acl/engine.js';
 import { setGrant, revokeGrant, setInheritance } from '../services/grants.js';
 import { toAuthUser } from '../auth/sessions.js';
 import { forbidden, notFound } from '../lib/errors.js';
@@ -62,6 +62,20 @@ export async function accessRoutes(app: FastifyInstance, s: Services) {
     expiresAt: z.string().datetime({ offset: true }).nullable().optional(),
     reason: z.string().max(500).nullable().optional(),
     confirmWiden: z.boolean().optional(),
+  });
+
+  /** Share dialog preview: who would newly gain / lose access to the page if the proposed grant were saved. */
+  app.post('/api/v1/pages/:id/access/preview', async (req) => {
+    const user = requireUser(req);
+    const { id } = parse(z.object({ id: uuid }), req.params);
+    const body = parse(grantBody.pick({ subjectType: true, subjectId: true, level: true, canExport: true, canDownload: true, canShare: true, canPublish: true }), req.body);
+    await requirePage(s.db, user, id, 'share');
+    const preview = await previewGrantAudience(s.db, user.orgId, { type: 'page', id }, body);
+    const name = await nameSubjects(s.db, [...preview.subjects.gained, ...preview.subjects.lost]);
+    return {
+      ...preview,
+      subjects: { ...preview.subjects, gained: preview.subjects.gained.map((g) => ({ ...g, subject: name(g) })), lost: preview.subjects.lost.map((g) => ({ ...g, subject: name(g) })) },
+    };
   });
 
   app.put('/api/v1/grants', async (req) => {

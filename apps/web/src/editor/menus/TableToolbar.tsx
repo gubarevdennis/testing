@@ -7,7 +7,8 @@ import { useEditorState } from '@tiptap/react';
 import {
   ArrowUpToLine, ArrowDownToLine, ArrowLeftToLine, ArrowRightToLine, Trash2, TableCellsMerge, TableCellsSplit, PaintBucket, AlignLeft, AlignCenter, AlignRight, MoreHorizontal, Copy, Rows3, Columns3, Heading, AlignVerticalJustifyStart, AlignVerticalJustifyCenter, AlignVerticalJustifyEnd,
 } from 'lucide-react';
-import { tableToRows, rowsToTsv, docToMarkdown } from '@kb/shared';
+import { tableToRows, rowsToTsv } from '@kb/shared';
+import { loadMarkdown } from '../../lib/markdown';
 import { Tooltip } from '../../components/ui/Tooltip';
 import { Menu } from '../../components/ui/Menu';
 import { HIGHLIGHTS } from '../palette';
@@ -32,7 +33,8 @@ export function TableToolbar({ editor }: { editor: Editor }) {
       </button>
     </Tooltip>
   );
-  const copy = (kind: 'tsv' | 'md') => {
+  const copy = async (kind: 'tsv' | 'md') => {
+    const { docToMarkdown } = await loadMarkdown();
     const t = tableNode(editor);
     if (!t) return;
     const json = t.node.toJSON();

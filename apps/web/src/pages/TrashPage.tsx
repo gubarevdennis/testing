@@ -6,6 +6,7 @@ import { get, post, del, ApiError } from '../api/client';
 import { toast } from '../components/ui/Toast';
 import { confirm } from '../components/ui/Confirm';
 import { relTime, fullTime } from '../lib/format';
+import { useMe } from '../state/session';
 
 interface TrashPageItem {
   id: string;
@@ -17,6 +18,7 @@ interface TrashPageItem {
   deleted_by_name: string | null;
   children: number;
   purgeAt: string;
+  path?: string[];
 }
 interface TrashSpaceItem {
   id: string;
@@ -24,6 +26,7 @@ interface TrashSpaceItem {
   icon: string | null;
   deleted_at: string;
   deleted_by_name: string | null;
+  purgeAt?: string;
 }
 
 function ErrorState({ error, onRetry }: { error: unknown; onRetry: () => void }) {
@@ -44,7 +47,7 @@ export default function TrashPage() {
   const trash = useQuery({ queryKey: ['trash'], queryFn: ({ signal }) => get<{ retentionDays: number; pages: TrashPageItem[] }>('/api/v1/trash', signal) });
   const trashSpaces = useQuery({
     queryKey: ['trash-spaces'],
-    queryFn: ({ signal }) => get<{ spaces: TrashSpaceItem[] }>('/api/v1/trash/spaces', signal).catch((e) => (e instanceof ApiError && e.status === 403 ? { spaces: [] } : Promise.reject(e))),
+    queryFn: ({ signal }) => get<{ retentionDays?: number; spaces: TrashSpaceItem[] }>('/api/v1/trash/spaces', signal).catch((e) => (e instanceof ApiError && e.status === 403 ? { spaces: [] as TrashSpaceItem[] } : Promise.reject(e))),
   });
   const [filter, setFilter] = useState('');
   const [space, setSpace] = useState('');
@@ -120,6 +123,29 @@ export default function TrashPage() {
     }
   };
 
+  const me = useMe();
+  const isAdmin = me.user.orgRole === 'owner' || me.user.orgRole === 'admin';
+  const purgeSpace = async (s: TrashSpaceItem) => {
+    const ok = await confirm({
+      title: 'Удалить пространство навсегда?',
+      danger: true,
+      confirmLabel: 'Удалить навсегда',
+      typeToConfirm: s.name.trim(),
+      body: <p>Пространство «{s.name}», все его страницы, история версий и вложения будут удалены без возможности восстановления.</p>,
+    });
+    if (!ok) return;
+    setBusy(s.id);
+    try {
+      const r = await del<{ purged: number }>(`/api/v1/trash/spaces/${s.id}`, { confirm: true });
+      refresh();
+      toast.success(`Пространство удалено навсегда${r?.purged ? ` (страниц: ${r.purged})` : ''}`);
+    } catch (e) {
+      toast.error(e instanceof ApiError ? (e.status === 403 && !e.message ? 'Удаление запрещено (юридическое удержание или недостаточно прав)' : e.message) : 'Не удалось удалить пространство');
+    } finally {
+      setBusy(null);
+    }
+  };
+
   return (
     <div className="page-container trash-page">
       <h1 className="page-heading">Корзина</h1>
@@ -141,15 +167,23 @@ export default function TrashPage() {
                 </span>
                 <div className="grow trash-main">
                   <div className="ellipsis trash-title">{s.name}</div>
-                  <div className="small muted" title={fullTime(s.deleted_at)}>
-                    Удалено {relTime(s.deleted_at)}
-                    {s.deleted_by_name ? ` · ${s.deleted_by_name}` : ''}
+                  <div className="small muted trash-meta">
+                    <span title={fullTime(s.deleted_at)}>
+                      Удалено {relTime(s.deleted_at)}
+                      {s.deleted_by_name ? ` · ${s.deleted_by_name}` : ''}
+                    </span>
+                    {s.purgeAt && <span title={fullTime(s.purgeAt)}>Удалится {relTime(s.purgeAt)}</span>}
                   </div>
                 </div>
                 <div className="trash-actions">
                   <button className="btn sm" onClick={() => restoreSpace(s)} disabled={busy === s.id} aria-busy={busy === s.id}>
                     <RotateCcw size={14} /> Восстановить
                   </button>
+                  {isAdmin && (
+                    <button className="btn sm danger" onClick={() => purgeSpace(s)} disabled={busy === s.id} aria-label={`Удалить навсегда пространство «${s.name}»`}>
+                      <Trash2 size={14} /> <span className="trash-purge-label">Удалить навсегда</span>
+                    </button>
+                  )}
                 </div>
               </li>
             ))}
@@ -214,6 +248,12 @@ export default function TrashPage() {
                       <Link to={`/s/${p.space_id}`} className="trash-origin">
                         {p.space_name}
                       </Link>
+                      {(p.path ?? []).map((c, i) => (
+                        <span key={i}>
+                          {' › '}
+                          {c}
+                        </span>
+                      ))}
                     </span>
                     <span title={fullTime(p.deleted_at)}>
                       Удалено {relTime(p.deleted_at)}

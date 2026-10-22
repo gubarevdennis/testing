@@ -67,6 +67,10 @@ export interface PageDto {
   favorite: boolean;
   access: { level: string; actions: Record<string, boolean>; policy: Space['policy'] };
   readMode: 'live' | 'published';
+  /** Pending approval request (only while status is 'review'). */
+  approval: { id: string; requestedBy: { id: string; name: string }; approvers: Array<{ id: string; name: string }>; message: string | null; revisionNumber: number | null; createdAt: string } | null;
+  /** Currently published revision, if any. */
+  published: { revisionId: string; number: number; at: string } | null;
   docGeneration: string | null;
 }
 

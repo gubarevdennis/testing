@@ -26,6 +26,7 @@ interface SearchResponse {
   totalIsLowerBound: boolean;
   results: SearchResult[];
   variants: string[];
+  didYouMean?: string | null;
 }
 
 const PAGE = 20;
@@ -227,11 +228,13 @@ export default function SearchPage() {
   useEffect(() => setActive(-1), [qs, type]);
 
   const noResults = !!first && first.total === 0;
-  const suggest = useQuery({
-    queryKey: ['search-suggest', q],
-    enabled: noResults,
-    queryFn: ({ signal }) => get<{ suggestions: Array<{ pageId: string; title: string; icon: string | null }> }>(`/api/v1/search/suggest?q=${encodeURIComponent(q)}`, signal),
-  });
+  const didYouMean = first?.didYouMean ?? null;
+  const didYouMeanHref = (() => {
+    if (!didYouMean) return '';
+    const next = new URLSearchParams(params);
+    next.set('q', didYouMean);
+    return `/search?${next.toString()}`;
+  })();
 
   const extraVariants = (first?.variants ?? []).filter((v) => v.toLowerCase() !== q.toLowerCase()).slice(0, 2);
   const filtersActive = !!(spaceId || authorId || from || to || status || type);
@@ -423,18 +426,12 @@ export default function SearchPage() {
         <div className="empty-state">
           <div className="empty-icon">🤷</div>
           <h3>По запросу «{q}» ничего не найдено</h3>
-          {(suggest.data?.suggestions.length ?? 0) > 0 && (
+          {didYouMean && (
             <div className="search-didyoumean">
               Возможно, вы имели в виду:{' '}
-              {suggest.data!.suggestions.slice(0, 4).map((s, i) => (
-                <span key={s.pageId}>
-                  {i > 0 && ', '}
-                  <Link to={`/p/${s.pageId}`}>
-                    {s.icon ? s.icon + ' ' : ''}
-                    {s.title || 'Без названия'}
-                  </Link>
-                </span>
-              ))}
+              <Link to={didYouMeanHref}>
+                <b>{didYouMean}</b>
+              </Link>
             </div>
           )}
           <ul className="search-tips">

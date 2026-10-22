@@ -3,8 +3,9 @@ import { z } from 'zod';
 import { LEVELS, SPACE_KINDS, SPACE_VISIBILITY } from '@kb/shared';
 import { tx } from '../db/pool.js';
 import { actorOf, parse, requireUser, type Services } from '../app.js';
-import { accessForSpaces, requireSpace, isOrgAdmin, bumpAclEpoch, userSubjects } from '../acl/engine.js';
-import { createSpace } from '../services/org.js';
+import { accessForSpaces, requireSpace, isOrgAdmin, bumpAclEpoch, userSubjects, usersWithAction } from '../acl/engine.js';
+import { createSpace, orgSettings } from '../services/org.js';
+import { purgeSpace } from '../services/pages.js';
 import { audit } from '../services/audit.js';
 import { visibleChildren, sharedWithMe } from '../services/tree.js';
 import { badRequest, conflict, forbidden, notFound } from '../lib/errors.js';
@@ -158,7 +159,19 @@ export async function spaceRoutes(app: FastifyInstance, s: Services) {
           and (exists (select 1 from grants g where g.resource_type = 'space' and g.resource_id = s.id and g.subject_type = 'user' and g.subject_id = $2 and g.level = 'full' and g.revoked_at is null) or $3)`,
       [user.orgId, user.id, isOrgAdmin(user)],
     );
-    return { spaces: r.rows };
+    const retention = (await orgSettings(s.db, user.orgId)).retention?.trashDays ?? s.cfg.retention.trashDays;
+    return { retentionDays: retention, spaces: r.rows.map((sp) => ({ ...sp, purgeAt: new Date(new Date(sp.deleted_at).getTime() + retention * 86400_000) })) };
+  });
+
+  /** Permanent deletion of a trashed space with all its pages (organisation administrators only). */
+  app.delete('/api/v1/trash/spaces/:id', async (req) => {
+    const user = requireUser(req);
+    const { id } = parse(z.object({ id: uuid }), req.params);
+    parse(z.object({ confirm: z.literal(true) }), req.body ?? {});
+    if (!isOrgAdmin(user)) throw forbidden('Окончательное удаление пространства доступно администратору организации');
+    const purged = await tx(s.db, (q) => purgeSpace(q, actorOf(req), id, user.orgId));
+    s.bus.emit({ type: 'acl-changed', orgId: user.orgId });
+    return { purged };
   });
 
   app.get('/api/v1/spaces/:id/tree', async (req) => {
@@ -193,11 +206,13 @@ export async function spaceRoutes(app: FastifyInstance, s: Services) {
     if (user.kind === 'guest') throw forbidden('Гости не могут запрашивать доступ');
     const r = await tx(s.db, async (q) => {
       const row = (await q.query(`insert into access_requests (org_id, resource_type, resource_id, user_id, level, reason) values ($1, $2, $3, $4, $5, $6) returning *`, [user.orgId, body.resourceType, body.resourceId, user.id, body.level, body.reason ?? null])).rows[0];
-      const managers = await q.query(`select subject_id from grants where resource_type = $1 and resource_id = $2 and subject_type = 'user' and level = 'full' and revoked_at is null`, [body.resourceType, body.resourceId]);
-      for (const m of managers.rows) await q.query(`insert into notifications (user_id, type, data) values ($1, 'access_request', $2)`, [m.subject_id, { requestId: row.id, from: user.name, resourceType: body.resourceType, resourceId: body.resourceId, level: body.level, reason: body.reason ?? null }]);
-      await audit(q, actorOf(req), { action: 'access.request', targetType: body.resourceType, targetId: body.resourceId, details: { level: body.level } });
-      return row;
+      // Everyone who can share the resource — directly, via groups or inherited from the space / parent pages.
+      const managers = (await usersWithAction(q, user.orgId, { type: body.resourceType, id: body.resourceId }, 'share')).filter((m) => m.status === 'active' && m.id !== user.id);
+      for (const m of managers) await q.query(`insert into notifications (user_id, type, data) values ($1, 'access_request', $2)`, [m.id, { requestId: row.id, from: user.name, resourceType: body.resourceType, resourceId: body.resourceId, level: body.level, reason: body.reason ?? null }]);
+      await audit(q, actorOf(req), { action: 'access.request', targetType: body.resourceType, targetId: body.resourceId, details: { level: body.level, notified: managers.length } });
+      return { row, notified: managers.map((m) => m.id) };
     });
-    return { request: r };
+    for (const id of r.notified) s.bus.emit({ type: 'notification', userId: id });
+    return { request: r.row };
   });
 }

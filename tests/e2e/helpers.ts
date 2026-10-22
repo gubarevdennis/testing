@@ -52,3 +52,33 @@ export async function apiContent(request: APIRequestContext, pageId: string) {
   expect(r.ok()).toBeTruthy();
   return (await r.json()) as { content: any; title: string };
 }
+
+/** Creates an employee via the admin API (test-only password endpoint) and returns credentials. */
+export async function createUser(request: APIRequestContext, name: string, opts: { pageGrants?: Array<{ pageId: string; level: 'view' | 'comment' | 'edit' }> } = {}) {
+  const csrf = (await request.storageState()).cookies.find((c) => c.name === 'kb_csrf')?.value ?? '';
+  const email = `u${Date.now()}${Math.floor(Math.random() * 1000)}@corp.test`;
+  const r = await request.post('/api/v1/admin/users', { data: { email, name, kind: 'employee', invite: false, pageGrants: opts.pageGrants }, headers: { 'x-csrf-token': csrf } });
+  expect(r.ok(), await r.text()).toBeTruthy();
+  const { user } = await r.json();
+  const password = 'User-password-1';
+  const p = await request.post('/api/v1/__test/set-password', { data: { userId: user.id, password }, headers: { 'x-csrf-token': csrf } });
+  expect(p.ok()).toBeTruthy();
+  return { id: user.id as string, email, password, name };
+}
+
+export async function api(page: Page, method: 'POST' | 'PUT' | 'PATCH' | 'DELETE', path: string, data?: unknown) {
+  const csrf = (await page.context().storageState()).cookies.find((c) => c.name === 'kb_csrf')?.value ?? '';
+  const r = await page.request.fetch(path, { method, data, headers: { 'x-csrf-token': csrf } });
+  expect(r.ok(), `${method} ${path}: ${await r.text()}`).toBeTruthy();
+  return r.json();
+}
+
+/** Dispatches a synthetic paste with the given clipboard flavours into the focused editor. */
+export async function paste(page: Page, data: Record<string, string>) {
+  await page.evaluate((d) => {
+    const dt = new DataTransfer();
+    for (const [k, v] of Object.entries(d)) dt.setData(k, v);
+    const target = document.activeElement ?? document.querySelector('.kb-editor');
+    target!.dispatchEvent(new ClipboardEvent('paste', { clipboardData: dt, bubbles: true, cancelable: true }));
+  }, data);
+}

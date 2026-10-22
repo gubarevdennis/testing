@@ -96,6 +96,17 @@ export function useDebounced<T>(value: T, ms = 250): T {
   return v;
 }
 
+export interface AdminUserDetail extends AdminUser {
+  updated_at: string;
+  primary_group_name: string | null;
+  manager_name: string | null;
+  owned_pages: number;
+}
+
+export function useUserDetail(id: string | null | undefined) {
+  return useQuery({ queryKey: ['admin', 'user', id], queryFn: () => get<{ user: AdminUserDetail }>(`/api/v1/admin/users/${id}`), enabled: !!id });
+}
+
 export function useGroups(enabled = true) {
   return useQuery({ queryKey: ['admin', 'groups'], queryFn: () => get<{ groups: AdminGroup[] }>('/api/v1/admin/groups'), enabled });
 }

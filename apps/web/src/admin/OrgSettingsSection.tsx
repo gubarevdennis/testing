@@ -23,13 +23,14 @@ const LIMITS = {
   quotaPerUserMb: [10, 1_000_000],
 } as const;
 
-type Form = { requireMfa: boolean; guestsEnabled: boolean; publicLinksEnabled: boolean; ssoOnly: boolean; trashDays: string; journalDays: string; revisionDays: string; quotaPerUserMb: string };
+type Form = { requireMfa: boolean; guestsEnabled: boolean; publicLinksEnabled: boolean; ssoOnly: boolean; oidcJitProvisioning: boolean; trashDays: string; journalDays: string; revisionDays: string; quotaPerUserMb: string };
 
 const toForm = (s: OrgSettings): Form => ({
   requireMfa: s.requireMfa,
   guestsEnabled: s.guestsEnabled,
   publicLinksEnabled: s.publicLinksEnabled,
   ssoOnly: s.ssoOnly,
+  oidcJitProvisioning: !!s.oidcJitProvisioning,
   trashDays: String(s.retention.trashDays),
   journalDays: String(s.retention.journalDays),
   revisionDays: String(s.retention.revisionDays),
@@ -62,7 +63,7 @@ export function OrgSettingsSection() {
       const f = form!;
       const b = base!;
       const body: Record<string, unknown> = {};
-      for (const k of ['requireMfa', 'guestsEnabled', 'publicLinksEnabled', 'ssoOnly'] as const) if (f[k] !== b[k]) body[k] = f[k];
+      for (const k of ['requireMfa', 'guestsEnabled', 'publicLinksEnabled', 'ssoOnly', 'oidcJitProvisioning'] as const) if (f[k] !== b[k]) body[k] = f[k];
       const retention: Record<string, number> = {};
       for (const k of ['trashDays', 'journalDays', 'revisionDays'] as const) if (f[k] !== b[k]) retention[k] = Number(f[k]);
       if (Object.keys(retention).length) body.retention = retention;
@@ -83,6 +84,7 @@ export function OrgSettingsSection() {
     if (!form || !base) return;
     const warnings: string[] = [];
     if (form.ssoOnly && !base.ssoOnly) warnings.push('Вход по паролю будет запрещён всем, кроме владельцев. Убедитесь, что корпоративный SSO настроен и работает.');
+    if (form.oidcJitProvisioning && !base.oidcJitProvisioning) warnings.push('Любой сотрудник, прошедший вход через корпоративный SSO, автоматически получит учётную запись в базе знаний.');
     if (form.requireMfa && !base.requireMfa) warnings.push('Пользователи без двухфакторной аутентификации должны будут настроить её при следующем входе.');
     if (!form.guestsEnabled && base.guestsEnabled) warnings.push('Новых гостей нельзя будет приглашать.');
     if (form.publicLinksEnabled && !base.publicLinksEnabled) warnings.push('Пользователи с правом публикации смогут открывать страницы по публичным ссылкам без входа.');
@@ -108,7 +110,7 @@ export function OrgSettingsSection() {
   if (q.isError) return <ErrorState error={q.error} onRetry={() => q.refetch()} />;
   if (!form) return null;
   const set = <K extends keyof Form>(k: K, v: Form[K]) => setForm((f) => (f ? { ...f, [k]: v } : f));
-  const toggle = (k: 'requireMfa' | 'guestsEnabled' | 'publicLinksEnabled' | 'ssoOnly', label: string, hint: string) => (
+  const toggle = (k: 'requireMfa' | 'guestsEnabled' | 'publicLinksEnabled' | 'ssoOnly' | 'oidcJitProvisioning', label: string, hint: string) => (
     <div className="admin-setting">
       <div className="grow">
         <label htmlFor={'os-' + k} className="field-label">
@@ -156,6 +158,7 @@ export function OrgSettingsSection() {
           <h3 className="admin-card-title">Безопасность</h3>
           {toggle('requireMfa', 'Обязательная двухфакторная аутентификация', 'Каждый пользователь должен подтверждать вход кодом из приложения-аутентификатора.')}
           {toggle('ssoOnly', 'Вход только через SSO', 'Пароли отключаются для всех, кроме владельцев (резервный доступ).')}
+          {toggle('oidcJitProvisioning', 'Автоматическое создание учётных записей при входе через SSO', 'Применяется только ко входу через корпоративный SSO: сотрудник без учётной записи получит её автоматически при первом входе.')}
         </div>
         <div className="card col" style={{ gap: 0 }}>
           <h3 className="admin-card-title">Внешний доступ</h3>

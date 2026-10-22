@@ -41,7 +41,7 @@ export async function searchCommentRoutes(app: FastifyInstance, s: Services) {
   app.get('/api/v1/pages/:id/comments', async (req) => {
     const user = requireUser(req);
     const { id } = parse(z.object({ id: uuid }), req.params);
-    await requirePage(s.db, user, id, 'view');
+    const acc = await requirePage(s.db, user, id, 'view');
     const rows = (
       await s.db.query(
         `select c.id, c.thread_id, c.parent_id, c.block_id, c.quote, c.body, c.body_text, c.created_at, c.updated_at, c.resolved_at, c.deleted_at, c.author_id, u.name as author_name, r.name as resolved_by_name
@@ -58,7 +58,20 @@ export async function searchCommentRoutes(app: FastifyInstance, s: Services) {
         t.resolvedAt = c.resolved_at;
         t.resolvedBy = c.resolved_by_name;
       }
-      t.comments.push({ id: c.id, parentId: c.parent_id, author: { id: c.author_id, name: c.author_name }, text: c.deleted_at ? '' : c.body_text, deleted: !!c.deleted_at, createdAt: c.created_at, updatedAt: c.updated_at, mine: c.author_id === user.id });
+      const mine = c.author_id === user.id;
+      t.comments.push({
+        id: c.id,
+        parentId: c.parent_id,
+        author: { id: c.author_id, name: c.author_name },
+        text: c.deleted_at ? '' : c.body_text,
+        mentions: c.deleted_at ? [] : ((c.body?.mentions ?? []) as string[]),
+        deleted: !!c.deleted_at,
+        createdAt: c.created_at,
+        updatedAt: c.updated_at,
+        mine,
+        // Mirrors DELETE /comments/:id: the author or someone with full access to the page.
+        canDelete: !c.deleted_at && acc.actions.comment && (mine || acc.level === 'full'),
+      });
       threads.set(c.thread_id, t);
     }
     return { threads: [...threads.values()] };
@@ -116,7 +129,8 @@ export async function searchCommentRoutes(app: FastifyInstance, s: Services) {
     if (!c) throw notFound();
     await requirePage(s.db, user, c.page_id, 'comment');
     if (c.author_id !== user.id) throw forbidden('Редактировать можно только свои комментарии');
-    await s.db.query('update comments set body = $2, body_text = $3, updated_at = now() where id = $1', [id, { text, edited: true }, text]);
+    // Merge so stored mentions survive an edit.
+    await s.db.query('update comments set body = body || $2::jsonb, body_text = $3, updated_at = now() where id = $1', [id, { text, edited: true }, text]);
     s.bus.emit({ type: 'comments-changed', pageId: c.page_id });
     return { ok: true };
   });

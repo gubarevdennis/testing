@@ -90,8 +90,7 @@ export async function revisionRoutes(app: FastifyInstance, s: Services) {
     }
     const rev = (await s.db.query('select id, number, content, title from page_revisions where id = $1 and page_id = $2', [rid, id])).rows[0];
     if (!rev) throw notFound('Версия не найдена');
-    const pre = await s.hub.createRevisionNow(id, 'manual', user.id, `Перед восстановлением версии ${rev.number}`);
-    await s.db.query(`update page_revisions set kind = 'pre-restore' where id = $1 and kind = 'manual' and label like 'Перед восстановлением%'`, [pre.id]);
+    const pre = await s.hub.createRevisionNow(id, 'pre-restore', user.id, `Перед восстановлением версии ${rev.number}`);
     const res = await s.hub.applyServerChange(id, user.id, (doc) => {
       replaceContent(doc, rev.content, 'restore');
       if (restoreTitle && rev.title !== titleOf(doc)) setTitle(doc, rev.title);

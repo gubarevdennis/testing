@@ -20,7 +20,7 @@ export async function adminRoutes(app: FastifyInstance, s: Services) {
   app.get('/api/v1/admin/users', async (req) => {
     const user = requireUser(req);
     requirePeopleAdmin(user);
-    const qs = parse(z.object({ q: z.string().max(100).default(''), status: z.string().optional(), kind: z.enum(['employee', 'guest']).optional(), groupId: uuid.optional(), offset: z.coerce.number().int().min(0).default(0), limit: z.coerce.number().int().min(1).max(500).default(100) }), req.query);
+    const qs = parse(z.object({ q: z.string().max(100).default(''), status: z.string().optional(), kind: z.enum(['employee', 'guest']).optional(), role: z.enum(['owner', 'admin', 'people_admin', 'auditor', 'member']).optional(), groupId: uuid.optional(), offset: z.coerce.number().int().min(0).default(0), limit: z.coerce.number().int().min(1).max(500).default(100) }), req.query);
     const like = '%' + qs.q.replace(/[%_]/g, '') + '%';
     const rows = (
       await s.db.query(
@@ -28,12 +28,32 @@ export async function adminRoutes(app: FastifyInstance, s: Services) {
                 coalesce((select json_agg(json_build_object('id', g.id, 'name', g.name, 'kind', g.kind, 'role', m.role, 'expiresAt', m.expires_at)) from group_members m join groups g on g.id = m.group_id and g.deleted_at is null where m.user_id = u.id), '[]') as groups,
                 count(*) over() as total
            from users u where u.org_id = $1 and (u.name ilike $2 or u.email ilike $2) and ($3::text is null or u.status = $3) and ($4::text is null or u.kind = $4)
-            and ($5::uuid is null or exists (select 1 from group_members m where m.user_id = u.id and m.group_id = $5))
+            and ($5::uuid is null or exists (select 1 from group_members m where m.user_id = u.id and m.group_id = $5)) and ($8::text is null or u.org_role = $8)
           order by u.name offset $6 limit $7`,
-        [user.orgId, like, qs.status ?? null, qs.kind ?? null, qs.groupId ?? null, qs.offset, qs.limit],
+        [user.orgId, like, qs.status ?? null, qs.kind ?? null, qs.groupId ?? null, qs.offset, qs.limit, qs.role ?? null],
       )
     ).rows;
     return { users: rows.map(({ total, ...r }) => r), total: rows[0]?.total ?? 0 };
+  });
+
+  /** User card: profile, memberships, manager and primary department names. */
+  app.get('/api/v1/admin/users/:id', async (req) => {
+    const user = requireUser(req);
+    requirePeopleAdmin(user);
+    const { id } = parse(z.object({ id: uuid }), req.params);
+    const row = (
+      await s.db.query(
+        `select u.id, u.email, u.name, u.kind, u.org_role, u.status, u.title, u.created_at, u.updated_at, u.last_login_at, u.access_expires_at, u.mfa_enabled, u.primary_group_id, pg.name as primary_group_name,
+                u.manager_id, m.name as manager_name,
+                coalesce((select json_agg(json_build_object('id', g.id, 'name', g.name, 'kind', g.kind, 'role', gm.role, 'expiresAt', gm.expires_at) order by g.name) from group_members gm join groups g on g.id = gm.group_id and g.deleted_at is null where gm.user_id = u.id), '[]') as groups,
+                (select count(*)::int from pages p where p.owner_id = u.id and p.deleted_at is null) as owned_pages
+           from users u left join users m on m.id = u.manager_id left join groups pg on pg.id = u.primary_group_id
+          where u.id = $1 and u.org_id = $2`,
+        [id, user.orgId],
+      )
+    ).rows[0];
+    if (!row) throw notFound('Пользователь не найден');
+    return { user: row };
   });
 
   const createUserBody = z.object({
@@ -234,7 +254,9 @@ export async function adminRoutes(app: FastifyInstance, s: Services) {
       const old = a.get(spaceId)?.level ?? 'none';
       if (old !== acc.level) diff.push({ spaceId, name: names.get(spaceId), from: old, to: acc.level });
     }
-    return { changes: diff };
+    // Documents whose ownership would need a transfer on deactivation (same scope as transferOwnership).
+    const owned = (await s.db.query(`select count(*)::int c from pages p join spaces sp on sp.id = p.space_id where p.owner_id = $1 and p.org_id = $2 and sp.kind <> 'personal' and p.deleted_at is null`, [id, admin.orgId])).rows[0].c;
+    return { changes: diff, ownedPages: owned };
   });
 
   // ---- groups / departments
@@ -329,6 +351,7 @@ export async function adminRoutes(app: FastifyInstance, s: Services) {
         guestsEnabled: z.boolean().optional(),
         publicLinksEnabled: z.boolean().optional(),
         ssoOnly: z.boolean().optional(),
+        oidcJitProvisioning: z.boolean().optional(),
         retention: z.object({ trashDays: z.number().int().min(30).max(3650).optional(), journalDays: z.number().int().min(90).max(3650).optional(), revisionDays: z.number().int().min(365).max(36500).optional() }).optional(),
         quotaPerUserMb: z.number().int().min(10).max(1_000_000).optional(),
       }),

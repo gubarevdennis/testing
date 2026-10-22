@@ -17,13 +17,5 @@ export default defineConfig({
     outDir: 'dist',
     sourcemap: true,
     chunkSizeWarningLimit: 4000,
-    rollupOptions: {
-      output: {
-        manualChunks: {
-          editor: ['@tiptap/react', '@tiptap/core', '@tiptap/starter-kit', 'yjs'],
-          mermaid: ['mermaid'],
-        },
-      },
-    },
   },
 });

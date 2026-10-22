@@ -5,7 +5,7 @@ import { actorOf, parse, requireUser, type Services } from '../app.js';
 import { accessForSpaces, isOrgAdmin, requirePage, requireSpace } from '../acl/engine.js';
 import { audit } from '../services/audit.js';
 import { TEMPLATES } from '../templates/library.js';
-import { forbidden, notFound } from '../lib/errors.js';
+import { badRequest, forbidden, notFound } from '../lib/errors.js';
 import { getKbSchema, ensureBlockIds, walk, type PMNode } from '@kb/shared';
 
 const uuid = z.string().uuid();
@@ -44,7 +44,7 @@ export async function templateRoutes(app: FastifyInstance, s: Services) {
     const spaces = await accessForSpaces(s.db, user);
     const rows = (
       await s.db.query(
-        `select t.id, t.key, t.name, t.description, t.category, t.icon, t.builtin, t.space_id, t.version, t.properties, t.required_properties, t.updated_at, sp.name as space_name
+        `select t.id, t.key, t.name, t.description, t.category, t.icon, t.default_title, t.builtin, t.space_id, t.version, t.properties, t.required_properties, t.updated_at, sp.name as space_name
            from templates t left join spaces sp on sp.id = t.space_id where t.org_id = $1 and t.deleted_at is null and t.published order by t.builtin, t.category, t.name`,
         [user.orgId],
       )
@@ -62,21 +62,51 @@ export async function templateRoutes(app: FastifyInstance, s: Services) {
     return { template: t };
   });
 
-  /** Saves a page as a template of a space (or the organisation for admins). The page stays unchanged. */
+  /**
+   * Creates a template of a space (or of the organisation for admins) either from a page (`pageId`, the page stays
+   * unchanged) or directly from ProseMirror `content` (validated against the editor schema).
+   */
   app.post('/api/v1/templates', async (req) => {
     const user = requireUser(req);
-    const body = parse(z.object({ pageId: uuid, name: z.string().min(1).max(200), description: z.string().max(1000).default(''), category: z.string().max(100).default('Пространство'), icon: z.string().max(64).optional(), spaceId: uuid.nullable().optional(), requiredProperties: z.array(z.string().max(100)).max(30).optional() }), req.body);
-    await requirePage(s.db, user, body.pageId, 'view');
+    const body = parse(
+      z
+        .object({
+          pageId: uuid.optional(),
+          content: z.object({ type: z.literal('doc') }).passthrough().optional(),
+          title: z.string().max(500).optional(),
+          name: z.string().min(1).max(200),
+          description: z.string().max(1000).default(''),
+          category: z.string().max(100).default('Пространство'),
+          icon: z.string().max(64).optional(),
+          spaceId: uuid.nullable().optional(),
+          properties: z.record(z.string(), z.unknown()).optional(),
+          requiredProperties: z.array(z.string().max(100)).max(30).optional(),
+        })
+        .refine((b) => !!b.pageId !== !!b.content, { message: 'Укажите либо pageId, либо content', path: ['content'] }),
+      req.body,
+    );
+    if (body.pageId) await requirePage(s.db, user, body.pageId, 'view');
     if (body.spaceId) await requireSpace(s.db, user, body.spaceId, 'manage_space');
     else if (!isOrgAdmin(user)) throw forbidden('Шаблоны организации создаёт администратор');
-    const snap = await s.hub.snapshot(body.pageId);
-    const page = (await s.db.query('select properties, icon from pages where id = $1', [body.pageId])).rows[0];
-    const content = stripIds(snap.json);
-    getKbSchema().nodeFromJSON(ensureBlockIds(structuredClone(content))).check();
+    let content: PMNode;
+    let page: { properties: Record<string, unknown> | null; icon: string | null } = { properties: body.properties ?? {}, icon: null };
+    if (body.pageId) {
+      content = stripIds((await s.hub.snapshot(body.pageId)).json);
+      page = (await s.db.query('select properties, icon from pages where id = $1', [body.pageId])).rows[0];
+    } else {
+      if (JSON.stringify(body.content).length > 2_000_000) throw badRequest('Слишком большой шаблон');
+      try {
+        content = stripIds(body.content as PMNode);
+        getKbSchema().nodeFromJSON(ensureBlockIds(structuredClone(content))).check();
+      } catch (e) {
+        throw badRequest('Содержимое шаблона не соответствует схеме документа', { reason: (e as Error).message });
+      }
+    }
+    if (body.pageId) getKbSchema().nodeFromJSON(ensureBlockIds(structuredClone(content))).check();
     const t = await tx(s.db, async (q) => {
-      const r = (await q.query(`insert into templates (org_id, space_id, name, description, category, icon, content, properties, required_properties, created_by) values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) returning *`, [user.orgId, body.spaceId ?? null, body.name, body.description, body.category, body.icon ?? page.icon, content, page.properties ?? {}, body.requiredProperties ?? [], user.id])).rows[0];
+      const r = (await q.query(`insert into templates (org_id, space_id, name, description, category, icon, content, properties, required_properties, created_by, default_title) values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) returning *`, [user.orgId, body.spaceId ?? null, body.name, body.description, body.category, body.icon ?? page.icon, content, page.properties ?? {}, body.requiredProperties ?? [], user.id, body.title?.trim() || null])).rows[0];
       await q.query('insert into template_versions (template_id, version, content, properties, created_by) values ($1, 1, $2, $3, $4)', [r.id, content, page.properties ?? {}, user.id]);
-      await audit(q, actorOf(req), { action: 'template.create', targetType: 'template', targetId: r.id, details: { name: body.name, spaceId: body.spaceId ?? null } });
+      await audit(q, actorOf(req), { action: 'template.create', targetType: 'template', targetId: r.id, details: { name: body.name, spaceId: body.spaceId ?? null, source: body.pageId ? 'page' : 'content', pageId: body.pageId ?? null } });
       return r;
     });
     return { template: t };

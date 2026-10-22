@@ -360,3 +360,128 @@ export function diffAudience(before: AudienceEntry[], after: AudienceEntry[]): A
   }
   return { gained, lost, widens: gained.length > 0 };
 }
+
+export interface OrgPerson {
+  id: string;
+  name: string;
+  status: string;
+  kind: 'employee' | 'guest';
+  subjects: Subjects;
+}
+
+/** Active and invited users of an organisation with their subjects, computed in bulk (same rules as userSubjects). */
+export async function orgPeople(q: Queryable, orgId: string): Promise<OrgPerson[]> {
+  const users = (await q.query(`select id, name, kind, status from users where org_id = $1 and status in ('active', 'invited') and (access_expires_at is null or access_expires_at > now()) order by name`, [orgId])).rows;
+  const groups = new Map((await q.query('select id, parent_id, kind from groups where org_id = $1 and deleted_at is null', [orgId])).rows.map((g) => [g.id, g]));
+  const members = (await q.query(`select gm.user_id, gm.group_id from group_members gm join groups g on g.id = gm.group_id where g.org_id = $1 and g.deleted_at is null and (gm.expires_at is null or gm.expires_at > now())`, [orgId])).rows;
+  const byUser = new Map<string, Set<string>>();
+  for (const m of members) {
+    const set = byUser.get(m.user_id) ?? new Set<string>();
+    // Departments include their parent departments.
+    let g = groups.get(m.group_id);
+    while (g && !set.has(g.id)) {
+      set.add(g.id);
+      const parent = g.kind === 'department' && g.parent_id ? groups.get(g.parent_id) : null;
+      g = parent && parent.kind === 'department' ? parent : null;
+    }
+    byUser.set(m.user_id, set);
+  }
+  return users.map((u) => ({ id: u.id, name: u.name, status: u.status, kind: u.kind, subjects: { userId: u.id, groupIds: [...(byUser.get(u.id) ?? [])], employee: u.kind === 'employee' } }));
+}
+
+export interface ResourceRef {
+  type: 'space' | 'page';
+  id: string;
+}
+
+export interface ProposedGrant {
+  subjectType: 'user' | 'group' | 'org';
+  subjectId: string | null;
+  level: Level;
+  canExport?: boolean | null;
+  canDownload?: boolean | null;
+  canShare?: boolean | null;
+  canPublish?: boolean | null;
+}
+
+/** Grants applying to a page (with inheritance) or a space, plus the policy needed to evaluate them. */
+async function resourceGrants(q: Queryable, r: ResourceRef): Promise<{ rows: GrantRow[]; policy: SpacePolicy; personalOwnerId: string | null } | null> {
+  const meta = (
+    await q.query(
+      r.type === 'page'
+        ? `select s.kind, s.owner_user_id, s.settings from pages p join spaces s on s.id = p.space_id where p.id = $1`
+        : `select s.kind, s.owner_user_id, s.settings from spaces s where s.id = $1`,
+      [r.id],
+    )
+  ).rows[0];
+  if (!meta) return null;
+  const rows = (
+    r.type === 'page'
+      ? await q.query(APPLICABLE_GRANTS_SQL, [[r.id]])
+      : await q.query(`select g.*, g.resource_id as target_page, null::int as depth from grants g where g.resource_type = 'space' and g.resource_id = $1 and g.revoked_at is null`, [r.id])
+  ).rows as GrantRow[];
+  return { rows, policy: policyOf(meta.settings), personalOwnerId: meta.kind === 'personal' ? meta.owner_user_id : null };
+}
+
+/** Grant rows as they would be if `g` replaced the resource's own grant for the same subject. */
+function withProposed(rows: GrantRow[], r: ResourceRef, g: ProposedGrant): GrantRow[] {
+  const same = (x: GrantRow) => x.resource_type === r.type && x.resource_id === r.id && x.subject_type === g.subjectType && (x.subject_id ?? null) === (g.subjectId ?? null);
+  return [
+    ...rows.filter((x) => !same(x)),
+    {
+      id: 'proposed',
+      target_page: r.id,
+      resource_type: r.type,
+      resource_id: r.id,
+      subject_type: g.subjectType,
+      subject_id: g.subjectId,
+      level: g.level,
+      can_export: g.canExport ?? null,
+      can_download: g.canDownload ?? null,
+      can_share: g.canShare ?? null,
+      can_publish: g.canPublish ?? null,
+      starts_at: null,
+      expires_at: null,
+      depth: r.type === 'page' ? 0 : null,
+    },
+  ];
+}
+
+function toEntries(rows: GrantRow[]): AudienceEntry[] {
+  const now = new Date();
+  return rows.filter((g) => active(g, now)).map((g) => ({ subjectType: g.subject_type, subjectId: g.subject_id, level: g.level, via: viaOf(g), grantId: g.id, expiresAt: g.expires_at?.toISOString() ?? null }));
+}
+
+/** Users of the organisation who may perform `action` on a resource (e.g. who can share it: page owners, space managers). */
+export async function usersWithAction(q: Queryable, orgId: string, r: ResourceRef, action: Action): Promise<OrgPerson[]> {
+  const rg = await resourceGrants(q, r);
+  if (!rg) return [];
+  const people = await orgPeople(q, orgId);
+  return people.filter((p) => combine(rg.rows, p.subjects, rg.policy, { guest: p.kind === 'guest', personalOwner: rg.personalOwnerId === p.id }).actions[action]);
+}
+
+export interface AudiencePreview {
+  added: Array<{ id: string; name: string; level: Level }>;
+  addedCount: number;
+  removed: Array<{ id: string; name: string; level: Level }>;
+  removedCount: number;
+  subjects: AudienceDiff;
+}
+
+/** Who would newly gain (or lose) the ability to view a resource if `g` were applied (share dialog, widening confirmation). */
+export async function previewGrantAudience(q: Queryable, orgId: string, r: ResourceRef, g: ProposedGrant, limit = 50): Promise<AudiencePreview> {
+  const rg = await resourceGrants(q, r);
+  if (!rg) throw notFound();
+  const after = withProposed(rg.rows, r, g);
+  const people = await orgPeople(q, orgId);
+  const added: AudiencePreview['added'] = [];
+  const removed: AudiencePreview['removed'] = [];
+  for (const p of people) {
+    const opts = { guest: p.kind === 'guest', personalOwner: rg.personalOwnerId === p.id };
+    const b = combine(rg.rows, p.subjects, rg.policy, opts);
+    const a = combine(after, p.subjects, rg.policy, opts);
+    if (!b.actions.view && a.actions.view) added.push({ id: p.id, name: p.name, level: a.level });
+    else if (b.actions.view && !a.actions.view) removed.push({ id: p.id, name: p.name, level: b.level });
+  }
+  return { added: added.slice(0, limit), addedCount: added.length, removed: removed.slice(0, limit), removedCount: removed.length, subjects: diffAudience(toEntries(rg.rows), toEntries(after)) };
+}

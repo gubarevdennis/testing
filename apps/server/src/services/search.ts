@@ -60,6 +60,8 @@ export interface SearchParams {
   in?: 'all' | 'text' | 'images' | 'files';
   limit: number;
   offset: number;
+  /** Internal: skip the "did you mean" lookup (used when verifying a suggestion). */
+  noSuggest?: boolean;
 }
 
 const CANDIDATES = 3000;
@@ -137,7 +139,10 @@ export async function search(q: Queryable, user: AuthUser, p: SearchParams) {
   visible.sort((a, b) => b.score - a.score);
   const total = visible.length;
   const pageRows = visible.slice(p.offset, p.offset + p.limit);
-  if (!pageRows.length) return { total, totalIsLowerBound: rows.length >= CANDIDATES, results: [], variants };
+  if (!pageRows.length) {
+    const didYouMean = total === 0 && !p.noSuggest ? await correctedQuery(q, user, p, variants) : null;
+    return { total, totalIsLowerBound: rows.length >= CANDIDATES, results: [], variants, didYouMean };
+  }
   // Snippets, match origin and the first matching block only for the returned page of results.
   const ids = pageRows.map((r) => r.page_id);
   const details = (
@@ -177,7 +182,53 @@ export async function search(q: Queryable, user: AuthUser, p: SearchParams) {
       publishedVersion: r.publishedOnly,
     });
   }
-  return { total, totalIsLowerBound: rows.length >= CANDIDATES, results, variants };
+  return { total, totalIsLowerBound: rows.length >= CANDIDATES, results, variants, didYouMean: null };
+}
+
+/**
+ * "Did you mean": for a query with no results, replaces each word by the most similar (trigram) word from titles of
+ * pages the user can see — also trying the wrong-layout / transliterated forms — and returns the first candidate
+ * that actually yields results.
+ */
+async function correctedQuery(q: Queryable, user: AuthUser, p: SearchParams, variants: string[]): Promise<string | null> {
+  const wordsOf = (v: string) => (v.toLowerCase().match(/[\p{L}\p{N}]+/gu) ?? []).filter((w) => w.length >= 3);
+  const qwords = [...new Set(variants.flatMap(wordsOf))].slice(0, 20);
+  if (!qwords.length) return null;
+  const rows = (
+    await q.query(
+      `select v.qw, t.w, p.id, similarity(t.w, v.qw) as sim
+         from unnest($2::text[]) v(qw), pages p, lateral regexp_split_to_table(lower(p.title), '[[:space:][:punct:]«»—–]+') t(w)
+        where p.org_id = $1 and p.deleted_at is null and length(t.w) >= 3 and word_similarity(v.qw, p.title) > 0.25 and similarity(t.w, v.qw) > 0.3
+        order by sim desc limit 1000`,
+      [user.orgId, qwords],
+    )
+  ).rows;
+  if (!rows.length) return null;
+  const access = await accessForPages(q, user, [...new Set(rows.map((r) => r.id))]);
+  const best = new Map<string, { w: string; sim: number }>();
+  for (const r of rows) {
+    if (!access.get(r.id)?.actions.view || access.get(r.id)?.deleted) continue;
+    const cur = best.get(r.qw);
+    if (!cur || r.sim > cur.sim) best.set(r.qw, { w: r.w, sim: r.sim });
+  }
+  const candidates: Array<{ text: string; score: number }> = [];
+  for (const v of variants) {
+    const words = wordsOf(v);
+    if (!words.length) continue;
+    let score = 0;
+    const text = v.toLowerCase().replace(/[\p{L}\p{N}]+/gu, (w) => {
+      const b = w.length >= 3 ? best.get(w) : undefined;
+      score += b ? b.sim : 0;
+      return b ? b.w : w;
+    });
+    if (text !== p.q.trim().toLowerCase()) candidates.push({ text, score: score / words.length });
+  }
+  candidates.sort((a, b) => b.score - a.score);
+  for (const c of [...new Map(candidates.map((x) => [x.text, x])).values()].slice(0, 3)) {
+    const r = await search(q, user, { ...p, q: c.text, limit: 1, offset: 0, noSuggest: true });
+    if (r.total > 0) return c.text;
+  }
+  return null;
 }
 
 /** Finds the first block whose text matches, so the client can scroll exactly to it. */

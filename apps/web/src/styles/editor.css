@@ -85,7 +85,7 @@ a.crumb:hover { background: var(--surface-hover); color: var(--text); text-decor
 .kb-editor .is-empty::before, .kb-editor p.is-editor-empty:first-child::before { content: attr(data-placeholder); color: var(--text-3); pointer-events: none; float: left; height: 0; }
 .kb-editor .ProseMirror-selectednode:not(.kb-image-block):not(.react-renderer) { outline: 2px solid color-mix(in srgb, var(--accent) 60%, transparent); outline-offset: 2px; border-radius: 4px; }
 .kb-editor ::selection { background: color-mix(in srgb, var(--accent) 26%, transparent); }
-.kb-flash { animation: kb-flash 2.2s var(--ease); border-radius: 4px; }
+.kb-flash-overlay { position: absolute; z-index: 0; pointer-events: none; border-radius: 6px; animation: kb-flash 2.4s var(--ease) forwards; }
 @keyframes kb-flash { 0%, 40% { background: var(--hl-yellow); } 100% { background: transparent; } }
 .kb-comment-anchor { background: color-mix(in srgb, #f5c84b 28%, transparent); border-bottom: 2px solid color-mix(in srgb, #e0a800 70%, transparent); cursor: pointer; }
 .kb-find-match { background: color-mix(in srgb, #f5c84b 45%, transparent); border-radius: 2px; }

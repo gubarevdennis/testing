@@ -2,10 +2,11 @@ import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { tx, type Queryable } from '../db/pool.js';
 import { actorOf, parse, requireUser, type Services } from '../app.js';
-import { accessForPages, requirePage, pageAccess, type AuthUser, type PageAccess } from '../acl/engine.js';
+import { accessForPages, requirePage, pageAccess, usersWithAction, type AuthUser, type PageAccess } from '../acl/engine.js';
 import { createPage, movePage, previewMove, trashPage, restorePage, duplicatePage, purgePages, getPage, type PageRow } from '../services/pages.js';
 import { breadcrumbs, filterVisible, visibleChildren } from '../services/tree.js';
 import { audit } from '../services/audit.js';
+import { orgSettings } from '../services/org.js';
 import { badRequest, conflict, forbidden, notFound } from '../lib/errors.js';
 import { setTitle } from '../collab/ydoc.js';
 import { keyBetween } from '@kb/shared';
@@ -19,6 +20,27 @@ export async function pageDto(q: Queryable, user: AuthUser, p: PageRow, acc: Pag
   const fav = await q.query('select 1 from favorites where user_id = $1 and page_id = $2', [user.id, p.id]);
   const space = (await q.query('select id, name, icon, kind from spaces where id = $1', [p.space_id])).rows[0];
   const gen = (await q.query('select generation from doc_state where page_id = $1', [p.id])).rows[0]?.generation ?? null;
+  // Current approval request (review state): who asked and who may decide.
+  let approval = null;
+  if (p.status === 'review') {
+    const a = (
+      await q.query(
+        `select a.id, a.created_at, a.message, a.requested_by, u.name as requested_by_name, a.reviewer_id, r.name as reviewer_name, pr.number as revision_number
+           from approvals a join users u on u.id = a.requested_by left join users r on r.id = a.reviewer_id left join page_revisions pr on pr.id = a.revision_id
+          where a.page_id = $1 and a.status = 'pending' order by a.created_at desc limit 1`,
+        [p.id],
+      )
+    ).rows[0];
+    if (a) {
+      const approvers = a.reviewer_id
+        ? [{ id: a.reviewer_id, name: a.reviewer_name }]
+        : (await usersWithAction(q, p.org_id, { type: 'page', id: p.id }, 'publish')).filter((u) => u.status === 'active' && u.id !== a.requested_by).slice(0, 20).map((u) => ({ id: u.id, name: u.name }));
+      approval = { id: a.id, requestedBy: { id: a.requested_by, name: a.requested_by_name }, approvers, message: a.message, revisionNumber: a.revision_number, createdAt: a.created_at };
+    }
+  }
+  const pub = p.published_revision_id
+    ? (await q.query(`select r.id, r.number, coalesce((select max(e.created_at) from page_events e where e.page_id = r.page_id and e.type = 'published'), r.created_at) as at from page_revisions r where r.id = $1`, [p.published_revision_id])).rows[0]
+    : null;
   return {
     id: p.id,
     spaceId: p.space_id,
@@ -41,6 +63,8 @@ export async function pageDto(q: Queryable, user: AuthUser, p: PageRow, acc: Pag
     owner: name(p.owner_id),
     version: p.version,
     publishedRevisionId: p.published_revision_id,
+    published: pub ? { revisionId: pub.id, number: pub.number, at: pub.at } : null,
+    approval,
     reviewDueAt: p.review_due_at,
     verifiedAt: p.verified_at,
     needsReview: !!p.review_due_at && new Date(p.review_due_at) < new Date(),
@@ -80,7 +104,7 @@ export async function pageRoutes(app: FastifyInstance, s: Services) {
         content = structuredClone(t.content);
         properties = t.properties;
         icon = icon ?? t.icon;
-        title = title ?? t.name;
+        title = title ?? t.default_title ?? t.name;
       }
       return createPage(q, user, actorOf(req), { ...body, title, icon, content, properties });
     });
@@ -316,10 +340,21 @@ export async function pageRoutes(app: FastifyInstance, s: Services) {
       )
     ).rows;
     const acc = await accessForPages(s.db, user, rows.map((r) => r.id));
-    const retention = s.cfg.retention.trashDays;
+    const visible = rows.filter((r) => acc.get(r.id)?.actions.restore);
+    // Same retention the maintenance job applies (organisation setting, server default as fallback).
+    const retention = (await orgSettings(s.db, user.orgId)).retention?.trashDays ?? s.cfg.retention.trashDays;
+    // Original location: ancestor titles, hidden ones as '…' (like breadcrumbs).
+    const anc = visible.length
+      ? (await s.db.query(`select a.page_id, p.id, p.title, a.depth from page_ancestors a join pages p on p.id = a.ancestor_id where a.page_id = any($1::uuid[]) and a.depth > 0 order by a.depth desc`, [visible.map((r) => r.id)])).rows
+      : [];
+    const ancAcc = await accessForPages(s.db, user, [...new Set(anc.map((a) => a.id))]);
     return {
       retentionDays: retention,
-      pages: rows.filter((r) => acc.get(r.id)?.actions.restore).map((r) => ({ ...r, purgeAt: new Date(new Date(r.deleted_at).getTime() + retention * 86400_000) })),
+      pages: visible.map((r) => ({
+        ...r,
+        path: anc.filter((a) => a.page_id === r.id).map((a) => (ancAcc.get(a.id)?.actions.view ? a.title : '…')),
+        purgeAt: new Date(new Date(r.deleted_at).getTime() + retention * 86400_000),
+      })),
     };
   });
 

@@ -143,3 +143,4 @@ button.kb-list-item { border: none; background: transparent; width: 100%; text-a
   .publish-bar .pb-actions { width: 100%; }
   .publish-bar .pb-actions .btn { flex: 1 1 auto; }
 }
+.share-preview-names { font-size: var(--fs-sm); color: var(--text-2); max-height: 120px; overflow-y: auto; margin-top: 2px; }

@@ -11,20 +11,7 @@ import { relTime, fullTime } from '../../lib/format';
 import { useMe } from '../../state/session';
 import { DirectoryPicker, errMsg, type DirUser } from './directory';
 
-interface Approval {
-  id: string;
-  status: 'pending' | 'approved' | 'rejected' | 'cancelled';
-  requested_by: string;
-  requested_by_name: string;
-  reviewer_id: string | null;
-  reviewer_name: string | null;
-  decided_by_name: string | null;
-  decision_comment: string | null;
-  message: string | null;
-  created_at: string;
-  decided_at: string | null;
-  revision_number: number | null;
-}
+type Approval = NonNullable<PageDto['approval']>;
 
 const STATUS_TEXT: Record<string, string> = { draft: 'Черновик', review: 'На согласовании', published: 'Опубликовано', archived: 'Архив' };
 const STATUS_BADGE: Record<string, string> = { draft: '', review: 'amber', published: 'green', archived: 'purple' };
@@ -48,19 +35,14 @@ export function PublishBar({ page, onChanged }: { page: PageDto; onChanged(): vo
   const hasState = page.status === 'review' || page.status === 'archived';
   const visible = workflow || hasState;
 
-  const approvals = useQuery({
-    queryKey: ['approvals', page.id],
-    queryFn: ({ signal }) => get<{ approvals: Approval[] }>(`/api/v1/pages/${page.id}/approvals`, signal),
-    enabled: visible && (page.status === 'review' || requireApproval),
-  });
-  const pending = approvals.data?.approvals.find((x) => x.status === 'pending') ?? null;
-  const lastDecision = approvals.data?.approvals.find((x) => x.status === 'approved' || x.status === 'rejected') ?? null;
+  const pending = page.status === 'review' ? page.approval : null;
 
+  const publishedId = page.published?.revisionId ?? page.publishedRevisionId;
   // Unpublished changes: compare the published revision with the live document (editors only).
   const changes = useQuery({
-    queryKey: ['revision-diff', page.id, page.publishedRevisionId, 'current', page.version],
-    queryFn: ({ signal }) => get<{ stats: { added: number; removed: number; changed: number } }>(`/api/v1/pages/${page.id}/revisions/${page.publishedRevisionId}/diff?against=current`, signal),
-    enabled: visible && canEdit && !!page.publishedRevisionId && page.status === 'published',
+    queryKey: ['revision-diff', page.id, publishedId, 'current', page.version],
+    queryFn: ({ signal }) => get<{ stats: { added: number; removed: number; changed: number } }>(`/api/v1/pages/${page.id}/revisions/${publishedId}/diff?against=current`, signal),
+    enabled: visible && canEdit && !!publishedId && page.status === 'published',
     staleTime: 30_000,
   });
   const unpublished = changes.data ? changes.data.stats.added + changes.data.stats.removed + changes.data.stats.changed : 0;
@@ -72,7 +54,6 @@ export function PublishBar({ page, onChanged }: { page: PageDto; onChanged(): vo
   if (!visible) return null;
 
   const done = () => {
-    qc.invalidateQueries({ queryKey: ['approvals', page.id] });
     qc.invalidateQueries({ queryKey: ['revisions', page.id] });
     qc.invalidateQueries({ queryKey: ['revision-diff', page.id] });
     onChanged();
@@ -121,14 +102,15 @@ export function PublishBar({ page, onChanged }: { page: PageDto; onChanged(): vo
     run('archive', () => post(`/api/v1/pages/${page.id}/archive`, { archived }), archived ? 'Страница перенесена в архив' : 'Страница возвращена из архива');
   };
 
-  const canDecide = canPublish && !!pending && (!pending.reviewer_id || pending.reviewer_id === me.user.id);
+  const canDecide = canPublish && !!pending && (!pending.approvers.length || pending.approvers.some((x) => x.id === me.user.id));
 
   let text: ReactNode = null;
   if (page.status === 'review') {
     text = pending ? (
       <>
-        Отправил(а) {pending.requested_by_name} {relTime(pending.created_at)}
-        {pending.reviewer_name ? ` · согласующий: ${pending.reviewer_name}` : ' · согласуют владельцы пространства'}
+        Отправил(а) {pending.requestedBy.name} {relTime(pending.createdAt)}
+        {pending.revisionNumber ? ` (версия ${pending.revisionNumber})` : ''}
+        {pending.approvers.length ? ` · ${pending.approvers.length === 1 ? 'согласующий' : 'согласующие'}: ${pending.approvers.slice(0, 3).map((x) => x.name).join(', ')}${pending.approvers.length > 3 ? ` и ещё ${pending.approvers.length - 3}` : ''}` : ''}
         {pending.message ? ` · «${pending.message}»` : ''}
       </>
     ) : (
@@ -136,27 +118,26 @@ export function PublishBar({ page, onChanged }: { page: PageDto; onChanged(): vo
     );
   } else if (page.status === 'draft') {
     text =
-      lastDecision?.status === 'rejected' && canEdit ? (
-        <>
-          Возвращено на доработку: {lastDecision.decided_by_name}
-          {lastDecision.decision_comment ? ` — «${lastDecision.decision_comment}»` : ''}
-        </>
-      ) : mode === 'publish' ? (
+      mode === 'publish' ? (
         canEdit ? 'Читатели не видят эту страницу, пока она не опубликована' : 'Страница ещё не опубликована'
       ) : requireApproval ? (
         'Изменения требуют согласования'
       ) : null;
   } else if (page.status === 'published') {
+    const pubInfo = page.published ? `Опубликована версия ${page.published.number}, ${relTime(page.published.at)}` : null;
     text = canEdit && unpublished > 0 ? (
       <>
+        {pubInfo ? pubInfo + '. ' : ''}
         Есть неопубликованные изменения ({unpublished} {unpublished === 1 ? 'блок' : 'блоков'}){' '}
-        <button className="btn sm ghost" onClick={() => openHistory(page.publishedRevisionId)}>
+        <button className="btn sm ghost" onClick={() => openHistory(publishedId)}>
           <History size={13} /> Сравнить
         </button>
       </>
     ) : mode === 'publish' && canEdit ? (
-      'Читатели видят опубликованную версию'
-    ) : null;
+      `${pubInfo ? pubInfo + ' — ' : ''}читатели видят именно её`
+    ) : (
+      pubInfo
+    );
   } else if (page.status === 'archived') {
     text = 'Страница в архиве — содержимое может быть неактуальным';
   }
@@ -318,12 +299,12 @@ function DecideDialog({ decision, page, approval, onClose, onDone }: { decision:
     >
       <div className="col" style={{ gap: 12 }}>
         <p className="muted">
-          Запрос от {approval.requested_by_name}, {fullTime(approval.created_at)}
-          {approval.revision_number ? ` — версия ${approval.revision_number}` : ''}.{' '}
+          Запрос от {approval.requestedBy.name}, {fullTime(approval.createdAt)}
+          {approval.revisionNumber ? ` — версия ${approval.revisionNumber}` : ''}.{' '}
           {approve ? 'Будет опубликована именно отправленная версия, даже если после отправки страницу правили.' : 'Страница вернётся в черновик, автор получит уведомление с вашим комментарием.'}
         </p>
         {approval.message && <div className="cm-quote">{approval.message}</div>}
-        {approval.revision_number && (
+        {approval.revisionNumber && (
           <div>
             <button className="btn sm ghost" onClick={() => openHistory()}>
               <History size={13} /> Открыть историю версий

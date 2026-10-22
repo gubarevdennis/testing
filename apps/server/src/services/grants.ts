@@ -2,7 +2,7 @@ import { LEVEL_RANK, type Level } from '@kb/shared';
 import type { Tx, Queryable } from '../db/pool.js';
 import { badRequest, conflict, forbidden, notFound } from '../lib/errors.js';
 import { audit, type AuditActor } from './audit.js';
-import { bumpAclEpoch, pageAudience, requirePage, requireSpace, type AuthUser } from '../acl/engine.js';
+import { bumpAclEpoch, pageAudience, previewGrantAudience, requirePage, requireSpace, type AuthUser } from '../acl/engine.js';
 import { orgSettings } from './org.js';
 
 export interface GrantInput {
@@ -57,7 +57,11 @@ export async function setGrant(q: Tx, user: AuthUser, actor: AuditActor, input: 
   const before = input.resourceType === 'page' ? await pageAudience(q, input.resourceId) : null;
   if (input.subjectType === 'org' && input.level !== 'none' && !input.confirmWiden) {
     const had = (before ?? []).some((e) => e.subjectType === 'org' && LEVEL_RANK[e.level] >= LEVEL_RANK[input.level]);
-    if (!had) throw conflict('audience_change', 'Доступ будет открыт всей организации — требуется подтверждение', { widens: true });
+    if (!had) {
+      // The confirmation dialog shows who exactly would newly gain access.
+      const preview = await previewGrantAudience(q, user.orgId, { type: input.resourceType, id: input.resourceId }, input);
+      throw conflict('audience_change', 'Доступ будет открыт всей организации — требуется подтверждение', { widens: true, preview });
+    }
   }
   const prev = await q.query(
     `update grants set revoked_at = now(), revoked_by = $5

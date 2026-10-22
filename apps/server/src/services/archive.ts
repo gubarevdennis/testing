@@ -62,7 +62,7 @@ export async function buildOrgArchive(s: Services, orgId: string, opts: ArchiveO
       ),
       collections: await q(`select id, page_id, name, schema, views from collections where org_id = $1`, [orgId]),
       comments: opts.includeComments ? await q(`select c.id, c.page_id, c.thread_id, c.parent_id, c.block_id, c.quote, c.body_text, c.author_id, c.created_at, c.resolved_at from comments c where c.org_id = $1 and c.deleted_at is null`, [orgId]) : [],
-      templates: await q(`select id, space_id, key, name, description, category, icon, content, properties, required_properties, builtin from templates where org_id = $1 and deleted_at is null and not builtin`, [orgId]),
+      templates: await q(`select id, space_id, key, name, description, category, icon, default_title, content, properties, required_properties, builtin from templates where org_id = $1 and deleted_at is null and not builtin`, [orgId]),
       revisions: opts.includeVersions
         ? await q(`select r.id, r.page_id, r.number, r.kind, r.label, r.title, r.content, r.authors, r.created_by, r.created_at from page_revisions r join pages p on p.id = r.page_id where p.org_id = $1 and p.deleted_at is null order by r.page_id, r.number`, [orgId])
         : [],

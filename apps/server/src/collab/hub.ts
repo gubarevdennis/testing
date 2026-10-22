@@ -431,17 +431,17 @@ export class CollabHub {
     live.flushTimer = setTimeout(() => void this.flush(live, { revision: false }).catch((err) => this.log.error({ err }, 'flush failed')), wait);
   }
 
-  private flush(live: LiveDoc, opts: { revision: boolean; kind?: 'auto' | 'manual'; label?: string; userId?: string | null }) {
+  private flush(live: LiveDoc, opts: { revision: boolean; kind?: 'auto' | 'manual' | 'pre-restore'; label?: string; userId?: string | null }) {
     return this.run(live, () => this.flushNow(live, opts));
   }
 
   /** Materialises JSON/text for search & API, records the edit journal, creates auto revisions and compacts. */
-  private async flushNow(live: LiveDoc, opts: { revision: boolean; kind?: 'auto' | 'manual'; label?: string; userId?: string | null }) {
+  private async flushNow(live: LiveDoc, opts: { revision: boolean; kind?: 'auto' | 'manual' | 'pre-restore'; label?: string; userId?: string | null }) {
     if (live.flushTimer) {
       clearTimeout(live.flushTimer);
       live.flushTimer = null;
     }
-    const wantRevision = (opts.revision && live.changedSinceRevision) || (live.changedSinceRevision && Date.now() - live.lastRevisionAt > AUTO_REVISION_MS) || opts.kind === 'manual';
+    const wantRevision = (opts.revision && live.changedSinceRevision) || (live.changedSinceRevision && Date.now() - live.lastRevisionAt > AUTO_REVISION_MS) || (!!opts.kind && opts.kind !== 'auto');
     if (!live.dirty && !wantRevision) return null;
     const json = ydocToJson(live.ydoc);
     const text = docToPlainText(json);
@@ -511,9 +511,9 @@ export class CollabHub {
   }
 
   /** Creates a named/manual revision of the current state (used by "Сохранить версию", publish, pre-restore). */
-  async createRevisionNow(pageId: string, kind: 'manual' | 'auto', userId: string | null, label?: string) {
+  async createRevisionNow(pageId: string, kind: 'manual' | 'auto' | 'pre-restore', userId: string | null, label?: string) {
     const live = await this.load(pageId);
-    return this.run(live, () => this.flushNow(live, { revision: true, kind: 'manual', label, userId }).then(async (r) => r ?? (await this.latestRevision(pageId))));
+    return this.run(live, () => this.flushNow(live, { revision: true, kind, label, userId }).then(async (r) => r ?? (await this.latestRevision(pageId))));
   }
 
   private async latestRevision(pageId: string) {
