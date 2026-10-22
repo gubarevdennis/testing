@@ -96,10 +96,14 @@ test('real 200% browser zoom (1280x800 at 2x = 640x400 CSS px) keeps every key s
 });
 
 test('pixel baselines for stable screens (R-QA-008, AT-89)', async ({ browser }) => {
+  // make sure the organisation exists, then capture the sign-in screen from a fresh (signed-out) context
+  const setupCtx = await browser.newContext();
+  await ensureOwner(await setupCtx.newPage());
+  await setupCtx.close();
   const ctx = await browser.newContext({ viewport: { width: 1280, height: 800 } });
   const page = await ctx.newPage();
   await page.goto('/');
-  await expect(page.getByRole('heading', { name: /Вход в базу знаний|Первичная настройка/ })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Вход в базу знаний' })).toBeVisible();
   await expect(page).toHaveScreenshot('auth.png', { maxDiffPixelRatio: 0.01 });
   await ensureOwner(page);
   await page.keyboard.press('?');

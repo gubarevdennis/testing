@@ -2,7 +2,7 @@
 .app-shell { display: flex; height: 100dvh; overflow: hidden; background: var(--bg); }
 .main-col { flex: 1; min-width: 0; display: flex; flex-direction: column; position: relative; }
 .main-area { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; outline: none; scroll-padding-top: 64px; }
-.floating-sidebar-toggle { position: absolute; top: 10px; left: 10px; z-index: var(--z-sticky); }
+.floating-sidebar-toggle { position: absolute; top: 10px; left: 10px; z-index: calc(var(--z-sticky) + 1); } /* above the sticky page header */
 .app-shell.is-mobile .floating-sidebar-toggle { top: 8px; left: 8px; }
 .offline-banner { display: flex; align-items: center; gap: 8px; justify-content: center; padding: 6px 12px; background: var(--warning-soft); color: var(--text); font-size: var(--fs-sm); flex: none; }
 body.resizing { cursor: col-resize; user-select: none; }
