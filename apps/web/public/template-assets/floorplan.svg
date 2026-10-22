@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360" viewBox="0 0 640 360" font-family="Inter, Arial, sans-serif" font-size="13">
+<rect width="640" height="360" fill="#F8F9FB"/>
+<g fill="#FFFFFF" stroke="#24272D" stroke-width="2">
+<rect x="40" y="40" width="560" height="280"/>
+</g>
+<g stroke="#68717D" stroke-width="1.5" fill="none">
+<path d="M240 40 V200"/><path d="M240 250 V320"/><path d="M420 40 V320"/><path d="M40 180 H180"/><path d="M420 200 H600"/>
+</g>
+<rect x="430" y="210" width="160" height="100" fill="#E8EFF9" stroke="#5A85C6"/>
+<g fill="#5A85C6"><circle cx="120" cy="110" r="5"/><circle cx="330" cy="120" r="5"/><circle cx="330" cy="240" r="5"/><circle cx="510" cy="120" r="5"/><circle cx="120" cy="250" r="5"/></g>
+<g fill="#24272D" text-anchor="middle"><text x="140" y="80">Офис 101</text><text x="330" y="80">Цех сборки</text><text x="510" y="80">Склад</text><text x="140" y="300">Офис 102</text><text x="510" y="265">Щитовая</text></g>
+</svg>

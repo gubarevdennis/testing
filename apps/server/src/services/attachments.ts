@@ -79,16 +79,25 @@ export async function inspectFile(path: string, filename: string, declaredMime?:
   return { mime, width, height, kind };
 }
 
-/** Removes scripts, event handlers and external references from SVG before storing it. */
+const SVG_TAGS = ['svg', 'g', 'path', 'rect', 'circle', 'ellipse', 'line', 'polyline', 'polygon', 'text', 'tspan', 'textPath', 'defs', 'linearGradient', 'radialGradient', 'stop', 'clipPath', 'mask', 'pattern', 'symbol', 'use', 'title', 'desc', 'marker', 'filter', 'feGaussianBlur', 'feOffset', 'feBlend', 'feColorMatrix', 'feMerge', 'feMergeNode', 'feFlood', 'feComposite', 'image', 'style', 'metadata'];
+const SVG_ATTRS = ['xmlns', 'xmlns:xlink', 'version', 'viewBox', 'width', 'height', 'x', 'y', 'x1', 'x2', 'y1', 'y2', 'cx', 'cy', 'r', 'rx', 'ry', 'd', 'points', 'fill', 'fill-opacity', 'fill-rule', 'stroke', 'stroke-width', 'stroke-linecap', 'stroke-linejoin', 'stroke-dasharray', 'stroke-opacity', 'opacity', 'transform', 'font-family', 'font-size', 'font-weight', 'text-anchor', 'dominant-baseline', 'id', 'class', 'offset', 'stop-color', 'stop-opacity', 'gradientUnits', 'gradientTransform', 'clip-path', 'clip-rule', 'mask', 'preserveAspectRatio', 'href', 'xlink:href', 'markerWidth', 'markerHeight', 'refX', 'refY', 'orient', 'stdDeviation', 'dx', 'dy', 'in', 'in2', 'mode', 'result', 'values', 'type', 'style', 'letter-spacing', 'patternUnits', 'filter'];
+
+/** Removes scripts, event handlers, foreignObject and external references from SVG before storing it. */
 export async function sanitizeSvgFile(path: string) {
-  const { Window } = await import('happy-dom');
-  const DOMPurify = (await import('dompurify')).default;
-  const win = new Window();
-  const purify = DOMPurify(win as unknown as Window & typeof globalThis);
+  const sanitize = (await import('sanitize-html')).default;
   const src = await readFile(path, 'utf8');
-  const clean = purify.sanitize(src, { USE_PROFILES: { svg: true, svgFilters: true }, FORBID_TAGS: ['script', 'foreignObject'], FORBID_ATTR: ['onload', 'onerror', 'onclick'] });
+  const clean = sanitize(src, {
+    allowedTags: SVG_TAGS,
+    allowedAttributes: { '*': SVG_ATTRS },
+    // Only internal fragment references (#id) and embedded data images are allowed.
+    allowedSchemes: ['data'],
+    allowedSchemesAppliedToAttributes: ['href', 'xlink:href'],
+    allowProtocolRelative: false,
+    parser: { xmlMode: true, lowerCaseTags: false, lowerCaseAttributeNames: false },
+    nonTextTags: ['script', 'foreignObject'],
+    exclusiveFilter: (frame) => ['href', 'xlink:href'].some((a) => frame.attribs[a] && !String(frame.attribs[a]).startsWith('#') && !String(frame.attribs[a]).startsWith('data:image/')),
+  });
   await writeFile(path, clean.includes('<svg') ? clean : '<svg xmlns="http://www.w3.org/2000/svg"/>');
-  await win.happyDOM.close();
 }
 
 /** Optional ClamAV scan (clamd INSTREAM). Returns null when clean or scanning is not configured. */

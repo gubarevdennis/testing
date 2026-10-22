@@ -8,3 +8,4 @@ playwright-report/
 .env
 .env.local
 tests/e2e/.artifacts/
+scratch/

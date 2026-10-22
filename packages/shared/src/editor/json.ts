@@ -29,7 +29,7 @@ export function walk(node: PMNode, fn: (n: PMNode, parent: PMNode | null, index:
 export function ensureBlockIds(doc: PMNode, seen: Set<string> = new Set()): PMNode {
   walk(doc, (n) => {
     if (!BLOCK_SET.has(n.type)) return;
-    n.attrs = n.attrs ?? {};
+    n.attrs = { ...(n.attrs ?? {}) }; // parsers may share attrs objects between nodes
     const id = n.attrs.id;
     if (!id || typeof id !== 'string' || seen.has(id)) n.attrs.id = newId();
     seen.add(n.attrs.id);

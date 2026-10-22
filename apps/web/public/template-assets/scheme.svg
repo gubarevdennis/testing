@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="320" viewBox="0 0 640 320" font-family="Inter, Arial, sans-serif" font-size="13">
+<rect width="640" height="320" fill="#F8F9FB"/>
+<g fill="#FFFFFF" stroke="#68717D" stroke-width="1.5">
+<rect x="40" y="130" width="140" height="60" rx="8"/>
+<rect x="250" y="40" width="140" height="60" rx="8"/>
+<rect x="250" y="220" width="140" height="60" rx="8"/>
+<rect x="460" y="130" width="140" height="60" rx="8" fill="#E8EFF9" stroke="#5A85C6"/>
+</g>
+<g stroke="#5A85C6" stroke-width="2" fill="none">
+<path d="M180 160 H215 V70 H250"/><path d="M180 160 H215 V250 H250"/>
+<path d="M390 70 H425 V160 H460"/><path d="M390 250 H425 V160 H460"/>
+</g>
+<g fill="#24272D" text-anchor="middle">
+<text x="110" y="165">Блок питания</text><text x="320" y="75">Актуаторы</text>
+<text x="320" y="255">Датчики</text><text x="530" y="165">Шлюз IP/KNX</text>
+</g>
+</svg>

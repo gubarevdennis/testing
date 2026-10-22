@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="560" height="240" viewBox="0 0 560 240" font-family="Inter, Arial, sans-serif" font-size="13">
+<rect width="560" height="240" fill="#F8F9FB"/>
+<g stroke="#68717D" stroke-width="1.5">
+<g fill="#FFFFFF"><circle cx="100" cy="95" r="30"/><circle cx="220" cy="95" r="30"/><circle cx="340" cy="95" r="30"/></g>
+<circle cx="460" cy="95" r="30" fill="#E8EFF9" stroke="#5A85C6"/>
+<g fill="#FFFFFF"><path d="M60 175 Q100 130 140 175Z"/><path d="M180 175 Q220 130 260 175Z"/><path d="M300 175 Q340 130 380 175Z"/></g>
+<path d="M420 175 Q460 130 500 175Z" fill="#E8EFF9" stroke="#5A85C6"/>
+</g>
+<g fill="#24272D" text-anchor="middle"><text x="100" y="205">Проектирование</text><text x="220" y="205">ПНР</text><text x="340" y="205">Производство</text><text x="460" y="205">Руководитель</text></g>
+</svg>
