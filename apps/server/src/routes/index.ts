@@ -13,6 +13,7 @@ import { searchCommentRoutes } from './search-comments.js';
 import { templateRoutes } from './templates.js';
 import { collectionRoutes } from './collections.js';
 import { importExportRoutes } from './import-export.js';
+import { archiveRoutes } from './archives.js';
 
 export async function registerRoutes(app: FastifyInstance, s: Services) {
   await healthRoutes(app, s);
@@ -28,4 +29,5 @@ export async function registerRoutes(app: FastifyInstance, s: Services) {
   await templateRoutes(app, s);
   await collectionRoutes(app, s);
   await importExportRoutes(app, s);
+  await archiveRoutes(app, s);
 }
