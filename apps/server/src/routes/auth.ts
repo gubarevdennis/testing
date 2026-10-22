@@ -21,7 +21,7 @@ export async function authRoutes(app: FastifyInstance, s: Services) {
 
   app.get('/api/v1/setup/status', async () => {
     const r = await s.db.query('select count(*)::int c from organizations');
-    return { initialized: r.rows[0].c > 0 };
+    return { initialized: r.rows[0].c > 0, sso: !!s.cfg.oidc };
   });
 
   /** First-run bootstrap: only possible while no organisation exists. */

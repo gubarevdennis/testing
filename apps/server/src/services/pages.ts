@@ -205,6 +205,14 @@ export async function previewMove(q: Queryable, user: AuthUser, input: MoveInput
   const before = await pageAudience(q, page.id);
   const after = await hypotheticalAudience(q, page.id, { spaceId: targetSpaceId, parentId: targetParentId });
   const audience = diffAudience(before, after);
+  // Human readable names for the confirmation dialog.
+  const users = audience.gained.concat(audience.lost).filter((g) => g.subjectType === 'user').map((g) => g.subjectId);
+  const groups = audience.gained.concat(audience.lost).filter((g) => g.subjectType === 'group').map((g) => g.subjectId);
+  const names = new Map<string, string>([
+    ...((users.length ? (await q.query('select id, name from users where id = any($1::uuid[])', [users])).rows : []) as any[]).map((r) => [r.id, r.name] as [string, string]),
+    ...((groups.length ? (await q.query('select id, name from groups where id = any($1::uuid[])', [groups])).rows : []) as any[]).map((r) => [r.id, r.name] as [string, string]),
+  ]);
+  for (const e of [...audience.gained, ...audience.lost]) (e as any).name = e.subjectType === 'org' ? 'Все сотрудники организации' : names.get(e.subjectId ?? '') ?? '—';
   const counts = await q.query(
     `select count(*)::int - 1 as descendants,
             (select count(*)::int from attachments a where a.page_id in (select page_id from page_ancestors where ancestor_id = $1) and a.deleted_at is null) as attachments
