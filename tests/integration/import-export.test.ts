@@ -163,8 +163,8 @@ describe('Markdown ZIP (SC-15, AT-43, AT-69)', () => {
   });
 });
 
-describe('tabular import (AT-48..AT-51, UX13-17)', () => {
-  it('CSV in Windows-1251 with ";" and decimal comma, quotes and leading zeros', async () => {
+describe('tabular import (AT-48, AT-49, AT-50, UX13-17)', () => {
+  it('CSV in Windows-1251 with ";" and decimal comma, quotes and leading zeros; repeated upsert import without duplicates (AT-48, UX13-17, AT-50, R-COLLECTION-003)', async () => {
     const csv = 'Артикул;Наименование;Цена;Дата;Есть\n0012;"Кабель ""КНХ""; 2x2";1 234,50;01.10.2026;да\n0013;Дроссель;99,9;15.10.2026;нет\n';
     const j = await startImport(org.owner, [['price.csv', iconv.encode(csv, 'win1251')]]);
     const t = j.preview.tabular;
@@ -212,7 +212,7 @@ describe('tabular import (AT-48..AT-51, UX13-17)', () => {
   });
 });
 
-describe('export (SC-08, SC-09, SC-13, S09, UX13-16)', () => {
+describe('export (SC-13, S09, UX13-16)', () => {
   it('exports a page to MD/DOCX/HTML/PDF; DOCX opens in LibreOffice; MD round-trips', async () => {
     const j = await startImport(org.owner, [['source.md', Buffer.from('# Экспортируемая\n\n## Раздел\n\nТекст с **жирным** и [ссылкой](https://example.com).\n\n| A | B |\n|---|---|\n| 1 | 2 |\n\n```js\nconst x = 1;\n```\n\n> [!WARNING]\n> Важно\n')]]);
     const res = await org.owner.post(`/api/v1/imports/${j.jobId}/commit`, { target: { spaceId: org.generalSpaceId, parentId: null } });

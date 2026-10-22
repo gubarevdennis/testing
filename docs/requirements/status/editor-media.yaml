@@ -6,8 +6,8 @@
   note: Без теста
 - id: R-EDITOR-001
   status: partial
-  evidence: y-prosemirror (Collaboration) сохраняет курсор при удалённых изменениях; apps/web/src/sync/collab.ts (IDB-очередь)
-  note: Нет восстановления прокрутки/курсора при навигации и перезагрузке; нет E2E на стабильность курсора после sync/ререндера
+  evidence: apps/web/src/editor/selectionMemory.ts (курсор по id блока); hooks/useScrollRestore.ts (прокрутка Back/Forward)
+  note: tests/e2e/clipboard.spec.ts:'caret position…'. Нет E2E на стабильность курсора при совместной правке
 - id: R-EDITOR-002
   status: partial
   evidence: packages/shared/src/editor/extensions.ts createSchemaExtensions; apps/web/src/editor/extensions/paste.ts SmartPaste; Collaboration undo
@@ -22,9 +22,9 @@
   evidence: apps/web/src/editor/extensions/uploads.ts; apps/web/src/components/ImageViewer.tsx (wheel/pinch/pan/double-tap/rotate); apps/web/src/editor/nodeviews/ImageView.tsx
   note: 'tests/e2e/content.spec.ts:''image: upload via file chooser, resize presets, caption, full-screen viewer with zoom'''
 - id: R-EDITOR-003
-  status: partial
-  evidence: apps/web/src/editor/menus/BubbleToolbar.tsx turnIntoItems; apps/web/src/editor/menus/BlockHandle.tsx «Превратить в»
-  note: Тестов конвертации всех типов нет; преобразование в блок кода молча теряет marks (ссылки, стили); id блока пересоздаётся при setNode
+  status: done
+  evidence: apps/web/src/editor/convert.ts; setNode сохраняет атрибуты
+  note: tests/unit/editor-convert.test.ts:'R-EDITOR-003…', 'AT-64…'; tests/e2e/clipboard.spec.ts
 - id: R-EDITOR-004
   status: manual
   evidence: Tiptap-редактор, меню, DnD, viewer
@@ -135,46 +135,47 @@
   evidence: y-prosemirror relative positions; autosave через CRDT без перезаписи документа
   note: Нет E2E «курсор стабилен при sync» (требуется приёмкой)
 - id: R-CLIPBOARD-002
-  status: partial
-  evidence: apps/web/src/editor/menus/BlockHandle.tsx (ссылка на блок, MD); apps/web/src/editor/menus/TableToolbar.tsx (таблица TSV/MD); CodeBlockView; PageView «Копировать ссылку»
-  note: В меню нет «страницу с форматированием», «как текст», «Markdown страницы» (только Mod+Shift+C)
+  status: done
+  evidence: PageView «Копировать страницу» (с форматированием / как текст / Markdown) → apps/web/src/editor/clipboard/copy.tsx copyPage; apps/web/src/editor/menus/BlockHandle.tsx; apps/web/src/editor/menus/TableToolbar.tsx;
+    CodeBlockView
+  note: tests/e2e/clipboard.spec.ts:'page menu copies the page…'
 - id: R-CLIPBOARD-003
   status: done
   evidence: AppShell.tsx перехватывает только Mod+K/Mod+Shift+P/Mod+\ вне полей; SmartPaste только в редакторе
   note: ''
 - id: R-CLIPBOARD-004
-  status: partial
-  evidence: Штатная PM-сериализация renderHTML
-  note: 'Нет clipboard-сериализатора: в HTML уходят служебные data-*/id, относительные /api URL картинок; вставка в Word не проверена (нужен MS Word)'
+  status: env-blocked
+  evidence: apps/web/src/editor/extensions/paste.ts SmartPaste clipboardSerializer → apps/web/src/editor/clipboard/html.ts cleanCopiedDom (абсолютные URL, без якорей комментариев/id); apps/web/src/editor/clipboard/copy.tsx
+    copyPage (text/html + text/plain)
+  note: tests/e2e/clipboard.spec.ts; tests/unit/clipboard-html.test.ts. Вставка в MS Word здесь не проверяема
 - id: R-CLIPBOARD-005
   status: done
   evidence: packages/shared/src/editor/markdown.ts docToMarkdown
   note: tests/unit/markdown.test.ts:'writes readable markdown…', 'round-trips…', property 'text is never lost'
 - id: R-CLIPBOARD-006
   status: done
-  evidence: apps/web/src/editor/menus/TableToolbar.tsx copy('tsv') rowsToTsv; CodeBlockView копирует textContent
-  note: TSV только командой меню, не при Ctrl+C
+  evidence: apps/web/src/editor/extensions/paste.ts SmartPaste clipboardTextSerializer (диапазон ячеек → TSV); apps/web/src/editor/menus/TableToolbar.tsx TSV+HTML; CodeBlockView
+  note: tests/e2e/clipboard.spec.ts:'table copy for Excel…'
 - id: R-CLIPBOARD-007
   status: missing
   evidence: —
   note: Команды «копировать изображение» нет
 - id: R-CLIPBOARD-008
-  status: partial
-  evidence: .then(toast) во всех командах; treeActions.copyLink — fallback с выделяемым полем
-  note: Markdown/ссылка на блок/таблица при отказе API молчат (нет ошибки и fallback)
+  status: done
+  evidence: apps/web/src/editor/clipboard/copy.tsx copyWithFeedback (тост только после записи; при отказе — ошибка и диалог с выделенным текстом)
+  note: tests/e2e/clipboard.spec.ts:'refused clipboard access…'
 - id: R-CLIPBOARD-009
   status: partial
-  evidence: apps/web/src/editor/extensions/paste.ts SmartPaste Ctrl+Shift+V (только текст); PM parser отбрасывает script
-  note: Нет санитайзера на клиенте и выбора «Сохранить/Объединить/Только текст»
+  evidence: apps/web/src/editor/clipboard/html.ts cleanPastedHtml (allowlist, transformPastedHTML в apps/web/src/editor/extensions/paste.ts SmartPaste); Ctrl+Shift+V
+  note: tests/unit/clipboard-html.test.ts; tests/e2e/clipboard.spec.ts. Нет явного выбора «Сохранить форматирование / Объединить / Только текст» (только Ctrl+Shift+V)
 - id: R-CLIPBOARD-010
-  status: partial
-  evidence: PM DOMParser + Tiptap parse rules (в т.ч. GDocs <b style=normal>)
-  note: 'Фикстур вставки нет; вставка HTML идёт штатным парсером ProseMirror без санитайзера: inline-стили Word (шрифт/размер/цвет) превращаются в marks; списки Word (MsoListParagraph) не становятся списками;
-    картинки Word (file://, data:) не загружаются как вложения; RTF не обрабатывается; фикстур Word/GDocs нет'
+  status: done
+  evidence: apps/web/src/editor/clipboard/html.ts cleanPastedHtml + convertWordLists
+  note: 'Фикстуры Word и Google Docs: tests/unit/clipboard-html.test.ts; tests/e2e/clipboard.spec.ts:Word paste…'
 - id: R-CLIPBOARD-011
-  status: partial
-  evidence: treeActions.copyLink fallback-диалог
-  note: Для остальных команд мобильного fallback нет
+  status: done
+  evidence: apps/web/src/editor/clipboard/copy.tsx — диалог с выделенным текстом для ручного копирования (работает и на мобильных)
+  note: Проверено в Chromium; на реальных устройствах не проверялось
 - id: R-CLIPBOARD-012
   status: done
   evidence: Editor.tsx onCopyMd (Mod+Shift+C), BlockHandle «Копировать как Markdown»
@@ -224,9 +225,9 @@
   evidence: tesseract.js (локальные rus/eng), очередь jobs, loadAttachment
   note: tests/integration/content.test.ts:'recognises Russian and English text on a screenshot…'
 - id: R-EDITOR-023
-  status: partial
-  evidence: packages/shared/src/editor/extensions.ts CONTENT_SCHEMA_VERSION=1; migrations/0001_core.sql pages.content_schema_version
-  note: Механизма миграций схемы нет (упомянутый collab/schema-migrations.ts отсутствует)
+  status: done
+  evidence: packages/shared/src/editor/migrations.ts migrateContent/SCHEMA_MIGRATIONS; archive.ts restore (contentSchemaVersion)
+  note: tests/unit/schema-migrations.test.ts
 - id: R-MEDIA-005
   status: partial
   evidence: apps/server/src/routes/attachments.ts POST /api/v1/attachments, POST /api/v1/attachments/:id/ocr
@@ -242,25 +243,24 @@
     не проверяются
 - id: SC-06
   status: partial
-  evidence: PM parser
-  note: 'Нет предпросмотра вставки; вставка HTML идёт штатным парсером ProseMirror без санитайзера: inline-стили Word (шрифт/размер/цвет) превращаются в marks; списки Word (MsoListParagraph) не становятся
-    списками; картинки Word (file://, data:) не загружаются как вложения; RTF не обрабатывается; фикстур Word/GDocs нет'
+  evidence: apps/web/src/editor/clipboard/html.ts; apps/web/src/editor/extensions/paste.ts SmartPaste
+  note: tests/e2e/clipboard.spec.ts. Предпросмотра вставки нет; Картинки из Word (file://, VML) браузер не передаёт — пользователь получает уведомление с числом непереданных изображений; RTF не разбирается
 - id: SC-07
   status: env-blocked
   evidence: PM copy html/plain; парсинг HTML
   note: Нужны реальные Word/почта/Google Docs; кроме того см. пробелы R-CLIPBOARD-004/020
 - id: SC-08
   status: done
-  evidence: packages/shared/src/editor/markdown.ts docToMarkdown (markers:false)
-  note: tests/unit/markdown.test.ts (GFM, fences, таблицы)
+  evidence: packages/shared/src/editor/markdown.ts docToMarkdown; apps/web/src/editor/clipboard/copy.tsx copyPage(markdown)
+  note: tests/e2e/clipboard.spec.ts:'page menu copies the page…'; tests/unit/markdown.test.ts
 - id: SC-09
   status: env-blocked
   evidence: apps/web/src/editor/menus/TableToolbar.tsx TSV; CodeBlockView
   note: Проверка ячеек в реальном Excel/Sheets невозможна здесь; unit-теста rowsToTsv нет
 - id: SC-10
-  status: partial
-  evidence: treeActions.copyLink fallback
-  note: Для MD/блока/таблицы — ни объяснения, ни альтернативы
+  status: done
+  evidence: apps/web/src/editor/clipboard/copy.tsx copyWithFeedback
+  note: tests/e2e/clipboard.spec.ts:'refused clipboard access…'
 - id: SC-21
   status: partial
   evidence: tests/integration/content.test.ts:'recognises Russian and English text on a screenshot…'; OcrDialog textarea + «Копировать»
@@ -290,9 +290,9 @@
   evidence: Tiptap/ProseMirror (docs/ARCHITECTURE.md §3)
   note: В docs/DECISIONS.md нет решения о выборе редактора и проверке его ограничений
 - id: R-CLIPBOARD-014
-  status: partial
-  evidence: PM копирует text/html со структурой
-  note: Тестов rich-копирования нет
+  status: done
+  evidence: PM text/html + text/plain; copyPage/TableToolbar пишут HTML и текст
+  note: tests/e2e/clipboard.spec.ts:'page menu copies the page…', 'table copy for Excel…'
 - id: R-EDITOR-026
   status: missing
   evidence: —
@@ -302,11 +302,9 @@
   evidence: uploads.ts, blockOps.ts работают в doc/таблице/колонке/выноске
   note: Единообразие в трёх контекстах — ручная проверка; тестов нет
 - id: R-CLIPBOARD-015
-  status: partial
-  evidence: apps/web/src/editor/extensions/paste.ts SmartPaste (TSV/MD/HTML ветки)
-  note: 'tests/e2e/collab.spec.ts:''paste: spreadsheet range becomes a table; Markdown becomes formatted blocks'' (TSV, MD); вставка HTML идёт штатным парсером ProseMirror без санитайзера: inline-стили
-    Word (шрифт/размер/цвет) превращаются в marks; списки Word (MsoListParagraph) не становятся списками; картинки Word (file://, data:) не загружаются как вложения; RTF не обрабатывается; фикстур Word/GDocs
-    нет'
+  status: done
+  evidence: apps/web/src/editor/extensions/paste.ts SmartPaste (TSV / Markdown / санитизированный HTML)
+  note: 'tests/e2e/collab.spec.ts:''paste: spreadsheet range becomes a table; Markdown becomes formatted blocks''; tests/e2e/clipboard.spec.ts'
 - id: R-CLIPBOARD-016
   status: partial
   evidence: apps/web/src/editor/extensions/paste.ts SmartPaste looksLikeMarkdown; Ctrl+Shift+V — исходный текст
@@ -316,21 +314,21 @@
   evidence: apps/web/src/editor/extensions/uploads.ts (objectURL-превью, повтор, ожидание сети)
   note: 'Заглушка — декорация, а не блок: не синхронизируется и пропадает при перезагрузке/закрытии'
 - id: R-COLLECTION-001
-  status: partial
-  evidence: special.ts CollectionView vs table; collections + pages.collection_id
-  note: 'UI сломан: Editor.tsx insertCollection шлёт {pageId,name}, а POST /collections требует spaceId (400); CollectionBlockView читает collection.fields/pageId, API отдаёт schema/page_id'
+  status: done
+  evidence: special.ts CollectionView; Editor.tsx insertCollection (spaceId/parentId); blocks.tsx CollectionBlockView
+  note: tests/e2e/clipboard.spec.ts:'registry block from the slash menu…'
 - id: R-COLLECTION-002
   status: partial
   evidence: apps/web/src/pages/ImportPage.tsx типы столбцов + «не распознано»; importer.ts tabularDryRun
   note: Типы «пользователь» и «файл» в мастере отсутствуют
 - id: R-COLLECTION-003
   status: partial
-  evidence: importer.ts commitTabular (new/append/upsert), tabularDryRun
-  note: tests/integration/import-export.test.ts:'CSV in Windows-1251…' (повторный upsert без дублей). Нет «заменить диапазон»; в UI импорта нельзя выбрать существующую коллекцию/upsert
+  evidence: importer.ts new/append/upsert + dry-run; ImportPage «В существующую», режим и ключевой столбец; пробный прогон обязателен
+  note: tests/integration/import-export.test.ts:'CSV in Windows-1251… (AT-48, UX13-17, AT-50, R-COLLECTION-003)'. Нет «заменить диапазон»
 - id: R-CLIPBOARD-017
   status: partial
-  evidence: apps/web/src/editor/extensions/paste.ts SmartPaste parseTsv/rowsToTable; HTML-таблицы Excel парсятся схемой; apps/web/src/editor/menus/TableToolbar.tsx TSV
-  note: При копировании нет TSV+HTML вместе; экспорта выделения в CSV нет; HTML Excel без теста
+  evidence: apps/web/src/editor/extensions/paste.ts SmartPaste (вставка TSV/HTML Excel, копирование TSV+HTML)
+  note: Экспорта выделения в CSV нет; HTML Excel 20×10 не проверялся
 - id: R-TABLE-004
   status: partial
   evidence: apps/web/src/editor/menus/TableToolbar.tsx; Tab-навигация
@@ -361,17 +359,17 @@
   evidence: apps/server/src/routes/attachments.ts attachmentDto (sha256, version, size), loadAttachment
   note: tests/integration/content.test.ts:'files of a private page are not accessible…', 'respects download policy…'
 - id: AT-44
-  status: partial
-  evidence: 'PM parser: заголовки h1–h6 сохраняются'
-  note: Списки Word (MsoListParagraph) превращаются в абзацы; теста нет
+  status: done
+  evidence: apps/web/src/editor/clipboard/html.ts convertWordLists
+  note: tests/unit/clipboard-html.test.ts:'AT-44…'; tests/e2e/clipboard.spec.ts:'Word paste…'
 - id: AT-46
   status: done
   evidence: apps/web/src/editor/extensions/uploads.ts (мгновенное превью, ожидание сети, повтор)
   note: Без теста
 - id: AT-50
-  status: partial
-  evidence: importer.ts upsert + dry-run
-  note: tests/integration/import-export.test.ts:'CSV in Windows-1251…'; UI не позволяет повторный импорт в существующую коллекцию
+  status: done
+  evidence: importer.ts upsert + dry-run; ImportPage (существующая коллекция, обязательный пробный прогон); GET /api/v1/collections?spaceId
+  note: tests/integration/import-export.test.ts:'CSV in Windows-1251… (…AT-50…)'
 - id: AT-51
   status: partial
   evidence: HTML-таблица Excel → table; TSV fallback
@@ -411,8 +409,8 @@
   note: Без автотестов конверсии/копирования между страницами
 - id: R-CLIPBOARD-018
   status: partial
-  evidence: PM data-pm-slice (внутренний формат), html → plain
-  note: 'Внутренний формат несёт attachmentId чужой страницы: вложение проверяется по правам исходной страницы (читатели новой страницы получат 404); утечка data-* в HTML'
+  evidence: apps/web/src/editor/clipboard/html.ts cleanCopiedDom/cleanPastedHtml (внутренние ссылки), ClientBlockIds
+  note: Вложение, скопированное на другую страницу, проверяется по правам исходной страницы (читатели новой получат 404)
 - id: R-EDITOR-033
   status: partial
   evidence: ProseMirror + Yjs UndoManager
@@ -422,9 +420,9 @@
   evidence: apps/web/src/editor/extensions/paste.ts SmartPaste; apps/web/src/editor/extensions/uploads.ts handlePaste (изображения)
   note: Нет выбора «с форматированием/только текст/как Markdown» при неоднозначности
 - id: R-FILES-004
-  status: partial
-  evidence: apps/web/src/editor/extensions/uploads.ts; apps/web/src/lib/uploads.ts
-  note: Клиент не передаёт sha256 в /uploads (проверка хэша не срабатывает); хэш после restore — tests/integration/archive.test.ts
+  status: done
+  evidence: 'apps/web/src/lib/uploads.ts (SHA-256 клиента: малые — сверка с ответом, большие — потоково + /complete {sha256}); lib/sha256.ts'
+  note: tests/integration/files-integrity.test.ts; tests/unit/sha256.test.ts; хэш после restore — tests/integration/archive.test.ts
 - id: R-TABLE-005
   status: done
   evidence: apps/web/src/editor/menus/TableToolbar.tsx; apps/web/src/editor/extensions/paste.ts SmartPaste
@@ -448,8 +446,8 @@
   note: tests/e2e/editor.spec.ts:'slash menu inserts a table and a callout; "> " creates a toggle' — только клавиатура/RU; Esc и мышь не проверяются
 - id: AT-64
   status: done
-  evidence: setHeading/setParagraph сохраняют текст
-  note: Без теста; id блока при этом пересоздаётся (см. R-EDITOR-067)
+  evidence: setHeading/setParagraph сохраняют текст, marks и id
+  note: tests/unit/editor-convert.test.ts:'AT-64…'
 - id: AT-65
   status: partial
   evidence: DragHandle + Yjs UndoManager
@@ -460,8 +458,8 @@
   note: Без теста
 - id: AT-67
   status: partial
-  evidence: PM parser таблиц/списков
-  note: Картинки из Word не переносятся
+  evidence: apps/web/src/editor/clipboard/html.ts
+  note: Таблицы и списки сохраняются; Картинки из Word (file://, VML) браузер не передаёт — пользователь получает уведомление с числом непереданных изображений; RTF не разбирается
 - id: AT-68
   status: partial
   evidence: apps/web/src/editor/extensions/uploads.ts handlePaste
@@ -476,9 +474,8 @@
   note: UI обложки нет (pages.cover только в API)
 - id: R-CLIPBOARD-020
   status: partial
-  evidence: PM parser (h1–h6, p, ul/ol, table, a, img, figure)
-  note: 'вставка HTML идёт штатным парсером ProseMirror без санитайзера: inline-стили Word (шрифт/размер/цвет) превращаются в marks; списки Word (MsoListParagraph) не становятся списками; картинки Word
-    (file://, data:) не загружаются как вложения; RTF не обрабатывается; фикстур Word/GDocs нет'
+  evidence: apps/web/src/editor/clipboard/html.ts (H1–H6, списки Word, таблицы, ссылки, data:-изображения → вложения)
+  note: tests/e2e/clipboard.spec.ts. Картинки из Word (file://, VML) браузер не передаёт — пользователь получает уведомление с числом непереданных изображений; RTF не разбирается
 - id: R-CLIPBOARD-021
   status: partial
   evidence: apps/web/src/editor/extensions/paste.ts SmartPaste (без диалогов)
@@ -500,18 +497,18 @@
   evidence: apps/web/src/editor/menus/BubbleToolbar.tsx onMouseDown preventDefault; команды на текущем выделении
   note: 'Косвенно: tests/e2e/content.spec.ts:''comment on a selection…'''
 - id: R-EDITOR-037
-  status: partial
-  evidence: Yjs + IndexedDB; Editor.tsx монтирование после sync
-  note: tests/e2e/editor.spec.ts:'create page, type with Markdown shortcuts, …survives reload' проверяет содержимое после reload; прокрутка/фокус/курсор не восстанавливаются
+  status: done
+  evidence: apps/web/src/editor/selectionMemory.ts; useScrollRestore; Yjs+IndexedDB
+  note: tests/e2e/clipboard.spec.ts:'caret position of a page is restored…'; tests/e2e/editor.spec.ts:'create page, type with Markdown shortcuts, …survives reload'
 - id: R-FILES-005
   status: done
   evidence: apps/server/src/routes/attachments.ts DELETE — soft delete; физического удаления blob нет (GC не реализован)
   note: Без теста
 - id: UX13-02
   status: partial
-  evidence: PM parser
-  note: 'вставка HTML идёт штатным парсером ProseMirror без санитайзера: inline-стили Word (шрифт/размер/цвет) превращаются в marks; списки Word (MsoListParagraph) не становятся списками; картинки Word
-    (file://, data:) не загружаются как вложения; RTF не обрабатывается; фикстур Word/GDocs нет'
+  evidence: apps/web/src/editor/clipboard/html.ts
+  note: tests/e2e/clipboard.spec.ts (заголовки, вложенные списки, таблица). Картинки из Word (file://, VML) браузер не передаёт — пользователь получает уведомление с числом непереданных изображений; RTF
+    не разбирается
 - id: UX13-03
   status: missing
   evidence: apps/web/src/editor/extensions/uploads.ts хранит загрузки только в памяти
@@ -545,13 +542,13 @@
   evidence: apps/web/src/editor/menus/BubbleToolbar.tsx; suggest.tsx (стрелки/Enter/Esc)
   note: 'Touch-варианта панели/ручки нет: ручка блока только по hover'
 - id: R-CLIPBOARD-022
-  status: partial
-  evidence: 'Сервер: apps/server/src/convert/html.ts sanitizeHtml (импорт)'
-  note: 'Клиентская вставка не санитизируется: Color/FontFamily/FontSize/Highlight читают style= и сохраняют произвольные стили Word'
+  status: done
+  evidence: apps/web/src/editor/clipboard/html.ts filterStyle (только семантика и собственная палитра/шрифты)
+  note: 'tests/unit/clipboard-html.test.ts:''R-CLIPBOARD-022: removes scripts…''; tests/e2e/clipboard.spec.ts'
 - id: R-EDITOR-043
-  status: partial
-  evidence: collab/ydoc.ts validateDoc; hub.ts reject; ensureBlockIds
-  note: tests/integration/collab.test.ts:'rejects schema-invalid updates…'. Нет миграций схемы; санитизация атрибутов узлов (src/href) на сервере не выполняется
+  status: done
+  evidence: collab/ydoc.ts validateDoc (схема + findUnsafeUrls), sanitizeDocUrls при импорте/восстановлении; migrations.ts
+  note: tests/unit/schema-migrations.test.ts; tests/integration/files-integrity.test.ts:'R-EDITOR-043…'; tests/integration/collab.test.ts
 - id: E2E-111
   status: done
   evidence: TextStyle/Color в схеме, хранится в Yjs
@@ -601,13 +598,13 @@
   evidence: special.ts SyncedBlock; blocks.tsx SyncedBlockView (404 → «Нет доступа» без текста)
   note: Без тестов
 - id: R-FILES-007
-  status: partial
-  evidence: storage/blob-store.ts (SHA-256, fsync+rename), attachment_versions, s3-store.ts
-  note: Периодической сверки целостности нет (только при архиве/restore); защита от удаления — рекомендация включить object lock
+  status: done
+  evidence: apps/server/src/services/integrity.ts verifyBlobs (ежечасно в jobs/worker.ts maintenance), migrations/0007_blob_integrity.sql, предупреждение в /api/v1/admin/health
+  note: tests/integration/files-integrity.test.ts:'R-FILES-007…'. Защита от удаления — object lock бакета (рекомендация)
 - id: V17-F01
   status: partial
-  evidence: PM paste + Yjs undo
-  note: Изображения из многостраничного документа не загружаются; теста нет
+  evidence: apps/web/src/editor/clipboard/html.ts; Yjs undo
+  note: Изображения Word не переносятся; теста многостраничной вставки и Undo нет
 - id: R-MEDIA-009
   status: partial
   evidence: apps/web/src/editor/extensions/uploads.ts; Editor.tsx
@@ -666,9 +663,9 @@
   evidence: FileBlock draggable; PM copy
   note: Без теста
 - id: V18-A13
-  status: partial
-  evidence: PM parser сохраняет текст
-  note: Фикстуры сложного Word нет — «0 потерь» не подтверждено
+  status: done
+  evidence: apps/web/src/editor/clipboard/html.ts
+  note: tests/e2e/clipboard.spec.ts:'Word paste…' (текст всех абзацев, списков и таблицы сохранён)
 - id: V18-A14
   status: done
   evidence: apps/web/src/editor/extensions/paste.ts SmartPaste TSV → table
@@ -766,17 +763,17 @@
   evidence: OrderedList (нумерация пересчитывается), TaskItem
   note: Нет UI «начать с N»/«продолжить»
 - id: R-EDITOR-067
-  status: partial
-  evidence: turnIntoItems; comment — mark
-  note: id блока меняется при setNode; в код — теряются marks/ссылки; несовместимые преобразования не объясняются
+  status: done
+  evidence: apps/web/src/editor/convert.ts convertToCodeBlock (упоминания/формулы → текст, подтверждение при потере форматирования); id блока сохраняется
+  note: tests/unit/editor-convert.test.ts; tests/e2e/clipboard.spec.ts:'converting formatted text to a code block…'
 - id: R-EDITOR-068
   status: partial
   evidence: apps/web/src/editor/extensions/blockOps.ts Escape → selectBlock
   note: Нет двухступенчатого Ctrl+A (блок → статья), нет выделения нескольких блоков
 - id: R-CLIPBOARD-024
   status: partial
-  evidence: PM copy/cut/paste между редакторами; ClientBlockIds разводит дубли id
-  note: 'Изображения по правам: см. R-CLIPBOARD-018; трекеры/служебные атрибуты не удаляются при копировании наружу'
+  evidence: PM copy/paste + portable HTML
+  note: Права на вложения при переносе — см. R-CLIPBOARD-018
 - id: R-CLIPBOARD-025
   status: partial
   evidence: json.ts parseTsv (кавычки, многострочные ячейки), looksLikeTsv
@@ -830,14 +827,13 @@
   evidence: Tiptap lists
   note: tests/e2e/editor.spec.ts:'create page, type with Markdown shortcuts, …survives reload' проверяет плоский список; вложенность не проверяется
 - id: E209
-  status: partial
-  evidence: PM parser
-  note: 'E2E нет; вставка HTML идёт штатным парсером ProseMirror без санитайзера: inline-стили Word (шрифт/размер/цвет) превращаются в marks; списки Word (MsoListParagraph) не становятся списками; картинки
-    Word (file://, data:) не загружаются как вложения; RTF не обрабатывается; фикстур Word/GDocs нет'
+  status: done
+  evidence: apps/web/src/editor/clipboard/html.ts; apps/web/src/editor/extensions/paste.ts SmartPaste
+  note: tests/e2e/clipboard.spec.ts:'Word paste keeps headings, nested and numbered lists…'
 - id: E210
-  status: partial
-  evidence: PM parser + sanitizeHref для ссылок
-  note: E2E нет; inline-стили не чистятся
+  status: done
+  evidence: apps/web/src/editor/clipboard/html.ts; apps/web/src/editor/extensions/paste.ts SmartPaste pasteHTML + startUploads
+  note: 'tests/e2e/clipboard.spec.ts:''web HTML paste: scripts removed, embedded image uploaded…'''
 - id: E211
   status: done
   evidence: apps/web/src/editor/extensions/paste.ts SmartPaste
@@ -871,9 +867,9 @@
   evidence: Набор E2E/интеграционных тестов
   note: Требует QA-прогона по списку блокирующих дефектов
 - id: R-MEDIA-015
-  status: partial
-  evidence: apps/web/src/editor/nodeviews/ImageView.tsx onDoubleClick/кнопка; onClick только в режиме чтения
-  note: В режиме редактирования одиночный клик не открывает lightbox
+  status: done
+  evidence: apps/web/src/editor/nodeviews/ImageView.tsx onClick (чтение — один клик; редактирование — клик по выделенному)
+  note: tests/e2e/clipboard.spec.ts:'image viewer…'
 - id: R-MEDIA-016
   status: superseded
   evidence: overridden_by R-MEDIA-021
@@ -883,9 +879,9 @@
   evidence: apps/web/src/components/ImageViewer.tsx (Esc, ←/→, download по ACL)
   note: 'tests/e2e/content.spec.ts:''image: upload via file chooser, resize presets, caption, full-screen viewer with zoom'' (Esc)'
 - id: R-MEDIA-018
-  status: partial
-  evidence: apps/web/src/components/ImageViewer.tsx body overflow hidden, wheel preventDefault, тайлы/hiRes по требованию
-  note: Нет ограничения панорамирования границами
+  status: done
+  evidence: apps/web/src/components/ImageViewer.tsx clampView (без выхода за границы), body overflow hidden, тайлы
+  note: Повёрнутое изображение не ограничивается
 - id: R-EDITOR-074
   status: partial
   evidence: apps/web/src/editor/menus/BlockHandle.tsx (absolute, без сдвига)
@@ -967,17 +963,17 @@
   evidence: Контент шаблона копируется
   note: Без теста
 - id: R-MEDIA-019
-  status: partial
-  evidence: apps/web/src/components/ImageViewer.tsx fit, тёмный фон; масштаб не меняет блок
-  note: Одно нажатие открывает только в режиме чтения
+  status: done
+  evidence: apps/web/src/editor/nodeviews/ImageView.tsx; apps/web/src/components/ImageViewer.tsx (тёмный фон, «вписать», масштаб не меняет блок)
+  note: tests/e2e/clipboard.spec.ts:'image viewer…'
 - id: R-MEDIA-020
   status: done
   evidence: apps/web/src/components/ImageViewer.tsx zoomAt по указателю, drag-pan, ctrl-wheel pinch, dblclick, + - 0 1 Esc
   note: 'tests/e2e/content.spec.ts:''image: upload via file chooser, resize presets, caption, full-screen viewer with zoom'' (+, 0, Esc)'
 - id: R-MEDIA-021
-  status: partial
-  evidence: apps/web/src/components/ImageViewer.tsx MIN_SCALE/MAX_SCALE
-  note: Диапазон 2–1600% вместо ~10–800%
+  status: done
+  evidence: apps/web/src/components/ImageViewer.tsx MIN_SCALE 0.1 / MAX_SCALE 8 (ниже 10 % только для «вписать» огромных схем)
+  note: tests/e2e/clipboard.spec.ts:'image viewer…'
 - id: R-MEDIA-022
   status: partial
   evidence: apps/web/src/components/ImageViewer.tsx pointer-events pinch/pan/double-tap
@@ -1011,9 +1007,9 @@
   evidence: apps/server/src/services/attachments.ts makeTiles; limitInputPixels
   note: tests/integration/content.test.ts:'large images get a deep-zoom tile pyramid…'
 - id: R-FILES-011
-  status: partial
-  evidence: apps/server/src/routes/attachments.ts /api/v1/uploads (offset, complete только при полном размере); lib/uploads.ts
-  note: 'Клиент не шлёт sha256; возобновление не переживает перезагрузку страницы. Тест: tests/integration/content.test.ts resumable upload'
+  status: done
+  evidence: apps/server/src/routes/attachments.ts /uploads/:id/complete {sha256}; lib/uploads.ts (возобновление по сохранённому uploadId после перезагрузки)
+  note: tests/integration/files-integrity.test.ts:'R-FILES-011…'; tests/integration/content.test.ts resumable upload
 - id: UX23-220
   status: done
   evidence: apps/server/src/routes/attachments.ts /uploads/:id/complete (409 incomplete); блок вставляется только после complete

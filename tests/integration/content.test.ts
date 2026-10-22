@@ -28,7 +28,7 @@ async function upload(api: Api, pageId: string | null, name: string, data: Buffe
 }
 
 describe('attachments', () => {
-  it('uploads an image, stores the original byte-exact with checksum, creates previews (A10, R-FILES)', async () => {
+  it('uploads an image, stores the original byte-exact with checksum, creates previews (A10, R-MEDIA-010, V18-A10, R-FILES-003)', async () => {
     const page = (await org.owner.post('/api/v1/pages', { spaceId: org.generalSpaceId, title: 'С изображением' })).page;
     const img = await sharp({ create: { width: 3000, height: 2000, channels: 3, background: '#88aadd' } }).jpeg().toBuffer();
     const r = await upload(org.owner, page.id, 'схема.jpg', img, 'image/jpeg');
@@ -58,7 +58,7 @@ describe('attachments', () => {
     expect(ok.attachments[0].mime).toBe('text/plain');
   });
 
-  it('sanitises SVG and serves user content in a sandbox (SC-12, SC-33)', async () => {
+  it('sanitises SVG and serves user content in a sandbox (SC-12, SC-33, R-MEDIA-011)', async () => {
     const page = (await org.owner.post('/api/v1/pages', { spaceId: org.generalSpaceId, title: 'SVG' })).page;
     const evil = '<svg xmlns="http://www.w3.org/2000/svg" onload="alert(1)"><script>alert(2)</script><rect width="10" height="10"/></svg>';
     const r = await upload(org.owner, page.id, 'evil.svg', Buffer.from(evil));
@@ -70,7 +70,7 @@ describe('attachments', () => {
     expect(res.headers.get('x-content-type-options')).toBe('nosniff');
   });
 
-  it('files of a private page are not accessible by direct link; revocation invalidates signed links (E2E-102, A14, V18-A17, V15-A08, ACL-164)', async () => {
+  it('files of a private page are not accessible by direct link; revocation invalidates signed links (E2E-102, A14, V18-A17, V15-A08, ACL-164, R-FILES-006, V15-A14)', async () => {
     const u = await org.user('Владелец файла');
     const me = await u.get('/api/v1/auth/me');
     const p = (await u.post('/api/v1/pages', { spaceId: me.personalSpaceId, title: 'Личная с файлом' })).page;
@@ -96,7 +96,7 @@ describe('attachments', () => {
     expect((await reader.raw('GET', a.downloadUrl)).status).toBe(403);
   });
 
-  it('resumable upload with chunk retry and checksum verification (UX23-220, A16)', async () => {
+  it('resumable upload with chunk retry and checksum verification (UX23-220, A16, R-FILES-011)', async () => {
     const page = (await org.owner.post('/api/v1/pages', { spaceId: org.generalSpaceId, title: 'Большой файл' })).page;
     const data = Buffer.alloc(1_000_000, 7);
     data.write('kb-resumable', 0);
@@ -119,13 +119,13 @@ describe('attachments', () => {
     expect(list.attachments.map((x: any) => x.id)).toContain(done.attachment.id);
   });
 
-  it('incomplete upload cannot be completed', async () => {
+  it('incomplete upload cannot be completed (UX23-220)', async () => {
     const s = await org.owner.post('/api/v1/uploads', { pageId: null, filename: 'x.bin', size: 1000 });
     const e = await expectStatus(org.owner.post(`/api/v1/uploads/${s.uploadId}/complete`), 409);
     expect(e.error.code).toBe('incomplete');
   });
 
-  it('replacing a file creates a new version; old version restorable', async () => {
+  it('replacing a file creates a new version; old version restorable (R-FILES-003, R-MEDIA-013)', async () => {
     const page = (await org.owner.post('/api/v1/pages', { spaceId: org.generalSpaceId, title: 'Версии файла' })).page;
     const a = (await upload(org.owner, page.id, 'spec.txt', Buffer.from('v1'))).attachments[0];
     const fd = new FormData();
@@ -157,7 +157,7 @@ describe('attachments', () => {
   });
 });
 
-describe('OCR (SC-21..24, AT, §8)', () => {
+describe('OCR (R-OCR-001, R-OCR-007, R-OCR-011, SC-22, §8)', () => {
   it('recognises Russian and English text on a screenshot, keeps original, result is searchable with origin marker (R-SEARCH-002, SC-23)', async () => {
     const page = (await org.owner.post('/api/v1/pages', { spaceId: org.generalSpaceId, title: 'Скриншот щита' })).page;
     const png = await textImage(['Регламент освещения KNX', 'Артикул ABC-1234', 'Distribution board']);
