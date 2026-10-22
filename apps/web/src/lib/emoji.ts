@@ -246,3 +246,11 @@ export const EMOJI: Array<{ e: string; k: string }> = RAW.split('\n')
     return { e, k: (k ?? '').toLowerCase() };
   })
   .filter((x, i, arr) => x.e && arr.findIndex((y) => y.e === x.e) === i);
+
+export function searchEmoji(q: string) {
+  const t = q.trim().toLowerCase();
+  if (!t) return EMOJI;
+  const starts = EMOJI.filter((e) => e.k.split(' ').some((w) => w.startsWith(t)));
+  const rest = EMOJI.filter((e) => !starts.includes(e) && e.k.includes(t));
+  return [...starts, ...rest];
+}

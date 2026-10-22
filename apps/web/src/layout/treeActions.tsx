@@ -121,7 +121,7 @@ export async function duplicatePage(pageId: string) {
 }
 
 export async function copyLink(pageId: string, blockId?: string) {
-  const url = `${location.origin}/p/${pageId}${blockId ? '#' + blockId : ''}`;
+  const url = `${location.origin}/p/${pageId}${blockId ? '?block=' + blockId : ''}`;
   try {
     await navigator.clipboard.writeText(url);
     toast.success('Ссылка скопирована');

@@ -49,6 +49,7 @@ export function useServerEvents(enabled: boolean) {
             break;
           case 'comments-changed':
             qc.invalidateQueries({ queryKey: ['comments', e.pageId] });
+            window.dispatchEvent(new CustomEvent('kb:comments-changed', { detail: { pageId: e.pageId } }));
             break;
           case 'notification':
             qc.invalidateQueries({ queryKey: ['notifications'] });

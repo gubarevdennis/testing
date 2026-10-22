@@ -18,6 +18,7 @@ export async function pageDto(q: Queryable, user: AuthUser, p: PageRow, acc: Pag
   const name = (id: string | null) => (id ? { id, name: people.find((x) => x.id === id)?.name ?? '—' } : null);
   const fav = await q.query('select 1 from favorites where user_id = $1 and page_id = $2', [user.id, p.id]);
   const space = (await q.query('select id, name, icon, kind from spaces where id = $1', [p.space_id])).rows[0];
+  const gen = (await q.query('select generation from doc_state where page_id = $1', [p.id])).rows[0]?.generation ?? null;
   return {
     id: p.id,
     spaceId: p.space_id,
@@ -47,6 +48,7 @@ export async function pageDto(q: Queryable, user: AuthUser, p: PageRow, acc: Pag
     favorite: !!fav.rowCount,
     access: { level: acc.level, actions: acc.actions, policy: acc.policy },
     readMode: acc.policy.publishingMode === 'publish' && !acc.actions.edit ? 'published' : 'live',
+    docGeneration: gen,
   };
 }
 

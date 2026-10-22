@@ -165,3 +165,7 @@ export function colorForUser(userId: string): string {
   for (let i = 0; i < userId.length; i++) h = (h * 31 + userId.charCodeAt(i)) >>> 0;
   return COLORS[h % COLORS.length];
 }
+
+/** Names of the shared types inside a page's Y.Doc. */
+export const FRAGMENT_NAME = 'default';
+export const TITLE_NAME = 'title';

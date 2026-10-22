@@ -184,7 +184,7 @@ export class CollabProvider {
       ws.send(encodeClient({ type: MSG.HELLO, stateVector: Y.encodeStateVector(this.doc) }));
       this.pingTimer = setInterval(() => ws.readyState === 1 && ws.send(encodeClient({ type: MSG.PING })), 25_000);
     };
-    ws.onmessage = (ev: { data: ArrayBuffer | Buffer }) => this.onMessage(new Uint8Array(ev.data as ArrayBuffer));
+    ws.onmessage = (ev: { data: ArrayBuffer | Uint8Array }) => this.onMessage(new Uint8Array(ev.data as ArrayBuffer));
     ws.onclose = (ev: { code: number; reason?: string }) => {
       clearInterval(this.pingTimer);
       if (this.ackTimer) clearTimeout(this.ackTimer);

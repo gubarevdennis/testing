@@ -49,7 +49,7 @@ export function Menu({ trigger, items, placement = 'bottom-start', label, onOpen
       offset(4),
       flip({ padding: 8, fallbackAxisSideDirection: 'end' }),
       shift({ padding: 8 }),
-      size({ padding: 8, apply: ({ availableHeight, elements }) => Object.assign(elements.floating.style, { maxHeight: `${Math.max(160, availableHeight)}px` }) }),
+      size({ padding: 8, apply: ({ availableHeight, elements }) => { Object.assign(elements.floating.style, { maxHeight: `${Math.max(160, availableHeight)}px` }); } }),
     ],
   });
   const click = useClick(context);

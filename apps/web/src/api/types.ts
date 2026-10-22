@@ -67,6 +67,7 @@ export interface PageDto {
   favorite: boolean;
   access: { level: string; actions: Record<string, boolean>; policy: Space['policy'] };
   readMode: 'live' | 'published';
+  docGeneration: string | null;
 }
 
 export interface Crumb {

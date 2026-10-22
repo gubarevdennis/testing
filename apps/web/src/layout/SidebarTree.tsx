@@ -537,10 +537,12 @@ const TreeRow = memo(function TreeRow({ row: r, tabIndex, active, renaming, drag
         (rowRef.current?.querySelector('.tree-more') as HTMLElement | null)?.click();
       }}
     >
-      {n.canEdit && (
+      {n.canEdit ? (
         <span className="tree-handle" aria-hidden onPointerDown={(e) => (e.stopPropagation(), onPointerDown(e, true))} title="Перетащите, чтобы переместить">
           <GripVertical size={12} />
         </span>
+      ) : (
+        <span aria-hidden />
       )}
       <button className={'tree-chevron' + (n.hasChildren ? '' : ' leaf')} tabIndex={-1} aria-hidden={!n.hasChildren} aria-label={r.expanded ? 'Свернуть' : 'Развернуть'} onClick={(e) => (e.stopPropagation(), n.hasChildren && onToggle())}>
         {n.hasChildren ? <ChevronRight size={14} className={'chev' + (r.expanded ? ' open' : '')} /> : <span className="dot" />}

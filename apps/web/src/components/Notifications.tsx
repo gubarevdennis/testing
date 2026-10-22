@@ -20,7 +20,7 @@ export function NotificationsPopover({ trigger }: { trigger: (ref: (el: HTMLElem
   const { data } = useNotifications();
   const qc = useQueryClient();
   const navigate = useNavigate();
-  const { refs, floatingStyles, context } = useFloating({ open, onOpenChange: setOpen, placement: 'right-start', whileElementsMounted: autoUpdate, middleware: [offset(8), flip({ padding: 8 }), shift({ padding: 8 }), size({ padding: 8, apply: ({ availableHeight, elements }) => Object.assign(elements.floating.style, { maxHeight: `${Math.min(520, availableHeight)}px` }) })] });
+  const { refs, floatingStyles, context } = useFloating({ open, onOpenChange: setOpen, placement: 'right-start', whileElementsMounted: autoUpdate, middleware: [offset(8), flip({ padding: 8 }), shift({ padding: 8 }), size({ padding: 8, apply: ({ availableHeight, elements }) => { Object.assign(elements.floating.style, { maxHeight: `${Math.min(520, availableHeight)}px` }); } })] });
   const { getReferenceProps, getFloatingProps } = useInteractions([useClick(context), useDismiss(context)]);
   const markAll = async () => {
     await post('/api/v1/notifications/read', {});
