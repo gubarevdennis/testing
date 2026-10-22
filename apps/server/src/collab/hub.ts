@@ -186,6 +186,10 @@ export class CollabHub {
 
   async connect(ws: WebSocket, user: AuthUser, sessionId: string | null, pageId: string) {
     const conn: Conn = { id: randomUUID(), ws, user, sessionId, clientId: null, canEdit: false, level: 'none', alive: true };
+    // Messages may arrive while access is checked and the document loads: buffer them.
+    const early: Uint8Array[] = [];
+    const buffer = (data: Buffer, isBinary: boolean) => isBinary && early.push(new Uint8Array(data));
+    ws.on('message', buffer);
     const acc = await pageAccess(this.pool, user, pageId);
     if (!acc || !acc.actions.view || acc.deleted) {
       this.sendError(ws, 'not_found', 'Страница не найдена или нет доступа', CLOSE.NOT_FOUND);
@@ -213,10 +217,12 @@ export class CollabHub {
     live.conns.add(conn);
     this.metrics.collabConnections.inc();
     ws.on('pong', () => (conn.alive = true));
+    ws.off('message', buffer);
     ws.on('message', (data: Buffer, isBinary: boolean) => {
       if (!isBinary) return;
       void this.onMessage(live, conn, new Uint8Array(data)).catch((err) => this.log.error({ err, pageId }, 'collab message failed'));
     });
+    for (const m of early) void this.onMessage(live, conn, m).catch((err) => this.log.error({ err, pageId }, 'collab message failed'));
     ws.on('close', () => {
       live.conns.delete(conn);
       this.metrics.collabConnections.dec();

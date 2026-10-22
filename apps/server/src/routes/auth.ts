@@ -41,7 +41,7 @@ export async function authRoutes(app: FastifyInstance, s: Services) {
     return { user: toAuthUser(result.owner), csrfToken: sess.csrf };
   });
 
-  app.post('/api/v1/auth/login', { config: { rateLimit: { max: 20, timeWindow: '1 minute' } } }, async (req, reply) => {
+  app.post('/api/v1/auth/login', { config: { rateLimit: { max: s.cfg.authRateLimitPerMinute, timeWindow: '1 minute' } } }, async (req, reply) => {
     const body = parse(z.object({ email: z.string().min(3).max(320), password: z.string().min(1).max(1024), totp: z.string().optional(), org: z.string().optional() }), req.body);
     const email = body.email.trim().toLowerCase();
     const rows = (await s.db.query(`select u.* from users u join organizations o on o.id = u.org_id where lower(u.email) = $1 ${body.org ? 'and o.slug = $2' : ''} order by u.created_at limit 2`, body.org ? [email, body.org] : [email])).rows;
@@ -170,7 +170,7 @@ export async function authRoutes(app: FastifyInstance, s: Services) {
   });
 
   /** Accepting an invitation sets the password and activates the account. */
-  app.post('/api/v1/auth/invite/accept', { config: { rateLimit: { max: 20, timeWindow: '1 minute' } } }, async (req, reply) => {
+  app.post('/api/v1/auth/invite/accept', { config: { rateLimit: { max: s.cfg.authRateLimitPerMinute, timeWindow: '1 minute' } } }, async (req, reply) => {
     const body = parse(z.object({ token: z.string().min(10), password: z.string(), name: z.string().min(1).max(200).optional() }), req.body);
     const p = passwordProblems(body.password);
     if (p) throw badRequest(p);

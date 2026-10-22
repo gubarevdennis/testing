@@ -8,3 +8,4 @@ export * from './editor/markdown.js';
 export * from './permissions.js';
 export * from './sort-key.js';
 export * from './collab-protocol.js';
+export * from './collab-client.js';

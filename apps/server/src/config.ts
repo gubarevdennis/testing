@@ -34,6 +34,7 @@ export interface Config {
   logLevel: string;
   retention: { trashDays: number; journalDays: number; revisionDays: number };
   rateLimitPerMinute: number;
+  authRateLimitPerMinute: number;
   clamavHost: string | null;
 }
 
@@ -79,6 +80,7 @@ export function loadConfig(overrides: Partial<Config> = {}): Config {
     logLevel: env('LOG_LEVEL', nodeEnv === 'test' ? 'warn' : 'info'),
     retention: { trashDays: int('RETENTION_TRASH_DAYS', 90), journalDays: int('RETENTION_JOURNAL_DAYS', 90), revisionDays: int('RETENTION_REVISION_DAYS', 365) },
     rateLimitPerMinute: int('RATE_LIMIT_PER_MINUTE', 600),
+    authRateLimitPerMinute: int('AUTH_RATE_LIMIT_PER_MINUTE', 30),
     clamavHost: process.env.CLAMAV_HOST || null,
   };
   if (cfg.env === 'production' && cfg.secretKey.length < 32) throw new Error('SECRET_KEY must be at least 32 characters in production');
