@@ -117,6 +117,10 @@ export interface CreatePageInput {
   templateId?: string | null;
   collectionId?: string | null;
   status?: string;
+  /** Pre-assigned id (imports resolve cross-links before pages exist). */
+  id?: string;
+  /** Kind of the first revision. */
+  revisionKind?: 'create' | 'import';
 }
 
 /**
@@ -142,13 +146,13 @@ export async function createPage(q: Tx, user: AuthUser, actor: AuditActor, input
   const sortKey = await placementKey(q, spaceId, parentId, { beforeId: input.beforeId, afterId: input.afterId, position: input.position });
   const title = (input.title ?? '').slice(0, 500);
   const r = await q.query(
-    `insert into pages (org_id, space_id, parent_id, sort_key, title, icon, properties, owner_id, created_by, updated_by, create_request_id, collection_id, status)
-     values ($1, $2, $3, $4, $5, $6, $7, $8, $8, $8, $9, $10, $11) returning *`,
-    [user.orgId, spaceId, parentId, sortKey, title, input.icon ?? null, input.properties ?? {}, user.id, input.requestId ?? null, input.collectionId ?? null, input.status ?? 'draft'],
+    `insert into pages (id, org_id, space_id, parent_id, sort_key, title, icon, properties, owner_id, created_by, updated_by, create_request_id, collection_id, status)
+     values (coalesce($12::uuid, gen_random_uuid()), $1, $2, $3, $4, $5, $6, $7, $8, $8, $8, $9, $10, $11) returning *`,
+    [user.orgId, spaceId, parentId, sortKey, title, input.icon ?? null, input.properties ?? {}, user.id, input.requestId ?? null, input.collectionId ?? null, input.status ?? 'draft', input.id ?? null],
   );
   const page = r.rows[0] as PageRow;
   await insertAncestors(q, page.id, parentId);
-  await initDocument(q, page.id, title, input.content ?? null, user.id);
+  await initDocument(q, page.id, title, input.content ?? null, user.id, input.revisionKind ?? 'create');
   await q.query(`insert into page_events (org_id, page_id, actor_id, type, data) values ($1, $2, $3, 'created', $4)`, [user.orgId, page.id, user.id, { parentId, spaceId, templateId: input.templateId ?? null }]);
   await audit(q, actor, { action: 'page.create', targetType: 'page', targetId: page.id, details: { spaceId, parentId, title, templateId: input.templateId ?? null } });
   return { page, created: true };

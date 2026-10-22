@@ -1,0 +1,234 @@
+import type { FastifyInstance } from 'fastify';
+import type { Readable } from 'node:stream';
+import { z } from 'zod';
+import { tx } from '../db/pool.js';
+import { actorOf, parse, requireUser, type Services } from '../app.js';
+import { requirePage, requireSpace, pageAccess } from '../acl/engine.js';
+import { streamToTemp, blobKey } from '../storage/blob-store.js';
+import { analyzeImport, commitDocuments, commitIntoPage, commitTabular, tabularDryRun, storeBuffer, type ImportPlan, type ImportTarget, type TabularOptions } from '../services/importer.js';
+import { exportPages, type ExportFormat } from '../services/exporter.js';
+import { auditStandalone } from '../services/audit.js';
+import { badRequest, conflict, forbidden, notFound, unprocessable } from '../lib/errors.js';
+import { registerJob } from '../jobs/worker.js';
+import { readFile, rm } from 'node:fs/promises';
+import { replaceContent, ydocToJson } from '../collab/ydoc.js';
+
+const uuid = z.string().uuid();
+
+const targetSchema = z.object({ spaceId: uuid, parentId: uuid.nullable().default(null), mode: z.enum(['new', 'update', 'append']).default('new'), pageId: uuid.nullable().optional() });
+const tabularSchema = z.object({
+  sheet: z.number().int().min(0).default(0),
+  header: z.boolean().default(true),
+  as: z.enum(['table', 'collection']).default('table'),
+  collectionId: uuid.nullable().optional(),
+  collectionMode: z.enum(['append', 'upsert']).optional(),
+  keyColumn: z.number().int().min(0).nullable().optional(),
+  columnTypes: z.array(z.enum(['text', 'number', 'date', 'checkbox', 'select', 'url', 'email'])).optional(),
+  title: z.string().max(300).optional(),
+  encoding: z.enum(['auto', 'utf-8', 'windows-1251']).optional(),
+  delimiter: z.enum(['auto', ',', ';', '\t']).optional(),
+});
+
+/** Summary of a staged plan for the preview screen (content itself is not sent). */
+function planSummary(plan: ImportPlan) {
+  return {
+    kind: plan.kind,
+    files: plan.files,
+    pages: plan.pages.map((p) => ({ tempId: p.tempId, parentTempId: p.parentTempId, title: p.title, sourceFile: p.sourceFile, stats: p.stats, assets: p.assets.length })),
+    assets: Object.keys(plan.assets).length,
+    tabular: plan.tabular ? { file: plan.tabular.file, encoding: plan.tabular.encoding, delimiter: plan.tabular.delimiter, sheets: plan.tabular.sheets } : null,
+  };
+}
+
+registerJob('import-analyze', async ({ s, job, progress }) => {
+  const files = [];
+  for (const f of job.params.files as Array<{ filename: string; sha: string }>) files.push({ filename: f.filename, data: await s.store.readBuffer(blobKey(f.sha)) });
+  await progress({ stage: 'analyze', files: files.length });
+  const plan = await analyzeImport(s, files, { csv: job.params.csv });
+  const ok = plan.files.some((f) => f.status !== 'error');
+  return { status: ok ? 'awaiting_confirmation' : 'succeeded', result: { plan }, report: { files: plan.files } };
+});
+
+registerJob('export', async ({ s, job, progress }) => {
+  const user = (await s.db.query('select * from users where id = $1', [job.created_by])).rows[0];
+  const { toAuthUser } = await import('../auth/sessions.js');
+  await progress({ stage: 'render' });
+  const out = await exportPages(s, toAuthUser(user), job.params.pageIds, job.params.format, { includeChildren: job.params.includeChildren });
+  const blob = await s.store.putBuffer(out.buffer);
+  await s.db.query(`insert into blobs (sha256, size, mime, storage_key) values ($1, $2, $3, $4) on conflict do nothing`, [blob.sha256, blob.size, out.mime, blob.key]);
+  return { result: { sha: blob.sha256, size: blob.size, filename: out.filename, mime: out.mime }, report: { warnings: out.warnings, ...out.report } };
+});
+
+export async function importExportRoutes(app: FastifyInstance, s: Services) {
+  /** Upload files for import. Nothing is created until the user confirms the preview. */
+  app.post('/api/v1/imports', async (req) => {
+    const user = requireUser(req);
+    const fields: Record<string, string> = {};
+    const files: Array<{ filename: string; sha: string; size: number }> = [];
+    for await (const part of req.parts()) {
+      if (part.type === 'field') {
+        fields[part.fieldname] = String(part.value);
+        continue;
+      }
+      const tmp = await streamToTemp(s.store, part.file as Readable, s.cfg.maxImportBytes);
+      try {
+        const st = await storeBuffer(s, await readFile(tmp.path), part.filename || 'file');
+        files.push({ filename: part.filename || 'file', sha: st.sha, size: st.size });
+      } catch (e: any) {
+        files.push({ filename: part.filename || 'file', sha: '', size: tmp.size, ...({ error: e.message } as any) });
+      } finally {
+        await rm(tmp.path, { force: true });
+      }
+    }
+    if (!files.length) throw badRequest('Не выбраны файлы');
+    const bad = files.filter((f) => !f.sha);
+    if (bad.length === files.length) throw unprocessable('upload_rejected', (bad[0] as any).error ?? 'Файл отклонён');
+    const key = fields.idempotencyKey || null;
+    const csv = fields.csv ? JSON.parse(fields.csv) : undefined;
+    const existing = key ? (await s.db.query(`select id from jobs where org_id = $1 and type = 'import-analyze' and created_by = $2 and idempotency_key = $3`, [user.orgId, user.id, key])).rows[0] : null;
+    if (existing) return { jobId: existing.id, duplicate: true };
+    const r = await s.db.query(`insert into jobs (org_id, type, idempotency_key, created_by, params) values ($1, 'import-analyze', $2, $3, $4) returning id`, [user.orgId, key, user.id, { files: files.filter((f) => f.sha), csv, rejected: bad }]);
+    return { jobId: r.rows[0].id, duplicate: false, rejected: bad };
+  });
+
+  async function job(userId: string, id: string, type?: string) {
+    const j = (await s.db.query('select * from jobs where id = $1', [id])).rows[0];
+    if (!j || j.created_by !== userId || (type && j.type !== type)) throw notFound('Задание не найдено');
+    return j;
+  }
+
+  app.get('/api/v1/imports/:id', async (req) => {
+    const user = requireUser(req);
+    const { id } = parse(z.object({ id: uuid }), req.params);
+    const j = await job(user.id, id);
+    return { id: j.id, type: j.type, status: j.status, progress: j.progress, error: j.error, preview: j.result?.plan ? planSummary(j.result.plan) : null, result: j.result?.commit ?? null, rejected: j.params.rejected ?? [], createdAt: j.created_at };
+  });
+
+  app.post('/api/v1/imports/:id/dry-run', async (req) => {
+    const user = requireUser(req);
+    const { id } = parse(z.object({ id: uuid }), req.params);
+    const opts = parse(tabularSchema, req.body);
+    const j = await job(user.id, id, 'import-analyze');
+    if (!j.result?.plan?.tabular) throw badRequest('Пробный прогон доступен для табличных данных');
+    return tabularDryRun(s, j.result.plan, opts as TabularOptions);
+  });
+
+  /** Atomic publication of the staged result. Idempotent: repeating returns the same pages. */
+  app.post('/api/v1/imports/:id/commit', async (req) => {
+    const user = requireUser(req);
+    const { id } = parse(z.object({ id: uuid }), req.params);
+    const body = parse(z.object({ target: targetSchema, tabular: tabularSchema.optional(), pageTempIds: z.array(z.string()).optional() }), req.body);
+    const target = body.target as ImportTarget;
+    const actor = actorOf(req);
+    const result = await tx(s.db, async (q) => {
+      const j = (await q.query('select * from jobs where id = $1 for update', [id])).rows[0];
+      if (!j || j.created_by !== user.id) throw notFound('Задание не найдено');
+      if (j.status === 'succeeded' && j.result?.commit) return { ...j.result.commit, repeated: true };
+      if (j.status === 'cancelled') throw conflict('cancelled', 'Импорт отменён');
+      if (j.status !== 'awaiting_confirmation') throw conflict('not_ready', 'Анализ ещё не завершён');
+      const plan: ImportPlan = j.result.plan;
+      if (body.pageTempIds) plan.pages = plan.pages.filter((p) => body.pageTempIds!.includes(p.tempId) || plan.pages.some((c) => body.pageTempIds!.includes(c.tempId) && c.parentTempId === p.tempId));
+      let commit: any;
+      if (plan.kind === 'tabular') {
+        const t = await commitTabular(s, q, user, actor, plan, target, (body.tabular ?? { sheet: 0, header: true, as: 'table' }) as TabularOptions, id);
+        if ('appendTo' in t) {
+          // Appending a table to an existing page goes through the collaborative document (after the transaction).
+          commit = { appendTo: t.appendTo, table: t.table };
+        } else commit = t;
+      } else if (target.mode === 'new') commit = await commitDocuments(s, q, user, actor, plan, target, id);
+      else commit = { intoPage: true };
+      await q.query(`update jobs set status = 'succeeded', result = result || $2::jsonb, finished_at = now() where id = $1`, [id, JSON.stringify({ commit })]);
+      return commit;
+    });
+    if (result.appendTo) {
+      await requirePage(s.db, user, result.appendTo, 'edit');
+      await s.hub.applyServerChange(result.appendTo, user.id, (doc) => {
+        const cur = ydocToJson(doc);
+        replaceContent(doc, { type: 'doc', content: [...(cur.content ?? []), result.table] }, 'import');
+      });
+      const final = { pages: [{ id: result.appendTo }], rootPageId: result.appendTo };
+      await s.db.query(`update jobs set result = result || $2::jsonb where id = $1`, [id, JSON.stringify({ commit: final })]);
+      return final;
+    }
+    if (result.intoPage) {
+      const j = await job(user.id, id);
+      const final = await commitIntoPage(s, user, actor, j.result.plan, target, id);
+      await s.db.query(`update jobs set result = result || $2::jsonb where id = $1`, [id, JSON.stringify({ commit: final })]);
+      return final;
+    }
+    s.bus.emit({ type: 'tree-changed', orgId: user.orgId, spaceId: target.spaceId });
+    return result;
+  });
+
+  app.post('/api/v1/imports/:id/cancel', async (req) => {
+    const user = requireUser(req);
+    const { id } = parse(z.object({ id: uuid }), req.params);
+    const j = await job(user.id, id);
+    if (j.status === 'succeeded') throw conflict('already_committed', 'Импорт уже выполнен — удалите созданные страницы или восстановите версию');
+    await s.db.query(`update jobs set status = 'cancelled', cancel_requested = true, finished_at = now() where id = $1`, [id]);
+    return { ok: true };
+  });
+
+  app.get('/api/v1/jobs', async (req) => {
+    const user = requireUser(req);
+    const rows = (await s.db.query(`select id, type, status, progress, error, created_at, finished_at, report from jobs where created_by = $1 order by created_at desc limit 50`, [user.id])).rows;
+    return { jobs: rows };
+  });
+
+  // ------------------------------------------------------------------ exports
+
+  /** Quick synchronous export of one page (or branch) — the common case. */
+  app.get('/api/v1/pages/:id/export', async (req, reply) => {
+    const user = requireUser(req);
+    const { id } = parse(z.object({ id: uuid }), req.params);
+    const qs = parse(z.object({ format: z.enum(['md', 'docx', 'html', 'pdf']), children: z.coerce.boolean().default(false) }), req.query);
+    const acc = await requirePage(s.db, user, id, 'view');
+    if (!acc.actions.export) throw forbidden('Экспорт запрещён политикой или правами');
+    const out = await exportPages(s, user, [id], qs.format as ExportFormat, { includeChildren: qs.children });
+    await auditStandalone(s.db, actorOf(req), { action: 'export.page', targetType: 'page', targetId: id, details: { format: qs.format, children: qs.children, ...out.report, warnings: out.warnings.length } });
+    reply.header('content-disposition', `attachment; filename="export.${out.filename.split('.').pop()}"; filename*=UTF-8''${encodeURIComponent(out.filename)}`);
+    reply.header('x-export-warnings', encodeURIComponent(JSON.stringify(out.warnings.slice(0, 20))));
+    return reply.type(out.mime).send(out.buffer);
+  });
+
+  /** Background export for large selections; result downloadable for 24 hours by its creator only. */
+  app.post('/api/v1/exports', async (req) => {
+    const user = requireUser(req);
+    const body = parse(z.object({ pageIds: z.array(uuid).min(1).max(1000).optional(), spaceId: uuid.optional(), format: z.enum(['md', 'docx', 'html', 'pdf']), includeChildren: z.boolean().default(true), idempotencyKey: z.string().max(100).optional() }), req.body);
+    let ids = body.pageIds ?? [];
+    if (body.spaceId) {
+      const acc = await requireSpace(s.db, user, body.spaceId, 'view');
+      if (!acc.actions.export) throw forbidden('Экспорт пространства запрещён');
+      ids = (await s.db.query(`select id from pages where space_id = $1 and parent_id is null and deleted_at is null order by sort_key collate "C"`, [body.spaceId])).rows.map((r) => r.id);
+    }
+    for (const id of ids.slice(0, 50)) {
+      const a = await pageAccess(s.db, user, id);
+      if (!a?.actions.view) throw notFound();
+    }
+    if (body.idempotencyKey) {
+      const ex = (await s.db.query(`select id from jobs where org_id = $1 and type = 'export' and created_by = $2 and idempotency_key = $3`, [user.orgId, user.id, body.idempotencyKey])).rows[0];
+      if (ex) return { jobId: ex.id, duplicate: true };
+    }
+    const r = await s.db.query(`insert into jobs (org_id, type, idempotency_key, created_by, params) values ($1, 'export', $2, $3, $4) returning id`, [user.orgId, body.idempotencyKey ?? null, user.id, { pageIds: ids, format: body.format, includeChildren: body.includeChildren }]);
+    await auditStandalone(s.db, actorOf(req), { action: 'export.request', targetType: body.spaceId ? 'space' : 'page', targetId: body.spaceId ?? ids[0], details: { count: ids.length, format: body.format } });
+    return { jobId: r.rows[0].id };
+  });
+
+  app.get('/api/v1/exports/:id', async (req) => {
+    const user = requireUser(req);
+    const { id } = parse(z.object({ id: uuid }), req.params);
+    const j = await job(user.id, id, 'export');
+    return { id: j.id, status: j.status, progress: j.progress, error: j.error, report: j.report, file: j.result ? { filename: j.result.filename, size: j.result.size } : null };
+  });
+
+  app.get('/api/v1/exports/:id/download', async (req, reply) => {
+    const user = requireUser(req);
+    const { id } = parse(z.object({ id: uuid }), req.params);
+    const j = await job(user.id, id, 'export');
+    if (j.status !== 'succeeded') throw conflict('not_ready', 'Экспорт ещё не готов');
+    if (Date.now() - new Date(j.finished_at).getTime() > 24 * 3600_000) throw conflict('expired', 'Срок хранения файла экспорта истёк — запустите экспорт снова');
+    await auditStandalone(s.db, actorOf(req), { action: 'export.download', targetType: 'job', targetId: id });
+    reply.header('content-disposition', `attachment; filename="export"; filename*=UTF-8''${encodeURIComponent(j.result.filename)}`);
+    return reply.type(j.result.mime).send(await s.store.read(blobKey(j.result.sha)));
+  });
+}

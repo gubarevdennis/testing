@@ -110,6 +110,7 @@ export async function docxToDoc(buf: Buffer, storeImage: StoreImage): Promise<{ 
   const html = result.value.replace(/<a href="#footnote-ref-\d+">↑<\/a>/g, '').replace(/<p class="lead">/g, '<p data-variant="lead">');
   const conv = htmlToDoc(html, {
     resolveImage: (src) => {
+      if (src.startsWith('kbblob:')) return { src, attachmentId: src }; // staged import asset
       const m = /\/api\/v1\/attachments\/([0-9a-f-]{36})\/content/.exec(src);
       return m ? { src, attachmentId: m[1] } : null;
     },

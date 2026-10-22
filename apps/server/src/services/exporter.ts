@@ -1,0 +1,370 @@
+import yazl from 'yazl';
+import { createHash } from 'node:crypto';
+import { docToMarkdown, walk, findBlock, type PMNode, type ConversionWarning } from '@kb/shared';
+import type { Services } from '../app.js';
+import { accessForPages, type AuthUser } from '../acl/engine.js';
+import { blobKey } from '../storage/blob-store.js';
+import { docToDocx } from '../convert/docx-export.js';
+import { docToHtml } from '../convert/html.js';
+
+export type ExportFormat = 'md' | 'docx' | 'html' | 'pdf';
+
+export interface ExportPage {
+  id: string;
+  title: string;
+  icon: string | null;
+  parentId: string | null;
+  spaceId: string;
+  content: PMNode;
+  canDownload: boolean;
+  properties: Record<string, unknown>;
+  status: string;
+  updatedAt: Date | null;
+  author: string | null;
+}
+
+/** Loads pages for export with the same rules as reading: live or published version, ACL per page. */
+export async function loadExportPages(s: Services, user: AuthUser, rootIds: string[], includeChildren: boolean): Promise<{ pages: ExportPage[]; skipped: number }> {
+  let ids = rootIds;
+  if (includeChildren)
+    ids = (await s.db.query(`select a.page_id from page_ancestors a join pages p on p.id = a.page_id where a.ancestor_id = any($1::uuid[]) and p.deleted_at is null order by a.depth`, [rootIds])).rows.map((r) => r.page_id);
+  ids = [...new Set(ids)];
+  const acc = await accessForPages(s.db, user, ids);
+  const allowed = ids.filter((id) => acc.get(id)?.actions.view && acc.get(id)?.actions.export && !acc.get(id)?.deleted);
+  const rows = allowed.length
+    ? (await s.db.query(`select p.*, u.name as author from pages p left join users u on u.id = p.created_by where p.id = any($1::uuid[])`, [allowed])).rows
+    : [];
+  const pages: ExportPage[] = [];
+  for (const id of allowed) {
+    const p = rows.find((r) => r.id === id)!;
+    const a = acc.get(id)!;
+    let content: PMNode;
+    let title = p.title;
+    if (a.policy.publishingMode === 'publish' && !a.actions.edit) {
+      if (!p.published_revision_id) continue;
+      const rev = (await s.db.query('select content, title from page_revisions where id = $1', [p.published_revision_id])).rows[0];
+      content = rev.content;
+      title = rev.title;
+    } else content = (await s.hub.snapshot(id)).json;
+    pages.push({ id, title, icon: p.icon, parentId: p.parent_id, spaceId: p.space_id, content, canDownload: a.actions.download, properties: p.properties, status: p.status, updatedAt: p.content_updated_at, author: p.author });
+  }
+  return { pages, skipped: ids.length - pages.length };
+}
+
+export function slugify(s: string): string {
+  const t = s
+    .normalize('NFKC')
+    .replace(/[\\/:*?"<>|\u0000-\u001F]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 80);
+  return t || 'Без названия';
+}
+
+interface AssetRef {
+  attachmentId: string;
+  sha: string;
+  path: string;
+  mime: string;
+  size: number;
+  filename: string;
+}
+
+/** Collects attachment files referenced by pages (only where download is allowed). */
+async function collectAssets(s: Services, user: AuthUser, pages: ExportPage[], prefix: (p: ExportPage) => string): Promise<{ assets: Map<string, AssetRef>; warnings: ConversionWarning[] }> {
+  const assets = new Map<string, AssetRef>();
+  const warnings: ConversionWarning[] = [];
+  const used = new Set<string>();
+  for (const p of pages) {
+    const ids: string[] = [];
+    walk(p.content, (n) => {
+      if (n.attrs?.attachmentId) ids.push(n.attrs.attachmentId);
+    });
+    if (!ids.length) continue;
+    if (!p.canDownload) {
+      warnings.push({ code: 'download-forbidden', message: `«${p.title}»: файлы не включены — скачивание запрещено политикой` });
+      continue;
+    }
+    const rows = (
+      await s.db.query(`select a.id, a.page_id, a.filename, v.blob_sha256, v.mime, v.size from attachments a join attachment_versions v on v.attachment_id = a.id and v.version = a.current_version where a.id = any($1::uuid[]) and a.deleted_at is null`, [ids])
+    ).rows;
+    // Files owned by other pages are included only if the user may download them there too.
+    const foreign = [...new Set(rows.filter((r) => r.page_id && !pages.some((x) => x.id === r.page_id)).map((r) => r.page_id as string))];
+    const foreignAcc = foreign.length ? await accessForPages(s.db, user, foreign) : new Map();
+    for (const r of rows) {
+      if (assets.has(r.id)) continue;
+      if (r.page_id && foreign.includes(r.page_id) && !foreignAcc.get(r.page_id)?.actions.download) continue;
+      const name = slugify(r.filename);
+      let path = `${prefix(p)}assets/${name}`;
+      for (let k = 2; used.has(path); k++) path = `${prefix(p)}assets/${name.replace(/(\.[^.]+)?$/, `-${k}$1`)}`;
+      used.add(path);
+      assets.set(r.id, { attachmentId: r.id, sha: r.blob_sha256, path, mime: r.mime, size: Number(r.size), filename: r.filename });
+    }
+    for (const id of ids) if (!assets.has(id)) warnings.push({ code: 'asset-missing', message: `«${p.title}»: вложение ${id} недоступно или удалено` });
+  }
+  return { assets, warnings };
+}
+
+export interface ExportResult {
+  buffer: Buffer;
+  filename: string;
+  mime: string;
+  warnings: ConversionWarning[];
+  report: Record<string, unknown>;
+}
+
+function resolvers(s: Services, pages: ExportPage[]) {
+  const byId = new Map(pages.map((p) => [p.id, p]));
+  return {
+    pageTitle: (id: string) => byId.get(id)?.title ?? null,
+    syncedContent: (pageId: string, blockId: string) => {
+      const p = byId.get(pageId);
+      return p ? findBlock(p.content, blockId)?.node ?? null : null;
+    },
+  };
+}
+
+/** Single page or branch as one document in the requested format. Multiple pages: ZIP. */
+export async function exportPages(s: Services, user: AuthUser, rootIds: string[], format: ExportFormat, opts: { includeChildren: boolean; singleFile?: boolean }): Promise<ExportResult> {
+  const { pages, skipped } = await loadExportPages(s, user, rootIds, opts.includeChildren);
+  if (!pages.length) throw Object.assign(new Error('Нет страниц, доступных для экспорта'), { status: 403 });
+  const warnings: ConversionWarning[] = [];
+  if (skipped) warnings.push({ code: 'skipped', message: `Пропущено страниц без права экспорта или без опубликованной версии: ${skipped}` });
+  const r = resolvers(s, pages);
+  const root = pages[0];
+
+  if (format === 'md') {
+    // Tree layout: each page is a folder-relative .md; links between exported pages are relative.
+    const paths = pagePaths(pages, '.md');
+    const { assets, warnings: aw } = await collectAssets(s, user, pages, (p) => dirOf(paths.get(p.id)!));
+    warnings.push(...aw);
+    const files: Array<{ path: string; data: Buffer }> = [];
+    for (const p of pages) {
+      const here = paths.get(p.id)!;
+      const md = docToMarkdown(p.content, {
+        frontMatter: { title: p.title, id: p.id, ...(p.icon ? { icon: p.icon } : {}), status: p.status, updated: p.updatedAt?.toISOString?.() ?? null },
+        assetHref: (aid) => (assets.has(aid) ? relative(here, assets.get(aid)!.path) : null),
+        pageHref: (pid, bid) => (paths.has(pid) ? relative(here, paths.get(pid)!) + (bid ? '#' + bid : '') : `${s.cfg.publicUrl}/p/${pid}${bid ? '#' + bid : ''}`),
+        syncedContent: r.syncedContent,
+      });
+      md.warnings.forEach((w) => warnings.push({ ...w, message: `«${p.title}»: ${w.message}` }));
+      // Front matter stays first (for tools that read it), then the page title as H1 for human readers.
+      const fm = /^---\n[\s\S]*?\n---\n/.exec(md.markdown)?.[0] ?? '';
+      files.push({ path: here, data: Buffer.from(fm + (fm ? '\n' : '') + `# ${p.title}\n\n` + md.markdown.slice(fm.length).replace(/^\n+/, ''), 'utf8') });
+    }
+    if (pages.length === 1 && !assets.size) return { buffer: files[0].data, filename: slugify(root.title) + '.md', mime: 'text/markdown; charset=utf-8', warnings, report: { pages: 1, assets: 0 } };
+    const zip = await buildZip(s, files, [...assets.values()], warnings, { title: root.title, pages: pages.length });
+    return { buffer: zip, filename: slugify(root.title) + '.zip', mime: 'application/zip', warnings, report: { pages: pages.length, assets: assets.size } };
+  }
+
+  if (format === 'docx') {
+    const merged = mergeForSingleDocument(pages);
+    const { assets } = await collectAssets(s, user, pages, () => '');
+    const out = await docToDocx(merged, {
+      title: root.title,
+      author: root.author ?? undefined,
+      baseUrl: s.cfg.publicUrl,
+      pageTitle: r.pageTitle,
+      syncedContent: r.syncedContent,
+      loadImage: async (n) => {
+        const a = n.attrs?.attachmentId ? assets.get(n.attrs.attachmentId) : null;
+        if (!a) return null;
+        const sharp = (await import('sharp')).default;
+        const data = await s.store.readBuffer(blobKey(a.sha));
+        const m = await sharp(data).metadata().catch(() => ({ width: 400, height: 300 }) as any);
+        return { data, width: m.width ?? 400, height: m.height ?? 300, mime: a.mime };
+      },
+    });
+    warnings.push(...out.warnings);
+    return { buffer: out.buffer, filename: slugify(root.title) + '.docx', mime: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', warnings, report: { pages: pages.length } };
+  }
+
+  // HTML / PDF share the same rendering.
+  const merged = mergeForSingleDocument(pages);
+  const { assets } = await collectAssets(s, user, pages, () => '');
+  const html = await standaloneHtml(s, root.title, merged, assets, { inlineImages: true });
+  if (format === 'html') return { buffer: Buffer.from(html, 'utf8'), filename: slugify(root.title) + '.html', mime: 'text/html; charset=utf-8', warnings, report: { pages: pages.length } };
+  const pdf = await htmlToPdf(s, html, root.title);
+  return { buffer: pdf, filename: slugify(root.title) + '.pdf', mime: 'application/pdf', warnings, report: { pages: pages.length } };
+}
+
+/** Child pages are appended after their parent with a heading, producing one printable document. */
+function mergeForSingleDocument(pages: ExportPage[]): PMNode {
+  if (pages.length === 1) return pages[0].content;
+  const out: PMNode[] = [...(pages[0].content.content ?? [])];
+  for (const p of pages.slice(1)) {
+    out.push({ type: 'heading', attrs: { level: 1 }, content: [{ type: 'text', text: p.title || 'Без названия' }] });
+    out.push(...(p.content.content ?? []));
+  }
+  return { type: 'doc', content: out };
+}
+
+/** Readable relative paths: Space-less tree of folders; a page with children becomes "<title>/index.md". */
+export function pagePaths(pages: ExportPage[], ext: string, base = ''): Map<string, string> {
+  const ids = new Set(pages.map((p) => p.id));
+  const children = new Map<string | null, ExportPage[]>();
+  for (const p of pages) {
+    const parent = p.parentId && ids.has(p.parentId) ? p.parentId : null;
+    children.set(parent, [...(children.get(parent) ?? []), p]);
+  }
+  const out = new Map<string, string>();
+  const walkTree = (parent: string | null, dir: string) => {
+    const used = new Set<string>();
+    for (const p of children.get(parent) ?? []) {
+      let name = slugify(p.title);
+      for (let k = 2; used.has(name.toLowerCase()); k++) name = `${slugify(p.title)} (${k})`;
+      used.add(name.toLowerCase());
+      if (children.get(p.id)?.length) {
+        out.set(p.id, `${dir}${name}/index${ext}`);
+        walkTree(p.id, `${dir}${name}/`);
+      } else out.set(p.id, `${dir}${name}${ext}`);
+    }
+  };
+  walkTree(null, base);
+  return out;
+}
+
+export function dirOf(path: string) {
+  const i = path.lastIndexOf('/');
+  return i >= 0 ? path.slice(0, i + 1) : '';
+}
+
+/** Relative link from one archive file to another, URL-encoded for Markdown. */
+export function relative(from: string, to: string): string {
+  const a = dirOf(from).split('/').filter(Boolean);
+  const b = to.split('/');
+  let i = 0;
+  while (i < a.length && i < b.length - 1 && a[i] === b[i]) i++;
+  const up = a.slice(i).map(() => '..');
+  return [...up, ...b.slice(i)].map((seg) => encodeURIComponent(seg).replace(/%2F/g, '/')).join('/');
+}
+
+async function buildZip(s: Services, files: Array<{ path: string; data: Buffer }>, assets: AssetRef[], warnings: ConversionWarning[], meta: { title: string; pages: number }): Promise<Buffer> {
+  const zip = new yazl.ZipFile();
+  const sums: string[] = [];
+  const add = (path: string, data: Buffer) => {
+    zip.addBuffer(data, path, { mtime: new Date() });
+    sums.push(`${createHash('sha256').update(data).digest('hex')}  ${path}`);
+  };
+  for (const f of files) add(f.path, f.data);
+  for (const a of assets) add(a.path, await s.store.readBuffer(blobKey(a.sha)));
+  const report = [`# Отчёт об экспорте`, '', `Документ: ${meta.title}`, `Дата: ${new Date().toISOString()}`, `Страниц: ${meta.pages}`, `Файлов: ${assets.length}`, '', '## Преобразования и ограничения', '', ...(warnings.length ? warnings.map((w) => `- ${w.message}`) : ['- Нет — всё содержимое представлено без упрощений.'])].join('\n');
+  add('export-report.md', Buffer.from(report + '\n', 'utf8'));
+  zip.addBuffer(Buffer.from(sums.join('\n') + '\n', 'utf8'), 'checksums.sha256');
+  zip.end();
+  const chunks: Buffer[] = [];
+  for await (const c of zip.outputStream) chunks.push(c as Buffer);
+  return Buffer.concat(chunks);
+}
+
+const PRINT_CSS = `
+  :root { --text:#24272D; --muted:#68717D; --border:#E5E8ED; --accent:#5A85C6; --soft:#F3F5F7; }
+  * { box-sizing: border-box; }
+  body { font-family: Inter, "Segoe UI", Roboto, "DejaVu Sans", Arial, sans-serif; color: var(--text); line-height: 1.6; max-width: 820px; margin: 40px auto; padding: 0 24px; font-size: 15px; }
+  h1,h2,h3,h4,h5,h6 { line-height: 1.25; margin: 1.4em 0 .5em; page-break-after: avoid; }
+  h1.kb-title { font-size: 2em; margin-top: 0; }
+  a { color: #2F5FA8; }
+  p.kb-lead, p[data-variant="lead"] { font-size: 1.1em; color: var(--muted); }
+  blockquote { margin: 1em 0; padding-left: 1em; border-left: 3px solid var(--border); color: #4A5260; }
+  pre { background: var(--soft); border: 1px solid var(--border); border-radius: 8px; padding: 12px; overflow-x: auto; white-space: pre-wrap; word-break: break-word; font-size: 13px; }
+  code { font-family: "JetBrains Mono", Consolas, "DejaVu Sans Mono", monospace; background: var(--soft); padding: 0 3px; border-radius: 4px; }
+  pre code { background: none; padding: 0; }
+  table { border-collapse: collapse; width: 100%; margin: 1em 0; page-break-inside: auto; }
+  tr { page-break-inside: avoid; }
+  td, th { border: 1px solid var(--border); padding: 6px 8px; vertical-align: top; overflow-wrap: anywhere; }
+  th { background: var(--soft); text-align: left; }
+  td p, th p { margin: 0; }
+  figure.kb-image { margin: 1em 0; text-align: center; }
+  figure.kb-image[data-align="left"] { text-align: left; } figure.kb-image[data-align="right"] { text-align: right; }
+  figure img { max-width: 100%; height: auto; }
+  figcaption { color: var(--muted); font-size: .9em; }
+  .kb-callout { border-radius: 10px; padding: 12px 16px; margin: 1em 0; background: #EAF1FB; page-break-inside: avoid; }
+  .kb-callout[data-variant="tip"] { background: #E8F6EE; } .kb-callout[data-variant="warning"] { background: #FDF3E1; }
+  .kb-callout[data-variant="error"] { background: #FBEAEA; } .kb-callout[data-variant="important"] { background: #F3ECFB; }
+  .kb-callout[data-variant="example"], .kb-callout[data-variant="neutral"] { background: var(--soft); }
+  .kb-columns { display: flex; gap: 24px; } .kb-column { flex: 1 1 0; min-width: 0; }
+  details { border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; margin: .5em 0; } details > summary { font-weight: 600; }
+  ul[data-type="taskList"] { list-style: none; padding-left: 0; } ul[data-type="taskList"] li { display: flex; gap: 8px; }
+  .kb-file a, .kb-page-link a { display: inline-block; padding: 6px 10px; border: 1px solid var(--border); border-radius: 8px; text-decoration: none; }
+  hr { border: none; border-top: 1px solid var(--border); margin: 2em 0; }
+  mark { background: #FFF3B0; }
+  @media print { body { margin: 0; max-width: none; } a { color: inherit; } }
+  @page { size: A4; margin: 18mm 16mm; }
+`;
+
+export async function standaloneHtml(s: Services, title: string, doc: PMNode, assets: Map<string, AssetRef>, opts: { inlineImages: boolean }): Promise<string> {
+  const d = structuredClone(doc);
+  if (opts.inlineImages) {
+    const tasks: Promise<void>[] = [];
+    walk(d, (n) => {
+      if (n.type === 'image') {
+        const a = n.attrs?.attachmentId ? assets.get(n.attrs.attachmentId) : null;
+        if (a)
+          tasks.push(
+            (async () => {
+              n.attrs!.src = `data:${a.mime};base64,${(await s.store.readBuffer(blobKey(a.sha))).toString('base64')}`;
+            })(),
+          );
+        else if (n.attrs?.src?.startsWith('/')) n.attrs.src = s.cfg.publicUrl + n.attrs.src;
+      }
+      if (n.type === 'fileBlock' && n.attrs?.attachmentId) n.attrs.href = `${s.cfg.publicUrl}/api/v1/attachments/${n.attrs.attachmentId}/download`;
+    });
+    await Promise.all(tasks);
+  }
+  const esc = (t: string) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+  const body = docToHtml(d).replace(/href="\/p\//g, `href="${s.cfg.publicUrl}/p/`);
+  return `<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${esc(title)}</title><style>${PRINT_CSS}</style></head><body><h1 class="kb-title">${esc(title)}</h1>${body}</body></html>`;
+}
+
+let browserPromise: Promise<any> | null = null;
+
+async function chromiumPath(configured: string | null): Promise<string | undefined> {
+  if (configured) return configured;
+  const { readdir } = await import('node:fs/promises');
+  for (const base of ['/opt/pw-browsers', `${process.env.HOME}/.cache/ms-playwright`]) {
+    try {
+      const dirs = (await readdir(base)).filter((d) => /^chromium-\d+$/.test(d)).sort().reverse();
+      if (dirs[0]) return `${base}/${dirs[0]}/chrome-linux/chrome`;
+    } catch {
+      /* not installed there */
+    }
+  }
+  return undefined;
+}
+
+/** Renders HTML to PDF with headless Chromium (works offline; A4, page numbers). */
+export async function htmlToPdf(s: Services, html: string, title: string): Promise<Buffer> {
+  if (!browserPromise) {
+    browserPromise = (async () => {
+      const { chromium } = await import('playwright-core');
+      return chromium.launch({ executablePath: await chromiumPath(s.cfg.chromiumPath), args: ['--no-sandbox', '--disable-dev-shm-usage'] });
+    })();
+    browserPromise.catch(() => (browserPromise = null));
+  }
+  const browser = await browserPromise;
+  const ctx = await browser.newContext({ javaScriptEnabled: false });
+  try {
+    const page = await ctx.newPage();
+    await page.route('**/*', (route: any) => (route.request().url().startsWith('data:') ? route.continue() : route.abort()));
+    await page.setContent(html, { waitUntil: 'load' });
+    const pdf = await page.pdf({
+      format: 'A4',
+      printBackground: true,
+      displayHeaderFooter: true,
+      headerTemplate: `<div style="font-size:8px;color:#68717D;width:100%;padding:0 16mm;">${title.replace(/</g, '&lt;')}</div>`,
+      footerTemplate: '<div style="font-size:8px;color:#68717D;width:100%;text-align:right;padding:0 16mm;"><span class="pageNumber"></span> / <span class="totalPages"></span></div>',
+      margin: { top: '18mm', bottom: '16mm', left: '16mm', right: '16mm' },
+    });
+    return Buffer.from(pdf);
+  } finally {
+    await ctx.close();
+  }
+}
+
+export async function closePdfBrowser() {
+  if (browserPromise) {
+    const b = await browserPromise.catch(() => null);
+    browserPromise = null;
+    await b?.close();
+  }
+}

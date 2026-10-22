@@ -27,7 +27,7 @@ export function sanitizeHtml(html: string): string {
       pre: ['class'],
     },
     allowedSchemes: ['http', 'https', 'mailto', 'tel', 'data'],
-    allowedSchemesByTag: { img: ['http', 'https', 'data'] },
+    allowedSchemesByTag: { img: ['http', 'https', 'data', 'kbblob'] }, // kbblob: staged import asset, replaced on commit
     allowedStyles: {
       '*': {
         color: [/^#[0-9a-f]{3,8}$/i, /^rgba?\([\d\s,.%]+\)$/i, /^[a-z]+$/i],

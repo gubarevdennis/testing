@@ -958,8 +958,12 @@ export function markdownToDoc(markdown: string, opts: FromMarkdownOptions = {}):
   // Title: front matter title, else a leading H1 (which is then removed from the body).
   let title: string | null = null;
   const fm = frontMatter as Record<string, unknown> | null;
-  if (fm && typeof fm.title === 'string') title = fm.title;
-  else if (content[0]?.type === 'heading' && content[0].attrs?.level === 1) {
+  const leadingH1 = content[0]?.type === 'heading' && content[0].attrs?.level === 1 ? (content[0].content ?? []).map((x) => x.text ?? '').join('').trim() : null;
+  if (fm && typeof fm.title === 'string') {
+    title = fm.title;
+    // Our own exports repeat the title as H1 for human readers: drop it so round trips are stable.
+    if (leadingH1 && leadingH1 === fm.title.trim()) content = content.slice(1);
+  } else if (content[0]?.type === 'heading' && content[0].attrs?.level === 1) {
     title = (content[0].content ?? []).map((x) => x.text ?? '').join('').trim() || null;
     if (title) content = content.slice(1);
   }

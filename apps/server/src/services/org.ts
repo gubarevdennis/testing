@@ -46,6 +46,8 @@ export async function bootstrapOrg(q: Tx, input: BootstrapInput) {
   const actor: AuditActor = { orgId: org.id, userId: owner.id, name: owner.name };
   await audit(q, actor, { action: 'org.bootstrap', targetType: 'org', targetId: org.id, details: { name: input.orgName } });
   await ensurePersonalSpace(q, owner);
+  const { installBuiltinTemplates } = await import('../routes/templates.js');
+  await installBuiltinTemplates(q, org.id);
   const ownerAuth = { id: owner.id, orgId: org.id, name: owner.name, email: owner.email, kind: 'employee' as const, orgRole: 'owner' as const, status: 'active' };
   await createSpace(q, ownerAuth, actor, { name: 'Общее', description: 'Пространство для всей компании', kind: 'org', visibility: 'open', icon: '🏢', orgLevel: 'view' });
   return { org, owner };
