@@ -1,12 +1,17 @@
 import { describe, it, expect } from 'vitest';
 import pg from 'pg';
-import { mkdtemp, readdir, copyFile, rm } from 'node:fs/promises';
+import { mkdtemp, readdir, copyFile, rm, mkdir } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { startServer, setupOrg, Api, OWNER } from '../support/harness.js';
 import { openClient } from '../support/collab.js';
 import { cloneTemplateDb } from '../support/process-server.js';
-import { migrateUp, migrateDown, migrationStatus, MIGRATIONS_DIR, SchemaTooNewError } from '../../apps/server/src/db/migrate.js';
+import { migrateUp, migrateDown, migrationStatus, MIGRATIONS_DIR, SchemaTooNewError, BackupRequiredError } from '../../apps/server/src/db/migrate.js';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
+import { REPO_ROOT } from '../support/process-server.js';
+import { tx } from '../../apps/server/src/db/pool.js';
+import { bootstrapOrg } from '../../apps/server/src/services/org.js';
 
 // Release rollback (E-14, OPS-002, R-OPS-001, R-OPS-004, R-OPS-007): every migration can be rolled back and
 // re-applied with real data in the database, and an older release refuses to run against a newer schema.
@@ -99,4 +104,53 @@ describe('schema migrations: rollback and re-apply (E-14, OPS-002, R-OPS-001)', 
       await rm(oldDir, { recursive: true, force: true });
     }
   });
+
+  it('pending migrations on a database with data are refused until a fresh full backup is recorded; backup.sh unlocks them, the CLI enforces it too (R-OPS-001, R-OPS-004)', async () => {
+    const run = promisify(execFile);
+    const db = await cloneTemplateDb('guard');
+    const work = await mkdtemp(join(tmpdir(), 'kb-mig-guard-'));
+    const pool = new pg.Pool({ connectionString: db.url, max: 2 });
+    const guard = { requireBackupWithinMinutes: 60 };
+    try {
+      // A fresh installation (no data yet) migrates without a backup.
+      const all = (await migrationStatus(pool)).map((m) => m.name);
+      await migrateDown(pool, 1);
+      expect(await migrateUp(pool, () => undefined, undefined, undefined, guard)).toEqual([all[all.length - 1]]);
+      // With data present, a pending migration needs a backup.
+      await tx(pool, (q) => bootstrapOrg(q, { orgName: 'Guard', slug: 'guard', ownerEmail: 'g@example.com', ownerName: 'G', password: 'Очень-надёжный-пароль-1' }));
+      await migrateDown(pool, 1);
+      const err = await migrateUp(pool, () => undefined, undefined, undefined, guard).catch((e) => e);
+      expect(err).toBeInstanceOf(BackupRequiredError);
+      expect(err.pending).toEqual([all[all.length - 1]]);
+      expect(err.message).toMatch(/without a fresh full backup/);
+      expect((await migrationStatus(pool)).filter((m) => m.applied).length).toBe(all.length - 1); // nothing applied
+      // A real backup run (recorded in "backups") unlocks the migration.
+      await mkdir(join(work, 'objects'), { recursive: true });
+      await run('bash', [join(REPO_ROOT, 'scripts/backup/backup.sh')], {
+        env: { ...process.env, DATABASE_URL: db.url, BACKUP_DIR: join(work, 'backups'), STORAGE_DRIVER: 'fs', STORAGE_ROOT: join(work, 'objects'), BACKUP_RECORD: '1', BACKUP_PRUNE: '0' },
+        timeout: 120_000,
+      });
+      expect((await pool.query(`select count(*)::int c from backups where kind = 'full' and status = 'ok'`)).rows[0].c).toBe(1);
+      expect(await migrateUp(pool, () => undefined, undefined, undefined, guard)).toEqual([all[all.length - 1]]);
+      // A backup older than the allowed age (or older than the current schema) does not count: the CLI refuses …
+      await pool.query(`update backups set finished_at = now() - interval '1 day'`);
+      await migrateDown(pool, 1);
+      const cli = (args: string[]) =>
+        run(process.execPath, ['--import', 'tsx', '--conditions=development', 'apps/server/src/cli.ts', 'migrate', 'up', ...args], { cwd: REPO_ROOT, env: { ...process.env, DATABASE_URL: db.url, MIGRATION_REQUIRE_BACKUP: 'true', MIGRATION_BACKUP_MAX_AGE_MIN: '60' }, timeout: 60_000 }).then(
+          (r) => ({ code: 0, out: r.stdout + r.stderr }),
+          (e) => ({ code: e.code as number, out: String(e.stdout) + String(e.stderr) }),
+        );
+      const refused = await cli([]);
+      expect(refused.code).toBe(1);
+      expect(refused.out).toMatch(/without a fresh full backup/);
+      // … unless the operator overrides it deliberately (restore.sh does this for a database restored from a backup).
+      const forced = await cli(['--skip-backup-check']);
+      expect(forced.code).toBe(0);
+      expect(forced.out).toMatch(/backup-before-migration check skipped/);
+      expect((await migrationStatus(pool)).every((m) => m.applied)).toBe(true);
+    } finally {
+      await pool.end();
+      await rm(work, { recursive: true, force: true });
+    }
+  }, 180_000);
 });

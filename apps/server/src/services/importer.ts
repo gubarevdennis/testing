@@ -1,7 +1,7 @@
 import yauzl from 'yauzl';
 import { writeFile, rm } from 'node:fs/promises';
 import { join, posix } from 'node:path';
-import { randomUUID } from 'node:crypto';
+import { randomUUID, createHash } from 'node:crypto';
 import { markdownToDoc, rowsToTable, walk, ensureBlockIds, docToPlainText, type PMNode, type ConversionWarning } from '@kb/shared';
 import type { Services } from '../app.js';
 import type { Tx } from '../db/pool.js';
@@ -15,6 +15,7 @@ import { requirePage, requireSpace, type AuthUser } from '../acl/engine.js';
 import { audit, type AuditActor } from './audit.js';
 import { unprocessable } from '../lib/errors.js';
 import { replaceContent, ydocToJson } from '../collab/ydoc.js';
+import { copyRemoteImages } from './remote-images.js';
 
 export const ZIP_LIMITS = { maxEntries: 20_000, maxTotalBytes: 4 * 1024 ** 3, maxEntryBytes: 1024 ** 3, maxRatio: 200 };
 
@@ -283,6 +284,8 @@ export async function analyzeImport(s: Services, files: Array<{ filename: string
     }
     plan.files.push(report);
   }
+  // Remote images are copied through the SSRF-guarded fetcher (R-SECURITY-008).
+  await copyRemoteImages(s, plan, addAsset);
   await stage('validate', { pages: plan.pages.length, depth: planHeight(plan.pages), errors: plan.files.filter((x) => x.status === 'error').length });
   await stage('preview', { files: plan.files.length, pages: plan.pages.length, assets: Object.keys(plan.assets).length, sources: plan.sources.length });
   return plan;
@@ -313,7 +316,20 @@ function planPage(doc: PMNode, title: string, parentTempId: string | null, sourc
 
 /** Markdown package: folders become pages, README/index.md is the folder page, relative links and assets are resolved. */
 async function planMarkdownZip(entries: Map<string, Buffer>, plan: ImportPlan, addAsset: (b: Buffer, n: string) => Promise<PlannedAsset>, report: FileReport, zipName: string) {
-  const mdFiles = [...entries.keys()].filter((k) => /\.(md|markdown)$/i.test(k)).sort();
+  // Our own Markdown export package (checksums.sha256 + export-report.md): verify integrity, skip the service files.
+  const sums = entries.get('checksums.sha256');
+  if (sums) {
+    const bad: string[] = [];
+    for (const line of sums.toString('utf8').split('\n')) {
+      const m = /^([0-9a-f]{64})\s+\*?(.+)$/.exec(line.trim());
+      if (!m) continue;
+      const data = entries.get(m[2]);
+      if (!data || createHash('sha256').update(data).digest('hex') !== m[1]) bad.push(m[2]);
+    }
+    if (bad.length) report.warnings.push({ code: 'checksum-mismatch', message: `Контрольные суммы не совпали (файл изменён или повреждён): ${bad.slice(0, 10).join(', ')}${bad.length > 10 ? '…' : ''}` });
+  }
+  const service = new Set(sums ? ['checksums.sha256', 'export-report.md'] : []);
+  const mdFiles = [...entries.keys()].filter((k) => /\.(md|markdown)$/i.test(k) && !service.has(k)).sort();
   if (!mdFiles.length) throw unprocessable('zip_no_md', 'В архиве нет Markdown-файлов');
   // Strip a single common top folder.
   const tops = new Set(mdFiles.map((f) => f.split('/')[0]));
@@ -359,7 +375,8 @@ async function planMarkdownZip(entries: Map<string, Buffer>, plan: ImportPlan, a
     const assetsInFile: Array<{ href: string; path: string }> = [];
     // Pre-scan to upload assets (markdownToDoc is synchronous).
     const text = entries.get(f)!.toString('utf8').replace(/^﻿/, '');
-    const hrefs = [...text.matchAll(/!?\[[^\]]*\]\(\s*<?([^)\s>]+)>?(?:\s+"[^"]*")?\s*\)/g)].map((m) => m[1]);
+    // CommonMark allows <angle-bracketed destinations> with spaces ("![](<img/схема сети.png>)").
+    const hrefs = [...text.matchAll(/!?\[[^\]]*\]\(\s*(?:<([^>\n]+)>|([^)\s]+))(?:\s+"[^"]*")?\s*\)/g)].map((m) => m[1] ?? m[2]);
     for (const h of hrefs) {
       const p = resolvePath(h);
       if (p && entries.has(p) && !/\.(md|markdown)$/i.test(p)) assetsInFile.push({ href: h, path: p });

@@ -32,9 +32,11 @@ export const queryClient = new QueryClient({
   },
 });
 
+const BOOT_TIMEOUT_MS = 12_000;
+
 function Authenticated() {
   const { me, setMe } = useSession();
-  const [state, setState] = useState<'loading' | 'ready' | 'login' | 'setup' | 'offline'>(me ? 'ready' : 'loading');
+  const [state, setState] = useState<'loading' | 'ready' | 'login' | 'setup' | 'offline' | 'timeout'>(me ? 'ready' : 'loading');
   const location = useLocation();
   const navigate = useNavigate();
   useEffect(() => {
@@ -43,12 +45,25 @@ function Authenticated() {
       setState('login');
     });
     if (me) return;
+    // R-UI-053: the start screen never spins forever — a server that does not answer gets an explanation and a retry.
+    const ctl = new AbortController();
+    const timer = setTimeout(() => ctl.abort(), BOOT_TIMEOUT_MS);
     (async () => {
       try {
-        const m = await get<Me>('/api/v1/auth/me');
+        const m = await get<Me>('/api/v1/auth/me', ctl.signal);
         setMe(m);
         setState('ready');
       } catch (e) {
+        if ((e as Error).name === 'AbortError') {
+          const cached = localStorage.getItem('kb:me');
+          if (cached) {
+            setMe(JSON.parse(cached));
+            setState('ready');
+            return;
+          }
+          setState('timeout');
+          return;
+        }
         if (e instanceof ApiError && e.isNetwork) {
           // Offline start: use the last known session to allow reading/editing cached documents.
           const cached = localStorage.getItem('kb:me');
@@ -62,8 +77,13 @@ function Authenticated() {
         }
         const st = await get<{ initialized: boolean }>('/api/v1/setup/status').catch(() => ({ initialized: true }));
         setState(st.initialized ? 'login' : 'setup');
+      } finally {
+        clearTimeout(timer);
       }
     })();
+    return () => {
+      clearTimeout(timer);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   useEffect(() => {
@@ -71,6 +91,17 @@ function Authenticated() {
   }, [me]);
   if (state === 'loading') return <div className="center-screen"><span className="spinner" aria-label="Загрузка" /></div>;
   if (state === 'offline') return <div className="center-screen"><div className="empty-state"><div className="empty-icon">📡</div><h3>Нет связи с сервером</h3><p>Проверьте подключение к сети. Страница обновится автоматически.</p><button className="btn" onClick={() => location.pathname && window.location.reload()}>Повторить</button></div></div>;
+  if (state === 'timeout')
+    return (
+      <div className="center-screen">
+        <div className="empty-state" role="alert">
+          <div className="empty-icon">⏳</div>
+          <h3>Сервер не отвечает</h3>
+          <p>Приложение не получило ответа за {BOOT_TIMEOUT_MS / 1000} с. Ваши данные не потеряны: несохранённые изменения хранятся на этом устройстве. Повторите попытку; если ошибка повторяется — сообщите администратору.</p>
+          <button className="btn primary" onClick={() => window.location.reload()}>Повторить</button>
+        </div>
+      </div>
+    );
   if (state === 'setup') return <SetupPage onDone={(m) => { setMe(m); setState('ready'); navigate('/'); }} />;
   if (state === 'login' || !me) return <LoginPage onDone={(m) => { setMe(m); setState('ready'); }} />;
   return (

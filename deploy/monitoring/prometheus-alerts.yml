@@ -90,6 +90,14 @@ groups:
         annotations:
           summary: "У клиентов есть неотправленные изменения старше 5 минут (p95 {{ $value | humanizeDuration }})"
           runbook: "docs/OPERATIONS.md#runbook-collab-persist"
+      - alert: KbCollabReconnectStorm
+        expr: sum(rate(kb_collab_reconnects_total{job="kb"}[5m])) > 2 * clamp_min(sum(kb_collab_connections{job="kb"}), 1) / 60
+        for: 10m
+        labels: { severity: warning, owner: ops }
+        annotations:
+          summary: "Массовые переподключения WebSocket ({{ $value | humanize }}/с) — клиенты теряют соединение"
+          description: "Каждое открытое соединение переподключается чаще двух раз в минуту: балансировщик/прокси обрывает WebSocket, перезапуски экземпляров или сеть."
+          runbook: "docs/OPERATIONS.md#runbook-reconnects"
       - alert: KbClientErrorsSpike
         expr: sum(increase(kb_client_errors_total{job="kb"}[10m])) > 50
         labels: { severity: warning, owner: dev }
@@ -115,6 +123,32 @@ groups:
         annotations:
           summary: "Более 20% задач {{ $labels.type }} завершаются ошибкой"
           runbook: "docs/OPERATIONS.md#runbook-stuck-jobs"
+      - alert: KbImportFailureRateHigh
+        expr: |
+          sum(increase(kb_import_files_total{job="kb",status=~"error|rejected"}[30m]))
+            / clamp_min(sum(increase(kb_import_files_total{job="kb"}[30m])), 1) > 0.25
+          and sum(increase(kb_import_files_total{job="kb"}[30m])) >= 8
+        for: 10m
+        labels: { severity: warning, owner: dev }
+        annotations:
+          summary: "Более 25% импортируемых файлов отклоняются или не разбираются ({{ $value | humanizePercentage }})"
+          runbook: "docs/OPERATIONS.md#runbook-import-ocr"
+      - alert: KbOcrSlow
+        expr: histogram_quantile(0.95, sum by (le) (rate(kb_ocr_duration_seconds_bucket{job="kb"}[30m]))) > 60
+        for: 30m
+        labels: { severity: warning, owner: ops }
+        annotations:
+          summary: "p95 распознавания OCR {{ $value | humanizeDuration }} (> 60 с)"
+          runbook: "docs/OPERATIONS.md#runbook-import-ocr"
+      - alert: KbOcrFailing
+        expr: |
+          sum(increase(kb_ocr_duration_seconds_count{job="kb",status="error"}[1h]))
+            / clamp_min(sum(increase(kb_ocr_duration_seconds_count{job="kb"}[1h])), 1) > 0.2
+        for: 15m
+        labels: { severity: warning, owner: ops }
+        annotations:
+          summary: "Более 20% задач OCR завершаются ошибкой"
+          runbook: "docs/OPERATIONS.md#runbook-import-ocr"
       - alert: KbSearchIndexLag
         expr: max(kb_outbox_pending{job="kb"}) > 1000
         for: 15m

@@ -12,9 +12,13 @@ export function relTime(d: string | Date | null | undefined): string {
   return new Date(d).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', year: new Date(d).getFullYear() === new Date().getFullYear() ? undefined : 'numeric' });
 }
 
+// One formatter instance: toLocaleString with options builds a new Intl formatter on every call (≈1 ms), and
+// fullTime is rendered by the save indicator on every keystroke.
+const fullFmt = new Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+
 export function fullTime(d: string | Date | null | undefined): string {
   if (!d) return '';
-  return new Date(d).toLocaleString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  return fullFmt.format(new Date(d));
 }
 
 export function fileSize(n: number | null | undefined): string {

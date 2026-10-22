@@ -2,14 +2,15 @@ import DragHandle from '@tiptap/extension-drag-handle-react';
 import type { Editor } from '@tiptap/core';
 import { NodeSelection, TextSelection } from '@tiptap/pm/state';
 import { useRef, useState } from 'react';
-import { GripVertical, Plus, Copy, Trash2, Link2, ArrowUp, ArrowDown, MessageSquarePlus, FileDown, Repeat2, Palette } from 'lucide-react';
+import { GripVertical, Plus, Copy, Trash2, Link2, ArrowUp, ArrowDown, MessageSquarePlus, FileDown, Repeat2, Palette, ClipboardCopy } from 'lucide-react';
 import { loadMarkdown } from '../../lib/markdown';
 import { Menu } from '../../components/ui/Menu';
 import { Tooltip } from '../../components/ui/Tooltip';
 import { duplicateBlock, deleteBlock, moveBlock } from '../extensions/blockOps';
 import { turnIntoItems } from './BubbleToolbar';
 import { TEXT_COLORS } from '../palette';
-import { copyWithFeedback } from '../clipboard/copy';
+import { copyWithFeedback, copyBlocks } from '../clipboard/copy';
+import { sectionRange } from '../clipboard/section';
 
 // Must be a stable object: DragHandle re-registers its plugin (re-initialising every plugin view) when it changes.
 const POSITION = { placement: 'left-start' as const, strategy: 'absolute' as const };
@@ -79,6 +80,21 @@ export function BlockHandle({ editor, pageId, onComment }: { editor: Editor; pag
       { id: 'up', label: 'Переместить вверх', icon: <ArrowUp size={15} />, shortcut: 'Alt+Shift+↑', onSelect: () => c && moveBlock(editor, -1, c.pos) },
       { id: 'down', label: 'Переместить вниз', icon: <ArrowDown size={15} />, shortcut: 'Alt+Shift+↓', onSelect: () => c && moveBlock(editor, 1, c.pos) },
       { separator: true as const },
+      // R-CLIPBOARD-001: a block / a heading's section with formatting (text/html + text/plain)
+      { id: 'copy', label: 'Копировать блок', icon: <ClipboardCopy size={15} />, onSelect: () => c && void copyBlocks(editor, c.pos, c.pos + c.node.nodeSize, 'Блок скопирован') },
+      ...(c?.node.type.name === 'heading'
+        ? [
+            {
+              id: 'copy-section',
+              label: 'Копировать раздел',
+              icon: <ClipboardCopy size={15} />,
+              onSelect: () => {
+                const r = c && sectionRange(editor.state.doc, c.pos);
+                if (r) void copyBlocks(editor, r.from, r.to, 'Раздел скопирован');
+              },
+            },
+          ]
+        : []),
       {
         id: 'link',
         label: 'Копировать ссылку на блок',

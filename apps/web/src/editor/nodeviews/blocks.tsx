@@ -10,6 +10,7 @@ import { IconPickerPopover } from '../../components/IconPicker';
 import { get } from '../../api/client';
 import { toast } from '../../components/ui/Toast';
 import { DocPreviewInline } from './DocPreviewInline';
+import { UploadPlaceholder } from './UploadPlaceholder';
 
 const CALLOUT_LABEL: Record<string, string> = { info: 'Информация', tip: 'Совет', important: 'Важно', warning: 'Предупреждение', error: 'Ошибка / запрет', example: 'Пример', neutral: 'Заметка' };
 
@@ -63,7 +64,18 @@ function fileIcon(mime: string | null, name: string) {
   return <FileIcon size={20} />;
 }
 
-export function FileView({ node, selected, editor, updateAttributes }: NodeViewProps) {
+export function FileView(props: NodeViewProps) {
+  const { node, editor, selected } = props;
+  if (node.attrs.uploadId && !node.attrs.attachmentId)
+    return (
+      <NodeViewWrapper className={`kb-file view-${node.attrs.view}${selected ? ' is-selected' : ''}`} data-drag-handle="">
+        <UploadPlaceholder editor={editor} uploadId={node.attrs.uploadId} name={node.attrs.name} kind="file" />
+      </NodeViewWrapper>
+    );
+  return <LoadedFileView {...props} />;
+}
+
+function LoadedFileView({ node, selected, editor, updateAttributes }: NodeViewProps) {
   const a = node.attrs;
   const ext = (a.name as string).split('.').pop()?.toUpperCase() ?? '';
   const previewable = /^(application\/pdf|image\/|text\/plain|video\/|audio\/)/.test(a.mime ?? '');

@@ -107,6 +107,27 @@ export function filterStyle(style: string, tag: string): string {
   return out.join('; ');
 }
 
+const TRACKING_PARAM = /^(utm_[a-z_]+|fbclid|gclid|dclid|gbraid|wbraid|yclid|ysclid|_openstat|mc_cid|mc_eid|_hsenc|_hsmi|mkt_tok|igshid)$/i;
+const TRACKING_HOST = /(^|\.)(google-analytics\.com|googletagmanager\.com|doubleclick\.net|mc\.yandex\.ru|top-fwz1\.mail\.ru|counter\.yadro\.ru|facebook\.com\/tr|pixel\.|track\.|tracking\.)/i;
+
+/** Removes tracking parameters (utm_*, fbclid, gclid, yclid…) from a link; other parameters and the fragment stay (R-CLIPBOARD-024). */
+export function stripTracking(href: string): string {
+  const q = href.indexOf('?');
+  if (q < 0) return href;
+  const hash = href.indexOf('#', q);
+  const base = href.slice(0, q);
+  const query = href.slice(q + 1, hash < 0 ? undefined : hash);
+  const frag = hash < 0 ? '' : href.slice(hash);
+  const kept = query.split('&').filter((p) => p && !TRACKING_PARAM.test(decodeURIComponent(p.split('=')[0] ?? '')));
+  return base + (kept.length ? '?' + kept.join('&') : '') + frag;
+}
+
+/** Tracking pixels: 0/1 px images or images served by analytics counters. */
+export function isTrackingImage(src: string, width: string | null, height: string | null): boolean {
+  if (/^[01]$/.test(width ?? '') && /^[01]$/.test(height ?? '')) return true;
+  return /^https?:\/\//i.test(src) && TRACKING_HOST.test(src.replace(/^https?:\/\//i, ''));
+}
+
 function unwrap(el: Element) {
   el.replaceWith(...Array.from(el.childNodes));
 }
@@ -213,12 +234,13 @@ function sanitizeTree(root: Element, res: CleanResult, origin: string | null) {
       const href = el.getAttribute('href');
       if (href != null) {
         if (!sanitizeHref(href)) el.removeAttribute('href');
-        else if (origin && href.startsWith(origin + '/')) el.setAttribute('href', href.slice(origin.length));
+        else if (origin && href.startsWith(origin + '/')) el.setAttribute('href', stripTracking(href.slice(origin.length)));
+        else el.setAttribute('href', stripTracking(href));
       }
     }
     if (tag === 'img') {
       const src = el.getAttribute('src') ?? '';
-      const tiny = /^[01]$/.test(el.getAttribute('width') ?? '') && /^[01]$/.test(el.getAttribute('height') ?? '');
+      const tiny = isTrackingImage(src, el.getAttribute('width'), el.getAttribute('height'));
       const figure = el.closest('figure');
       if (tiny) {
         el.remove();

@@ -1,6 +1,6 @@
 import type { Editor, Range } from '@tiptap/core';
 import {
-  Type, Heading1, Heading2, Heading3, List, ListOrdered, ListChecks, Quote, Code2, Minus, Table, Image, Paperclip, Info, Columns2, Columns3, ChevronRight, Sigma, Workflow, ListTree, FileText, Link2, Video, Pilcrow, AtSign, Smile, Copy, Database,
+  Type, Heading1, Heading2, Heading3, Heading4, Heading5, Heading6, List, ListOrdered, ListChecks, Quote, Code2, Minus, Table, Image, Paperclip, Info, Columns2, Columns3, ChevronRight, Sigma, Workflow, ListTree, FileText, Link2, Video, Pilcrow, AtSign, Smile, Copy, Database,
 } from 'lucide-react';
 import type { ReactNode } from 'react';
 
@@ -32,6 +32,9 @@ export const SLASH_COMMANDS: SlashCommand[] = [
   { id: 'h1', group: 'Основные', title: 'Заголовок 1', keywords: 'h1 heading title заголовок большой', shortcut: '#', icon: <Heading1 size={S} />, run: (e, r) => del(e, r).setHeading({ level: 1 }).run() },
   { id: 'h2', group: 'Основные', title: 'Заголовок 2', keywords: 'h2 heading subtitle заголовок средний', shortcut: '##', icon: <Heading2 size={S} />, run: (e, r) => del(e, r).setHeading({ level: 2 }).run() },
   { id: 'h3', group: 'Основные', title: 'Заголовок 3', keywords: 'h3 heading заголовок малый', shortcut: '###', icon: <Heading3 size={S} />, run: (e, r) => del(e, r).setHeading({ level: 3 }).run() },
+  { id: 'h4', group: 'Основные', title: 'Заголовок 4', keywords: 'h4 heading заголовок четвёртого уровня', shortcut: '####', icon: <Heading4 size={S} />, run: (e, r) => del(e, r).setHeading({ level: 4 }).run() },
+  { id: 'h5', group: 'Основные', title: 'Заголовок 5', keywords: 'h5 heading заголовок пятого уровня', shortcut: '#####', icon: <Heading5 size={S} />, run: (e, r) => del(e, r).setHeading({ level: 5 }).run() },
+  { id: 'h6', group: 'Основные', title: 'Заголовок 6', keywords: 'h6 heading заголовок шестого уровня', shortcut: '######', icon: <Heading6 size={S} />, run: (e, r) => del(e, r).setHeading({ level: 6 }).run() },
   { id: 'lead', group: 'Основные', title: 'Вводный абзац', keywords: 'lead intro вводный лид крупный', icon: <Pilcrow size={S} />, run: (e, r) => del(e, r).setParagraph().updateAttributes('paragraph', { variant: 'lead' }).run() },
   { id: 'bullet', group: 'Списки', title: 'Маркированный список', keywords: 'bullet list ul список маркеры точки', shortcut: '-', icon: <List size={S} />, run: (e, r) => del(e, r).toggleBulletList().run() },
   { id: 'ordered', group: 'Списки', title: 'Нумерованный список', keywords: 'number ordered ol список нумерация', shortcut: '1.', icon: <ListOrdered size={S} />, run: (e, r) => del(e, r).toggleOrderedList().run() },

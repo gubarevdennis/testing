@@ -10,6 +10,7 @@ import { FRAGMENT, ydocToJson, validateDoc, titleOf } from './ydoc.js';
 import { pageAccess, type AuthUser } from '../acl/engine.js';
 import { createRevision } from '../services/revisions.js';
 import { enqueue } from '../services/pages.js';
+import { auditStandalone } from '../services/audit.js';
 import type { EventBus } from '../lib/events.js';
 import type { Metrics } from '../observability/metrics.js';
 
@@ -69,6 +70,8 @@ export class CollabHub {
   private aclRecheck = new Map<string, NodeJS.Timeout>();
   private expiryTimer: NodeJS.Timeout;
   private lastExpiryCheck = new Date();
+  /** Fault injection for tests (never set in production): the next N journal writes fail. */
+  readonly faults = { persistFailures: 0 };
 
   constructor(
     private pool: pg.Pool,
@@ -168,6 +171,10 @@ export class CollabHub {
    */
   private async persist(live: LiveDoc, update: Uint8Array, userId: string | null, clientId: number | null, opId: string): Promise<{ seq: number; duplicate: boolean }> {
     const started = performance.now();
+    if (this.faults.persistFailures > 0) {
+      this.faults.persistFailures--;
+      throw new Error('injected persist failure');
+    }
     const res = await tx(this.pool, async (c) => {
       const st = (await c.query('select last_seq from doc_state where page_id = $1 for update', [live.pageId])).rows[0];
       const dup = await c.query('select seq from doc_updates where page_id = $1 and op_id = $2', [live.pageId, opId]);
@@ -483,6 +490,13 @@ export class CollabHub {
     }
     const wantRevision = (opts.revision && live.changedSinceRevision) || (live.changedSinceRevision && Date.now() - live.lastRevisionAt > AUTO_REVISION_MS) || (!!opts.kind && opts.kind !== 'auto');
     if (!live.dirty && !wantRevision) return null;
+    // A page purged while its document was still in memory has nothing left to write to.
+    const exists = (await this.pool.query('select 1 from pages where id = $1', [live.pageId])).rowCount;
+    if (!exists) {
+      live.dirty = false;
+      live.changedSinceRevision = false;
+      return null;
+    }
     const json = ydocToJson(live.ydoc);
     const text = docToPlainText(json);
     const state = Y.encodeStateAsUpdate(live.ydoc);
@@ -491,6 +505,7 @@ export class CollabHub {
     const prev = live.lastFlushedJson;
     let revision: { id: string; number: number } | null = null;
     let titleChanged = false;
+    let editAudit: Record<string, unknown> | null = null;
     await tx(this.pool, async (c) => {
       if (live.dirty) {
         await c.query('update doc_state set content = $2, plain_text = $3, updated_at = now() where page_id = $1', [live.pageId, json, text]);
@@ -511,6 +526,8 @@ export class CollabHub {
             await c.query(`update page_events set data = $2 where id = $1`, [last.id, { ...last.data, blocks, added: (last.data.added ?? 0) + changes.added, removed: (last.data.removed ?? 0) + changes.removed, changed: (last.data.changed ?? 0) + changes.changed, until: new Date().toISOString(), seq: live.lastSeq }]);
           } else {
             await c.query(`insert into page_events (org_id, page_id, actor_id, type, data) values ($1, $2, $3, 'edit', $4)`, [live.orgId, live.pageId, actor, { kind: 'edit', authors, blocks: changes.ids.slice(0, 500), added: changes.added, removed: changes.removed, changed: changes.changed, seq: live.lastSeq }]);
+            // Each new logical edit operation also goes to the tamper-evident audit log (OPS-014), written after commit.
+            editAudit = { actor, authors, added: changes.added, removed: changes.removed, changed: changes.changed, seq: live.lastSeq };
           }
         }
         await enqueue(c, 'index-page', { pageId: live.pageId });
@@ -533,6 +550,10 @@ export class CollabHub {
         live.snapshotSeq = live.lastSeq;
       }
     });
+    if (editAudit) {
+      const e = editAudit as { actor: string | null };
+      void auditStandalone(this.pool, { orgId: live.orgId, userId: e.actor }, { action: 'page.edit', targetType: 'page', targetId: live.pageId, details: editAudit }).catch((err) => this.log.warn({ err: (err as Error).message }, 'failed to audit page edit'));
+    }
     if (titleChanged) {
       const sp = (await this.pool.query('select space_id from pages where id = $1', [live.pageId])).rows[0];
       if (sp) this.bus.emit({ type: 'tree-changed', orgId: live.orgId, spaceId: sp.space_id });
@@ -595,7 +616,8 @@ export class CollabHub {
     const r = await this.pool.query(
       `select org_id from grants where (expires_at > $1 and expires_at <= $2) or (starts_at > $1 and starts_at <= $2)
        union select g.org_id from group_members m join groups g on g.id = m.group_id where m.expires_at > $1 and m.expires_at <= $2
-       union select org_id from users where access_expires_at > $1 and access_expires_at <= $2`,
+       union select org_id from users where access_expires_at > $1 and access_expires_at <= $2
+       union select u.org_id from sessions s join users u on u.id = s.user_id where s.expires_at > $1 and s.expires_at <= $2`,
       [since, now],
     );
     this.lastExpiryCheck = now;

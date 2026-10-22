@@ -58,7 +58,9 @@ case "$CMD" in
     own "$DIR"
     PORT="${PORT:-$(free_port)}"
     T=$(now_ms)
-    pgrun "$BIN/initdb" -D "$DIR/primary" -A trust -U postgres --no-sync >/dev/null
+    # UTF8 like production clusters: with the process locale (often C/SQL_ASCII in CI) Russian full-text search and
+    # case folding would behave differently from the real installation (V17-F05 checks search after recovery).
+    pgrun "$BIN/initdb" -D "$DIR/primary" -A trust -U postgres --no-sync --encoding=UTF8 --locale="${PITR_LOCALE:-C.UTF-8}" >/dev/null
     cat >>"$DIR/primary/postgresql.conf" <<CONF
 listen_addresses = '127.0.0.1'
 port = $PORT

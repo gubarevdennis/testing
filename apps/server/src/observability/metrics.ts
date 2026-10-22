@@ -21,6 +21,10 @@ export function createMetrics() {
     clientUnsyncedAge: new client.Histogram({ name: 'kb_client_unsynced_queue_age_seconds', help: 'Age of oldest unsynced local change reported by clients', buckets: [1, 5, 15, 60, 300, 1800], registers: [registry] }),
     clientInputLatency: new client.Histogram({ name: 'kb_client_input_latency_ms', help: 'Input-to-paint latency reported by clients', buckets: [8, 16, 33, 50, 75, 100, 200, 500], registers: [registry] }),
     integrityErrors: new client.Gauge({ name: 'kb_integrity_errors', help: 'Data integrity problems found by the last check', registers: [registry] }),
+    // R-OPS-003: reconnect storms, import failure rate, OCR latency (alerts in deploy/monitoring/prometheus-alerts.yml).
+    collabReconnects: new client.Counter({ name: 'kb_collab_reconnects_total', help: 'Collaboration WebSocket reconnects (same session and page within 2 minutes of a disconnect)', registers: [registry] }),
+    importFiles: new client.Counter({ name: 'kb_import_files_total', help: 'Files analysed for import by format and result (ok, warning, error, rejected)', labelNames: ['format', 'status'], registers: [registry] }),
+    ocrSeconds: new client.Histogram({ name: 'kb_ocr_duration_seconds', help: 'OCR recognition time per image', labelNames: ['status'], buckets: [0.5, 1, 2, 5, 10, 20, 30, 60, 120, 300], registers: [registry] }),
   };
   return m;
 }

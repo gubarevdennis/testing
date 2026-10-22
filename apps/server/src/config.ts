@@ -38,6 +38,12 @@ export interface Config {
   rateLimitPerMinute: number;
   authRateLimitPerMinute: number;
   clamavHost: string | null;
+  /** Server-side fetching of remote images (import): SSRF-guarded; private addresses are refused unless the host is allow-listed (R-SECURITY-008). */
+  remoteFetch: { enabled: boolean; allowHosts: string[]; timeoutMs: number; maxBytes: number };
+  /** Pending migrations on a database with data require a full backup this fresh (minutes); null = not enforced (R-OPS-001, R-OPS-004). */
+  migrationBackupMaxAgeMinutes: number | null;
+  /** OpenTelemetry trace export (OTLP/HTTP); endpoint null = trace ids for logs only (R-OPS-003). */
+  tracing: { endpoint: string | null; serviceName: string; headers: string };
 }
 
 export function loadConfig(overrides: Partial<Config> = {}): Config {
@@ -85,6 +91,15 @@ export function loadConfig(overrides: Partial<Config> = {}): Config {
     rateLimitPerMinute: int('RATE_LIMIT_PER_MINUTE', 600),
     authRateLimitPerMinute: int('AUTH_RATE_LIMIT_PER_MINUTE', 30),
     clamavHost: process.env.CLAMAV_HOST || null,
+    remoteFetch: {
+      enabled: bool('REMOTE_FETCH_ENABLED', true),
+      allowHosts: (process.env.REMOTE_FETCH_ALLOW_HOSTS ?? '').split(',').map((h) => h.trim().toLowerCase()).filter(Boolean),
+      timeoutMs: int('REMOTE_FETCH_TIMEOUT_MS', 10_000),
+      maxBytes: int('REMOTE_FETCH_MAX_MB', 20) * 1024 * 1024,
+    },
+    // "Any migration only with a backup": enforced by default in production, opt-in elsewhere.
+    migrationBackupMaxAgeMinutes: bool('MIGRATION_REQUIRE_BACKUP', nodeEnv === 'production') ? int('MIGRATION_BACKUP_MAX_AGE_MIN', 180) : null,
+    tracing: { endpoint: process.env.OTEL_EXPORTER_OTLP_TRACES_ENDPOINT?.replace(/\/v1\/traces\/?$/, '') || process.env.OTEL_EXPORTER_OTLP_ENDPOINT || null, serviceName: env('OTEL_SERVICE_NAME', 'kb'), headers: env('OTEL_EXPORTER_OTLP_HEADERS', '') },
   };
   if (cfg.env === 'production' && cfg.secretKey.length < 32) throw new Error('SECRET_KEY must be at least 32 characters in production');
   return { ...cfg, ...overrides };

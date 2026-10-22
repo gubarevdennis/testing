@@ -28,7 +28,31 @@ export async function waitFor(pred: () => boolean, ms = 5000, label = 'condition
 }
 
 /** Headless collaborative client manipulating the Y.XmlFragment the same way the editor binding does. */
-export async function openClient(baseUrl: string, api: Api, pageId: string, opts: { connect?: boolean; batchMs?: number } = {}): Promise<TestClient> {
+/** A WebSocket that never connects (as behind a proxy that blocks the Upgrade). */
+export class BlockedWebSocket {
+  readyState = 0;
+  binaryType = 'arraybuffer';
+  onopen: any = null;
+  onmessage: any = null;
+  onclose: any = null;
+  onerror: any = null;
+  constructor() {
+    setTimeout(() => {
+      this.readyState = 3;
+      this.onerror?.();
+      this.onclose?.({ code: 1006 });
+    }, 5);
+  }
+  send() {}
+  close() {}
+}
+
+export async function openClient(
+  baseUrl: string,
+  api: Api,
+  pageId: string,
+  opts: { connect?: boolean; batchMs?: number; wsBlocked?: boolean; httpFallback?: boolean; providerOptions?: Record<string, unknown> } = {},
+): Promise<TestClient> {
   const doc = new Y.Doc();
   const statuses: SyncStatus[] = [];
   const fatal: string[] = [];
@@ -36,14 +60,16 @@ export async function openClient(baseUrl: string, api: Api, pageId: string, opts
   const provider = new CollabProvider({
     url: baseUrl.replace('http', 'ws') + '/api/v1/collab/' + pageId,
     doc,
-    WebSocketImpl: WebSocket,
+    WebSocketImpl: opts.wsBlocked ? BlockedWebSocket : WebSocket,
     wsOptions: { headers: { cookie: api.cookieHeader() } },
+    httpFallback: opts.httpFallback || opts.wsBlocked ? { headers: () => ({ cookie: api.cookieHeader(), ...(api.csrf ? { 'x-csrf-token': api.csrf } : {}) }) } : undefined,
     batchMs: opts.batchMs ?? 5,
     backoff: { minMs: 50, maxMs: 300 },
     ackTimeoutMs: 3000,
     onStatus: (s) => statuses.push(s),
     onFatal: (code) => fatal.push(code),
     onAccess: (canEdit, level) => access.push({ canEdit, level }),
+    ...opts.providerOptions,
   });
   const frag = () => doc.getXmlFragment('default');
   const textNode = (i: number) => {
@@ -86,7 +112,7 @@ export async function openClient(baseUrl: string, api: Api, pageId: string, opts
   };
   if (opts.connect !== false) {
     await provider.connect();
-    await waitFor(() => provider.synced || fatal.length > 0, 5000, 'synced');
+    await waitFor(() => provider.synced || fatal.length > 0, opts.wsBlocked ? 15000 : 5000, 'synced');
   }
   return client;
 }

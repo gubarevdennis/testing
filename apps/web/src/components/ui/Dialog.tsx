@@ -20,9 +20,10 @@ export function Dialog({ open, title, onClose, children, footer, size = 'normal'
   const ref = useRef<HTMLDivElement>(null);
   const titleId = useId();
   const prevFocus = useRef<Element | null>(null);
+  const wasOpen = useRef(false);
   useEffect(() => {
     if (!open) return;
-    prevFocus.current = document.activeElement;
+    if (!prevFocus.current || prevFocus.current === document.body) prevFocus.current = document.activeElement;
     const el = ref.current;
     const first = (initialFocus ? el?.querySelector(initialFocus) : el?.querySelector('input, textarea, select, button:not(.dialog-close), [tabindex]:not([tabindex="-1"])')) as HTMLElement | null;
     setTimeout(() => first?.focus(), 0);
@@ -48,10 +49,20 @@ export function Dialog({ open, title, onClose, children, footer, size = 'normal'
     document.addEventListener('keydown', onKey, true);
     return () => {
       document.removeEventListener('keydown', onKey, true);
-      (prevFocus.current as HTMLElement | null)?.focus?.();
+      const prev = prevFocus.current as HTMLElement | null;
+      if (prev?.isConnected) prev.focus?.();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
+  // Capture the opener while rendering (before the commit): a dialog opened from a menu item renders in the same
+  // commit that removes the menu, so by the time effects run the focused item is gone. Focus then returns to the
+  // menu's trigger instead of being lost on <body>.
+  if (open && !wasOpen.current) {
+    const active = document.activeElement as HTMLElement | null;
+    const menu = active?.closest('[role=menu]');
+    prevFocus.current = (menu?.id ? document.querySelector(`[aria-controls="${CSS.escape(menu.id)}"]`) : null) ?? active;
+  }
+  wasOpen.current = open;
   if (!open) return null;
   return createPortal(
     <div className="dialog-backdrop" onMouseDown={(e) => !persistent && e.target === e.currentTarget && onClose()}>

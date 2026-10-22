@@ -135,7 +135,10 @@ export function docToMarkdown(doc: PMNode, opts: ToMarkdownOptions = {}): { mark
     const children = () => phrasing(inner, rest);
     switch (m.type) {
       case 'link': {
-        const href = sanitizeHref(m.attrs?.href) ?? '';
+        let href = sanitizeHref(m.attrs?.href) ?? '';
+        // Links to other pages go through pageHref too: in a ZIP export they become relative file links (SC-15).
+        const internal = /^\/p\/([0-9a-f-]{36})(?:#(.+))?$/i.exec(href);
+        if (internal && opts.pageHref) href = opts.pageHref(internal[1], internal[2] ?? null);
         return [{ type: 'link', url: href, title: m.attrs?.title ?? null, children: children() }];
       }
       case 'bold':

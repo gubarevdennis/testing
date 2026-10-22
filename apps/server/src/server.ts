@@ -11,7 +11,7 @@ export async function createServer(overrides: Partial<Config> = {}, opts: { migr
   const cfg = loadConfig(overrides);
   const log = createLogger(cfg);
   const db = createPool(cfg.databaseUrl, cfg.dbPoolSize, log);
-  if (opts.migrate !== false) await migrateUp(db, (m) => log.info(m));
+  if (opts.migrate !== false) await migrateUp(db, (m) => log.info(m), undefined, undefined, { requireBackupWithinMinutes: cfg.migrationBackupMaxAgeMinutes });
   const store = await createBlobStore(cfg);
   const { app, services } = await buildApp({ cfg, db, log, store });
   const worker = new Worker(services, log);

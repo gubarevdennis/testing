@@ -4,6 +4,7 @@ import { badRequest, conflict, forbidden, notFound, unprocessable } from '../lib
 import { audit, type AuditActor } from './audit.js';
 import { jsonToUpdate, updateToJson } from '../collab/ydoc.js';
 import { docToPlainText, countWords } from '@kb/shared';
+import { moveImpact, type MoveImpact } from './move-impact.js';
 import { diffAudience, hypotheticalAudience, pageAudience, requirePage, requireSpace, bumpAclEpoch, type AuthUser, type AudienceDiff } from '../acl/engine.js';
 
 export interface PageRow {
@@ -196,6 +197,8 @@ export interface MovePreview {
   descendants: number;
   attachments: number;
   requiresConfirmation: boolean;
+  /** Paths, public links and guests affected by the move (R-SPACE-007, R-ACL-068). */
+  impact?: MoveImpact;
 }
 
 async function resolveMoveTarget(q: Queryable, user: AuthUser, page: PageRow, input: MoveInput) {
@@ -252,13 +255,15 @@ export async function previewMove(q: Queryable, user: AuthUser, input: MoveInput
     [page.id],
   );
   const personalSource = (await q.query(`select kind from spaces where id = $1`, [page.space_id])).rows[0]?.kind === 'personal';
+  const impact = await moveImpact(q, user, page, { spaceId: targetSpaceId, parentId: targetParentId }, audience.lost);
   return {
     from: { spaceId: page.space_id, parentId: page.parent_id },
     to: { spaceId: targetSpaceId, parentId: targetParentId },
     audience,
     descendants: counts.rows[0].descendants,
     attachments: counts.rows[0].attachments,
-    requiresConfirmation: audience.widens || (personalSource && targetSpaceId !== page.space_id),
+    requiresConfirmation: audience.widens || (personalSource && targetSpaceId !== page.space_id) || impact.guests.some((g) => g.losesAccess),
+    impact,
   };
 }
 

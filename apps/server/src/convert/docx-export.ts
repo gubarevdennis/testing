@@ -1,10 +1,12 @@
 import {
   AlignmentType,
+  Bookmark,
   BorderStyle,
   Document,
   ExternalHyperlink,
   HeadingLevel,
   ImageRun,
+  InternalHyperlink,
   LevelFormat,
   Packer,
   Paragraph,
@@ -121,7 +123,10 @@ export async function docToDocx(doc: PMNode, opts: DocxExportOptions): Promise<{
             break;
         }
       }
-      if (href) {
+      if (href?.startsWith('#') && href.length > 1) {
+        // In-document anchor (block id) → Word bookmark link, not an external relationship (R-IMPORT-026).
+        out.push(new InternalHyperlink({ anchor: bookmarkName(href.slice(1)), children: [new TextRun({ ...o, style: 'Hyperlink' })] }));
+      } else if (href) {
         const link = href.startsWith('/') ? opts.baseUrl + href : href;
         out.push(new ExternalHyperlink({ link, children: [new TextRun({ ...o, style: 'Hyperlink' })] }));
       } else out.push(new TextRun(o));
@@ -163,13 +168,17 @@ export async function docToDocx(doc: PMNode, opts: DocxExportOptions): Promise<{
     switch (n.type) {
       case 'paragraph':
         return [new Paragraph({ children: runs(n.content, n.attrs?.variant === 'lead' ? { size: 26, color: '68717D' } : {}), alignment: align(n.attrs?.textAlign), indent })];
-      case 'heading':
-        return [new Paragraph({ heading: HEADINGS[Math.min(6, Math.max(1, n.attrs?.level ?? 1)) - 1], children: runs(n.content), alignment: align(n.attrs?.textAlign) })];
+      case 'heading': {
+        // Every heading carries a bookmark named after its block id: anchors and the TOC keep working in Word.
+        const children = n.attrs?.id ? [new Bookmark({ id: bookmarkName(n.attrs.id), children: runs(n.content) })] : runs(n.content);
+        return [new Paragraph({ heading: HEADINGS[Math.min(6, Math.max(1, n.attrs?.level ?? 1)) - 1], children, alignment: align(n.attrs?.textAlign) })];
+      }
       case 'blockquote': {
         const out: Array<Paragraph | Table | TableOfContents> = [];
         for (const c of n.content ?? []) {
           if (c.type === 'paragraph' || c.type === 'heading')
-            out.push(new Paragraph({ children: runs(c.content, { italics: true, color: '4A5260' }), indent: { left: 567 }, border: { left: { style: BorderStyle.SINGLE, size: 12, color: 'C9CFD8', space: 8 } } }));
+            // Word's "Quote" style keeps the quote semantic for Word users and for re-import (R-EXPORT-012).
+            out.push(new Paragraph({ style: 'Quote', children: runs(c.content, { italics: true, color: '4A5260' }), indent: { left: 567 }, border: { left: { style: BorderStyle.SINGLE, size: 12, color: 'C9CFD8', space: 8 } } }));
           else out.push(...(await block(c, { indent: (ctx.indent ?? 0) + 1 })));
         }
         return out;
@@ -275,7 +284,8 @@ export async function docToDocx(doc: PMNode, opts: DocxExportOptions): Promise<{
             children: [new ImageRun({ type, data, transformation: { width: Math.round((width || 400) * scale), height: Math.round((height || 300) * scale) }, altText: { name: n.attrs?.alt || 'image', description: n.attrs?.alt || '', title: n.attrs?.caption || '' } } as any)],
           }),
         ];
-        if (n.attrs?.caption) out.push(new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: n.attrs.caption, italics: true, size: 18, color: '68717D' })] }));
+        // Word's built-in "caption" style: Word lists it in the table of figures and re-import maps it back (R-IMPORT-027).
+        if (n.attrs?.caption) out.push(new Paragraph({ style: 'Caption', alignment: AlignmentType.CENTER, children: [new TextRun({ text: n.attrs.caption })] }));
         return out;
       }
       case 'fileBlock':
@@ -353,6 +363,7 @@ export async function docToDocx(doc: PMNode, opts: DocxExportOptions): Promise<{
       paragraphStyles: [
         { id: 'Code', name: 'Code', basedOn: 'Normal', run: { font: 'Consolas', size: 19 }, paragraph: { spacing: { before: 60, after: 60 } } },
         { id: 'Quote', name: 'Quote', basedOn: 'Normal', run: { italics: true, color: '4A5260' }, paragraph: { indent: { left: 567 } } },
+        { id: 'Caption', name: 'caption', basedOn: 'Normal', next: 'Normal', run: { italics: true, size: 18, color: '68717D' }, paragraph: { spacing: { after: 120 } } },
       ],
     },
     numbering: {
@@ -365,6 +376,11 @@ export async function docToDocx(doc: PMNode, opts: DocxExportOptions): Promise<{
   });
   const buffer = await Packer.toBuffer(d);
   return { buffer, warnings };
+}
+
+/** Word bookmark names: ≤ 40 chars, letters/digits/underscore; a leading underscore hides them from the UI. */
+export function bookmarkName(blockId: string): string {
+  return ('_kb' + String(blockId).replace(/[^A-Za-z0-9]/g, '')).slice(0, 40);
 }
 
 function none() {

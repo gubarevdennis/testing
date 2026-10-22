@@ -1,13 +1,16 @@
 import type { FastifyInstance } from 'fastify';
 import type { Readable } from 'node:stream';
-import { readFile, rm } from 'node:fs/promises';
+import { readFile, rm, stat } from 'node:fs/promises';
+import { createReadStream } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { join } from 'node:path';
 import { z } from 'zod';
 import { tx } from '../db/pool.js';
 import { actorOf, parse, requireUser, type Services } from '../app.js';
 import { isOrgAdmin } from '../acl/engine.js';
 import { verifyPassword } from '../auth/passwords.js';
 import { auditStandalone } from '../services/audit.js';
-import { buildOrgArchive, analyzeArchive, restoreArchive, verifyRestore } from '../services/archive.js';
+import { buildOrgArchive, analyzeArchive, restoreArchive, verifyRestore, type RestoreTarget } from '../services/archive.js';
 import { assertClean } from '../services/importer.js';
 import { streamToTemp, blobKey } from '../storage/blob-store.js';
 import { registerJob } from '../jobs/worker.js';
@@ -80,11 +83,46 @@ export async function archiveRoutes(app: FastifyInstance, s: Services) {
     const file = await req.file();
     if (!file) throw badRequest('Файл не выбран');
     const tmp = await streamToTemp(s.store, file.file as Readable, s.cfg.maxImportBytes);
+    return analyzeUploaded(req, user, tmp.path, file.filename || 'archive.zip');
+  });
+
+  /**
+   * Large archives over unstable networks (R-EXPORT-002): the archive is sent through a resumable upload session
+   * (POST /api/v1/uploads with pageId null, PUT chunks, resume from `received` after an interruption) and then
+   * analysed from that session. An incomplete session is refused with the number of bytes received so far.
+   */
+  app.post('/api/v1/admin/archives/restore/upload/:uploadId', async (req) => {
+    const user = requireUser(req);
+    if (!isOrgAdmin(user)) throw forbidden();
+    const { uploadId } = parse(z.object({ uploadId: uuid }), req.params);
+    const { sha256 } = parse(z.object({ sha256: z.string().regex(/^[0-9a-f]{64}$/).optional() }), req.body ?? {});
+    const u = (await s.db.query('select * from upload_sessions where id = $1 and user_id = $2', [uploadId, user.id])).rows[0];
+    if (!u) throw notFound('Сеанс загрузки не найден');
+    if (u.status !== 'open') throw conflict('upload_closed', 'Загрузка уже использована или отменена');
+    const path = join(s.store.tmpDir(), 'up-' + u.temp_key);
+    const size = (await stat(path).catch(() => ({ size: 0 }))).size;
+    if (size !== Number(u.size)) throw conflict('incomplete', `Получено ${size} из ${u.size} байт — продолжите загрузку`, { received: size });
+    const expected = sha256 ?? u.sha256_expected;
+    if (expected) {
+      const h = createHash('sha256');
+      for await (const c of createReadStream(path)) h.update(c as Buffer);
+      if (h.digest('hex') !== expected) {
+        await s.db.query(`update upload_sessions set status = 'failed', error = 'checksum mismatch' where id = $1`, [uploadId]);
+        await rm(path, { force: true });
+        throw new AppError(422, 'checksum_mismatch', 'Контрольная сумма архива не совпала — файл повреждён при передаче, загрузите заново');
+      }
+    }
+    await s.db.query(`update upload_sessions set status = 'complete' where id = $1`, [uploadId]);
+    return analyzeUploaded(req, user, path, u.filename);
+  });
+
+  async function analyzeUploaded(req: any, user: ReturnType<typeof requireUser>, tmpPath: string, filename: string) {
+    const tmp = { path: tmpPath };
     try {
       // Quarantine: the whole archive is scanned before anything is read from it; attachments are scanned again
       // individually during the analysis (archive.malware).
       try {
-        await assertClean(s, tmp.path, file.filename || 'archive.zip');
+        await assertClean(s, tmp.path, filename);
       } catch (e: any) {
         await auditStandalone(s.db, actorOf(req), { action: 'archive.restore_rejected', outcome: 'denied', details: { reason: e.code, message: String(e.message).slice(0, 300) } });
         throw e;
@@ -99,11 +137,19 @@ export async function archiveRoutes(app: FastifyInstance, s: Services) {
     } finally {
       await rm(tmp.path, { force: true });
     }
-  });
+  }
 
   app.post('/api/v1/admin/archives/restore/:id/commit', async (req) => {
     const { id } = parse(z.object({ id: uuid }), req.params);
-    const body = parse(z.object({ password: z.string(), confirm: z.literal(true) }), req.body);
+    const body = parse(
+      z.object({
+        password: z.string(),
+        confirm: z.literal(true),
+        // Restore target (R-ARCHIVE-006): merge into the organisation (default), a new isolated space, or an existing space.
+        target: z.discriminatedUnion('mode', [z.object({ mode: z.literal('merge') }), z.object({ mode: z.literal('new-space'), name: z.string().max(200).optional() }), z.object({ mode: z.literal('into-space'), spaceId: uuid })]).default({ mode: 'merge' }),
+      }),
+      req.body,
+    );
     const user = await requireAdmin(req, body.password);
     const j = (await s.db.query(`select * from jobs where id = $1 and org_id = $2 and type = 'archive-restore'`, [id, user.orgId])).rows[0];
     if (!j) throw notFound();
@@ -114,14 +160,15 @@ export async function archiveRoutes(app: FastifyInstance, s: Services) {
     const restore = await tx(s.db, async (q) => {
       const locked = (await q.query(`update jobs set status = 'running' where id = $1 and status = 'awaiting_confirmation' returning id`, [id])).rowCount;
       if (!locked) throw conflict('bad_state', 'Восстановление уже выполняется');
-      return restoreArchive(s, q, user.orgId, actorOf(req), entries, analysis, user.id);
+      return restoreArchive(s, q, user.orgId, actorOf(req), entries, analysis, user.id, body.target as RestoreTarget);
     }).catch(async (e) => {
       await s.db.query(`update jobs set status = 'failed', error = $2, finished_at = now() where id = $1 and status <> 'succeeded'`, [id, String(e.message).slice(0, 1000)]);
       throw e;
     });
-    const verification = await verifyRestore(s, entries, restore.idMap);
-    await s.db.query(`update jobs set status = 'succeeded', result = result || $2::jsonb, finished_at = now() where id = $1`, [id, JSON.stringify({ restore: { ...restore, idMap: undefined }, verification })]);
+    const verification = await verifyRestore(s, entries, restore.idMap, restore.rootParents);
+    await s.db.query(`update jobs set status = 'succeeded', result = result || $2::jsonb, finished_at = now() where id = $1`, [id, JSON.stringify({ restore: { ...restore, idMap: undefined, rootParents: undefined }, verification })]);
     s.bus.emit({ type: 'acl-changed', orgId: user.orgId });
-    return { restore: { ...restore, idMap: undefined }, verification };
+    if (restore.target.spaceId) s.bus.emit({ type: 'tree-changed', orgId: user.orgId, spaceId: restore.target.spaceId });
+    return { restore: { ...restore, idMap: undefined, rootParents: undefined }, verification };
   });
 }

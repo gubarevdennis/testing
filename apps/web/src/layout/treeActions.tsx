@@ -1,6 +1,6 @@
 import { post, del, ApiError, uuid } from '../api/client';
 import { queryClient } from '../App';
-import { toast } from '../components/ui/Toast';
+import { toast, useToasts } from '../components/ui/Toast';
 import { confirm } from '../components/ui/Confirm';
 import { useUi } from '../state/ui';
 
@@ -55,13 +55,25 @@ export async function movePage(pageId: string, title: string, target: MoveTarget
       const d = e.details;
       const gained = (d?.audience?.gained ?? []) as Array<{ name: string; from: string; to: string }>;
       const lost = (d?.audience?.lost ?? []) as Array<{ name: string; from: string; to: string }>;
+      const impact = d?.impact as { fromPath: string[]; toPath: string[]; publicLinks: number; guests: Array<{ id: string; name: string; losesAccess: boolean }> } | undefined;
       const ok = await confirm({
         title: 'Изменится круг доступа',
         confirmLabel: 'Переместить',
         body: (
           <div className="col" style={{ gap: 8 }}>
+            {impact && (
+              <div className="move-path small">
+                <div>
+                  <span className="muted">Откуда:</span> {impact.fromPath.join(' / ')}
+                </div>
+                <div>
+                  <span className="muted">Куда:</span> <b>{impact.toPath.join(' / ')}</b>
+                </div>
+              </div>
+            )}
             <p>
-              Страница «{title}»{d?.descendants ? ` и вложенные страницы (${d.descendants})` : ''}{d?.attachments ? `, вложения (${d.attachments})` : ''} станут доступны новым участникам:
+              Страница «{title}»{d?.descendants ? ` и вложенные страницы (${d.descendants})` : ''}{d?.attachments ? `, вложения (${d.attachments})` : ''}
+              {gained.length ? ' станут доступны новым участникам:' : ' будут перенесены.'}
             </p>
             {gained.length > 0 && (
               <ul className="audience-list">
@@ -84,6 +96,19 @@ export async function movePage(pageId: string, title: string, target: MoveTarget
                 </ul>
               </>
             )}
+            {impact && impact.guests.length > 0 && (
+              <div>
+                <p className="muted">Гости с доступом:</p>
+                <ul className="audience-list">
+                  {impact.guests.map((g) => (
+                    <li key={g.id}>
+                      {g.name} — {g.losesAccess ? <b>потеряет доступ</b> : 'сохранит доступ'}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {impact && impact.publicLinks > 0 && <p className="muted">Публичные ссылки ({impact.publicLinks}) продолжат работать и после переноса — отзовите их в «Поделиться», если это не нужно.</p>}
           </div>
         ),
       });
@@ -97,11 +122,16 @@ export async function movePage(pageId: string, title: string, target: MoveTarget
   invalidateTree();
   queryClient.invalidateQueries({ queryKey: ['page', pageId] });
   if (!opts.silent)
-    toast.success(`«${title || 'Без названия'}» перемещена`, {
-      label: 'Отменить',
-      run: async () => {
-        await post(`/api/v1/pages/${pageId}/move`, r.undo).catch((e) => toast.error(e.message));
-        invalidateTree();
+    useToasts.getState().push({
+      kind: 'success',
+      message: `«${title || 'Без названия'}» перемещена${r.preview?.impact?.toPath ? ` в ${r.preview.impact.toPath.join(' / ')}` : ''}`,
+      link: { label: 'Открыть', href: `/p/${pageId}` },
+      action: {
+        label: 'Отменить',
+        run: async () => {
+          await post(`/api/v1/pages/${pageId}/move`, r.undo).catch((e) => toast.error(e.message));
+          invalidateTree();
+        },
       },
     });
   return true;

@@ -6,7 +6,7 @@ import { actorOf, parse, requireUser, type Services } from '../app.js';
 import { requirePage, requireSpace, pageAccess, accessForPages } from '../acl/engine.js';
 import { streamToTemp, blobKey } from '../storage/blob-store.js';
 import { analyzeImport, commitDocuments, commitIntoPage, commitTabular, tabularDryRun, storeBuffer, type ImportPlan, type ImportTarget, type TabularOptions } from '../services/importer.js';
-import { exportPages, type ExportFormat } from '../services/exporter.js';
+import { exportPages, ExportCancelledError, type ExportFormat } from '../services/exporter.js';
 import { auditStandalone } from '../services/audit.js';
 import { badRequest, conflict, forbidden, notFound, unprocessable } from '../lib/errors.js';
 import { registerJob } from '../jobs/worker.js';
@@ -54,19 +54,35 @@ registerJob('import-analyze', async ({ s, job, progress }) => {
   };
   await onStage('analyze', { files: files.length });
   const plan = await analyzeImport(s, files, { csv: job.params.csv, onStage });
+  for (const f of plan.files) s.metrics.importFiles.labels(importFormat(f.file), f.status).inc();
   const ok = plan.files.some((f) => f.status !== 'error');
   return { status: ok ? 'awaiting_confirmation' : 'succeeded', result: { plan }, report: { files: plan.files } };
 });
 
-registerJob('export', async ({ s, job, progress }) => {
+registerJob('export', async ({ s, job, progress, cancelled }) => {
   const user = (await s.db.query('select * from users where id = $1', [job.created_by])).rows[0];
   const { toAuthUser } = await import('../auth/sessions.js');
   await progress({ stage: 'render' });
-  const out = await exportPages(s, toAuthUser(user), job.params.pageIds, job.params.format, { includeChildren: job.params.includeChildren });
+  let out;
+  try {
+    out = await exportPages(s, toAuthUser(user), job.params.pageIds, job.params.format, { includeChildren: job.params.includeChildren, layout: job.params.layout, isCancelled: cancelled });
+  } catch (e) {
+    // Cancelled by the user (R-EXPORT-022): nothing is stored; the worker marks the job 'cancelled'.
+    if (e instanceof ExportCancelledError) return { result: null, report: { cancelled: true } };
+    throw e;
+  }
+  if (await cancelled()) return { result: null, report: { cancelled: true } };
   const blob = await s.store.putBuffer(out.buffer);
   await s.db.query(`insert into blobs (sha256, size, mime, storage_key) values ($1, $2, $3, $4) on conflict do nothing`, [blob.sha256, blob.size, out.mime, blob.key]);
   return { result: { sha: blob.sha256, size: blob.size, filename: out.filename, mime: out.mime, pageIds: out.pageIds ?? job.params.pageIds }, report: { warnings: out.warnings, ...out.report } };
 });
+
+/** Low-cardinality format label for import metrics. */
+function importFormat(filename: string) {
+  const ext = filename.toLowerCase().split('.').pop() ?? '';
+  const alias: Record<string, string> = { markdown: 'md', htm: 'html' };
+  return ['docx', 'md', 'markdown', 'txt', 'zip', 'html', 'htm', 'csv', 'tsv', 'xlsx'].includes(ext) ? alias[ext] ?? ext : 'other';
+}
 
 export async function importExportRoutes(app: FastifyInstance, s: Services) {
   /** Upload files for import. Nothing is created until the user confirms the preview. */
@@ -94,6 +110,7 @@ export async function importExportRoutes(app: FastifyInstance, s: Services) {
     }
     if (!files.length) throw badRequest('Не выбраны файлы');
     const bad = files.filter((f) => !f.sha);
+    for (const f of bad) s.metrics.importFiles.labels(importFormat(f.filename), 'rejected').inc();
     if (bad.length === files.length) throw unprocessable('upload_rejected', (bad[0] as any).error ?? 'Файл отклонён');
     const key = fields.idempotencyKey || null;
     const csv = fields.csv ? JSON.parse(fields.csv) : undefined;
@@ -104,7 +121,7 @@ export async function importExportRoutes(app: FastifyInstance, s: Services) {
       { stage: 'upload', at: now, files: files.length, bytes: files.reduce((n, f) => n + f.size, 0) },
       { stage: 'scan', at: now, scanner: s.cfg.clamavHost ? 'clamav' : 'disabled', rejected: bad.map((f) => ({ file: f.filename, code: (f as any).code ?? null })) },
     ];
-    const r = await s.db.query(`insert into jobs (org_id, type, idempotency_key, created_by, params, progress) values ($1, 'import-analyze', $2, $3, $4, $5) returning id`, [user.orgId, key, user.id, { files: files.filter((f) => f.sha), csv, rejected: bad }, { stage: 'queued', stages }]);
+    const r = await s.db.query(`insert into jobs (org_id, type, idempotency_key, created_by, params, progress) values ($1, 'import-analyze', $2, $3, $4, $5) returning id`, [user.orgId, key, user.id, { files: files.filter((f) => f.sha), csv, rejected: bad, traceparent: req.span?.traceparent() }, { stage: 'queued', stages }]);
     return { jobId: r.rows[0].id, duplicate: false, rejected: bad };
   });
 
@@ -219,13 +236,14 @@ export async function importExportRoutes(app: FastifyInstance, s: Services) {
     await auditStandalone(s.db, actorOf(req), { action: 'export.page', targetType: 'page', targetId: id, details: { format: qs.format, children: qs.children, ...out.report, warnings: out.warnings.length } });
     reply.header('content-disposition', `attachment; filename="export.${out.filename.split('.').pop()}"; filename*=UTF-8''${encodeURIComponent(out.filename)}`);
     reply.header('x-export-warnings', encodeURIComponent(JSON.stringify(out.warnings.slice(0, 20))));
+    reply.header('x-content-sha256', String(out.report.sha256));
     return reply.type(out.mime).send(out.buffer);
   });
 
   /** Background export for large selections; result downloadable for 24 hours by its creator only. */
   app.post('/api/v1/exports', async (req) => {
     const user = requireUser(req);
-    const body = parse(z.object({ pageIds: z.array(uuid).min(1).max(1000).optional(), spaceId: uuid.optional(), format: z.enum(['md', 'docx', 'html', 'pdf']), includeChildren: z.boolean().default(true), idempotencyKey: z.string().max(100).optional() }), req.body);
+    const body = parse(z.object({ pageIds: z.array(uuid).min(1).max(1000).optional(), spaceId: uuid.optional(), format: z.enum(['md', 'docx', 'html', 'pdf']), includeChildren: z.boolean().default(true), layout: z.enum(['merged', 'files']).default('merged'), idempotencyKey: z.string().max(100).optional() }), req.body);
     let ids = body.pageIds ?? [];
     if (body.spaceId) {
       const acc = await requireSpace(s.db, user, body.spaceId, 'view');
@@ -240,7 +258,7 @@ export async function importExportRoutes(app: FastifyInstance, s: Services) {
       const ex = (await s.db.query(`select id from jobs where org_id = $1 and type = 'export' and created_by = $2 and idempotency_key = $3`, [user.orgId, user.id, body.idempotencyKey])).rows[0];
       if (ex) return { jobId: ex.id, duplicate: true };
     }
-    const r = await s.db.query(`insert into jobs (org_id, type, idempotency_key, created_by, params) values ($1, 'export', $2, $3, $4) returning id`, [user.orgId, body.idempotencyKey ?? null, user.id, { pageIds: ids, format: body.format, includeChildren: body.includeChildren }]);
+    const r = await s.db.query(`insert into jobs (org_id, type, idempotency_key, created_by, params) values ($1, 'export', $2, $3, $4) returning id`, [user.orgId, body.idempotencyKey ?? null, user.id, { pageIds: ids, format: body.format, includeChildren: body.includeChildren, layout: body.layout, traceparent: req.span?.traceparent() }]);
     await auditStandalone(s.db, actorOf(req), { action: 'export.request', targetType: body.spaceId ? 'space' : 'page', targetId: body.spaceId ?? ids[0], details: { count: ids.length, format: body.format } });
     return { jobId: r.rows[0].id };
   });
@@ -249,7 +267,27 @@ export async function importExportRoutes(app: FastifyInstance, s: Services) {
     const user = requireUser(req);
     const { id } = parse(z.object({ id: uuid }), req.params);
     const j = await job(user.id, id, 'export');
-    return { id: j.id, status: j.status, progress: j.progress, error: j.error, report: j.report, file: j.result ? { filename: j.result.filename, size: j.result.size } : null };
+    return { id: j.id, status: j.status, progress: j.progress, error: j.error, report: j.report, cancelRequested: j.cancel_requested === true, file: j.result?.sha ? { filename: j.result.filename, size: j.result.size, sha256: j.result.sha } : null };
+  });
+
+  /** Cancels a background export (R-EXPORT-022): a queued job never runs; a running one stops at the next page. */
+  app.post('/api/v1/exports/:id/cancel', async (req) => {
+    const user = requireUser(req);
+    const { id } = parse(z.object({ id: uuid }), req.params);
+    const j = await job(user.id, id, 'export');
+    if (j.status === 'succeeded' || j.status === 'partial') throw conflict('already_finished', 'Экспорт уже завершён — файл можно не скачивать');
+    if (j.status === 'failed' || j.status === 'cancelled') return { ok: true, status: j.status };
+    const r = (
+      await s.db.query(
+        `update jobs set cancel_requested = true,
+                status = case when status = 'queued' then 'cancelled' else status end,
+                finished_at = case when status = 'queued' then now() else finished_at end
+          where id = $1 returning status`,
+        [id],
+      )
+    ).rows[0];
+    await auditStandalone(s.db, actorOf(req), { action: 'export.cancel', targetType: 'job', targetId: id, details: { status: r.status } });
+    return { ok: true, status: r.status };
   });
 
   app.get('/api/v1/exports/:id/download', async (req, reply) => {
@@ -268,6 +306,7 @@ export async function importExportRoutes(app: FastifyInstance, s: Services) {
     }
     await auditStandalone(s.db, actorOf(req), { action: 'export.download', targetType: 'job', targetId: id });
     reply.header('content-disposition', `attachment; filename="export"; filename*=UTF-8''${encodeURIComponent(j.result.filename)}`);
+    reply.header('x-content-sha256', j.result.sha);
     return reply.type(j.result.mime).send(await s.store.read(blobKey(j.result.sha)));
   });
 }

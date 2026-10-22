@@ -1,12 +1,21 @@
 import { Extension, type Editor } from '@tiptap/core';
 import { Plugin, PluginKey } from '@tiptap/pm/state';
-import { Decoration, DecorationSet } from '@tiptap/pm/view';
+import type { Node as PMNode } from '@tiptap/pm/model';
 import { uploadFile, isImageFile, type AttachmentDto } from '../../lib/uploads';
-import { fileSize } from '../../lib/format';
+import { saveUpload, loadUpload, dropUpload, patchUpload, uploadsForPage } from '../../lib/pendingUploads';
 
-interface UploadItem {
+/**
+ * Uploads as real document blocks (R-MEDIA-006, R-MEDIA-008, UX13-03).
+ *
+ * A dropped/pasted/chosen file immediately becomes an `image` / `fileBlock` node with `uploadId` (local preview from
+ * the file, progress, retry). The file is kept in IndexedDB (lib/pendingUploads) until the server stored it; then the
+ * same node is completed in place (attachmentId, src) in a transaction that is not an undo step. Because the block is
+ * part of the document it survives re-renders, sync and reloads; an error never removes it; closing the tab during the
+ * upload resumes it the next time the page is opened in this browser.
+ */
+export interface UploadItem {
   id: string;
-  pos: number;
+  pageId: string;
   file: File;
   progress: number;
   state: 'uploading' | 'waiting' | 'error';
@@ -15,126 +24,190 @@ interface UploadItem {
   controller: AbortController;
 }
 
-export const uploadsKey = new PluginKey<DecorationSet>('kbUploads');
+export const uploadsKey = new PluginKey('kbUploads');
 const items = new Map<string, UploadItem>();
+const listeners = new Map<string, Set<() => void>>();
+/** Editors by page, so a finished upload is applied to the editor currently showing its page. */
+const editors = new Map<string, Editor>();
 
-function widget(item: UploadItem) {
-  const el = document.createElement('div');
-  el.className = 'kb-upload' + (item.state === 'error' ? ' error' : '');
-  el.contentEditable = 'false';
-  el.dataset.uploadId = item.id;
-  render(el, item);
-  return el;
+function notify(id: string) {
+  listeners.get(id)?.forEach((l) => l());
 }
 
-function render(el: HTMLElement, item: UploadItem) {
-  el.replaceChildren();
-  if (item.preview) {
-    const img = document.createElement('img');
-    img.src = item.preview;
-    img.alt = '';
-    el.append(img);
-  }
-  const info = document.createElement('div');
-  info.className = 'kb-upload-info';
-  const name = document.createElement('div');
-  name.className = 'kb-upload-name';
-  name.textContent = `${item.file.name || 'Файл'} · ${fileSize(item.file.size)}`;
-  const status = document.createElement('div');
-  status.className = 'kb-upload-status';
-  status.setAttribute('role', 'status');
-  status.textContent =
-    item.state === 'error' ? item.error ?? 'Ошибка загрузки' : item.state === 'waiting' ? 'Ожидание сети — загрузка продолжится автоматически' : `Загрузка… ${Math.round(item.progress * 100)}%`;
-  const bar = document.createElement('div');
-  bar.className = 'progress';
-  const fill = document.createElement('div');
-  fill.style.width = `${Math.round(item.progress * 100)}%`;
-  bar.append(fill);
-  info.append(name, status);
-  if (item.state !== 'error') info.append(bar);
-  const actions = document.createElement('div');
-  actions.className = 'kb-upload-actions';
-  if (item.state === 'error') {
-    const retry = document.createElement('button');
-    retry.className = 'btn sm';
-    retry.textContent = 'Повторить';
-    retry.dataset.action = 'retry';
-    actions.append(retry);
-  }
-  const cancel = document.createElement('button');
-  cancel.className = 'btn sm ghost';
-  cancel.textContent = item.state === 'error' ? 'Убрать' : 'Отменить';
-  cancel.dataset.action = 'cancel';
-  actions.append(cancel);
-  el.append(info, actions);
+export function subscribeUpload(id: string, cb: () => void) {
+  let set = listeners.get(id);
+  if (!set) listeners.set(id, (set = new Set()));
+  set.add(cb);
+  return () => {
+    set!.delete(cb);
+    if (!set!.size) listeners.delete(id);
+  };
 }
 
-function refresh(id: string) {
-  const el = document.querySelector<HTMLElement>(`.kb-upload[data-upload-id="${id}"]`);
+export function getUploadItem(id: string): UploadItem | undefined {
+  return items.get(id);
+}
+
+/** Alt text from the file name ("Схема_склада.png" → "Схема склада"); generic clipboard names → "Изображение". */
+export function altFromName(name: string): string {
+  const base = name.replace(/\.[a-z0-9]{1,5}$/i, '').replace(/[_]+/g, ' ').trim();
+  if (!base || /^(image|img|clipboard|screenshot|pasted|blob|изображение)[\s\d-]*$/i.test(base)) return 'Изображение';
+  return base.slice(0, 200);
+}
+
+function placeholderNode(file: File, id: string) {
+  return isImageFile(file)
+    ? { type: 'image', attrs: { uploadId: id, alt: altFromName(file.name || '') } }
+    : { type: 'fileBlock', attrs: { uploadId: id, name: file.name || 'Файл', size: file.size, mime: file.type || null, view: 'compact' } };
+}
+
+/** Inserts blocks at a block boundary: replaces an empty paragraph, otherwise goes after the current text block. */
+function insertBlocks(editor: Editor, nodes: object[], pos: number) {
+  const doc = editor.state.doc;
+  const $pos = doc.resolve(Math.min(pos, doc.content.size));
+  const chain = editor.chain();
+  if ($pos.parent.isTextblock && $pos.depth > 0) {
+    if ($pos.parent.content.size === 0) chain.insertContentAt({ from: $pos.before(), to: $pos.after() }, nodes);
+    else chain.insertContentAt($pos.after(), nodes);
+  } else chain.insertContentAt(pos, nodes);
+  chain.run();
+}
+
+/** Finds the node carrying `uploadId`. */
+export function findUploadNode(doc: PMNode, id: string): { node: PMNode; pos: number } | null {
+  let found: { node: PMNode; pos: number } | null = null;
+  doc.descendants((node, pos) => {
+    if (found) return false;
+    if (node.attrs.uploadId === id) {
+      found = { node, pos };
+      return false;
+    }
+    return true;
+  });
+  return found;
+}
+
+function attachmentAttrs(node: PMNode, a: AttachmentDto) {
+  if (node.type.name === 'image')
+    return { ...node.attrs, uploadId: null, src: a.contentUrl, attachmentId: a.id, naturalWidth: a.width, naturalHeight: a.height, width: node.attrs.width ?? (a.width && a.width > 720 ? null : a.width) };
+  return { ...node.attrs, uploadId: null, attachmentId: a.id, name: a.filename, size: a.size, mime: a.mime };
+}
+
+/** Completes the placeholder in place. Returns false when the editor or the block is gone. */
+function complete(editor: Editor | undefined, id: string, a: AttachmentDto): 'done' | 'no-editor' | 'no-node' {
+  if (!editor || editor.isDestroyed) return 'no-editor';
+  const hit = findUploadNode(editor.state.doc, id);
+  if (!hit) return 'no-node';
+  // not an undo step: Ctrl+Z after the upload must not turn the image back into a placeholder
+  editor.view.dispatch(editor.state.tr.setNodeMarkup(hit.pos, undefined, attachmentAttrs(hit.node, a)).setMeta('addToHistory', false));
+  return 'done';
+}
+
+/** Removes the placeholder block (user pressed "Убрать"/"Отменить") and forgets the local file. */
+export function cancelUpload(editor: Editor, id: string) {
   const item = items.get(id);
-  if (el && item) {
-    el.classList.toggle('error', item.state === 'error');
-    render(el, item);
-  }
+  item?.controller.abort();
+  items.delete(id);
+  if (item?.preview) URL.revokeObjectURL(item.preview);
+  void dropUpload(id);
+  const hit = findUploadNode(editor.state.doc, id);
+  if (hit) editor.view.dispatch(editor.state.tr.delete(hit.pos, hit.pos + hit.node.nodeSize));
+  notify(id);
 }
 
-function setDecos(editor: Editor) {
-  editor.view.dispatch(editor.state.tr.setMeta(uploadsKey, 'refresh'));
+export function retryUpload(editor: Editor, id: string) {
+  const item = items.get(id);
+  if (!item) return;
+  item.controller = new AbortController();
+  void run(editor, item);
 }
 
-/** Starts uploading files and inserts image/file blocks at `pos` once each upload is stored on the server. */
+function track(file: File, id: string, pageId: string): UploadItem {
+  const item: UploadItem = { id, pageId, file, progress: 0, state: 'uploading', controller: new AbortController(), preview: isImageFile(file) && file.size < 30e6 ? URL.createObjectURL(file) : undefined };
+  items.set(id, item);
+  return item;
+}
+
+/** Inserts upload blocks at `pos` right away and uploads the files in the background. */
 export function startUploads(editor: Editor, files: File[], pos: number, pageId: string) {
-  for (const file of files) {
-    const id = Math.random().toString(36).slice(2);
-    const item: UploadItem = { id, pos, file, progress: 0, state: 'uploading', controller: new AbortController(), preview: isImageFile(file) && file.size < 30e6 ? URL.createObjectURL(file) : undefined };
-    items.set(id, item);
-    run(editor, item, pageId);
+  if (!files.length) return;
+  editors.set(pageId, editor);
+  const started = files.map((file) => {
+    const id = crypto.randomUUID();
+    const item = track(file, id, pageId);
+    return { item, node: placeholderNode(file, id) };
+  });
+  insertBlocks(
+    editor,
+    started.map((s) => s.node),
+    pos,
+  );
+  for (const { item } of started) {
+    // persist first (best effort), then upload: a closed tab resumes from IndexedDB
+    void saveUpload({ id: item.id, pageId, name: item.file.name, type: item.file.type, lastModified: item.file.lastModified, size: item.file.size, blob: item.file, ts: Date.now() }).then(() => run(editor, item));
   }
-  setDecos(editor);
 }
 
-async function run(editor: Editor, item: UploadItem, pageId: string) {
+async function run(editor: Editor, item: UploadItem) {
   item.state = 'uploading';
   item.error = undefined;
-  refresh(item.id);
+  notify(item.id);
   try {
     const a = await uploadFile(
       item.file,
-      pageId,
+      item.pageId,
       (p, st) => {
         item.progress = p;
         item.state = st === 'waiting' ? 'waiting' : 'uploading';
-        refresh(item.id);
+        notify(item.id);
       },
       item.controller.signal,
     );
-    if (editor.isDestroyed) return;
-    const pos = Math.min(item.pos, editor.state.doc.content.size);
+    if (!items.has(item.id)) return; // cancelled meanwhile
+    const target = editors.get(item.pageId) ?? editor;
+    const r = complete(target, item.id, a);
+    if (r === 'no-editor') await patchUpload(item.id, { attachment: a, blob: undefined });
+    else await dropUpload(item.id);
     items.delete(item.id);
-    if (item.preview) URL.revokeObjectURL(item.preview);
-    insertAttachment(editor, a, pos);
+    if (item.preview) setTimeout(() => URL.revokeObjectURL(item.preview!), 30_000);
+    notify(item.id);
   } catch (e) {
     if ((e as Error).name === 'AbortError') return;
     item.state = 'error';
-    item.error = (e as Error).message;
-    refresh(item.id);
+    item.error = (e as Error).message || 'Ошибка загрузки';
+    notify(item.id);
   }
 }
 
-export function insertAttachment(editor: Editor, a: AttachmentDto, pos: number) {
-  const isImage = a.kind === 'image' || /^image\//.test(a.mime);
-  const node = isImage
-    ? { type: 'image', attrs: { src: a.contentUrl, attachmentId: a.id, alt: '', naturalWidth: a.width, naturalHeight: a.height, width: a.width && a.width > 720 ? null : a.width } }
-    : { type: 'fileBlock', attrs: { attachmentId: a.id, name: a.filename, size: a.size, mime: a.mime, view: 'compact' } };
-  const $pos = editor.state.doc.resolve(pos);
-  // insert at block boundary: after the current block when inside text
-  let at = pos;
-  if ($pos.parent.isTextblock) at = $pos.parent.content.size === 0 ? $pos.before() : $pos.after();
-  const empty = $pos.parent.isTextblock && $pos.parent.content.size === 0 && $pos.depth > 0;
-  const chain = editor.chain();
-  if (empty) chain.insertContentAt({ from: $pos.before(), to: $pos.after() }, node);
-  else chain.insertContentAt(at, node);
-  chain.run();
+/**
+ * Called when a page is opened with edit rights: placeholders of this page whose file is still in this browser
+ * resume uploading; finished-but-unapplied uploads are applied; stored files whose block no longer exists are dropped.
+ */
+export async function resumeUploads(editor: Editor, pageId: string) {
+  editors.set(pageId, editor);
+  const stored = await uploadsForPage(pageId);
+  if (editor.isDestroyed) return;
+  for (const s of stored) {
+    if (items.has(s.id)) continue;
+    const hit = findUploadNode(editor.state.doc, s.id);
+    if (!hit) {
+      if (Date.now() - s.ts > 10_000) await dropUpload(s.id);
+      continue;
+    }
+    if (s.attachment) {
+      if (complete(editor, s.id, s.attachment) === 'done') await dropUpload(s.id);
+      notify(s.id);
+      continue;
+    }
+    if (!s.blob) continue;
+    const file = new File([s.blob], s.name, { type: s.type, lastModified: s.lastModified });
+    void run(editor, track(file, s.id, pageId));
+  }
+}
+
+/** Whether this browser still holds the file of a placeholder (another user's placeholder → false). */
+export async function hasLocalUpload(id: string) {
+  return !!(await loadUpload(id));
 }
 
 export const Uploads = Extension.create<{ pageId: () => string }>({
@@ -142,48 +215,17 @@ export const Uploads = Extension.create<{ pageId: () => string }>({
   addOptions() {
     return { pageId: () => '' };
   },
+  onDestroy() {
+    const pageId = this.options.pageId();
+    if (editors.get(pageId) === this.editor) editors.delete(pageId);
+  },
   addProseMirrorPlugins() {
     const editor = this.editor;
     const pageId = this.options.pageId;
     return [
-      new Plugin<DecorationSet>({
+      new Plugin({
         key: uploadsKey,
-        state: {
-          init: () => DecorationSet.empty,
-          apply(tr, set) {
-            for (const item of items.values()) item.pos = tr.mapping.map(item.pos);
-            if (tr.getMeta(uploadsKey) || tr.docChanged) {
-              return DecorationSet.create(
-                tr.doc,
-                [...items.values()].map((i) => Decoration.widget(Math.min(i.pos, tr.doc.content.size), () => widget(i), { key: i.id + ':' + i.state, side: 1 })),
-              );
-            }
-            return set.map(tr.mapping, tr.doc);
-          },
-        },
         props: {
-          decorations(state) {
-            return uploadsKey.getState(state);
-          },
-          handleDOMEvents: {
-            click(_view, e) {
-              const btn = (e.target as HTMLElement).closest<HTMLElement>('.kb-upload button');
-              if (!btn) return false;
-              const id = btn.closest<HTMLElement>('.kb-upload')!.dataset.uploadId!;
-              const item = items.get(id);
-              if (!item) return true;
-              if (btn.dataset.action === 'cancel') {
-                item.controller.abort();
-                items.delete(id);
-                if (item.preview) URL.revokeObjectURL(item.preview);
-                setDecos(editor);
-              } else if (btn.dataset.action === 'retry') {
-                item.controller = new AbortController();
-                run(editor, item, pageId());
-              }
-              return true;
-            },
-          },
           handleDrop(view, event, _slice, moved) {
             const files = [...(event.dataTransfer?.files ?? [])];
             if (moved || !files.length || !view.editable) return false;

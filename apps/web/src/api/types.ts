@@ -52,6 +52,8 @@ export interface PageDto {
   inheritPermissions: boolean;
   /** Page has its own explicit grants (an exception to inherited rights). */
   hasExplicitGrants?: boolean;
+  /** Page of a personal space that somebody besides the owner can open («не полностью личная»). */
+  personalShared?: boolean;
   locked: boolean;
   wide: boolean;
   properties: Record<string, any>;

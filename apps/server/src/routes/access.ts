@@ -37,7 +37,7 @@ export async function accessRoutes(app: FastifyInstance, s: Services) {
     const page = (await s.db.query('select inherit_permissions, space_id, parent_id from pages where id = $1', [id])).rows[0];
     const audience = user.kind === 'guest' && !acc.actions.share ? [] : await pageAudience(s.db, id);
     const name = await nameSubjects(s.db, audience);
-    const grants = (await s.db.query(`select id, subject_type, subject_id, level, can_export, can_download, can_share, can_publish, starts_at, expires_at, reason, created_at, granted_by from grants where resource_type = 'page' and resource_id = $1 and revoked_at is null`, [id])).rows;
+    const grants = (await s.db.query(`select id, subject_type, subject_id, level, can_export, can_download, can_share, can_publish, starts_at, expires_at, time_zone, reason, created_at, granted_by from grants where resource_type = 'page' and resource_id = $1 and revoked_at is null`, [id])).rows;
     const gname = await nameSubjects(s.db, grants.map((g) => ({ subjectType: g.subject_type, subjectId: g.subject_id })));
     return {
       my: { level: acc.level, actions: acc.actions, sources: acc.sources, explanation: acc.explanation },
@@ -61,6 +61,7 @@ export async function accessRoutes(app: FastifyInstance, s: Services) {
     startsAt: z.string().datetime({ offset: true }).nullable().optional(),
     expiresAt: z.string().datetime({ offset: true }).nullable().optional(),
     reason: z.string().max(500).nullable().optional(),
+    timeZone: z.string().max(64).regex(/^[A-Za-z0-9_+\-/]+$/).nullable().optional(),
     confirmWiden: z.boolean().optional(),
   });
 

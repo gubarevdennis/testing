@@ -10,8 +10,10 @@ import { ImageView } from './nodeviews/ImageView';
 import { CalloutView, FileView, EmbedView, PageLinkView, PageMentionView, MermaidView, TocView, SyncedBlockView, CollectionBlockView, CodeBlockView } from './nodeviews/blocks';
 import { ClientBlockIds } from './extensions/blockIds';
 import { BlockOps } from './extensions/blockOps';
+import { StableSelection } from './extensions/stableSelection';
 import { Uploads } from './extensions/uploads';
 import { SmartPaste } from './extensions/paste';
+import { PasteOptions } from './extensions/pasteOptions';
 import { slashExtension, mentionExtension, pageLinkExtension, emojiExtension } from './extensions/suggest';
 import { FindInPage } from './extensions/find';
 import { ConflictGuard, type ConflictInfo } from './extensions/conflictGuard';
@@ -54,6 +56,7 @@ export function clientExtensions(o: ClientExtensionOptions): AnyExtension[] {
   const exts: AnyExtension[] = [
     ...schema,
     Collaboration.configure({ document: o.doc, field: FRAGMENT_NAME }),
+    StableSelection,
     Placeholder.configure({
       includeChildren: true,
       placeholder: ({ node, editor, pos }) => {
@@ -74,6 +77,7 @@ export function clientExtensions(o: ClientExtensionOptions): AnyExtension[] {
     BlockOps,
     Uploads.configure({ pageId: () => o.pageId }),
     SmartPaste,
+    PasteOptions,
     FindInPage,
     ConflictGuard.configure({ onConflict: (c) => o.onConflict(c) }),
     slashExtension(o.commandContext),

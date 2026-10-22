@@ -44,11 +44,11 @@ export async function api<T = any>(method: string, path: string, body?: unknown,
     throw new ApiError(0, 'network', 'Нет связи с сервером. Проверьте подключение — изменения в документах сохраняются на устройстве.');
   }
   if (opts.raw) {
-    if (!res.ok) throw await toError(res);
+    if (!res.ok) throw await toError(res, method);
     return res as unknown as T;
   }
   if (!res.ok) {
-    const err = await toError(res);
+    const err = await toError(res, method);
     if (res.status === 401 && onUnauthorized && !path.startsWith('/api/v1/auth/login')) onUnauthorized();
     throw err;
   }
@@ -57,15 +57,48 @@ export async function api<T = any>(method: string, path: string, body?: unknown,
   return (ct.includes('json') ? res.json() : res.text()) as Promise<T>;
 }
 
-async function toError(res: Response): Promise<ApiError> {
+async function toError(res: Response, method = 'GET'): Promise<ApiError> {
   let body: any = null;
   try {
     body = await res.json();
   } catch {
     /* not json */
   }
-  const msg = body?.error?.message ?? (res.status >= 500 ? 'Сервер временно недоступен. Повторите попытку.' : `Ошибка ${res.status}`);
+  const msg = explainError(res.status, body?.error?.message, method, body?.correlationId);
   return new ApiError(res.status, body?.error?.code ?? 'http_' + res.status, msg, body?.error?.details, body?.correlationId);
+}
+
+/**
+ * Error message template (R-UI-052): what happened, whether the data was saved, what to do and how to retry.
+ * Server messages already explain *what* happened; the missing parts are added for statuses where the user
+ * has to act (no rights, conflict, size, rate limit, server failure). Validation (400) and auth (401) messages
+ * stay as they are because they are shown next to the field that needs fixing.
+ */
+export function explainError(status: number, serverMessage: string | undefined, method = 'GET', correlationId?: string): string {
+  const defaults: Record<number, string> = {
+    403: 'Недостаточно прав для этого действия.',
+    404: 'Объект не найден или удалён.',
+    409: 'Данные одновременно изменил другой пользователь.',
+    413: 'Файл или запрос слишком большой.',
+    429: 'Слишком много запросов.',
+  };
+  const what = (serverMessage ?? defaults[status] ?? (status >= 500 ? 'Сервер временно недоступен.' : `Запрос не выполнен (код ${status}).`)).trim();
+  if (status < 403 || status === 404 || status === 401) return what;
+  const parts = [/[.!?…]$/.test(what) ? what : what + '.'];
+  const lower = what.toLowerCase();
+  const mutating = method !== 'GET' && method !== 'HEAD';
+  if (mutating && !/сохран|не изменен|не изменён/.test(lower)) parts.push('Изменение не сохранено.');
+  if (!/повтор|запросите|уменьшите|подождите|обновите/.test(lower)) {
+    const todo: Record<number, string> = {
+      403: 'Запросите доступ у владельца страницы или администратора.',
+      409: 'Обновите страницу, проверьте актуальные данные и повторите действие.',
+      413: 'Уменьшите размер файла или разделите его и повторите.',
+      429: 'Подождите минуту и повторите попытку.',
+    };
+    parts.push(todo[status] ?? 'Повторите попытку через несколько секунд; если ошибка повторяется — сообщите администратору.');
+  }
+  if (status >= 500 && correlationId) parts.push(`Код обращения: ${correlationId}.`);
+  return parts.join(' ');
 }
 
 export const get = <T = any>(p: string, signal?: AbortSignal) => api<T>('GET', p, undefined, { signal });

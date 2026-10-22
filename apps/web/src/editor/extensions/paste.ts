@@ -6,6 +6,7 @@ import { looksLikeTsv, parseTsv, rowsToTable, sanitizeHref, tableToRows, rowsToT
 import { markdownNow } from '../../lib/markdown';
 import { cleanPastedHtml, cleanCopiedDom, dataUriToFile } from '../clipboard/html';
 import { startUploads } from './uploads';
+import { notePaste } from './pasteOptions';
 import { toast } from '../../components/ui/Toast';
 
 const MD_HINTS = [/^#{1,6}\s/m, /^\s*[-*+]\s+\S/m, /^\s*\d+[.)]\s+\S/m, /^```/m, /^\s*>\s/m, /^\|.+\|\s*$/m, /\*\*[^*\n]+\*\*/, /\[[^\]\n]+\]\([^)\s]+\)/, /^\s*[-*]\s\[[ xX]\]\s/m];
@@ -44,6 +45,8 @@ export const SmartPaste = Extension.create({
             // A table (cell range) is copied as TSV so it lands cell by cell in Excel / Google Sheets.
             const first = slice.content.firstChild;
             if (slice.content.childCount === 1 && first?.type.name === 'table') return rowsToTsv(tableToRows(first.toJSON() as PMNode));
+            // a cell range (CellSelection) is a slice of table rows: Ctrl+C must give TSV as well (R-TABLE-003)
+            if (first?.type.name === 'tableRow') return rowsToTsv(tableToRows({ type: 'table', content: (slice.content.toJSON() as PMNode[]) ?? [] } as PMNode));
             return '';
           },
           handleKeyDown(_view, e) {
@@ -52,11 +55,15 @@ export const SmartPaste = Extension.create({
           },
           handlePaste(view, event) {
             // a paste is always its own undo step (not merged with the typing just before it)
-            yUndoPluginKey.getState(view.state)?.undoManager?.stopCapturing();
+            const um = yUndoPluginKey.getState(view.state)?.undoManager;
+            um?.stopCapturing();
+            // ...and typing right after the paste starts a new step too (R-EDITOR-033: one Undo = exactly the paste)
+            setTimeout(() => um?.stopCapturing(), 0);
             const cd = event.clipboardData;
             if (!cd || !view.editable) return false;
             const text = cd.getData('text/plain');
             const html = cd.getData('text/html');
+            notePaste(html && !plain ? { html: true, text } : null); // paste options for formatted pastes (R-CLIPBOARD-009)
             const { $from } = view.state.selection;
             if ($from.parent.type.spec.code) return false; // code block / mermaid: browser default (plain)
             if (plain) {

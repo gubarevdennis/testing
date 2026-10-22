@@ -1,13 +1,13 @@
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { Search, Home, Inbox, Star, Trash2, LayoutTemplate, Upload, Shield, Settings, LogOut, Moon, Sun, Monitor, HelpCircle, ChevronsLeft, Plus, ChevronRight, RotateCcw } from 'lucide-react';
+import { Search, Home, Inbox, Star, Trash2, LayoutTemplate, Upload, Shield, Settings, LogOut, Moon, Sun, Monitor, HelpCircle, ChevronsLeft, Plus, ChevronRight, RotateCcw, FolderPlus } from 'lucide-react';
 import { useMe } from '../state/session';
 import { useUi } from '../state/ui';
 import { useSpaces, useFavorites, useNotifications } from '../hooks/data';
 import { SidebarTree } from './SidebarTree';
 import { Menu } from '../components/ui/Menu';
 import { Tooltip } from '../components/ui/Tooltip';
-import { post } from '../api/client';
+import { post, ApiError } from '../api/client';
 import { createPage } from './treeActions';
 import { toast } from '../components/ui/Toast';
 import { Avatar } from '../components/Avatar';
@@ -16,6 +16,7 @@ import { useQuickSwitcher } from './QuickSwitcher';
 import { NotificationsPopover } from '../components/Notifications';
 import { pagesWithPending } from '../sync/idb';
 import { confirm } from '../components/ui/Confirm';
+import { CreateSpaceDialog } from '../components/space/SpaceAccess';
 
 export function Sidebar({ mobile, onNavigate }: { mobile?: boolean; onNavigate?: () => void }) {
   const me = useMe();
@@ -27,16 +28,24 @@ export function Sidebar({ mobile, onNavigate }: { mobile?: boolean; onNavigate?:
   const openHelp = useHelp((s) => s.open);
   const openSwitcher = useQuickSwitcher((s) => s.open);
   const resizing = useRef(false);
+  const [createSpace, setCreateSpace] = useState(false);
   const isAdmin = ['owner', 'admin', 'people_admin', 'auditor'].includes(me.user.orgRole);
   const all = spaces.data?.spaces ?? [];
   const personal = all.find((s) => s.isPersonal) ?? null;
 
   const newPage = async () => {
-    const target = personal ?? all.find((s) => s.member && s.actions.create);
+    // A click right after login can come before the spaces list has loaded: wait for it instead of failing.
+    const list = spaces.data?.spaces ?? (await spaces.refetch()).data?.spaces ?? [];
+    const target = list.find((s) => s.isPersonal) ?? list.find((s) => s.member && s.actions.create);
     if (!target) return toast.error('Нет пространства, где вы можете создавать страницы');
-    const p = await createPage(target.id, null);
-    navigate('/p/' + p.id, { state: { justCreated: true } });
-    onNavigate?.();
+    try {
+      const p = await createPage(target.id, null);
+      navigate('/p/' + p.id, { state: { justCreated: true } });
+      onNavigate?.();
+    } catch (e) {
+      // R-UI-009: a failed creation must be visible, not an unhandled rejection
+      toast.error(e instanceof ApiError ? e.message : 'Не удалось создать страницу. Повторите попытку.');
+    }
   };
 
   const startResize = (e: React.PointerEvent) => {
@@ -125,6 +134,12 @@ export function Sidebar({ mobile, onNavigate }: { mobile?: boolean; onNavigate?:
         <button className="nav-item" onClick={newPage}>
           <Plus size={16} /> <span>Новая страница</span>
         </button>
+        {me.user.kind !== 'guest' && (
+          <button className="nav-item" onClick={() => setCreateSpace(true)}>
+            <FolderPlus size={16} /> <span>Новое пространство</span>
+          </button>
+        )}
+        {createSpace && <CreateSpaceDialog open onClose={() => (setCreateSpace(false), onNavigate?.())} />}
       </div>
       <div className="sidebar-scroll">
         {!!favorites.data?.pages.length && (

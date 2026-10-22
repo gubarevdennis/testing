@@ -5,7 +5,7 @@ import { findParentNode } from '@tiptap/core';
 import { useCallback } from 'react';
 import { useEditorState } from '@tiptap/react';
 import {
-  ArrowUpToLine, ArrowDownToLine, ArrowLeftToLine, ArrowRightToLine, Trash2, TableCellsMerge, TableCellsSplit, PaintBucket, AlignLeft, AlignCenter, AlignRight, MoreHorizontal, Copy, Rows3, Columns3, Heading, AlignVerticalJustifyStart, AlignVerticalJustifyCenter, AlignVerticalJustifyEnd,
+  ArrowUpToLine, ArrowDownToLine, ArrowLeftToLine, ArrowRightToLine, Trash2, TableCellsMerge, TableCellsSplit, PaintBucket, AlignLeft, AlignCenter, AlignRight, MoreHorizontal, Copy, Rows3, Columns3, Heading, AlignVerticalJustifyStart, AlignVerticalJustifyCenter, AlignVerticalJustifyEnd, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, ArrowDownAZ, ArrowDownZA,
 } from 'lucide-react';
 import { tableToRows, rowsToTsv } from '@kb/shared';
 import { loadMarkdown } from '../../lib/markdown';
@@ -13,10 +13,20 @@ import { Tooltip } from '../../components/ui/Tooltip';
 import { Menu } from '../../components/ui/Menu';
 import { HIGHLIGHTS } from '../palette';
 import { copyWithFeedback, fragmentHtml } from '../clipboard/copy';
+import { moveTableRow, moveTableColumn, sortTableByColumn, TABLE_OP_ERRORS, type TableOpResult } from '../tableOps';
+import { toast } from '../../components/ui/Toast';
+
+function report(r: TableOpResult, editor: Editor) {
+  if (r !== 'ok' && TABLE_OP_ERRORS[r]) toast.error(TABLE_OP_ERRORS[r]);
+  // the menu returns focus to its button on close: give it back to the table so Alt+Shift+arrows keep working
+  setTimeout(() => editor.view.focus(), 30);
+}
 
 const inTable = (e: Editor) => e.isActive('table');
 const TABLE_OPTIONS = { placement: 'top-start' as const, offset: 6, flip: true, shift: { padding: 8 } };
 const tableShouldShow = ({ editor: e }: { editor: Editor }) => e.isEditable && inTable(e);
+
+const NOT_IN_TABLE = { multi: false, canSplit: false };
 
 function tableNode(editor: Editor) {
   return findParentNode((n) => n.type.name === 'table')(editor.state.selection);
@@ -24,7 +34,8 @@ function tableNode(editor: Editor) {
 
 /** Contextual toolbar above a table: rows/columns, merging, cell colours and alignment, copy to Excel. */
 export function TableToolbar({ editor }: { editor: Editor }) {
-  const st = useEditorState({ editor, selector: ({ editor: e }) => ({ multi: e.state.selection instanceof CellSelection, canSplit: e.can().splitCell() }) });
+  // outside a table the toolbar is hidden: skip the (document-wide) command dry run on every keystroke
+  const st = useEditorState({ editor, selector: ({ editor: e }) => (inTable(e) ? { multi: e.state.selection instanceof CellSelection, canSplit: e.can().splitCell() } : NOT_IN_TABLE) });
   const c = () => editor.chain().focus();
   const b = (label: string, icon: React.ReactNode, run: () => void, disabled = false) => (
     <Tooltip label={label}>
@@ -106,6 +117,13 @@ export function TableToolbar({ editor }: { editor: Editor }) {
         <Menu
           label="Таблица"
           items={[
+            { id: 'mrup', label: 'Переместить строку вверх', icon: <ArrowUp size={15} />, shortcut: 'Alt+Shift+↑', onSelect: () => report(moveTableRow(editor, -1), editor) },
+            { id: 'mrdown', label: 'Переместить строку вниз', icon: <ArrowDown size={15} />, shortcut: 'Alt+Shift+↓', onSelect: () => report(moveTableRow(editor, 1), editor) },
+            { id: 'mcleft', label: 'Переместить столбец влево', icon: <ArrowLeft size={15} />, shortcut: 'Alt+Shift+←', onSelect: () => report(moveTableColumn(editor, -1), editor) },
+            { id: 'mcright', label: 'Переместить столбец вправо', icon: <ArrowRight size={15} />, shortcut: 'Alt+Shift+→', onSelect: () => report(moveTableColumn(editor, 1), editor) },
+            { id: 'sasc', label: 'Сортировать по возрастанию', icon: <ArrowDownAZ size={15} />, onSelect: () => report(sortTableByColumn(editor, 'asc'), editor) },
+            { id: 'sdesc', label: 'Сортировать по убыванию', icon: <ArrowDownZA size={15} />, onSelect: () => report(sortTableByColumn(editor, 'desc'), editor) },
+            { separator: true },
             { id: 'hrow', label: 'Строка заголовков', icon: <Heading size={15} />, onSelect: () => c().toggleHeaderRow().run() },
             { id: 'hcol', label: 'Столбец заголовков', icon: <Heading size={15} />, onSelect: () => c().toggleHeaderColumn().run() },
             { separator: true },

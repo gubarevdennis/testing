@@ -58,6 +58,12 @@ export function fragmentHtml(editor: Editor, json: PMNode): string {
   return div.innerHTML;
 }
 
+/** Copies a range of whole blocks with formatting (text/html) and as text (text/plain) — block/section copy. */
+export async function copyBlocks(editor: Editor, from: number, to: number, success: string): Promise<boolean> {
+  const json = { type: 'doc', content: editor.state.doc.slice(from, to).content.toJSON() ?? [] } as PMNode;
+  return copyWithFeedback({ text: docToPlainText(json), html: fragmentHtml(editor, json) }, success);
+}
+
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
 
 export type CopyPageFormat = 'html' | 'text' | 'markdown';

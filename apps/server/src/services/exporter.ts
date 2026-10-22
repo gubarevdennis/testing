@@ -5,9 +5,33 @@ import type { Services } from '../app.js';
 import { accessForPages, type AuthUser } from '../acl/engine.js';
 import { blobKey } from '../storage/blob-store.js';
 import { docToDocx } from '../convert/docx-export.js';
+import { validateDocx } from '../convert/docx-validate.js';
 import { docToHtml } from '../convert/html.js';
 
 export type ExportFormat = 'md' | 'docx' | 'html' | 'pdf';
+
+/** Raised inside an export when the user cancelled the background job (R-EXPORT-022). */
+export class ExportCancelledError extends Error {
+  constructor() {
+    super('Экспорт отменён пользователем');
+  }
+}
+
+export interface ExportOptions {
+  includeChildren: boolean;
+  singleFile?: boolean;
+  /** 'merged' (default): one document for the branch; 'files': a ZIP with one file per page in the tree layout. */
+  layout?: 'merged' | 'files';
+  /** Polled between pages; returning true aborts the export with ExportCancelledError. */
+  isCancelled?: () => Promise<boolean>;
+}
+
+/** Fails closed when a produced DOCX breaks Open XML package/schema rules Word enforces (integrity check). */
+async function checkDocx(buf: Buffer, title: string) {
+  const v = await validateDocx(buf);
+  if (!v.ok) throw Object.assign(new Error(`Файл DOCX «${title}» не прошёл проверку целостности: ${v.errors.slice(0, 3).join('; ')}`), { status: 500 });
+  return v;
+}
 
 export interface ExportPage {
   id: string;
@@ -127,9 +151,20 @@ function resolvers(s: Services, pages: ExportPage[]) {
 }
 
 /** Single page or branch as one document in the requested format. Multiple pages: ZIP. */
-export async function exportPages(s: Services, user: AuthUser, rootIds: string[], format: ExportFormat, opts: { includeChildren: boolean; singleFile?: boolean }): Promise<ExportResult> {
+export async function exportPages(s: Services, user: AuthUser, rootIds: string[], format: ExportFormat, opts: ExportOptions): Promise<ExportResult> {
+  const out = await exportPagesInner(s, user, rootIds, format, opts);
+  // Integrity: the checksum of the delivered file is part of the report (and of the download headers).
+  out.report = { ...out.report, sha256: createHash('sha256').update(out.buffer).digest('hex'), bytes: out.buffer.length };
+  return out;
+}
+
+async function exportPagesInner(s: Services, user: AuthUser, rootIds: string[], format: ExportFormat, opts: ExportOptions): Promise<ExportResult> {
+  const cancelCheck = async () => {
+    if (opts.isCancelled && (await opts.isCancelled())) throw new ExportCancelledError();
+  };
   const { pages, skipped } = await loadExportPages(s, user, rootIds, opts.includeChildren);
   if (!pages.length) throw Object.assign(new Error('Нет страниц, доступных для экспорта'), { status: 403 });
+  await cancelCheck();
   const warnings: ConversionWarning[] = [];
   if (skipped) warnings.push({ code: 'skipped', message: `Пропущено страниц без права экспорта или без опубликованной версии: ${skipped}` });
   const r = resolvers(s, pages);
@@ -142,6 +177,7 @@ export async function exportPages(s: Services, user: AuthUser, rootIds: string[]
     warnings.push(...aw);
     const files: Array<{ path: string; data: Buffer }> = [];
     for (const p of pages) {
+      await cancelCheck();
       const here = paths.get(p.id)!;
       const md = docToMarkdown(p.content, {
         frontMatter: { title: p.title, id: p.id, ...(p.icon ? { icon: p.icon } : {}), status: p.status, updated: p.updatedAt?.toISOString?.() ?? null },
@@ -159,9 +195,28 @@ export async function exportPages(s: Services, user: AuthUser, rootIds: string[]
     return { buffer: zip, filename: slugify(root.title) + '.zip', mime: 'application/zip', warnings, pageIds: pages.map((p) => p.id), report: { pages: pages.length, assets: assets.size } };
   }
 
+  if (opts.layout === 'files' && pages.length > 1) {
+    // Separate files: one document per page in the readable tree layout, plus report and checksums (ZIP).
+    const ext = '.' + format;
+    const paths = pagePaths(pages, ext);
+    const files: Array<{ path: string; data: Buffer }> = [];
+    const { assets } = await collectAssets(s, user, pages, () => '');
+    for (const p of pages) {
+      await cancelCheck();
+      const one = await renderSingle(s, p.title, p.content, p.author, format, assets, r);
+      warnings.push(...one.warnings.map((w) => ({ ...w, message: `«${p.title}»: ${w.message}` })));
+      files.push({ path: paths.get(p.id)!, data: one.buffer });
+    }
+    const zip = await buildZip(s, files, [], warnings, { title: root.title, pages: pages.length });
+    return { buffer: zip, filename: slugify(root.title) + '.zip', mime: 'application/zip', warnings, pageIds: pages.map((p) => p.id), report: { pages: pages.length, layout: 'files', files: files.length } };
+  }
+
   if (format === 'docx') {
     const merged = mergeForSingleDocument(pages);
+    // A branch exported as one Word document starts with a table of contents (headings carry bookmarks).
+    if (pages.length > 1) merged.content = [{ type: 'toc' }, ...(merged.content ?? [])];
     const { assets } = await collectAssets(s, user, pages, () => '');
+    await cancelCheck();
     const out = await docToDocx(merged, {
       title: root.title,
       author: root.author ?? undefined,
@@ -178,16 +233,46 @@ export async function exportPages(s: Services, user: AuthUser, rootIds: string[]
       },
     });
     warnings.push(...out.warnings);
-    return { buffer: out.buffer, filename: slugify(root.title) + '.docx', mime: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', warnings, pageIds: pages.map((p) => p.id), report: { pages: pages.length } };
+    const v = await checkDocx(out.buffer, root.title);
+    return { buffer: out.buffer, filename: slugify(root.title) + '.docx', mime: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', warnings, pageIds: pages.map((p) => p.id), report: { pages: pages.length, toc: pages.length > 1, validation: { ok: v.ok, parts: v.parts, stats: v.stats } } };
   }
 
   // HTML / PDF share the same rendering.
   const merged = mergeForSingleDocument(pages);
   const { assets } = await collectAssets(s, user, pages, () => '');
+  await cancelCheck();
   const html = await standaloneHtml(s, root.title, merged, assets, { inlineImages: true });
   if (format === 'html') return { buffer: Buffer.from(html, 'utf8'), filename: slugify(root.title) + '.html', mime: 'text/html; charset=utf-8', warnings, pageIds: pages.map((p) => p.id), report: { pages: pages.length } };
   const pdf = await htmlToPdf(s, html, root.title);
   return { buffer: pdf, filename: slugify(root.title) + '.pdf', mime: 'application/pdf', warnings, pageIds: pages.map((p) => p.id), report: { pages: pages.length } };
+}
+
+/** One page as a standalone DOCX/HTML/PDF document (separate-files export). */
+async function renderSingle(s: Services, title: string, content: PMNode, author: string | null, format: ExportFormat, assets: Map<string, AssetRef>, r: ReturnType<typeof resolvers>): Promise<{ buffer: Buffer; warnings: ConversionWarning[] }> {
+  if (format === 'docx') {
+    const out = await docToDocx(content, {
+      title,
+      author: author ?? undefined,
+      baseUrl: s.cfg.publicUrl,
+      pageTitle: r.pageTitle,
+      syncedContent: r.syncedContent,
+      loadImage: async (n) => {
+        const a = n.attrs?.attachmentId ? assets.get(n.attrs.attachmentId) : null;
+        if (!a) return null;
+        const sharp = (await import('sharp')).default;
+        const data = await s.store.readBuffer(blobKey(a.sha));
+        const m = await sharp(data).metadata().catch(() => ({ width: 400, height: 300 }) as any);
+        return { data, width: m.width ?? 400, height: m.height ?? 300, mime: a.mime };
+      },
+    });
+    await checkDocx(out.buffer, title);
+    return out;
+  }
+  const html = await standaloneHtml(s, title, content, assets, { inlineImages: true });
+  if (format === 'html') return { buffer: Buffer.from(html, 'utf8'), warnings: [] };
+  if (format === 'pdf') return { buffer: await htmlToPdf(s, html, title), warnings: [] };
+  const md = docToMarkdown(content, { syncedContent: r.syncedContent });
+  return { buffer: Buffer.from(`# ${title}\n\n` + md.markdown, 'utf8'), warnings: md.warnings };
 }
 
 /** Child pages are appended after their parent with a heading, producing one printable document. */

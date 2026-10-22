@@ -10,6 +10,8 @@ import { orgSettings } from '../services/org.js';
 import { badRequest, conflict, forbidden, notFound } from '../lib/errors.js';
 import { setTitle } from '../collab/ydoc.js';
 import { keyBetween } from '@kb/shared';
+import { personalExposure } from './acl-extra.js';
+import { createViewLogger } from '../services/denials.js';
 
 const uuid = z.string().uuid();
 const idParam = z.object({ id: uuid });
@@ -59,6 +61,8 @@ export async function pageDto(q: Queryable, user: AuthUser, p: PageRow, acc: Pag
     status: p.status,
     inheritPermissions: p.inherit_permissions,
     hasExplicitGrants: (await pagesWithExplicitGrants(q, [p.id])).has(p.id),
+    // «Не полностью личная»: a page of a personal space that someone besides the owner can open (R-ACL-051).
+    personalShared: space.kind === 'personal' ? (await personalExposure(q, p.id)).shared : false,
     locked: p.locked,
     wide: p.wide,
     properties: p.properties,
@@ -87,6 +91,7 @@ export async function pageDto(q: Queryable, user: AuthUser, p: PageRow, acc: Pag
 }
 
 export async function pageRoutes(app: FastifyInstance, s: Services) {
+  const logView = createViewLogger(s.db, s.log);
   app.post('/api/v1/pages', async (req) => {
     const user = requireUser(req);
     const body = parse(
@@ -130,6 +135,7 @@ export async function pageRoutes(app: FastifyInstance, s: Services) {
     const p = (await getPage(s.db, id))!;
     if (p.deleted_at && !acc.actions.restore) throw notFound();
     await s.db.query(`insert into recent_views (user_id, page_id) values ($1, $2) on conflict (user_id, page_id) do update set viewed_at = now()`, [user.id, id]);
+    logView(req, id);
     return { page: await pageDto(s.db, user, p, acc), breadcrumbs: await breadcrumbs(s.db, user, id) };
   });
 

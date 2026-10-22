@@ -1,7 +1,7 @@
 import '../styles/admin.css';
 import type { ReactNode } from 'react';
 import { NavLink, Navigate, Route, Routes } from 'react-router-dom';
-import { Activity, Archive, FolderTree, Hourglass, ScrollText, Settings, ShieldAlert, Users } from 'lucide-react';
+import { Activity, Archive, FolderTree, Hourglass, ScrollText, Settings, ShieldAlert, ShieldCheck, Users } from 'lucide-react';
 import { useMe } from '../state/session';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { roleOf, ROLE_LABEL } from './common';
@@ -12,6 +12,7 @@ import { AuditSection } from './AuditSection';
 import { ArchivesSection } from './ArchivesSection';
 import { HealthSection } from './HealthSection';
 import { ExpiringSection } from './ExpiringSection';
+import { AccessSection } from './AccessSection';
 
 interface SectionDef {
   path: string;
@@ -34,6 +35,7 @@ export default function AdminPage() {
     { path: 'archives', label: 'Резервные копии и архив', icon: <Archive size={15} />, allowed: r.isAdmin, element: <ArchivesSection /> },
     { path: 'health', label: 'Состояние системы', icon: <Activity size={15} />, allowed: r.isAdmin, element: <HealthSection /> },
     { path: 'expiring', label: 'Истекающие доступы', icon: <Hourglass size={15} />, allowed: r.canPeople, element: <ExpiringSection /> },
+    { path: 'access', label: 'Доступ', icon: <ShieldCheck size={15} />, allowed: r.canPeople || r.canAudit, element: <AccessSection /> },
   ].filter((s) => s.allowed && !guest);
 
   if (!sections.length) {

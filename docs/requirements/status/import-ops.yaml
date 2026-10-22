@@ -1,8 +1,8 @@
 # Status of IMPORT, EXPORT, ARCHIVE, BACKUP, OPS requirements (audit 2026-10-22)
 - id: R-OPS-001
-  status: partial
-  evidence: tests/resilience/migrations.test.ts (tested rollback of every migration with data); docs/OPERATIONS.md §3 backup before update
-  note: Backup before migration is a procedure, not enforced by tooling
+  status: done
+  evidence: 'db/migrate.ts BackupRequiredError: pending migrations on a database with data need a successful full backup (backups table) newer than MIGRATION_BACKUP_MAX_AGE_MIN and than the last applied migration; enforced on server start and cli migrate up (default on in production, override --skip-backup-check, used by restore.sh); rollback of every migration with data; tests/resilience/migrations.test.ts: pending migrations on a database with data are refused until a fresh full backup is recorded…'
+  note: ''
 - id: R-EXPORT-001
   status: done
   evidence: 'tests/integration/import-export.test.ts: exports MD/DOCX/HTML/PDF; DOCX/MD/CSV/XLSX imports; GET /api/v1/collections/:id/export?format=csv|xlsx; org archive ZIP'
@@ -32,9 +32,9 @@
   evidence: 'db/migrate.ts migrateDown + SchemaTooNewError; tests/resilience/migrations.test.ts: every migration rolls back and re-applies with data; older release refuses newer schema'
   note: Image/tag rollback itself is procedural (docs/OPERATIONS.md §3)
 - id: R-EXPORT-002
-  status: partial
-  evidence: tests/integration/archive.test.ts (links, ACL, attachments, Unicode, corrupted archive); resumable uploads for files
-  note: Interrupted archive upload/resume not covered
+  status: done
+  evidence: 'tests/integration/archive.test.ts (links, ACL, attachments, Unicode, corrupted archive); POST /api/v1/admin/archives/restore/upload/:uploadId (resumable upload session); tests/integration/io-p0-export.test.ts: archive uploaded through an interrupted, resumed upload session…; tests/integration/io-p0-import.test.ts: Markdown ZIP … round trip'
+  note: ''
 - id: R-OPS-002
   status: env-blocked
   evidence: /healthz, /readyz, alerts KbInstanceDown/KbAllInstancesDown (deploy/monitoring/prometheus-alerts.yml)
@@ -45,12 +45,12 @@
   note: Confirmed at test scale only; production-volume drill pending
 - id: R-OPS-003
   status: partial
-  evidence: routes/health.ts (/healthz,/readyz,/metrics), pino JSON logs + correlationId, deploy/monitoring/*, scripts/backup/*, .github/workflows/ci.yml, docs/OPERATIONS.md runbooks
-  note: No distributed tracing (OpenTelemetry); no CD/deploy pipeline; secrets only via env/EnvironmentFile
+  evidence: routes/health.ts (/healthz,/readyz,/metrics), pino JSON logs + correlationId + traceId, observability/tracing.ts (W3C traceparent, OTLP/HTTP export of request and job spans), metrics kb_collab_reconnects_total / kb_import_files_total / kb_ocr_duration_seconds with alerts, deploy/monitoring/*, scripts/backup/*, .github/workflows/ci.yml, docs/OPERATIONS.md runbooks; tests/integration/io-p0-ops.test.ts
+  note: No CD/deploy pipeline; secrets only via env/EnvironmentFile (no secrets manager)
 - id: R-OPS-004
-  status: partial
-  evidence: tests/resilience/migrations.test.ts; SchemaTooNewError prevents running old code on newer schema
-  note: Pre-migration backup not enforced automatically
+  status: done
+  evidence: 'Same guard as R-OPS-001 (BackupRequiredError) + SchemaTooNewError; tests/resilience/migrations.test.ts: pending migrations … refused until a fresh full backup is recorded; backup.sh unlocks them, the CLI enforces it too'
+  note: ''
 - id: R-BACKUP-002
   status: partial
   evidence: CI runs tests/resilience/backup-restore.test.ts on every push; verify-backup.sh
@@ -96,17 +96,17 @@
   evidence: 'tests/integration/import-export.test.ts: rejects zip-slip paths and zip bombs'
   note: ''
 - id: R-IMPORT-007
-  status: partial
-  evidence: 'tests/integration/import-export.test.ts: headings, nested lists, merged tables, images'
-  note: DOCX captions not mapped; headers/footers only reported; footnotes become a list
+  status: done
+  evidence: 'convert/docx-import.ts restructureDocxHtml/preprocessDocx: captions → image caption, footnotes/endnotes → [n] + «Сноски», headers/footers → collapsed block, bordered paragraphs → separators, bookmarks → anchors, TOC field → TOC block; tests/integration/io-p0-import.test.ts: Word captions, footnotes, three numbering levels, headers/footers…; reference corpus …; tests/e2e/io-p0-roundtrip.spec.ts: DOCX import → edit…'
+  note: Fixtures are generated with the docx library in Word style (built-in style names, numbering.xml, footnotes, header/footer parts); no binary authored in Microsoft Word is checked in
 - id: R-IMPORT-008
   status: done
   evidence: 'tests/integration/import-export.test.ts: import-source attachment regl.docx'
   note: ''
 - id: R-IMPORT-009
-  status: partial
-  evidence: 'convert/docx-import.ts inspectDocx: smartart/shapes/fields/floating/track-changes/comments warnings'
-  note: Converted to text, not image; only merged-cells warning tested
+  status: done
+  evidence: 'preprocessDocx keeps field results and SmartArt node text in place; inspectDocx reports smartart/shapes/fields/floating/track-changes/comments; original file kept as import-source; tests/integration/io-p0-import.test.ts: complex Word constructs … keep their text and are listed in the compatibility report'
+  note: 'Complex graphics are reported (not rasterised); the requirement allows "image or compatibility report"'
 - id: R-IMPORT-010
   status: done
   evidence: 'tests/unit/markdown.test.ts: parses GFM structure; tests/integration/import-export.test.ts: task list, table'
@@ -136,9 +136,9 @@
   evidence: convert/docx-export.ts (HeadingLevel 1–6, lists, tables, hyperlinks, images, captions, monospace code, creator=author)
   note: Styles not asserted in tests; version date not written
 - id: R-EXPORT-006
-  status: partial
-  evidence: 'tests/integration/import-export.test.ts: DOCX opens in LibreOffice (soffice conversion)'
-  note: Microsoft Word validation is manual
+  status: env-blocked
+  evidence: 'convert/docx-validate.ts: Open XML package/schema validation (content types, relationships, well-formedness, element order Word enforces, unique drawing ids, numbering/bookmarks); every exported DOCX is validated (fail closed); tests/integration/io-p0-export.test.ts: exported DOCX with every block type passes Open XML … opens in LibreOffice; corrupted packages are detected; tests/integration/io-p0-import.test.ts: … DOCX export valid for Word (Open XML) and LibreOffice'
+  note: Everything automatable is done; opening in real Microsoft Word is not possible in this Linux CI environment (manual check per release)
 - id: R-EXPORT-007
   status: partial
   evidence: docx-export.ts warns for mermaid/toggle; export-report.md in MD ZIP; x-export-warnings header
@@ -160,9 +160,9 @@
   evidence: 'tests/integration/import-export.test.ts: export respects rights …; tests/integration/acl-gaps.test.ts: a finished export cannot be downloaded after access was revoked'
   note: ''
 - id: R-EXPORT-012
-  status: partial
-  evidence: 'tests/integration/import-export.test.ts: MD round trip; DOCX import test uses docToDocx output (headings, lists, tables, images)'
-  note: Inline styles through DOCX round trip not asserted
+  status: done
+  evidence: 'tests/integration/io-p0-import.test.ts: inline formatting … survives DOCX export → import and is present in HTML export; Word-style DOCX … structure preserved (quotes now exported with Word Quote style); tests/e2e/io-p0-roundtrip.spec.ts: DOCX import → edit … DOCX and Markdown export'
+  note: ''
 - id: R-EXPORT-013
   status: done
   evidence: 'tests/integration/import-export.test.ts: tables in MD export and DOCX import'
@@ -245,17 +245,17 @@
   evidence: 'zod validation + AppError codes (app.ts error handler: 400/401/403/404/409/413/422/429/500/503), rate limits, OpenAPI generated'
   note: No per-endpoint contract tests; OpenAPI lacks complete schemas/examples
 - id: SC-13
-  status: partial
-  evidence: 'tests/integration/import-export.test.ts: DOCX import + export opened in LibreOffice'
-  note: Real Word-authored fixture, edit step and Word check missing
+  status: env-blocked
+  evidence: 'tests/integration/io-p0-import.test.ts: Word-style DOCX with headings, 3 list levels, links, 2 tables, images and code → import → edit → DOCX export valid for Word (Open XML) and LibreOffice, structure preserved; tests/e2e/io-p0-roundtrip.spec.ts: DOCX import → edit in the editor → DOCX and Markdown export…'
+  note: Import, edit (collaboration client and browser), export, Open XML validation and LibreOffice are automated; the final check in Microsoft Word needs Word (not available in CI)
 - id: SC-14
   status: done
   evidence: 'tests/integration/import-export.test.ts: merged tables colspan preserved, warning'
   note: ''
 - id: SC-15
-  status: partial
-  evidence: 'tests/integration/import-export.test.ts: MD ZIP import; branch export ZIP relative paths'
-  note: Import→export chain on the same set not tested
+  status: done
+  evidence: 'tests/integration/io-p0-import.test.ts: Markdown ZIP with a GFM table, task list, code and relative images → import → ZIP export → every relative link resolves locally → re-import gives the same content (links between pages are now relative in ZIP exports; checksums verified on re-import)'
+  note: ''
 - id: SC-16
   status: done
   evidence: 'tests/unit/markdown.test.ts: round-trips through import; property test'
@@ -285,9 +285,9 @@
   evidence: tests/integration/archive.test.ts on a small org; backup drill with 1 000 pages (docs/BACKUP_RESTORE.md §6)
   note: Archive migration of 1 000 pages not tested
 - id: R-IMPORT-019
-  status: partial
-  evidence: 'tests/unit/markdown.test.ts: text is never lost (property)'
-  note: No reference DOCX/MD corpus with ≥99 % character metric
+  status: done
+  evidence: 'tests/support/doc-corpus.ts: deterministic reference corpus (6 DOCX + 6 MD, all supported constructs) with independent expected text/structure; character accuracy via diff; tests/integration/io-p0-import.test.ts: reference DOCX and Markdown corpus: ≥99% of characters and 100% of structural elements … (measured 100%, printed in CI log)'
+  note: ''
 - id: R-OPS-010
   status: partial
   evidence: Dockerfile, deploy/*, deploy/env.example (no secrets), migrations, docs/OPERATIONS.md install
@@ -325,17 +325,17 @@
   evidence: 'tests/integration/import-export.test.ts: same idempotency key; cancel; per-file status ok/warning/error'
   note: ''
 - id: R-IMPORT-025
-  status: partial
-  evidence: 'tests/integration/import-export.test.ts: headings, lists, tables, images'
-  note: Captions, footnotes, numbering levels not fully verified
+  status: done
+  evidence: 'tests/integration/io-p0-import.test.ts: Word captions, footnotes, three numbering levels …(Heading 1–6, separators); reference corpus … 100% structural elements; inline styles via formatting test'
+  note: ''
 - id: R-IMPORT-026
-  status: partial
-  evidence: 'tests/integration/import-export.test.ts: Word headings become heading blocks'
-  note: Anchors/TOC for imported headings not verified
+  status: done
+  evidence: 'Heading bookmarks become block anchors and internal hyperlinks are re-pointed to them; Word TOC field → live TOC block; export writes bookmarks + internal links; tests/integration/io-p0-import.test.ts: Word captions … bookmarks and the TOC field…; tests/integration/io-p0-export.test.ts: docToDocx output … keeps anchors as bookmarks and internal links'
+  note: ''
 - id: R-IMPORT-027
-  status: partial
-  evidence: docx-import.ts stores images as assets with alt, in document order
-  note: Captions not imported
+  status: done
+  evidence: 'tests/integration/io-p0-import.test.ts: … images are page assets with order, alt and caption (attachments of the page, served, no external/broken src)'
+  note: ''
 - id: R-IMPORT-028
   status: done
   evidence: inspectDocx reports merged cells, floating objects, SmartArt, comments, track changes; source kept; tests/integration/import-export.test.ts
@@ -390,9 +390,9 @@
   evidence: 'tests/integration/import-export.test.ts: before commit nothing exists; commit repeated=true'
   note: ''
 - id: R-IMPORT-034
-  status: partial
-  evidence: inspectDocx incompatibility warnings; report per file
-  note: Footnotes/captions incomplete
+  status: done
+  evidence: 'tests/integration/io-p0-import.test.ts: Word captions, footnotes …; complex Word constructs … listed in the compatibility report (per-file warnings in the preview report)'
+  note: ''
 - id: R-IMPORT-035
   status: done
   evidence: 'tests/integration/import-export.test.ts: MD ZIP import; zip-slip and bomb rejected'
@@ -502,9 +502,9 @@
   evidence: editor.css @media print; PDF A4 via Chromium
   note: No TOC/print preview; not tested
 - id: R-EXPORT-022
-  status: partial
-  evidence: 'tests/integration/import-export.test.ts: 4 formats; POST /api/v1/exports background job with progress; checksums in MD ZIP; report'
-  note: No cancel endpoint for export jobs in UI; integrity check only for MD ZIP
+  status: done
+  evidence: 'POST /api/v1/exports/:id/cancel + «Отменить экспорт» in ExportDialog; SHA-256 of every export (x-content-sha256, job file.sha256, shown in the dialog); DOCX validated before delivery; separate-files ZIP layout with checksums/report; TOC in merged DOCX; tests/integration/io-p0-export.test.ts: a queued export is cancelled…; branch export: one DOCX with a table of contents, or separate files…; tests/e2e/io-p0-roundtrip.spec.ts: background export of a branch can be cancelled from the dialog…'
+  note: ''
 - id: V16-S08
   status: manual
   evidence: print CSS + PDF export
@@ -528,8 +528,8 @@
   note: Rolling deploy not tested end-to-end; no explicit overload shedding for import/OCR beyond queue concurrency
 - id: R-OPS-017
   status: done
-  evidence: 'deploy/monitoring/prometheus-alerts.yml: 28 rules, each with owner label + runbook link; grafana-dashboard.json'
-  note: Some signals (OCR latency, disk) rely on exporters
+  evidence: 'deploy/monitoring/prometheus-alerts.yml: 32 rules, each with owner label + runbook link (checked by tests/integration/io-p0-ops.test.ts); grafana-dashboard.json'
+  note: Disk signals rely on node_exporter
 - id: R-BACKUP-010
   status: partial
   evidence: see R-BACKUP-001; tests/resilience/pitr.test.ts
@@ -551,9 +551,9 @@
   evidence: verify-backup.sh (weekly in kb-backup.service/backup-loop.sh), SHA256SUMS
   note: Monthly/quarterly drill protocols must be run by operations
 - id: R-BACKUP-015
-  status: partial
-  evidence: restore.sh restores the whole org into a NEW DB/dir (refuses to overwrite); PITR to time T
-  note: No page/space-level restore from backup, no impact preview
+  status: done
+  evidence: 'services/partial-restore.ts + cli restore-pages: page/space restore from a backup restored into a temporary DB — impact preview (per-page diff, missing files), apply as a new version (existing/trashed pages) or recreated page with files (purged pages), never overwriting; org level: restore.sh / PITR; tests/resilience/io-p0-partial-restore.test.ts: space restore from a backup restored into a temporary database…'
+  note: ''
 - id: R-BACKUP-016
   status: done
   evidence: deploy/docker-compose.yml requires BACKUP_DATABASE_URL (no fallback to app role); separate kb_backup role (docs §3); app has no API to delete backups; offsite copy is WORM
@@ -571,9 +571,9 @@
   evidence: archive-export job with progress, checksums.sha256, download audited, 72 h expiry (routes/archives.ts)
   note: No volumes, no resumable download, no archive encryption; archive built in memory
 - id: R-ARCHIVE-006
-  status: partial
-  evidence: 'POST /api/v1/admin/archives/restore (dry-run analysis: checksums, missing files, ID conflicts, unresolved users); tests/integration/archive.test.ts'
-  note: Restore only into the current organisation (merge/remap); cannot choose new org/space or isolated target
+  status: done
+  evidence: 'services/archive.ts RestoreTarget: merge | new-space (isolated private space, fresh ids, space grants not applied) | into-space; target choice in the restore dialog; tests/integration/io-p0-export.test.ts: … restored into a NEW isolated space or merged into an existing space; tests/e2e/io-p0-roundtrip.spec.ts: archive restore dialog: the administrator chooses a new isolated space'
+  note: A separate new organisation is not offered; the isolated contour is a new private space
 - id: R-ARCHIVE-007
   status: done
   evidence: 'tests/integration/archive.test.ts: verification.problems = [], text/tree/attachments/revisions/ACL compared'
@@ -583,9 +583,9 @@
   evidence: 'tests/integration/archive.test.ts: wrong password → 403; confirm:true required; tests/integration/import-export.test.ts: export respects rights'
   note: ''
 - id: V17-F05
-  status: partial
-  evidence: 'tests/resilience/pitr.test.ts: PITR of DB + files; rights, content, attachments (sha256), audit verified'
-  note: Versions, search and backlinks not checked after PITR
+  status: done
+  evidence: 'tests/resilience/pitr.test.ts: PITR of DB + files; rights, content, attachments (sha256), audit, versions, search (incl. ACL) and backlinks verified after recovery (scratch cluster now UTF8 like production)'
+  note: ''
 - id: V17-F06
   status: done
   evidence: 'tests/integration/archive.test.ts: checksums.sha256 verified, restore into clean installation, verification ok'
@@ -631,10 +631,9 @@
   evidence: ArchiveOptions includeVersions/Acl/Comments/Audit, background job with progress, checksums
   note: ''
 - id: R-ARCHIVE-016
-  status: partial
-  evidence: 'readZipSafe (zip-slip, bomb), checksum verification, dry-run, antivirus on the whole archive and on every attachment (analysis.malware); tests/integration/archive.test.ts; tests/integration/import-pipeline.test.ts:
-    archive restore … infected one blocks the restore'
-  note: No target choice (new org/space)
+  status: done
+  evidence: 'readZipSafe (zip-slip, bomb), checksums, dry-run, antivirus (tests/integration/import-pipeline.test.ts); restore target new space / existing space / merge: tests/integration/io-p0-export.test.ts: … restored into a NEW isolated space or merged into an existing space; tests/e2e/io-p0-roundtrip.spec.ts: archive restore dialog…'
+  note: Restore into a separate new organisation is not offered (new space instead)
 - id: R-ARCHIVE-017
   status: process
   evidence: tests/integration/archive.test.ts automates the comparison
@@ -660,9 +659,9 @@
   evidence: 'tests/integration/archive.test.ts: corrupted archive refused, commit 422'
   note: ''
 - id: V18-A06
-  status: partial
-  evidence: services/archive.ts reads metadata in one REPEATABLE READ transaction
-  note: No concurrency test
+  status: done
+  evidence: 'services/archive.ts REPEATABLE READ snapshot; tests/integration/io-p0-export.test.ts: organisation archive taken during concurrent transactional changes and live editing is a consistent snapshot'
+  note: ''
 - id: V18-A21
   status: done
   evidence: 'tests/integration/import-export.test.ts: exported MD contains [!WARNING] callout; archive uses same MD writer'
@@ -680,13 +679,13 @@
   evidence: tests/resilience/backup-restore.test.ts restores into a new database + directory and starts a separate server
   note: Same PostgreSQL host, not an independent server
 - id: R-EXPORT-025
-  status: partial
-  evidence: MD round trip keeps marks (tests/unit/markdown.test.ts property test)
-  note: DOCX/HTML mark preservation not asserted
+  status: done
+  evidence: 'tests/integration/io-p0-import.test.ts: inline formatting (bold, italic, underline, strike, code, sub/sup, highlight, colour, links) survives DOCX export → import and is present in HTML export; MD round trip property test (tests/unit/markdown.test.ts)'
+  note: ''
 - id: E225
-  status: partial
-  evidence: 'tests/integration/import-export.test.ts: MD round trip; DOCX via docToDocx→import'
-  note: No E2E browser round trip
+  status: done
+  evidence: 'tests/e2e/io-p0-roundtrip.spec.ts: DOCX import → edit in the editor → DOCX and Markdown export from the page menu…; Markdown file import → edit → Markdown export round trip'
+  note: ''
 - id: R-OPS-019
   status: process
   evidence: docs/OPERATIONS.md, docs/BACKUP_RESTORE.md, deploy/*
@@ -705,8 +704,8 @@
   note: No operations passport with supported document/attachment sizes, editor counts, load profiles
 - id: R-OPS-022
   status: partial
-  evidence: Dockerfile, deploy/*, migrations + rollback, health/readiness, metrics/logs, alerts, backup + restore tests, docs
-  note: Tracing, CD, operations passport missing
+  evidence: Dockerfile, deploy/*, migrations + rollback + enforced pre-migration backup, health/readiness, metrics/logs/OpenTelemetry traces (tests/integration/io-p0-ops.test.ts), alerts, backup + restore tests, docs
+  note: CD pipeline and operations passport missing
 - id: OPS-001
   status: done
   evidence: Migrations auto-applied at start under advisory lock (server.ts → migrateUp); every test DB and production smoke run (node apps/server/dist/main.js) installs without manual SQL
@@ -728,9 +727,9 @@
   evidence: 'tests/integration/archive.test.ts: machine comparison after restore into clean installation'
   note: ''
 - id: QA26-17
-  status: partial
-  evidence: 'tests/integration/import-export.test.ts: Cyrillic names, broken archive, cancel, idempotent retry'
-  note: Long names, empty/large files, partial import not tested
+  status: done
+  evidence: 'tests/integration/io-p0-import.test.ts: long Cyrillic names with special characters, an empty file, a large file and a broken file in one batch … selective commit; tests/integration/import-export.test.ts: broken archive, cancel, idempotent retry'
+  note: ''
 - id: QA26-18
   status: done
   evidence: tests/resilience/backup-restore.test.ts (timings logged), docs/BACKUP_RESTORE.md §6 measurements

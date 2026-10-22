@@ -1,6 +1,10 @@
 import { Extension, InputRule, type Editor } from '@tiptap/core';
-import { NodeSelection, TextSelection, type EditorState } from '@tiptap/pm/state';
+import { NodeSelection, TextSelection, Plugin, PluginKey, type EditorState } from '@tiptap/pm/state';
 import type { Node as PMNode } from '@tiptap/pm/model';
+import { ySyncPluginKey } from '@tiptap/y-tiptap';
+import { Decoration, DecorationSet } from '@tiptap/pm/view';
+import { isInTable } from '@tiptap/pm/tables';
+import { moveTableRow, moveTableColumn } from '../tableOps';
 
 /** Finds the top-most block (direct child of the doc or of a container like column/callout) around the selection. */
 export function currentBlock(state: EditorState): { node: PMNode; pos: number; depth: number } | null {
@@ -25,6 +29,7 @@ export function blockAt(editor: Editor, pos: number) {
 
 export function moveBlock(editor: Editor, dir: -1 | 1, at?: number): boolean {
   const { state } = editor;
+  if (at == null && blockRangeKey.getState(state)) return moveBlockRange(editor, dir);
   const b = at != null ? blockAt(editor, at) : currentBlock(state);
   if (!b) return false;
   const $pos = state.doc.resolve(b.pos);
@@ -109,6 +114,121 @@ function exitDocumentEnd(editor: Editor, onlyAtBottomEdge: boolean): boolean {
 }
 
 /**
+ * Multi-block selection (R-EDITOR-068, UX21-186): Esc selects the current block, Shift+↑/↓ then extends the selection
+ * by whole sibling blocks. The range is kept in plugin state (block boundaries, mapped through changes) and shown as a
+ * text selection over the blocks; Backspace/Delete remove the blocks entirely, Alt+Shift+↑/↓ moves them together.
+ */
+export const blockRangeKey = new PluginKey<{ from: number; to: number } | null>('kbBlockRange');
+const SET_RANGE = 'kbSetBlockRange';
+
+function rangeSelection(state: EditorState, from: number, to: number) {
+  const first = state.doc.nodeAt(from);
+  const $to = state.doc.resolve(to);
+  const last = $to.nodeBefore;
+  const a = first?.isTextblock ? from + 1 : from;
+  const b = last?.isTextblock ? to - 1 : to;
+  return TextSelection.create(state.doc, a, b);
+}
+
+function setBlockRange(editor: Editor, from: number, to: number) {
+  const tr = editor.state.tr.setSelection(rangeSelection(editor.state, from, to)).setMeta(SET_RANGE, { from, to });
+  editor.view.dispatch(tr.scrollIntoView());
+  return true;
+}
+
+/** Extends the block selection by one sibling block up or down. */
+export function extendBlockSelection(editor: Editor, dir: -1 | 1): boolean {
+  const { state } = editor;
+  let range = blockRangeKey.getState(state);
+  if (!range) {
+    if (!(state.selection instanceof NodeSelection) || !state.selection.node.isBlock) return false;
+    range = { from: state.selection.from, to: state.selection.to };
+  }
+  const $from = state.doc.resolve(range.from);
+  const parent = $from.parent;
+  const startIndex = $from.index();
+  const endIndex = state.doc.resolve(range.to).index($from.depth); // exclusive
+  if (dir === 1) {
+    if (endIndex >= parent.childCount) return true;
+    return setBlockRange(editor, range.from, range.to + parent.child(endIndex).nodeSize);
+  }
+  if (startIndex <= 0) return true;
+  return setBlockRange(editor, range.from - parent.child(startIndex - 1).nodeSize, range.to);
+}
+
+function deleteBlockRange(editor: Editor): boolean {
+  const range = blockRangeKey.getState(editor.state);
+  if (!range) return false;
+  const tr = editor.state.tr.delete(range.from, range.to);
+  tr.setSelection(TextSelection.near(tr.doc.resolve(Math.min(range.from, tr.doc.content.size))));
+  editor.view.dispatch(tr.scrollIntoView());
+  return true;
+}
+
+/** Moves the selected blocks past the neighbouring sibling, keeping their order and ids. */
+export function moveBlockRange(editor: Editor, dir: -1 | 1): boolean {
+  const { state } = editor;
+  const range = blockRangeKey.getState(state);
+  if (!range) return false;
+  const $from = state.doc.resolve(range.from);
+  const parent = $from.parent;
+  const startIndex = $from.index();
+  const endIndex = state.doc.resolve(range.to).index($from.depth);
+  const slice = state.doc.slice(range.from, range.to);
+  const tr = state.tr;
+  let from: number;
+  if (dir === -1) {
+    if (startIndex <= 0) return true;
+    const size = parent.child(startIndex - 1).nodeSize;
+    tr.delete(range.from, range.to).insert(range.from - size, slice.content);
+    from = range.from - size;
+  } else {
+    if (endIndex >= parent.childCount) return true;
+    const size = parent.child(endIndex).nodeSize;
+    tr.delete(range.from, range.to).insert(range.from + size, slice.content);
+    from = range.from + size;
+  }
+  const to = from + (range.to - range.from);
+  tr.setSelection(rangeSelection({ doc: tr.doc } as EditorState, from, to)).setMeta(SET_RANGE, { from, to });
+  editor.view.dispatch(tr.scrollIntoView());
+  return true;
+}
+
+/**
+ * Backspace at the very start of a heading turns it into a paragraph (text kept), at the start of a quote it takes the
+ * paragraph out of the quote; only the next Backspace merges with the previous block (R-EDITOR-065, R-EDITOR-034).
+ */
+function resetTypeAtStart(editor: Editor): boolean {
+  const { selection } = editor.state;
+  if (!selection.empty || !(selection instanceof TextSelection)) return false;
+  const { $from } = selection;
+  if ($from.parentOffset !== 0) return false;
+  // right after a Markdown shortcut ("## ") Backspace undoes the shortcut (Tiptap's undoInputRule) instead
+  if (editor.state.plugins.some((p) => (p.spec as { isInputRules?: boolean }).isInputRules && p.getState(editor.state))) return false;
+  if ($from.parent.type.name === 'heading') return editor.commands.setParagraph();
+  if ($from.depth >= 2 && $from.node(-1).type.name === 'blockquote' && $from.index(-1) === 0) return editor.commands.lift('blockquote');
+  return false;
+}
+
+function inTableNoRange(editor: Editor) {
+  return isInTable(editor.state) && !blockRangeKey.getState(editor.state);
+}
+
+/** Ctrl/Cmd+A selects the text of the current block first, the whole article on the second press (R-EDITOR-068). */
+function selectAllStepwise(editor: Editor): boolean {
+  const { state } = editor;
+  const sel = state.selection;
+  if (!(sel instanceof TextSelection)) return false;
+  const { $from, $to } = sel;
+  if (!$from.sameParent($to) || !$from.parent.isTextblock || $from.parent.type.spec.code) return false;
+  const start = $from.start();
+  const end = $from.end();
+  if (end === start || (sel.from === start && sel.to === end)) return false; // second press → default "select all"
+  editor.view.dispatch(state.tr.setSelection(TextSelection.create(state.doc, start, end)));
+  return true;
+}
+
+/**
  * Keyboard shortcuts and Markdown shortcuts beyond StarterKit:
  *  "> " → toggle block, "\" " → quote (as agreed in spec v2.0), Mod+D duplicate, Alt+Shift+↑/↓ move block, Esc select block.
  */
@@ -118,8 +238,16 @@ export const BlockOps = Extension.create({
   addKeyboardShortcuts() {
     return {
       'Mod-d': () => duplicateBlock(this.editor),
-      'Alt-Shift-ArrowUp': () => moveBlock(this.editor, -1),
-      'Alt-Shift-ArrowDown': () => moveBlock(this.editor, 1),
+      'Mod-a': () => selectAllStepwise(this.editor),
+      'Shift-ArrowDown': () => extendBlockSelection(this.editor, 1),
+      'Shift-ArrowUp': () => extendBlockSelection(this.editor, -1),
+      Backspace: () => deleteBlockRange(this.editor) || resetTypeAtStart(this.editor),
+      Delete: () => deleteBlockRange(this.editor),
+      // inside a table the same keys move rows/columns (R-TABLE-003); the table itself moves via the block menu
+      'Alt-Shift-ArrowUp': () => (inTableNoRange(this.editor) ? (moveTableRow(this.editor, -1), true) : moveBlock(this.editor, -1)),
+      'Alt-Shift-ArrowDown': () => (inTableNoRange(this.editor) ? (moveTableRow(this.editor, 1), true) : moveBlock(this.editor, 1)),
+      'Alt-Shift-ArrowLeft': () => inTableNoRange(this.editor) && (moveTableColumn(this.editor, -1), true),
+      'Alt-Shift-ArrowRight': () => inTableNoRange(this.editor) && (moveTableColumn(this.editor, 1), true),
       Escape: () => {
         if (this.editor.state.selection instanceof NodeSelection) return false;
         return selectBlock(this.editor);
@@ -141,6 +269,46 @@ export const BlockOps = Extension.create({
         return true;
       },
     };
+  },
+  addProseMirrorPlugins() {
+    return [
+      new Plugin<{ from: number; to: number } | null>({
+        key: blockRangeKey,
+        state: {
+          init: () => null,
+          apply(tr, value) {
+            const set = tr.getMeta(SET_RANGE);
+            if (set !== undefined) return set;
+            if (!value) return null;
+            // remote changes keep the block selection (mapped); any local edit or selection change ends it
+            if (tr.getMeta('kbStableSelection') && !tr.docChanged) return value;
+            if (tr.getMeta(ySyncPluginKey)?.isChangeOrigin) {
+              const from = tr.mapping.map(value.from, 1);
+              const to = tr.mapping.map(value.to, -1);
+              return to > from ? { from, to } : null;
+            }
+            if (tr.selectionSet || tr.docChanged) return null;
+            return value;
+          },
+        },
+        props: {
+          attributes: (state): Record<string, string> => (blockRangeKey.getState(state) ? { 'data-block-range': 'true' } : {}),
+          decorations(state) {
+            const r = blockRangeKey.getState(state);
+            if (!r) return null;
+            const decos: Decoration[] = [];
+            const $from = state.doc.resolve(r.from);
+            let pos = r.from;
+            for (let i = $from.index(); pos < r.to && i < $from.parent.childCount; i++) {
+              const n = $from.parent.child(i);
+              decos.push(Decoration.node(pos, pos + n.nodeSize, { class: 'kb-block-in-range' }));
+              pos += n.nodeSize;
+            }
+            return DecorationSet.create(state.doc, decos);
+          },
+        },
+      }),
+    ];
   },
   addInputRules() {
     const editor = this.editor;

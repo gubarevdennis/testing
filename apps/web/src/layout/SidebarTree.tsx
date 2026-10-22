@@ -192,6 +192,13 @@ export function SidebarTree({ personal, spaces, shared, onNavigate }: Props) {
       case 'F2':
         if (r.kind === 'node' && r.node.canEdit) setRenaming(r.node.id);
         break;
+      case 'ContextMenu':
+      case 'F10':
+        // keyboard equivalent of the hover-only row actions (R-UI-060): Shift+F10 / Menu key opens "Действия"
+        if (e.key === 'F10' && !e.shiftKey) break;
+        e.preventDefault();
+        ((e.currentTarget as HTMLElement).closest('.tree-row')?.querySelector('.tree-more') as HTMLElement | null)?.click();
+        break;
     }
     if (e.altKey && e.shiftKey && r.kind === 'node' && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
       // Keyboard alternative to drag-and-drop: reorder among siblings.
@@ -345,22 +352,22 @@ export function SidebarTree({ personal, spaces, shared, onNavigate }: Props) {
   };
 
   const nodeMenu = (n: TreeNode, rowEl: HTMLElement | null): MenuEntry[] => [
-    { id: 'new', label: 'Новая вложенная страница', icon: <Plus size={15} />, disabled: !n.canCreate, onSelect: () => void newChild(n.spaceId, n.id) },
-    { id: 'rename', label: 'Переименовать', icon: <FileText size={15} />, shortcut: 'F2', disabled: !n.canEdit, onSelect: () => setRenaming(n.id) },
-    { id: 'icon', label: 'Изменить иконку', icon: <span>😀</span>, disabled: !n.canEdit, onSelect: () => rowEl && setIconFor({ node: n, anchor: rowEl }) },
+    { id: 'new', label: 'Новая вложенная страница', icon: <Plus size={15} />, disabled: !n.canCreate, disabledReason: 'Нет права создавать страницы здесь', onSelect: () => void newChild(n.spaceId, n.id) },
+    { id: 'rename', label: 'Переименовать', icon: <FileText size={15} />, shortcut: 'F2', disabled: !n.canEdit, disabledReason: 'Нужно право на редактирование — запросите его у владельца страницы', onSelect: () => setRenaming(n.id) },
+    { id: 'icon', label: 'Изменить иконку', icon: <span>😀</span>, disabled: !n.canEdit, disabledReason: 'Нужно право на редактирование — запросите его у владельца страницы', onSelect: () => rowEl && setIconFor({ node: n, anchor: rowEl }) },
     { separator: true },
-    { id: 'move', label: 'Переместить в…', icon: <ChevronRight size={15} />, disabled: !n.canEdit, onSelect: () => setMoving(n) },
+    { id: 'move', label: 'Переместить в…', icon: <ChevronRight size={15} />, disabled: !n.canEdit, disabledReason: 'Нужно право на редактирование — запросите его у владельца страницы', onSelect: () => setMoving(n) },
     { id: 'dup', label: 'Дублировать', icon: <FileText size={15} />, onSelect: () => void duplicatePage(n.id).then((p) => openPage(p.id)) },
     { id: 'link', label: 'Копировать ссылку', icon: <FileText size={15} />, onSelect: () => void copyLink(n.id) },
     { id: 'fav', label: 'В избранное', icon: <Star size={15} />, onSelect: () => void import('../api/client').then(({ put }) => put(`/api/v1/pages/${n.id}/favorite`)).then(() => queryClient.invalidateQueries({ queryKey: ['favorites'] })) },
     { separator: true },
-    { id: 'trash', label: 'Удалить в корзину', icon: <span>🗑</span>, danger: true, disabled: !n.canEdit, onSelect: () => void trashPage(n.id, n.title, () => currentPage === n.id && navigate('/')) },
+    { id: 'trash', label: 'Удалить в корзину', icon: <span>🗑</span>, danger: true, disabled: !n.canEdit, disabledReason: 'Нужно право на редактирование — запросите его у владельца страницы', onSelect: () => void trashPage(n.id, n.title, () => currentPage === n.id && navigate('/')) },
   ];
 
   const spaceMenu = (s: Space): MenuEntry[] => [
-    { id: 'new', label: 'Новая страница', icon: <Plus size={15} />, disabled: !s.actions.create, onSelect: () => void newChild(s.id, null) },
+    { id: 'new', label: 'Новая страница', icon: <Plus size={15} />, disabled: !s.actions.create, disabledReason: 'Нет права создавать страницы в этом пространстве', onSelect: () => void newChild(s.id, null) },
     { id: 'open', label: 'Обзор пространства', icon: <Building2 size={15} />, onSelect: () => navigate('/s/' + s.id) },
-    { id: 'settings', label: 'Настройки и участники', icon: <Users size={15} />, disabled: !s.actions.manage_space, onSelect: () => navigate('/s/' + s.id + '?tab=settings') },
+    { id: 'settings', label: 'Настройки и участники', icon: <Users size={15} />, disabled: !s.actions.manage_space, disabledReason: 'Настройки доступны администраторам пространства', onSelect: () => navigate('/s/' + s.id + '?tab=settings') },
   ];
 
   return (
@@ -515,7 +522,7 @@ const TreeRow = memo(function TreeRow({ row: r, tabIndex, active, renaming, drag
             label={`Действия пространства «${s.name}»`}
             items={() => spaceMenu(s)}
             trigger={({ ref, props }) => (
-              <button ref={ref} className="icon-btn sm" tabIndex={-1} aria-label="Действия" {...props}>
+              <button ref={ref} className="icon-btn sm tree-more" tabIndex={-1} aria-label="Действия" {...props}>
                 <MoreHorizontal size={14} />
               </button>
             )}

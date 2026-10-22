@@ -31,6 +31,9 @@ export const ImageBlock = Node.create({
       align: { default: 'center' },
       naturalWidth: { default: null },
       naturalHeight: { default: null },
+      // Client-side upload in progress (R-MEDIA-006/008): the block exists before the file reaches the server and
+      // is completed in place. Never parsed from or rendered to HTML (clipboard must not carry it).
+      uploadId: { default: null, parseHTML: () => null, renderHTML: () => ({}) },
     };
   },
   parseHTML() {
@@ -98,6 +101,9 @@ export const FileBlock = Node.create({
       mime: { default: null },
       view: { default: 'compact' },
       href: { default: null },
+      // Client-side upload in progress (R-MEDIA-006/008): the block exists before the file reaches the server and
+      // is completed in place. Never parsed from or rendered to HTML (clipboard must not carry it).
+      uploadId: { default: null, parseHTML: () => null, renderHTML: () => ({}) },
     };
   },
   parseHTML() {

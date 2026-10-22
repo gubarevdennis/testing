@@ -6,6 +6,7 @@ import { openViewer, collectImages } from '../../components/ImageViewer';
 import { uploadFile } from '../../lib/uploads';
 import { toast } from '../../components/ui/Toast';
 import { OcrDialog } from '../../components/OcrDialog';
+import { UploadPlaceholder } from './UploadPlaceholder';
 
 export function imageSrc(attrs: { src?: string | null; attachmentId?: string | null; naturalWidth?: number | null }, displayWidth: number) {
   if (attrs.attachmentId) {
@@ -16,7 +17,19 @@ export function imageSrc(attrs: { src?: string | null; attachmentId?: string | n
   return attrs.src ?? '';
 }
 
-export function ImageView({ node, updateAttributes, selected, editor, getPos, deleteNode }: NodeViewProps) {
+/** An image whose file is still uploading is a real block with a local preview (R-MEDIA-006/008). */
+export function ImageView(props: NodeViewProps) {
+  const { node, editor, selected } = props;
+  if (node.attrs.uploadId && !node.attrs.attachmentId)
+    return (
+      <NodeViewWrapper as="figure" className={`kb-image-block align-${node.attrs.align}${selected ? ' is-selected' : ''}`} data-drag-handle="" data-block-id={node.attrs.id}>
+        <UploadPlaceholder editor={editor} uploadId={node.attrs.uploadId} name={node.attrs.alt} kind="image" />
+      </NodeViewWrapper>
+    );
+  return <LoadedImageView {...props} />;
+}
+
+function LoadedImageView({ node, updateAttributes, selected, editor, getPos, deleteNode }: NodeViewProps) {
   const a = node.attrs as { src: string | null; attachmentId: string | null; alt: string; caption: string; width: number | null; align: string; naturalWidth: number | null; naturalHeight: number | null };
   const [state, setState] = useState<'loading' | 'ok' | 'error'>('loading');
   const [retry, setRetry] = useState(0);

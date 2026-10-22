@@ -11,7 +11,8 @@ import { clientExtensions } from './clientExtensions';
 import { BubbleToolbar } from './menus/BubbleToolbar';
 import { BlockHandle } from './menus/BlockHandle';
 import { TableToolbar } from './menus/TableToolbar';
-import { startUploads } from './extensions/uploads';
+import { PasteOptionsMenu } from './menus/PasteOptionsMenu';
+import { startUploads, resumeUploads } from './extensions/uploads';
 import { findKey } from './extensions/find';
 import { ImageViewer } from '../components/ImageViewer';
 import { Dialog } from '../components/ui/Dialog';
@@ -35,6 +36,8 @@ interface Props {
   canEdit: boolean;
   user: { id: string; name: string };
   autoFocusTitle?: boolean;
+  /** A just-created page left empty: Esc in the empty title cancels its creation (no "Без названия" garbage). */
+  onDiscardDraft?(): void;
   onReady?(h: EditorHandle): void;
   onPresence?(users: PresenceUser[]): void;
   onAccess?(canEdit: boolean, reason?: string): void;
@@ -73,6 +76,7 @@ export function PageEditor(p: Props) {
   useEffect(() => {
     let synced: () => void = () => undefined;
     const firstSync = new Promise<void>((r) => (synced = r));
+    let lastStorageWarning = 0;
     const s = openCollab(p.pageId, p.generation, p.user.id, {
       onSynced: () => synced(),
       onAccess: (canEdit, _level, reason) => {
@@ -81,7 +85,12 @@ export function PageEditor(p: Props) {
       },
       onPresence: (u) => cbs.current.onPresence?.(u),
       onFatal: (code, message) => setFatal({ code, message }),
-      onStorageError: (message) => toast.error(message),
+      // one warning per episode, not one per keystroke batch
+      onStorageError: (message) => {
+        if (Date.now() - lastStorageWarning < 30_000) return;
+        lastStorageWarning = Date.now();
+        toast.error(message);
+      },
     });
     setSession(s);
     setReady(false);
@@ -131,19 +140,22 @@ function LocalCopyGuard({ pageId, session, fatal, lostEdit }: { pageId: string; 
 }
 
 /** Shown when the server rejected changes or the page became unavailable: local work can always be saved. */
+/** Saves the local replica (including unsent changes) as Markdown on the device. */
+export async function downloadLocalCopy(session: CollabSession) {
+  const { docToMarkdown } = await loadMarkdown();
+  const json = yXmlFragmentToProsemirrorJSON(session.doc.getXmlFragment('default'));
+  const title = session.doc.getText(TITLE_NAME).toString() || 'Страница';
+  const { markdown } = docToMarkdown(json as any, { markers: true, frontMatter: { title } });
+  const blob = new Blob([markdown], { type: 'text/markdown;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `${title.replace(/[\\/:*?"<>|]+/g, '_')} (локальная копия).md`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
 function FatalBanner({ fatal, session }: { fatal: { code: string; message: string }; session: CollabSession }) {
-  const download = async () => {
-    const { docToMarkdown } = await loadMarkdown();
-    const json = yXmlFragmentToProsemirrorJSON(session.doc.getXmlFragment('default'));
-    const title = session.doc.getText(TITLE_NAME).toString() || 'Страница';
-    const { markdown } = docToMarkdown(json as any, { markers: true, frontMatter: { title } });
-    const blob = new Blob([markdown], { type: 'text/markdown;charset=utf-8' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = `${title.replace(/[\\/:*?"<>|]+/g, '_')} (локальная копия).md`;
-    a.click();
-    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-  };
+  const download = () => downloadLocalCopy(session);
   const unsent = session.provider.pendingCount();
   return (
     <div className="alert error editor-fatal" role="alert">
@@ -215,11 +227,21 @@ function EditorInner(p: Props & { session: CollabSession }) {
       } catch {
         /* offline: the toast still lets the user restore locally */
       }
-      toast.sticky('Другой участник удалил блок, который вы редактировали. Ваша версия сохранена' + (saved ? ' в истории страницы.' : ' на этом устройстве.'), {
+      const what = c.reason === 'moved' ? 'переместил блок, который вы редактировали, — ваши последние правки в нём не попали в перемещённую копию' : 'удалил блок, который вы редактировали';
+      toast.sticky(`Другой участник ${what}. Ваша версия сохранена` + (saved ? ' в истории страницы.' : ' на этом устройстве.'), {
         label: 'Вернуть мою версию',
         run: () => {
           const ed = editorRef.current;
           if (!ed || ed.isDestroyed) return;
+          if (c.reason === 'moved') {
+            // replace the moved copy (it keeps its new place) with the user's version
+            let range: { from: number; to: number } | null = null;
+            ed.state.doc.forEach((n, off) => n.attrs.id === c.blockId && !range && (range = { from: off, to: off + n.nodeSize }));
+            if (range) ed.chain().insertContentAt(range, c.block).run();
+            else ed.chain().insertContentAt(ed.state.doc.content.size, c.block).run();
+            if (saved) void post(`/api/v1/pages/${p.pageId}/conflicts/${saved.id}/resolve`, { resolution: 'restored' }).catch(() => undefined);
+            return;
+          }
           let at = 0;
           if (c.afterBlockId) ed.state.doc.forEach((n, off) => n.attrs.id === c.afterBlockId && (at = off + n.nodeSize));
           ed.chain().insertContentAt(at, c.block).run();
@@ -297,6 +319,11 @@ function EditorInner(p: Props & { session: CollabSession }) {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editor, session]);
+
+  // Uploads interrupted by a closed tab/reload continue from the file kept in this browser (UX13-03, R-MEDIA-006).
+  useEffect(() => {
+    if (editor && p.canEdit) void resumeUploads(editor, p.pageId);
+  }, [editor, p.canEdit, p.pageId]);
 
   // Caret of this page is restored on Back/Forward/reload; page-level copy commands from the page menu.
   useSelectionMemory(editor, p.pageId, !p.scrollToBlock && !p.autoFocusTitle);
@@ -395,6 +422,9 @@ function EditorInner(p: Props & { session: CollabSession }) {
             // focus synchronously (the focus command is deferred to the next frame and would drop fast keystrokes)
             editor.view.focus();
             editor.commands.setTextSelection(1);
+          } else if (e.key === 'Escape' && p.onDiscardDraft && !e.currentTarget.value.trim() && (!editor || editor.isEmpty)) {
+            e.preventDefault();
+            p.onDiscardDraft();
           }
         }}
       />
@@ -417,6 +447,7 @@ function EditorInner(p: Props & { session: CollabSession }) {
           )}
           {p.canEdit && <BubbleToolbar editor={editor} onComment={() => requestComment()} />}
           {p.canEdit && <TableToolbar editor={editor} />}
+          {p.canEdit && <PasteOptionsMenu editor={editor} />}
           {p.canEdit && <BlockHandle editor={editor} pageId={p.pageId} onComment={(id) => requestComment(id)} />}
           {!p.canEdit && <ReadOnlyCommentButton editor={editor} onComment={() => requestComment()} />}
           {p.canEdit && <TouchInsertButton editor={editor} />}

@@ -9,6 +9,7 @@ import { toast } from '../components/ui/Toast';
 import { confirm } from '../components/ui/Confirm';
 import { IconPickerPopover } from '../components/IconPicker';
 import { LEVEL_LABEL, STATUS_LABEL, relTime } from '../lib/format';
+import { SpaceMembersEditor, type SpaceGrant } from '../components/space/SpaceAccess';
 
 type Policy = { publishingMode: 'live' | 'publish'; requireApproval: boolean; allowExport: boolean; allowDownload: boolean; allowGuests: boolean };
 interface SpaceDetail {
@@ -150,7 +151,7 @@ function PagesTab({ space }: { space: SpaceDetail }) {
 }
 
 function AccessTab({ space }: { space: SpaceDetail }) {
-  const access = useQuery({ queryKey: ['space-access', space.id], queryFn: ({ signal }) => get<{ level: string; actions: Record<string, boolean>; grants: Grant[] }>(`/api/v1/spaces/${space.id}/access`, signal) });
+  const access = useQuery({ queryKey: ['space-access', space.id], queryFn: ({ signal }) => get<{ level: string; actions: Record<string, boolean>; grants: Array<Grant & SpaceGrant> }>(`/api/v1/spaces/${space.id}/access`, signal) });
   if (access.isLoading)
     return (
       <div className="col" aria-busy="true" aria-label="Загрузка">
@@ -176,7 +177,9 @@ function AccessTab({ space }: { space: SpaceDetail }) {
         ))}
       </div>
       {!full && <p className="small muted">Полный список участников видят руководители пространства.</p>}
-      {!grants.length ? (
+      {full ? (
+        <SpaceMembersEditor spaceId={space.id} spaceName={space.name} grants={grants} myLevel={access.data!.level} onChanged={() => access.refetch()} />
+      ) : !grants.length ? (
         <div className="empty-state compact">
           <p>Нет явно выданных прав.</p>
         </div>

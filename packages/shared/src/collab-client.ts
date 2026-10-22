@@ -12,6 +12,9 @@
 import * as Y from 'yjs';
 import * as awarenessProtocol from 'y-protocols/awareness';
 import { MSG, CLOSE, encodeClient, decodeServer, type PresenceUser } from './collab-protocol.js';
+import { HttpTunnelSocket, type HttpTunnelOptions } from './collab-http.js';
+
+export type CollabTransport = 'ws' | 'http';
 
 export type SyncStatus = 'connecting' | 'syncing' | 'saved' | 'local' | 'readonly' | 'error';
 
@@ -34,7 +37,7 @@ export interface CollabProviderOptions {
   batchMs?: number;
   ackTimeoutMs?: number;
   backoff?: { minMs: number; maxMs: number };
-  onStatus?: (s: SyncStatus, info: { pending: number; oldestPendingMs: number | null; message?: string }) => void;
+  onStatus?: (s: SyncStatus, info: { pending: number; oldestPendingMs: number | null; message?: string; transport: CollabTransport }) => void;
   onAccess?: (canEdit: boolean, level: string, reason?: string) => void;
   onPresence?: (users: PresenceUser[]) => void;
   /** Fatal problems: page deleted, change rejected, access revoked. Local data must be offered for export. */
@@ -43,6 +46,22 @@ export interface CollabProviderOptions {
   /** Local pending store failed (quota exceeded or unavailable). */
   onStorageError?: (message: string, quota: boolean) => void;
   newOpId?: () => string;
+  /**
+   * HTTP fallback channel used when WebSocket cannot be established (blocked by a proxy) — same frames and
+   * durability contract over HTTPS long polling. Omit to disable.
+   */
+  httpFallback?: HttpTunnelOptions;
+  /** Consecutive WebSocket failures (never opened or never synced) before switching to the HTTP channel. */
+  fallbackAfterFailures?: number;
+  /** An opened channel that does not deliver SYNC within this time is treated as broken. */
+  syncTimeoutMs?: number;
+  /**
+   * Backpressure: at most this many operations / bytes are in flight (sent, not yet acknowledged), and nothing
+   * more is written while the socket's own send buffer holds more than `maxBufferedBytes`.
+   */
+  maxInflightOps?: number;
+  maxInflightBytes?: number;
+  maxBufferedBytes?: number;
 }
 
 interface PendingOp {
@@ -50,9 +69,13 @@ interface PendingOp {
   ts: number;
   sent: boolean;
   covers?: string[];
+  /** Carried by a later operation (the catch-up diff after reconnect): not sent on its own, not counted in flight. */
+  coveredBy?: string;
   /** true once written to the local pending store (or when there is no store) */
   persisted?: boolean;
   write?: Promise<void>;
+  /** local write in progress: the operation is not sent before it is in the local journal */
+  writing?: boolean;
 }
 
 export class CollabProvider {
@@ -77,9 +100,17 @@ export class CollabProvider {
   private fatal = false;
   private message: string | undefined;
   private ready: Promise<void>;
+  /** The server answered persist_failed and has not committed anything since: visible error, export offered. */
+  private serverFailing: string | null = null;
+  private wsFailures = 0;
+  private fallbackSince = 0;
+  private syncTimer: any = null;
+  private drainTimer: any = null;
+  /** Transport of the current / last connection. */
+  transport: CollabTransport = 'ws';
 
   constructor(opts: CollabProviderOptions) {
-    this.opts = { batchMs: 80, ackTimeoutMs: 15_000, backoff: { minMs: 500, maxMs: 30_000 }, ...opts };
+    this.opts = { batchMs: 80, ackTimeoutMs: 15_000, backoff: { minMs: 500, maxMs: 30_000 }, fallbackAfterFailures: 2, syncTimeoutMs: 10_000, maxInflightOps: 32, maxInflightBytes: 4 * 1024 * 1024, maxBufferedBytes: 1024 * 1024, ...opts };
     this.doc = opts.doc;
     this.awareness = opts.awareness ?? new awarenessProtocol.Awareness(this.doc);
     this.doc.on('update', this.onDocUpdate);
@@ -129,6 +160,7 @@ export class CollabProvider {
       op.persisted = true;
       return;
     }
+    op.writing = true;
     op.write = store
       .put(opId, op.update, op.ts)
       .then(() => {
@@ -142,7 +174,13 @@ export class CollabProvider {
           : 'Не удалось сохранить изменения на устройстве (хранилище браузера недоступно). Не закрывайте страницу до восстановления связи.';
         this.opts.onStorageError?.(this.persistError, quota);
       })
-      .finally(() => this.setStatus());
+      .finally(() => {
+        // The operation goes to the server only after it is in the durable local journal (or the write failed:
+        // then sending is the only way to keep it).
+        op.writing = false;
+        this.sendPending();
+        this.setStatus();
+      });
   }
 
   /** Removes acknowledged operations from the local store only after their own write has finished. */
@@ -168,10 +206,15 @@ export class CollabProvider {
       } else s = this.allPersisted() ? 'local' : 'syncing';
     }
     else if (!this.canEdit) s = this.pendingCount() ? 'error' : 'readonly';
-    else s = this.pendingCount() ? 'syncing' : 'saved';
+    else if (this.serverFailing && this.pendingCount()) {
+      // The server cannot commit (storage failure): retrying, but the user must see it and may export a copy.
+      s = 'error';
+      message = message ?? this.serverFailing;
+      this.message = message;
+    } else s = this.pendingCount() ? 'syncing' : 'saved';
     if (s !== 'error' && !this.fatal && message === undefined) this.message = undefined;
     this.status = s;
-    this.opts.onStatus?.(s, { pending: this.pendingCount(), oldestPendingMs: this.oldestPendingMs(), message: this.message });
+    this.opts.onStatus?.(s, { pending: this.pendingCount(), oldestPendingMs: this.oldestPendingMs(), message: this.message, transport: this.transport });
   }
 
   private onDocUpdate = (update: Uint8Array, origin: unknown) => {
@@ -204,14 +247,43 @@ export class CollabProvider {
     }
   }
 
+  /** Operations sent and not yet acknowledged (covered ones travel inside their covering operation). */
+  inflight() {
+    let ops = 0;
+    let bytes = 0;
+    for (const p of this.pending.values())
+      if (p.sent && !p.coveredBy) {
+        ops++;
+        bytes += p.update.byteLength;
+      }
+    return { ops, bytes };
+  }
+
+  /**
+   * Sends unsent operations in order, with backpressure: a slow link or a slow server never gets an unbounded
+   * burst — at most `maxInflightOps`/`maxInflightBytes` await acknowledgement and the socket buffer is drained first.
+   * The rest stays queued (and in the local journal) and goes out as acknowledgements arrive.
+   */
   private sendPending() {
     if (!this.ws || this.ws.readyState !== 1 || !this.synced || !this.canEdit || this.fatal) return;
+    let { ops, bytes } = this.inflight();
+    let sentAny = false;
     for (const [opId, p] of this.pending) {
-      if (p.sent) continue;
+      if (p.sent || p.writing) continue;
+      const tooMany = ops >= this.opts.maxInflightOps! || (ops > 0 && bytes + p.update.byteLength > this.opts.maxInflightBytes!);
+      const buffered = (this.ws.bufferedAmount ?? 0) > this.opts.maxBufferedBytes!;
+      if (tooMany || buffered) {
+        // resume when acknowledgements arrive; if only the socket buffer is full, poll it shortly
+        if (buffered && !this.drainTimer) this.drainTimer = setTimeout(() => ((this.drainTimer = null), this.sendPending()), 50);
+        break;
+      }
       p.sent = true;
+      ops++;
+      bytes += p.update.byteLength;
+      sentAny = true;
       this.ws.send(encodeClient({ type: MSG.UPDATE, opId, update: p.update }));
     }
-    this.armAckTimer();
+    if (sentAny) this.armAckTimer();
   }
 
   private armAckTimer() {
@@ -234,25 +306,52 @@ export class CollabProvider {
     await this.ready;
     if (this.destroyed || this.fatal) return;
     if (this.ws && (this.ws.readyState === 0 || this.ws.readyState === 1)) return;
-    const WS = this.opts.WebSocketImpl ?? (globalThis as any).WebSocket;
-    const ws = this.opts.wsOptions ? new WS(this.opts.url, this.opts.wsOptions) : new WS(this.opts.url);
+    const fb = this.opts.httpFallback;
+    // WebSocket blocked (proxy) or broken: use the HTTP channel; every 5 minutes try WebSocket again.
+    if (fb && this.transport === 'http' && Date.now() - this.fallbackSince > 5 * 60_000) this.wsFailures = 0;
+    this.transport = fb && this.wsFailures >= this.opts.fallbackAfterFailures! ? 'http' : 'ws';
+    if (this.transport === 'http' && !this.fallbackSince) this.fallbackSince = Date.now();
+    if (this.transport === 'ws') this.fallbackSince = 0;
+    let ws: any;
+    if (this.transport === 'http') ws = new HttpTunnelSocket(this.opts.url, fb);
+    else {
+      const WS = this.opts.WebSocketImpl ?? (globalThis as any).WebSocket;
+      ws = this.opts.wsOptions ? new WS(this.opts.url, this.opts.wsOptions) : new WS(this.opts.url);
+    }
     ws.binaryType = 'arraybuffer';
     this.ws = ws;
     this.synced = false;
+    let gotSync = false;
     this.setStatus();
     ws.onopen = () => {
-      this.retry = 0;
       ws.send(encodeClient({ type: MSG.HELLO, stateVector: Y.encodeStateVector(this.doc) }));
       this.pingTimer = setInterval(() => ws.readyState === 1 && ws.send(encodeClient({ type: MSG.PING })), 25_000);
+      // An intermediary may accept the upgrade and then swallow frames: no SYNC in time = broken channel.
+      if (this.syncTimer) clearTimeout(this.syncTimer);
+      this.syncTimer = setTimeout(() => this.ws === ws && !this.synced && ws.close(), this.opts.syncTimeoutMs);
     };
-    ws.onmessage = (ev: { data: ArrayBuffer | Uint8Array }) => this.onMessage(new Uint8Array(ev.data as ArrayBuffer));
+    const prevOnMessage = (buf: Uint8Array) => {
+      if (!gotSync && this.ws === ws) {
+        gotSync = true;
+        this.retry = 0;
+        if (this.transport === 'ws') this.wsFailures = 0;
+      }
+      this.onMessage(buf);
+    };
+    ws.onmessage = (ev: { data: ArrayBuffer | Uint8Array }) => prevOnMessage(new Uint8Array(ev.data as ArrayBuffer));
     ws.onclose = (ev: { code: number; reason?: string }) => {
       clearInterval(this.pingTimer);
       if (this.ackTimer) clearTimeout(this.ackTimer);
+      if (this.syncTimer) clearTimeout(this.syncTimer);
       if (this.ws !== ws) return;
       this.ws = null;
       this.synced = false;
-      for (const p of this.pending.values()) p.sent = false; // will be re-sent (idempotent by opId)
+      // a WebSocket that never got as far as SYNC counts towards switching to the HTTP channel
+      if (!gotSync && this.transport === 'ws' && ev.code !== CLOSE.ACCESS_REVOKED && ev.code !== CLOSE.NOT_FOUND && ev.code !== CLOSE.SESSION_EXPIRED) this.wsFailures++;
+      for (const p of this.pending.values()) {
+        p.sent = false; // will be re-sent (idempotent by opId)
+        p.coveredBy = undefined;
+      }
       awarenessProtocol.removeAwarenessStates(this.awareness, [...this.awareness.getStates().keys()].filter((id) => id !== this.doc.clientID), this);
       if (ev.code === CLOSE.ACCESS_REVOKED || ev.code === CLOSE.NOT_FOUND) {
         this.fatal = true;
@@ -268,6 +367,11 @@ export class CollabProvider {
   private scheduleReconnect(minDelay = 0) {
     if (this.destroyed || this.fatal) return;
     const { minMs, maxMs } = this.opts.backoff!;
+    // switching to the fallback channel happens without waiting out the backoff
+    if (this.opts.httpFallback && this.transport === 'ws' && this.wsFailures === this.opts.fallbackAfterFailures && !minDelay) {
+      this.reconnectTimer = setTimeout(() => void this.connect(), 0);
+      return;
+    }
     const base = Math.min(maxMs, minMs * 2 ** this.retry++);
     const delay = Math.max(minDelay, base / 2 + Math.random() * (base / 2)); // exponential backoff with jitter
     this.reconnectTimer = setTimeout(() => void this.connect(), delay);
@@ -299,8 +403,10 @@ export class CollabProvider {
           this.flush();
           const diff = Y.encodeStateAsUpdate(this.doc, m.stateVector);
           const covered = [...this.pending.keys()];
+          let coverId: string | undefined;
           if (hasContent(diff)) {
             const opId = this.newOpId();
+            coverId = opId;
             const ts = Math.min(Date.now(), ...[...this.pending.values()].map((p) => p.ts));
             const op: PendingOp = { update: diff, ts, sent: false, covers: covered };
             this.pending.set(opId, op);
@@ -314,7 +420,10 @@ export class CollabProvider {
           // Covered operations are not re-sent individually: the diff carries them.
           for (const id of covered) {
             const p = this.pending.get(id);
-            if (p) p.sent = true;
+            if (p) {
+              p.sent = true;
+              p.coveredBy = coverId;
+            }
           }
           this.sendPending();
         }
@@ -330,7 +439,9 @@ export class CollabProvider {
         for (const id of done) this.pending.delete(id);
         this.forget(done, writes);
         this.serverSeq = Math.max(this.serverSeq, m.seq);
+        this.serverFailing = null;
         this.armAckTimer();
+        this.sendPending(); // backpressure: room for the next operations
         this.setStatus();
         return;
       }
@@ -339,7 +450,8 @@ export class CollabProvider {
         if (m.code === 'persist_failed') {
           if (p) p.sent = false;
           setTimeout(() => this.sendPending(), 2000);
-          this.setStatus('Сервер временно не может сохранить изменения — повторяем');
+          this.serverFailing = 'Сервер не может сохранить изменения (сбой хранилища). Они остаются на этом устройстве и отправляются повторно — при необходимости скачайте локальную копию.';
+          this.setStatus(this.serverFailing);
           return;
         }
         if (m.code === 'forbidden') {
@@ -397,6 +509,8 @@ export class CollabProvider {
   destroy() {
     this.flush();
     this.destroyed = true;
+    if (this.drainTimer) clearTimeout(this.drainTimer);
+    if (this.syncTimer) clearTimeout(this.syncTimer);
     this.disconnect();
     this.doc.off('update', this.onDocUpdate);
     this.awareness.off('update', this.onAwarenessUpdate);

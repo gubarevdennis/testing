@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { get, ApiError } from '../api/client';
 import { metaGet, metaSet } from '../sync/idb';
+import { isFresh, purgeLocalCopy, type CachedPage } from '../sync/localCopies';
 import { useSession } from '../state/session';
 import type { Space, TreeNode, PageDto, Crumb } from '../api/types';
 
@@ -25,15 +26,22 @@ export function usePage(id: string | undefined) {
   return useQuery({
     queryKey: ['page', id],
     queryFn: async () => {
-      const cacheKey = `page:${useSession.getState().me?.user.id ?? 'anon'}:${id}`;
+      const userId = useSession.getState().me?.user.id ?? 'anon';
+      const cacheKey = `page:${userId}:${id}`;
       try {
         const r = await get<{ page: PageDto; breadcrumbs: Crumb[] }>(`/api/v1/pages/${id}`);
-        void metaSet(cacheKey, r).catch(() => undefined);
+        void metaSet(cacheKey, { ...r, cachedAt: Date.now() }).catch(() => undefined);
         return r;
       } catch (e) {
         if (e instanceof ApiError && e.isNetwork) {
-          const cached = await metaGet<{ page: PageDto; breadcrumbs: Crumb[] }>(cacheKey).catch(() => undefined);
-          if (cached) return { ...cached, offline: true as const };
+          const cached = await metaGet<{ page: PageDto; breadcrumbs: Crumb[]; cachedAt?: number }>(cacheKey).catch(() => undefined);
+          // Local copies have a limited lifetime (R-ACL-025): stale copies are not shown offline.
+          if (cached && isFresh(cached)) return { ...cached, offline: true as const };
+        }
+        if (e instanceof ApiError && e.status === 404 && id) {
+          // Access revoked or page deleted: the copy on this device is removed as well (R-ACL-025).
+          const cached = await metaGet<CachedPage>(cacheKey).catch(() => undefined);
+          if (cached) void purgeLocalCopy(userId, id, cached).catch(() => undefined);
         }
         throw e;
       }

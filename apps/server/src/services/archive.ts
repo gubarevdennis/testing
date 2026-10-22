@@ -8,7 +8,7 @@
 import yazl from 'yazl';
 import { createHash, randomUUID } from 'node:crypto';
 import Papa from 'papaparse';
-import { docToMarkdown, collectBlocks, walk, migrateContent, CONTENT_SCHEMA_VERSION, type PMNode } from '@kb/shared';
+import { docToMarkdown, collectBlocks, walk, migrateContent, keyBetween, CONTENT_SCHEMA_VERSION, type PMNode } from '@kb/shared';
 import type { Services } from '../app.js';
 import type { Tx } from '../db/pool.js';
 import { blobKey } from '../storage/blob-store.js';
@@ -315,9 +315,20 @@ export async function analyzeArchive(s: Services, orgId: string, buf: Buffer): P
   return { analysis: { ok: !checksumErrors.length && !missingFiles.length && !malware.length, manifest, checksumErrors, missingFiles, conflicts, users, warnings, malware }, entries };
 }
 
+/**
+ * Where an archive is restored (R-ARCHIVE-006, R-ARCHIVE-016):
+ *  - merge: spaces of the archive are recreated in the organisation (ids remapped on conflict);
+ *  - new-space: everything goes into ONE new private space (isolated contour) — each archived space becomes a
+ *    top-level page of it; space-level grants are not applied (they would widen access), page grants are kept;
+ *  - into-space: the same layout inside an existing space (merge into a chosen space).
+ * In the single-space modes all ids are always fresh, so the originals are never touched or linked.
+ */
+export type RestoreTarget = { mode: 'merge' } | { mode: 'new-space'; name?: string } | { mode: 'into-space'; spaceId: string };
+
 /** Restores an archive into the current organisation in ONE transaction; returns a verification report. */
-export async function restoreArchive(s: Services, q: Tx, orgId: string, actor: AuditActor, entries: Map<string, Buffer>, analysis: ArchiveAnalysis, adminUserId: string) {
+export async function restoreArchive(s: Services, q: Tx, orgId: string, actor: AuditActor, entries: Map<string, Buffer>, analysis: ArchiveAnalysis, adminUserId: string, target: RestoreTarget = { mode: 'merge' }) {
   if (!analysis.ok) throw unprocessable('integrity', 'Архив не прошёл проверку целостности — восстановление запрещено');
+  const single = target.mode !== 'merge';
   const j = (p: string, d: unknown = []) => (entries.has(p) ? JSON.parse(entries.get(p)!.toString('utf8')) : d);
   const spaces = j('metadata/spaces.json') as any[];
   const pages = j('metadata/pages.json') as any[];
@@ -326,7 +337,7 @@ export async function restoreArchive(s: Services, q: Tx, orgId: string, actor: A
   const grants = j('metadata/permissions.json') as any[];
   const atts = j('metadata/attachments.json') as any[];
   const collections = j('metadata/collections.json') as any[];
-  const remap = analysis.conflicts.pages > 0 || analysis.conflicts.spaces > 0 || analysis.conflicts.attachments > 0;
+  const remap = single || analysis.conflicts.pages > 0 || analysis.conflicts.spaces > 0 || analysis.conflicts.attachments > 0;
   const idMap = new Map<string, string>();
   const map = (id: string | null | undefined) => (id ? (idMap.get(id) ?? id) : null);
   const fresh = (id: string) => {
@@ -359,8 +370,39 @@ export async function restoreArchive(s: Services, q: Tx, orgId: string, actor: A
     const uid = um(m.user_id);
     if (gid && uid) await q.query(`insert into group_members (group_id, user_id, role, expires_at) values ($1, $2, $3, $4) on conflict do nothing`, [gid, uid, m.role, m.expires_at]);
   }
+  // Single-space modes: one target space; every archived space becomes a folder page at its top level.
+  let targetSpaceId: string | null = null;
+  const rootParent = new Map<string, string>(); // archived root page id -> new folder page id
+  if (single) {
+    if (target.mode === 'into-space') {
+      const sp = (await q.query('select id from spaces where id = $1 and org_id = $2 and deleted_at is null', [target.spaceId, orgId])).rows[0];
+      if (!sp) throw unprocessable('target_space', 'Пространство для восстановления не найдено');
+      targetSpaceId = sp.id as string;
+    } else {
+      const last = (await q.query(`select sort_key from spaces where org_id = $1 and kind <> 'personal' order by sort_key collate "C" desc limit 1`, [orgId])).rows[0]?.sort_key ?? null;
+      const name = (target.name?.trim() || `Восстановлено из архива ${String(analysis.manifest.createdAt ?? '').slice(0, 10)}`).slice(0, 200);
+      targetSpaceId = (
+        await q.query(
+          `insert into spaces (org_id, name, description, icon, kind, visibility, owner_user_id, settings, sort_key, created_by) values ($1, $2, $3, '🗄', 'project', 'private', $4, '{}'::jsonb, $5, $4) returning id`,
+          [orgId, name, `Изолированное восстановление архива «${analysis.manifest.organization?.name ?? ''}» от ${analysis.manifest.createdAt ?? ''}`, adminUserId, keyBetween(last, null)],
+        )
+      ).rows[0].id as string;
+      await q.query(`insert into grants (org_id, resource_type, resource_id, subject_type, subject_id, level, reason, granted_by) values ($1, 'space', $2, 'user', $3, 'full', 'archive restore (isolated)', $3)`, [orgId, targetSpaceId, adminUserId]);
+    }
+    let folderKey: string | null = (await q.query(`select sort_key from pages where space_id = $1 and parent_id is null order by sort_key collate "C" desc limit 1`, [targetSpaceId])).rows[0]?.sort_key ?? null;
+    for (const sp of spaces) {
+      idMap.set(sp.id, targetSpaceId);
+      folderKey = keyBetween(folderKey, null);
+      const folderId = randomUUID();
+      const owner = sp.kind === 'personal' ? users.find((u: any) => u.id === sp.owner_user_id)?.name : null;
+      // Folder pages are ordinary archive pages from here on (inserted parents-first with the others).
+      pages.unshift({ id: folderId, space_id: sp.id, parent_id: null, sort_key: folderKey, title: sp.kind === 'personal' ? `Личное — ${owner ?? sp.name}` : sp.name, icon: sp.icon ?? '📁', cover: null, status: 'draft', inherit_permissions: true, locked: false, wide: false, properties: {}, owner_id: null, created_by: null, created_at: new Date().toISOString(), review_due_at: null, __folder: true });
+      for (const p of pages) if (!p.__folder && p.space_id === sp.id && !p.parent_id) rootParent.set(p.id, folderId);
+    }
+    for (const p of pages) if (rootParent.has(p.id)) p.parent_id = rootParent.get(p.id);
+  }
   // Spaces (personal spaces of existing users merge into their existing personal space).
-  for (const sp of spaces) {
+  for (const sp of single ? [] : spaces) {
     const owner = um(sp.owner_user_id);
     if (sp.kind === 'personal' && owner) {
       const ex = (await q.query(`select id from spaces where kind = 'personal' and owner_user_id = $1`, [owner])).rows[0];
@@ -468,7 +510,8 @@ export async function restoreArchive(s: Services, q: Tx, orgId: string, actor: A
   const droppedGrants: any[] = [];
   for (const g of grants) {
     const subject = g.subject_type === 'user' ? um(g.subject_id) : g.subject_type === 'group' ? groupMap.get(g.subject_id) ?? null : null;
-    if (g.subject_type !== 'org' && !subject) {
+    // Isolated restore: space grants of the archive would open the target space to their audience — not applied.
+    if ((g.subject_type !== 'org' && !subject) || (single && g.resource_type === 'space')) {
       droppedGrants.push(g);
       continue;
     }
@@ -482,12 +525,24 @@ export async function restoreArchive(s: Services, q: Tx, orgId: string, actor: A
     restoredGrants++;
   }
   await q.query(`insert into acl_epoch (org_id, epoch) values ($1, 1) on conflict (org_id) do update set epoch = acl_epoch.epoch + 1`, [orgId]);
-  await audit(q, actor, { action: 'archive.restore', targetType: 'org', targetId: orgId, details: { manifest: analysis.manifest.counts, remapped: remap, unresolvedUsers: unresolved.length, droppedGrants: droppedGrants.length } });
-  return { remapped: remap, idMap: Object.fromEntries(idMap), unresolvedUsers: unresolved, restoredGrants, droppedGrants: droppedGrants.length, pages: pages.length, attachments: attById.size };
+  await audit(q, actor, { action: 'archive.restore', targetType: single ? 'space' : 'org', targetId: targetSpaceId ?? orgId, details: { manifest: analysis.manifest.counts, target: target.mode, remapped: remap, unresolvedUsers: unresolved.length, droppedGrants: droppedGrants.length } });
+  const archivedPages = pages.filter((p) => !p.__folder).length;
+  return {
+    remapped: remap,
+    idMap: Object.fromEntries(idMap),
+    unresolvedUsers: unresolved,
+    restoredGrants,
+    droppedGrants: droppedGrants.length,
+    pages: archivedPages,
+    attachments: attById.size,
+    target: { mode: target.mode, spaceId: targetSpaceId, folders: pages.length - archivedPages },
+    /** New parent of each archived root page (single-space modes), for the post-restore verification. */
+    rootParents: Object.fromEntries([...rootParent].map(([pid, folder]) => [map(pid)!, map(folder)!])),
+  };
 }
 
 /** Post-restore verification: counts, tree, links, files (checksums) and ACL compared with the manifest. */
-export async function verifyRestore(s: Services, entries: Map<string, Buffer>, idMap: Record<string, string>) {
+export async function verifyRestore(s: Services, entries: Map<string, Buffer>, idMap: Record<string, string>, rootParents: Record<string, string> = {}) {
   const j = (p: string) => JSON.parse(entries.get(p)!.toString('utf8'));
   const pages = j('metadata/pages.json') as any[];
   const atts = j('metadata/attachments.json') as any[];
@@ -498,7 +553,7 @@ export async function verifyRestore(s: Services, entries: Map<string, Buffer>, i
   if (dbPages.length !== pages.length) problems.push(`Страниц: ожидалось ${pages.length}, восстановлено ${dbPages.length}`);
   for (const p of pages) {
     const d = dbPages.find((x) => x.id === m(p.id));
-    if (d && (d.parent_id ?? null) !== (p.parent_id ? m(p.parent_id) : null)) problems.push(`Нарушена иерархия страницы «${p.title}»`);
+    if (d && (d.parent_id ?? null) !== (p.parent_id ? m(p.parent_id) : rootParents[m(p.id)] ?? null)) problems.push(`Нарушена иерархия страницы «${p.title}»`);
     if (d && d.title !== p.title) problems.push(`Название не совпадает: «${p.title}»`);
   }
   let blocks = 0;

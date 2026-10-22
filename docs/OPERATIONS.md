@@ -14,7 +14,7 @@
 | `deploy/env.example` | Все переменные окружения с пояснениями; секретов нет. |
 | `deploy/nginx.conf` | TLS, WebSocket (`/api/v1/collab`, `/api/v1/events`), лимиты загрузки, заголовки безопасности. |
 | `deploy/systemd/kb.service`, `kb-backup.service`, `kb-backup.timer` | Установка без контейнеров. |
-| `deploy/monitoring/prometheus-alerts.yml`, `grafana-dashboard.json` | Алерты (28 правил) и дашборд. |
+| `deploy/monitoring/prometheus-alerts.yml`, `grafana-dashboard.json` | Алерты (32 правила) и дашборд. |
 | `scripts/backup/*` | `backup.sh`, `restore.sh`, `verify-backup.sh`, `restore-objects.sh`, `wal-archive.sh`/`wal-restore.sh`, `backup-loop.sh`, `check-docs.mjs`. |
 
 ## 1. Установка
@@ -89,6 +89,13 @@ sudo systemctl daemon-reload && sudo systemctl enable --now kb kb-backup.timer
 
 1. Сделайте копию **перед** обновлением (ТЗ п. 9: «любая миграция — с резервной копией»):
    `backup.sh`, затем `verify-backup.sh --latest` (для полной копии).
+   Правило **проверяется автоматически** (R-OPS-004): если в БД есть данные и есть неприменённые миграции, сервер
+   при старте и `cli migrate up` отказываются их применять (`BackupRequiredError`), пока в таблице `backups` нет
+   успешной полной копии (`backup.sh` с `BACKUP_RECORD=1`), завершённой не раньше `MIGRATION_BACKUP_MAX_AGE_MIN`
+   (180 мин) назад и после последней применённой миграции. Включено по умолчанию при `NODE_ENV=production`
+   (`MIGRATION_REQUIRE_BACKUP`). Осознанный обход — `cli migrate up --skip-backup-check` (пишет предупреждение;
+   его использует `restore.sh`, потому что восстановленная БД сама является копией). Проверено тестом
+   `tests/resilience/migrations.test.ts`.
 2. Просмотрите новые миграции: `node apps/server/dist/cli.js migrate status`.
 3. Обновите один экземпляр: `docker compose … up -d app` или `systemctl restart kb`. SIGTERM запускает
    graceful shutdown: документы сохраняются, WebSocket-клиенты получают «перезапуск сервера»,
@@ -164,6 +171,17 @@ sudo systemctl daemon-reload && sudo systemctl enable --now kb kb-backup.timer
 Ожидаемые задания сбора метрик: `job="kb"`, `job="node"` (с textfile collector), `job="postgres"`.
 
 ## 6. Журналы
+
+### Трассировка (OpenTelemetry)
+
+Каждый HTTP-запрос и каждая фоновая задача — это span. Входящий заголовок `traceparent` (W3C Trace Context)
+продолжает трассу вызывающей стороны, ответ возвращает `traceparent` серверного span, а `traceId` пишется в
+журнал запроса рядом с `reqId`. Задачи импорта и экспорта продолжают трассу запроса, который их создал.
+Экспорт — OTLP/HTTP (JSON) в любой OpenTelemetry Collector, Jaeger или Tempo:
+`OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318` (или `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT`),
+`OTEL_SERVICE_NAME` (по умолчанию `kb`), `OTEL_EXPORTER_OTLP_HEADERS=authorization=Bearer …`. Без адреса
+идентификаторы трасс всё равно создаются для журналов. Экспорт идёт пакетами в фоне и не влияет на запросы
+(очередь ограничена 5000 span). Проверено тестом `tests/integration/io-p0-ops.test.ts`.
 
 * Приложение пишет JSON-журнал (pino) в stdout, уровень задаёт `LOG_LEVEL`. В каждой записи запроса есть
   `reqId`, который совпадает с `correlationId` в ответе об ошибке: по номеру из сообщения пользователя
@@ -284,6 +302,28 @@ sudo systemctl daemon-reload && sudo systemctl enable --now kb kb-backup.timer
    релиза).
 4. Сохранность проверяется так: `node scripts/backup/check-docs.mjs $DATABASE_URL` воспроизводит все документы
    из журнала без пропусков.
+
+<a id="runbook-reconnects"></a>
+### 7.6.1 Массовые переподключения (`KbCollabReconnectStorm`)
+
+`kb_collab_reconnects_total` растёт, когда та же сессия снова открывает тот же документ в течение 2 минут после
+разрыва. Правки при этом не теряются (очередь клиента), но пользователи видят «Переподключение…».
+
+1. Совпадает ли всплеск с перезапуском экземпляров (`kb_process_start_time_seconds`) или релизом — тогда это
+   ожидаемо и затухает за минуты.
+2. Иначе проверьте таймауты прокси для WebSocket (`proxy_read_timeout` в `deploy/nginx.conf` должен быть больше
+   интервала ping 25 с), балансировщик и сеть; в журнале nginx — коды 499/502/504 на `/api/v1/collab`.
+3. По трассам (раздел 6, «Трассировка») найдите медленные `GET /api/v1/collab/:pageId` с ошибками.
+
+<a id="runbook-import-ocr"></a>
+### 7.6.2 Ошибки импорта и медленный OCR (`KbImportFailureRateHigh`, `KbOcrSlow`, `KbOcrFailing`)
+
+* Импорт: `kb_import_files_total{format,status}` показывает, какой формат отклоняется. Отчёт по файлу —
+  `GET /api/v1/imports/:id` (`preview.files[].error`), этапы — в журнале (`msg: import stage`, `jobId`).
+  `rejected` — антивирус или лимит размера (`MAX_IMPORT_MB`), `error` — файл не разобран (повреждён, не тот формат).
+* OCR: `kb_ocr_duration_seconds` — время распознавания одного изображения. Рост p95 означает нехватку CPU у
+  воркеров: увеличьте `WORKER_CONCURRENCY` только при свободных ядрах, иначе вынесите воркеры на отдельные
+  экземпляры (`WORKER_ENABLED`). Ошибки — в `ocr_results.error` и журнале (`job failed`, `type: ocr`).
 
 <a id="runbook-slow"></a>
 ### 7.7 Медленная работа

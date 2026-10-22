@@ -8,7 +8,7 @@ import { usePage } from '../hooks/data';
 import { useMe } from '../state/session';
 import { useUi } from '../state/ui';
 import { get, patch, post, put, del, ApiError } from '../api/client';
-import { PageEditor, EditorSkeleton, type EditorHandle } from '../editor/Editor';
+import { PageEditor, EditorSkeleton, downloadLocalCopy, type EditorHandle } from '../editor/Editor';
 import { SyncStatus } from '../components/page/SyncStatus';
 import { Presence } from '../components/page/Presence';
 import { Menu } from '../components/ui/Menu';
@@ -44,7 +44,7 @@ export default function PageView() {
     );
   if (page.isError || !page.data) return <PageError error={page.error} pageId={pageId!} retry={() => page.refetch()} />;
   const block = params.get('block') ?? (location.hash ? decodeURIComponent(location.hash.slice(1)) : null);
-  return <PageLoaded key={page.data.page.id} page={page.data.page} crumbs={page.data.breadcrumbs} block={block} justCreated={!!(location.state as any)?.justCreated} />;
+  return <PageLoaded key={page.data.page.id} page={page.data.page} crumbs={page.data.breadcrumbs} block={block} justCreated={!!(location.state as any)?.justCreated} offline={'offline' in page.data && !!page.data.offline} />;
 }
 
 function PageError({ error, pageId, retry }: { error: unknown; pageId: string; retry(): void }) {
@@ -85,7 +85,7 @@ function PageError({ error, pageId, retry }: { error: unknown; pageId: string; r
 
 type Panel = 'comments' | 'history' | 'info' | null;
 
-function PageLoaded({ page, crumbs, block, justCreated }: { page: PageDto; crumbs: Crumb[]; block: string | null; justCreated: boolean }) {
+function PageLoaded({ page, crumbs, block, justCreated, offline = false }: { page: PageDto; crumbs: Crumb[]; block: string | null; justCreated: boolean; offline?: boolean }) {
   const me = useMe();
   const qc = useQueryClient();
   const navigate = useNavigate();
@@ -200,16 +200,16 @@ function PageLoaded({ page, crumbs, block, justCreated }: { page: PageDto; crumb
     { separator: true as const },
     { id: 'history', label: 'История версий', icon: <History size={15} />, onSelect: () => setRightPanel('history') },
     { id: 'info', label: 'Сведения о странице', icon: <Info size={15} />, onSelect: () => setRightPanel('info') },
-    { id: 'export', label: 'Экспорт…', icon: <Download size={15} />, disabled: !a.export, hint: a.export ? undefined : 'Запрещено политикой', onSelect: () => setExp(true) },
+    { id: 'export', label: 'Экспорт…', icon: <Download size={15} />, disabled: !a.export, hint: a.export ? undefined : 'Запрещено политикой', disabledReason: 'Экспорт запрещён политикой пространства или организации', onSelect: () => setExp(true) },
     { id: 'print', label: 'Печать', icon: <Printer size={15} />, onSelect: () => window.print() },
     { separator: true as const },
-    { id: 'wide', label: 'Широкая страница', icon: <MoveHorizontal size={15} />, checked: page.wide, disabled: !canEdit, onSelect: () => patchPage({ wide: !page.wide }) },
+    { id: 'wide', label: 'Широкая страница', icon: <MoveHorizontal size={15} />, checked: page.wide, disabled: !canEdit, disabledReason: 'Нужно право на редактирование страницы — запросите его в «Поделиться»', onSelect: () => patchPage({ wide: !page.wide }) },
     ...(page.access.level === 'full' ? [{ id: 'lock', label: page.locked ? 'Снять защиту от изменений' : 'Защитить от изменений', icon: page.locked ? <Unlock size={15} /> : <Lock size={15} />, onSelect: () => patchPage({ locked: !page.locked }, page.locked ? 'Защита снята' : 'Страница защищена — редактировать могут только владельцы доступа') }] : []),
-    { id: 'template', label: 'Сохранить как шаблон', icon: <LayoutTemplate size={15} />, disabled: !canEdit, onSelect: () => saveAsTemplate(page.id, liveTitle) },
+    { id: 'template', label: 'Сохранить как шаблон', icon: <LayoutTemplate size={15} />, disabled: !canEdit, disabledReason: 'Нужно право на редактирование страницы — запросите его в «Поделиться»', onSelect: () => saveAsTemplate(page.id, liveTitle) },
     { separator: true as const },
-    { id: 'dup', label: 'Дублировать', icon: <Copy size={15} />, disabled: !a.create && !canEdit, onSelect: async () => { const p = await duplicatePage(page.id); if (p) navigate('/p/' + p.id); } },
-    { id: 'move', label: 'Переместить в…', icon: <FolderInput size={15} />, disabled: !a.move, onSelect: () => setMove(true) },
-    { id: 'delete', label: 'Удалить', icon: <Trash2 size={15} />, danger: true, disabled: !a.delete, onSelect: () => trashPage(page.id, liveTitle, () => navigate(page.parentId ? '/p/' + page.parentId : '/s/' + page.spaceId)) },
+    { id: 'dup', label: 'Дублировать', icon: <Copy size={15} />, disabled: !a.create && !canEdit, disabledReason: 'Нет права создавать страницы в этом пространстве', onSelect: async () => { const p = await duplicatePage(page.id); if (p) navigate('/p/' + p.id); } },
+    { id: 'move', label: 'Переместить в…', icon: <FolderInput size={15} />, disabled: !a.move, disabledReason: 'Перемещать страницу может только её редактор с правом на родительский раздел', onSelect: () => setMove(true) },
+    { id: 'delete', label: 'Удалить', icon: <Trash2 size={15} />, danger: true, disabled: !a.delete, disabledReason: 'Удалять страницу может только пользователь с полным доступом (или включено юридическое удержание)', onSelect: () => trashPage(page.id, liveTitle, () => navigate(page.parentId ? '/p/' + page.parentId : '/s/' + page.spaceId)) },
   ];
 
   return (
@@ -223,6 +223,13 @@ function PageLoaded({ page, crumbs, block, justCreated }: { page: PageDto; crumb
             {!isMobile && page.updatedBy && (
               <Tooltip label={`Изменено ${fullTime(page.contentUpdatedAt ?? page.updatedAt)} · ${page.updatedBy.name}`}>
                 <span className="small muted page-edited">{relTime(page.contentUpdatedAt ?? page.updatedAt)}</span>
+              </Tooltip>
+            )}
+            {page.personalShared && (
+              <Tooltip label="Страница из личного пространства, к которой есть доступ у других. Подробности — в «Поделиться».">
+                <button className="badge amber personal-shared-badge" onClick={() => setShare(true)}>
+                  Не полностью личная
+                </button>
               </Tooltip>
             )}
             <button className="btn sm" onClick={() => setShare(true)}>
@@ -272,6 +279,14 @@ function PageLoaded({ page, crumbs, block, justCreated }: { page: PageDto; crumb
               {accessLost}
             </div>
           )}
+          {offline && (
+            <div className="alert warning page-banner local-copy-banner" role="status">
+              Нет связи с сервером: открыта копия страницы, сохранённая на этом устройстве. Правки сохраняются здесь и будут отправлены автоматически при подключении. Пока нет связи, недоступны история версий, комментарии, публикация и экспорт; изменения других участников не видны.{' '}
+              <button className="btn sm" onClick={() => handle.current?.session && void downloadLocalCopy(handle.current.session)}>
+                <Download size={14} /> Скачать локальную копию
+              </button>
+            </div>
+          )}
           <div className={'page-body' + (page.wide ? ' wide' : '')}>
             <div className="page-icon-row">
               {page.icon ? (
@@ -300,18 +315,27 @@ function PageLoaded({ page, crumbs, block, justCreated }: { page: PageDto; crumb
                 canEdit={canEdit}
                 user={{ id: me.user.id, name: me.user.name }}
                 autoFocusTitle={justCreated}
+                onDiscardDraft={justCreated && canEdit ? () => navigate(page.parentId ? '/p/' + page.parentId : '/', { replace: true }) : undefined}
                 wide={page.wide}
                 scrollToBlock={block}
                 onReady={(h) => {
                   handle.current = h;
+                  // counting words walks the whole document: do it after typing pauses, not on every keystroke
+                  let wcTimer: ReturnType<typeof setTimeout> | null = null;
+                  const count = () => {
+                    wcTimer = null;
+                    if (!h.editor?.isDestroyed) setWordCount(h.editor?.storage.characterCount?.words?.() ?? 0);
+                  };
                   const upd = () => {
-                    setWordCount(h.editor?.storage.characterCount?.words?.() ?? 0);
                     emptyRef.current = !!h.editor?.isEmpty;
+                    if (!wcTimer) wcTimer = setTimeout(count, 600);
                   };
                   h.editor?.on('update', upd);
-                  upd();
+                  h.editor?.on('destroy', () => wcTimer && clearTimeout(wcTimer));
+                  emptyRef.current = !!h.editor?.isEmpty;
+                  count();
                 }}
-                onPresence={setPresence}
+                onPresence={(u) => setPresence((prev) => (JSON.stringify(prev) === JSON.stringify(u) ? prev : u))}
                 onTitle={setLiveTitle}
                 onAccess={(ce, reason) => {
                   if (!ce && canEdit) {

@@ -18,6 +18,8 @@ export interface GrantInput {
   startsAt?: string | null;
   expiresAt?: string | null;
   reason?: string | null;
+  /** IANA time zone the dates were entered in (shown back to people in other zones, R-ACL-036). */
+  timeZone?: string | null;
   /** Required when the change widens the audience to the whole organisation. */
   confirmWiden?: boolean;
 }
@@ -70,16 +72,16 @@ export async function setGrant(q: Tx, user: AuthUser, actor: AuditActor, input: 
   );
   const g = (
     await q.query(
-      `insert into grants (org_id, resource_type, resource_id, subject_type, subject_id, level, can_export, can_download, can_share, can_publish, starts_at, expires_at, reason, granted_by)
-       values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) returning *`,
-      [user.orgId, input.resourceType, input.resourceId, input.subjectType, input.subjectId, input.level, input.canExport ?? null, input.canDownload ?? null, input.canShare ?? null, input.canPublish ?? null, input.startsAt ?? null, input.expiresAt ?? null, input.reason ?? null, user.id],
+      `insert into grants (org_id, resource_type, resource_id, subject_type, subject_id, level, can_export, can_download, can_share, can_publish, starts_at, expires_at, reason, granted_by, time_zone)
+       values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15) returning *`,
+      [user.orgId, input.resourceType, input.resourceId, input.subjectType, input.subjectId, input.level, input.canExport ?? null, input.canDownload ?? null, input.canShare ?? null, input.canPublish ?? null, input.startsAt ?? null, input.expiresAt ?? null, input.reason ?? null, user.id, input.timeZone ?? null],
     )
   ).rows[0];
   await audit(q, actor, {
     action: prev.rowCount ? 'grant.update' : 'grant.create',
     targetType: input.resourceType,
     targetId: input.resourceId,
-    details: { subjectType: input.subjectType, subjectId: input.subjectId, level: input.level, previousLevel: prev.rows[0]?.level ?? null, expiresAt: input.expiresAt ?? null, reason: input.reason ?? null, flags: { export: input.canExport ?? null, download: input.canDownload ?? null, share: input.canShare ?? null, publish: input.canPublish ?? null } },
+    details: { subjectType: input.subjectType, subjectId: input.subjectId, level: input.level, previousLevel: prev.rows[0]?.level ?? null, startsAt: input.startsAt ?? null, expiresAt: input.expiresAt ?? null, timeZone: input.timeZone ?? null, reason: input.reason ?? null, flags: { export: input.canExport ?? null, download: input.canDownload ?? null, share: input.canShare ?? null, publish: input.canPublish ?? null } },
   });
   await bumpAclEpoch(q, user.orgId);
   return g;

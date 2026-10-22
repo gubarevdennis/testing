@@ -6,6 +6,8 @@ export interface ToastDef {
   message: string;
   kind?: 'info' | 'success' | 'error';
   action?: { label: string; run: () => void };
+  /** In-app link shown next to the action (e.g. "Открыть" the new location after a move). */
+  link?: { label: string; href: string };
   duration?: number;
 }
 
@@ -45,6 +47,20 @@ export function Toasts() {
         <div key={t.id} className={'toast ' + (t.kind ?? '')}>
           <span className="toast-icon">{t.kind === 'success' ? <CheckCircle2 size={16} /> : t.kind === 'error' ? <AlertCircle size={16} /> : <Info size={16} />}</span>
           <span className="toast-msg">{t.message}</span>
+          {t.link && (
+            <a
+              className="btn sm"
+              href={t.link.href}
+              onClick={(e) => {
+                e.preventDefault();
+                window.history.pushState({}, '', t.link!.href);
+                window.dispatchEvent(new PopStateEvent('popstate'));
+                dismiss(t.id);
+              }}
+            >
+              {t.link.label}
+            </a>
+          )}
           {t.action && (
             <button
               className="btn sm"

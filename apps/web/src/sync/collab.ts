@@ -10,6 +10,8 @@ export interface SyncInfo {
   oldestPendingMs: number | null;
   message?: string;
   lastSavedAt: number | null;
+  /** 'http' when the WebSocket is blocked and the HTTP fallback channel is used */
+  transport?: 'ws' | 'http';
 }
 
 /** Global view of sync state per open page (status indicator, leave-page guard, sync centre). */
@@ -46,6 +48,11 @@ export interface CollabCallbacks {
   onStorageError?(message: string, quota: boolean): void;
 }
 
+function csrfHeader(): Record<string, string> {
+  const m = /(?:^|;\s*)kb_csrf=([^;]+)/.exec(document.cookie);
+  return m ? { 'x-csrf-token': decodeURIComponent(m[1]) } : {};
+}
+
 function wsUrl(pageId: string) {
   const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
   return `${proto}//${location.host}/api/v1/collab/${pageId}`;
@@ -70,12 +77,14 @@ export function openCollab(pageId: string, generation: string | null, userId: st
   const provider = new CollabProvider({
     url: wsUrl(pageId),
     doc,
+    // WebSocket blocked by a proxy: the same protocol over HTTPS long polling (R-COLLAB-039)
+    httpFallback: { headers: () => csrfHeader() },
     pendingStore: {
       load: () => pendingFor(key),
       put: (opId, update, ts) => putPending(key, opId, update, ts),
       remove: (ids) => removePending(key, ids),
     },
-    onStatus: (status, info) => sync.set(pageId, { status, pending: info.pending, oldestPendingMs: info.oldestPendingMs, message: info.message, ...(status === 'saved' ? { lastSavedAt: Date.now() } : {}) }),
+    onStatus: (status, info) => sync.set(pageId, { status, pending: info.pending, oldestPendingMs: info.oldestPendingMs, message: info.message, transport: info.transport, ...(status === 'saved' ? { lastSavedAt: Date.now() } : {}) }),
     onAccess: cb.onAccess,
     onPresence: cb.onPresence,
     onFatal: cb.onFatal,

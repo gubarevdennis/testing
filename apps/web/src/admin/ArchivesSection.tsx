@@ -396,6 +396,12 @@ function RestoreDialog({ jobId: initialJob, onClose, onChanged }: { jobId?: stri
   const [password, setPassword] = useState('');
   const [ack, setAck] = useState(false);
   const [error, setError] = useState<{ msg: string; field?: 'password' } | null>(null);
+  // Restore target (R-ARCHIVE-006): merge into the organisation, a new isolated space, or an existing space.
+  const [targetMode, setTargetMode] = useState<'merge' | 'new-space' | 'into-space'>('merge');
+  const [targetName, setTargetName] = useState('');
+  const [targetSpace, setTargetSpace] = useState('');
+  const spacesQ = useQuery({ queryKey: ['spaces', 'restore-target'], queryFn: () => get<{ spaces: Array<{ id: string; name: string; kind: string }> }>('/api/v1/spaces'), enabled: targetMode === 'into-space' });
+  const target = targetMode === 'merge' ? { mode: 'merge' } : targetMode === 'new-space' ? { mode: 'new-space', ...(targetName.trim() ? { name: targetName.trim() } : {}) } : { mode: 'into-space', spaceId: targetSpace };
   const existing = useQuery({
     queryKey: ['admin', 'archive', initialJob],
     queryFn: () => get<{ analysis: Analysis | null; status: string }>(`/api/v1/admin/archives/${initialJob}`),
@@ -421,7 +427,7 @@ function RestoreDialog({ jobId: initialJob, onClose, onChanged }: { jobId?: stri
     }
   };
   const commit = useMutation({
-    mutationFn: () => post<RestoreResult>(`/api/v1/admin/archives/restore/${jobId}/commit`, { password, confirm: true }),
+    mutationFn: () => post<RestoreResult>(`/api/v1/admin/archives/restore/${jobId}/commit`, { password, confirm: true, target }),
     onSuccess: (r) => {
       setResult(r);
       setError(null);
@@ -458,7 +464,38 @@ function RestoreDialog({ jobId: initialJob, onClose, onChanged }: { jobId?: stri
         {a.ok && (
           <div className="card col" style={{ gap: 12 }}>
             <div className="field-label">Подтверждение восстановления</div>
-            <p className="small muted">Данные архива будут добавлены в текущую организацию одной транзакцией. Существующие страницы не перезаписываются; при совпадении идентификаторов объекты получат новые.</p>
+            <div className="col" style={{ gap: 6 }} role="radiogroup" aria-label="Куда восстановить">
+              <div className="field-label">Куда восстановить</div>
+              <label className="checkbox">
+                <input type="radio" name="rs-target" checked={targetMode === 'merge'} onChange={() => setTargetMode('merge')} /> Объединить с организацией (пространства архива)
+              </label>
+              <label className="checkbox">
+                <input type="radio" name="rs-target" checked={targetMode === 'new-space'} onChange={() => setTargetMode('new-space')} /> В новое изолированное пространство (видно только вам)
+              </label>
+              {targetMode === 'new-space' && (
+                <input className="input" aria-label="Название нового пространства" placeholder="Восстановлено из архива" value={targetName} onChange={(e) => setTargetName(e.target.value)} />
+              )}
+              <label className="checkbox">
+                <input type="radio" name="rs-target" checked={targetMode === 'into-space'} onChange={() => setTargetMode('into-space')} /> В существующее пространство
+              </label>
+              {targetMode === 'into-space' && (
+                <select className="input" aria-label="Пространство для восстановления" value={targetSpace} onChange={(e) => setTargetSpace(e.target.value)}>
+                  <option value="">Выберите пространство…</option>
+                  {(spacesQ.data?.spaces ?? [])
+                    .filter((x) => x.kind !== 'personal')
+                    .map((x) => (
+                      <option key={x.id} value={x.id}>
+                        {x.name}
+                      </option>
+                    ))}
+                </select>
+              )}
+            </div>
+            <p className="small muted">
+              {targetMode === 'merge'
+                ? 'Данные архива будут добавлены в текущую организацию одной транзакцией. Существующие страницы не перезаписываются; при совпадении идентификаторов объекты получат новые.'
+                : 'Каждое пространство архива станет страницей верхнего уровня в выбранном пространстве. Все объекты получат новые идентификаторы, оригиналы не изменяются; права пространств архива не применяются.'}
+            </p>
             {error && !error.field && (
               <div className="alert error" role="alert">
                 {error.msg}
@@ -482,7 +519,7 @@ function RestoreDialog({ jobId: initialJob, onClose, onChanged }: { jobId?: stri
           {a?.ok ? 'Отмена' : 'Закрыть'}
         </button>
         {a?.ok && (
-          <button className="btn danger solid" disabled={!password || !ack || busy} aria-busy={commit.isPending} onClick={() => commit.mutate()}>
+          <button className="btn danger solid" disabled={!password || !ack || busy || (targetMode === 'into-space' && !targetSpace)} aria-busy={commit.isPending} onClick={() => commit.mutate()}>
             {commit.isPending && <span className="spinner" />} Восстановить
           </button>
         )}

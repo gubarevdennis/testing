@@ -45,12 +45,44 @@ export class SchemaTooNewError extends Error {
   }
 }
 
+/** Raised when pending migrations would run on a database with data but no fresh full backup exists (R-OPS-001, R-OPS-004). */
+export class BackupRequiredError extends Error {
+  constructor(
+    public pending: string[],
+    public lastBackupAt: Date | null,
+  ) {
+    super(
+      `Refusing to apply ${pending.length} migration(s) (${pending.join(', ')}) without a fresh full backup: ` +
+        (lastBackupAt ? `the last successful backup (${lastBackupAt.toISOString()}) is older than the allowed age or older than the current schema. ` : 'no successful full backup is recorded. ') +
+        'Run scripts/backup/backup.sh (BACKUP_RECORD=1) and retry, or override deliberately with MIGRATION_REQUIRE_BACKUP=false / cli migrate up --skip-backup-check (docs/OPERATIONS.md §3).',
+    );
+  }
+}
+
+export interface MigrateGuard {
+  /** Pending migrations on a non-empty database need a successful full backup finished within this many minutes
+   * and after the latest applied migration. null/undefined = no check (fresh installs are never checked). */
+  requireBackupWithinMinutes?: number | null;
+}
+
+/** Checks the "backup before every migration" rule; a fresh (empty) database needs no backup. */
+async function checkBackupBeforeMigration(client: pg.PoolClient, pending: string[], maxAgeMinutes: number) {
+  const applied = (await client.query('select max(applied_at) as at, count(*)::int as n from schema_migrations')).rows[0];
+  if (!applied.n) return; // fresh install: nothing to lose
+  const hasBackups = (await client.query(`select to_regclass('public.backups') is not null as ok`)).rows[0].ok;
+  const hasData = (await client.query(`select to_regclass('public.organizations') is not null and exists (select 1 from organizations) as ok`).catch(() => ({ rows: [{ ok: true }] }))).rows[0].ok;
+  if (!hasData) return;
+  const last = hasBackups ? (await client.query(`select max(finished_at) as at from backups where kind = 'full' and status = 'ok'`)).rows[0].at as Date | null : null;
+  const fresh = last && last.getTime() >= Date.now() - maxAgeMinutes * 60_000 && last.getTime() >= new Date(applied.at).getTime();
+  if (!fresh) throw new BackupRequiredError(pending, last);
+}
+
 /**
  * Applies pending migrations, each in its own transaction, under an advisory lock (safe for parallel app instances).
  * Refuses to run (SchemaTooNewError) when the database has migrations this code does not know: an older release must
  * not run against a newer schema it was never tested with (roll the schema back first, see docs/OPERATIONS.md §3).
  */
-export async function migrateUp(pool: pg.Pool, log: (m: string) => void = () => undefined, target?: string, dir = MIGRATIONS_DIR): Promise<string[]> {
+export async function migrateUp(pool: pg.Pool, log: (m: string) => void = () => undefined, target?: string, dir = MIGRATIONS_DIR, guard: MigrateGuard = {}): Promise<string[]> {
   const client = await pool.connect();
   const applied: string[] = [];
   try {
@@ -61,6 +93,8 @@ export async function migrateUp(pool: pg.Pool, log: (m: string) => void = () => 
     const knownVersions = new Set(known.map((m) => m.version));
     const unknown = [...done.keys()].filter((v) => !knownVersions.has(v)).sort();
     if (unknown.length) throw new SchemaTooNewError(unknown);
+    const pending = known.filter((m) => !done.has(m.version) && !(target && m.version > target)).map((m) => m.name);
+    if (pending.length && guard.requireBackupWithinMinutes) await checkBackupBeforeMigration(client, pending, guard.requireBackupWithinMinutes);
     for (const m of known) {
       if (target && m.version > target) break;
       if (done.has(m.version)) {

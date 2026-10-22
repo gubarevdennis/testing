@@ -1,7 +1,9 @@
 import mammoth from 'mammoth';
 import yauzl from 'yauzl';
+import yazl from 'yazl';
 import { htmlToDoc } from './html.js';
-import type { PMNode } from '@kb/shared';
+import { randomUUID } from 'node:crypto';
+import { ensureBlockIds, getKbSchema, type PMNode } from '@kb/shared';
 import type { ConversionWarning } from '@kb/shared';
 
 export type StoreImage = (buf: Buffer, filename: string, mime: string, alt: string) => Promise<{ attachmentId: string; src: string }>;
@@ -26,6 +28,10 @@ const STYLE_MAP = [
   "p[style-name='Code'] => pre > code:separator('\\n')",
   "p[style-name='HTML Preformatted'] => pre > code:separator('\\n')",
   "p[style-name='Source Code'] => pre > code:separator('\\n')",
+  // Word captions ("Рисунок 1 — …") become the caption of the neighbouring image (R-IMPORT-027).
+  "p[style-name='caption'] => p.kb-caption:fresh",
+  "p[style-name='Caption'] => p.kb-caption:fresh",
+  "p[style-name='Название объекта'] => p.kb-caption:fresh",
   "r[style-name='Code Char'] => code",
   "r[style-name='Source Code Char'] => code",
   'u => u',
@@ -59,13 +65,35 @@ async function readZipEntries(buf: Buffer, names: RegExp): Promise<Map<string, s
 
 /** Detects constructs that cannot be represented faithfully; reported instead of being lost silently. */
 export async function inspectDocx(buf: Buffer): Promise<ConversionWarning[]> {
-  const parts = await readZipEntries(buf, /^word\/(document|comments|footnotes|endnotes)\.xml$/);
+  return (await inspectDocxParts(buf)).warnings;
+}
+
+/** Plain text of the paragraphs of a WordprocessingML part (w:t runs only: field codes are not text). */
+function partParagraphs(xml: string): string[] {
+  const out: string[] = [];
+  for (const p of xml.match(/<w:p\b[\s\S]*?<\/w:p>/g) ?? []) {
+    const t = (p.match(/<w:t(?:\s[^>]*)?>[^<]*<\/w:t>/g) ?? []).map((x) => x.replace(/<[^>]+>/g, '')).join('');
+    const text = t.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&amp;/g, '&').trim();
+    if (text) out.push(text);
+  }
+  return out;
+}
+
+interface DocxParts {
+  warnings: ConversionWarning[];
+  /** Distinct header/footer paragraphs (kept in a collapsed block instead of being dropped). */
+  headerFooter: string[];
+  hasToc: boolean;
+}
+
+async function inspectDocxParts(buf: Buffer): Promise<DocxParts> {
+  const parts = await readZipEntries(buf, /^word\/(document|comments|footnotes|endnotes|header\d*|footer\d*)\.xml$/);
   const doc = parts.get('word/document.xml');
   if (!doc) throw new Error('В файле нет основного документа word/document.xml — файл повреждён или не является DOCX');
   const w: ConversionWarning[] = [];
   const count = (re: RegExp) => (doc.match(re) ?? []).length;
   if (count(/<w:ins\b/g) + count(/<w:del\b/g)) w.push({ code: 'track-changes', message: `Обнаружены исправления (track changes): ${count(/<w:ins\b/g)} вставок, ${count(/<w:del\b/g)} удалений. Импортирован текст с принятыми вставками; исходный файл сохранён.` });
-  if (/dgm:relIds|smartArt/i.test(doc)) w.push({ code: 'smartart', message: 'SmartArt не поддерживается как редактируемый блок: текст сохранён, графика — в исходном файле.' });
+  if (/dgm:relIds|smartArt/i.test(doc)) w.push({ code: 'smartart', message: 'SmartArt не поддерживается как редактируемый блок: текст узлов перенесён на место схемы, графика — в исходном файле.' });
   if (count(/<wps:wsp\b/g) + count(/<v:shape\b/g)) w.push({ code: 'shapes', message: `Фигуры/надписи (${count(/<wps:wsp\b/g) + count(/<v:shape\b/g)}) преобразованы в текст, где это возможно; оформление фигур не переносится.` });
   if (count(/<wp:anchor\b/g)) w.push({ code: 'floating', message: `Плавающие объекты (${count(/<wp:anchor\b/g)}) размещены в потоке текста.` });
   if (count(/<w:fldSimple\b/g) + count(/<w:instrText\b/g)) w.push({ code: 'fields', message: 'Поля Word (оглавление, номера страниц, ссылки) импортированы как текущий текст результата.' });
@@ -74,14 +102,119 @@ export async function inspectDocx(buf: Buffer): Promise<ConversionWarning[]> {
   const comments = parts.get('word/comments.xml');
   if (comments && /<w:comment\b/.test(comments)) w.push({ code: 'comments', message: `Комментарии Word (${(comments.match(/<w:comment\b/g) ?? []).length}) не переносятся в обсуждения; они доступны в исходном файле.` });
   const foot = parts.get('word/footnotes.xml');
-  if (foot && (foot.match(/<w:footnote\b/g) ?? []).length > 2) w.push({ code: 'footnotes', message: 'Сноски преобразованы в нумерованный список в конце документа.' });
-  if (/<w:headerReference\b|<w:footerReference\b/.test(doc)) w.push({ code: 'header-footer', message: 'Колонтитулы не импортируются в тело статьи (сохранены в исходном файле).' });
+  // footnotes.xml always holds the separator and continuation-separator pseudo-notes.
+  const realNotes = (xml: string | undefined, tag: string) => (xml?.match(new RegExp(`<w:${tag}\\b(?![^>]*w:type="(?:separator|continuationSeparator|continuationNotice)")`, 'g')) ?? []).length;
+  const notes = realNotes(foot, 'footnote') + realNotes(parts.get('word/endnotes.xml'), 'endnote');
+  if (notes) w.push({ code: 'footnotes', message: `Сноски (${notes}) перенесены в раздел «Сноски» в конце статьи; в тексте — надстрочные номера [n].` });
+  const headerFooter: string[] = [];
+  for (const [name, xml] of [...parts].sort(([a], [b]) => (a.includes('header') === b.includes('header') ? a.localeCompare(b) : a.includes('header') ? -1 : 1))) if (/^word\/(header|footer)\d*\.xml$/.test(name)) for (const t of partParagraphs(xml)) if (!headerFooter.includes(t)) headerFooter.push(t);
+  if (/<w:headerReference\b|<w:footerReference\b/.test(doc) && headerFooter.length) w.push({ code: 'header-footer', message: 'Колонтитулы перенесены в свёрнутый блок «Колонтитулы исходного документа» в конце статьи.' });
   if (/w:macro|vbaProject/i.test(doc)) w.push({ code: 'macros', message: 'Макросы проигнорированы и не исполнялись.' });
-  return w;
+  const hasToc = /<w:instrText[^>]*>\s*TOC\b/.test(doc) || /<w:fldSimple[^>]*w:instr="\s*TOC\b/.test(doc) || /<w:docPartGallery w:val="Table of Contents"/.test(doc);
+  if (hasToc) w.push({ code: 'toc', message: 'Оглавление Word заменено живым оглавлением статьи (строится по заголовкам).' });
+  return { warnings: w, headerFooter, hasToc };
+}
+
+const stripTags = (h: string) => h.replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').trim();
+
+/**
+ * Structural post-processing of mammoth's HTML (R-IMPORT-007/025/026/027/034):
+ * bookmarks on headings become block anchors (internal links are re-pointed to them), the Word TOC field becomes a
+ * live TOC block, captions become image captions, footnote references become [n] and the notes a «Сноски» section.
+ */
+export function restructureDocxHtml(html: string, opts: { hasToc: boolean }): string {
+  // 1. Bookmarks: <h2><a id="_Toc1"></a><a id="x"></a>Text</h2> → <h2 data-block-id="uuid">Text</h2>; "#x" → "#uuid".
+  const anchors = new Map<string, string>();
+  html = html.replace(/<(h[1-6]|p)>((?:<a id="[^"]+"><\/a>)+)/g, (_m, tag: string, as: string) => {
+    const id = randomUUID();
+    for (const a of as.match(/id="([^"]+)"/g) ?? []) anchors.set(a.slice(4, -1), id);
+    return `<${tag} data-block-id="${id}">`;
+  });
+  html = html.replace(/<a id="[^"]*"><\/a>/g, '');
+  // 2. Word TOC field: its cached entries (paragraphs consisting of one link to a bookmark) → one TOC block.
+  if (opts.hasToc) {
+    let placed = false;
+    html = html.replace(/(?:<p><a href="#_Toc[^"]*">(?:(?!<\/p>)[\s\S])*?<\/a><\/p>)+/g, () => (placed ? '' : ((placed = true), '<div data-type="toc"></div>')));
+    if (!placed) html = '<div data-type="toc"></div>' + html;
+  }
+  html = html.replace(/href="#([^"]+)"/g, (m, a: string) => (anchors.has(a) ? `href="#${anchors.get(a)}"` : m));
+  // 3. Captions: an image paragraph followed (or preceded) by a caption paragraph becomes a figure with figcaption.
+  html = html.replace(/<p>(<img [^>]*\/?>)<\/p><p class="kb-caption">([\s\S]*?)<\/p>/g, (_m, img: string, cap: string) => `<figure>${img}<figcaption>${stripTags(cap)}</figcaption></figure>`);
+  html = html.replace(/<p class="kb-caption">([\s\S]*?)<\/p><p>(<img [^>]*\/?>)<\/p>/g, (_m, cap: string, img: string) => `<figure>${img}<figcaption>${stripTags(cap)}</figcaption></figure>`);
+  html = html.replace(/<p class="kb-caption">/g, '<p>'); // table captions etc. stay as text
+  // 4. Footnotes/endnotes: references → superscript [n]; the trailing note lists get a heading.
+  html = html.replace(/<sup><a href="#(?:footnote|endnote)-\d+" id="(?:footnote|endnote)-ref-\d+">(\[\d+\])<\/a><\/sup>/g, '<sup>$1</sup>');
+  html = html.replace(/\s*<a href="#(?:footnote|endnote)-ref-\d+">↑<\/a>/g, '');
+  html = html.replace(/<ol><li id="footnote-/, '<h3>Сноски</h3><ol><li id="footnote-');
+  html = html.replace(/<ol><li id="endnote-/, '<h3>Концевые сноски</h3><ol><li id="endnote-');
+  // 5. Separators marked by preprocessDocx.
+  html = html.split(`<p>${HR_MARKER}</p>`).join('<hr />');
+  return html;
+}
+
+async function readAllEntries(buf: Buffer): Promise<Map<string, Buffer>> {
+  return new Promise((resolve, reject) => {
+    const out = new Map<string, Buffer>();
+    yauzl.fromBuffer(buf, { lazyEntries: true }, (err, zip) => {
+      if (err || !zip) return reject(new Error('Файл DOCX повреждён (не является корректным ZIP-архивом)'));
+      zip.on('entry', (e: yauzl.Entry) => {
+        if (e.fileName.endsWith('/')) return zip.readEntry();
+        zip.openReadStream(e, (e2, rs) => {
+          if (e2 || !rs) return reject(e2);
+          const chunks: Buffer[] = [];
+          rs.on('data', (c) => chunks.push(c));
+          rs.on('end', () => {
+            out.set(e.fileName, Buffer.concat(chunks));
+            zip.readEntry();
+          });
+        });
+      });
+      zip.on('end', () => resolve(out));
+      zip.on('error', reject);
+      zip.readEntry();
+    });
+  });
+}
+
+const HR_MARKER = '\u2E3BKB-HR\u2E3B';
+const xmlEsc = (t: string) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+/**
+ * Rewrites constructs mammoth would drop silently (R-IMPORT-009): simple fields keep their displayed result,
+ * SmartArt diagrams are replaced in place by the text of their nodes (the graphic stays in the source file).
+ */
+export async function preprocessDocx(buf: Buffer): Promise<Buffer> {
+  const head = await readZipEntries(buf, /^word\/document\.xml$/);
+  const doc = head.get('word/document.xml');
+  if (!doc || !/<w:fldSimple\b|dgm:relIds|<w:pBdr>|o:hr="t"/.test(doc)) return buf;
+  const files = await readAllEntries(buf);
+  let xml = files.get('word/document.xml')!.toString('utf8');
+  xml = xml.replace(/<w:fldSimple\b[^>]*\/>/g, '').replace(/<w:fldSimple\b[^>]*>([\s\S]*?)<\/w:fldSimple>/g, '$1');
+  const rels = files.get('word/_rels/document.xml.rels')?.toString('utf8') ?? '';
+  xml = xml.replace(/<w:drawing>(?:(?!<\/w:drawing>)[\s\S])*?<dgm:relIds\b[^>]*r:dm="([^"]+)"[\s\S]*?<\/w:drawing>/g, (_m, rid: string) => {
+    const target = new RegExp(`<Relationship\\b[^>]*Id="${rid}"[^>]*Target="([^"]+)"`).exec(rels)?.[1] ?? new RegExp(`<Relationship\\b[^>]*Target="([^"]+)"[^>]*Id="${rid}"`).exec(rels)?.[1];
+    const data = target ? files.get(('word/' + target).replace(/\/[^/]+\/\.\.\//g, '/'))?.toString('utf8') : undefined;
+    const texts = (data?.match(/<a:t>[^<]*<\/a:t>/g) ?? []).map((t) => t.slice(5, -6).trim()).filter(Boolean);
+    return `<w:t xml:space="preserve">${texts.length ? xmlEsc('[SmartArt] ' + texts.map((t) => t.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')).join(' → ')) : '[SmartArt]'}</w:t>`;
+  });
+  // Separators: an empty paragraph with a top/bottom border (how Word draws "---" lines) or a VML horizontal line.
+  xml = xml.replace(/<w:p\b[^>]*>(?:(?!<\/w:p>)[\s\S])*?<\/w:p>/g, (p) => {
+    const rule = (/<w:pBdr>(?:(?!<\/w:pBdr>)[\s\S])*?<w:(bottom|top)\b(?![^>]*w:val="(?:nil|none)")/.test(p) && !/<w:t[\s>]|<w:drawing\b|<w:pict\b/.test(p)) || /<v:rect\b[^>]*o:hr="t"/.test(p);
+    return rule ? `<w:p><w:r><w:t>${HR_MARKER}</w:t></w:r></w:p>` : p;
+  });
+  files.set('word/document.xml', Buffer.from(xml, 'utf8'));
+  const z = new yazl.ZipFile();
+  for (const [name, data] of files) z.addBuffer(data, name);
+  z.end();
+  const chunks: Buffer[] = [];
+  for await (const c of z.outputStream) chunks.push(c as Buffer);
+  return Buffer.concat(chunks);
 }
 
 export async function docxToDoc(buf: Buffer, storeImage: StoreImage): Promise<{ doc: PMNode; title: string | null; warnings: ConversionWarning[] }> {
-  const warnings = await inspectDocx(buf);
+  const parts = await inspectDocxParts(buf);
+  const warnings = parts.warnings;
+  buf = await preprocessDocx(buf);
   let imageNo = 0;
   const result = await mammoth.convertToHtml(
     { buffer: buf },
@@ -102,12 +235,11 @@ export async function docxToDoc(buf: Buffer, storeImage: StoreImage): Promise<{ 
   for (const m of result.messages) {
     if (m.type === 'warning' && /Unrecognised paragraph style|Unrecognised run style/.test(m.message)) {
       const style = /'([^']+)'/.exec(m.message)?.[1];
-      if (!style || style === 'null') continue;
+      if (!style || style === 'null' || /^toc \d$/i.test(style)) continue;
       if (!warnings.some((x) => x.code === 'style-' + style)) warnings.push({ code: 'style-' + style, message: `Стиль Word «${style}» импортирован как обычный текст.` });
-    } else warnings.push({ code: 'mammoth', message: m.message });
+    } else if (!/style with ID TOC\d/i.test(m.message)) warnings.push({ code: 'mammoth', message: m.message });
   }
-  // Mammoth writes footnotes as a trailing list with anchors — keep the text, drop the back-links.
-  const html = result.value.replace(/<a href="#footnote-ref-\d+">↑<\/a>/g, '').replace(/<p class="lead">/g, '<p data-variant="lead">');
+  const html = restructureDocxHtml(result.value, { hasToc: parts.hasToc }).replace(/<p class="lead">/g, '<p data-variant="lead">');
   const conv = htmlToDoc(html, {
     resolveImage: (src) => {
       if (src.startsWith('kbblob:')) return { src, attachmentId: src }; // staged import asset
@@ -122,6 +254,23 @@ export async function docxToDoc(buf: Buffer, storeImage: StoreImage): Promise<{ 
     title = (first.content ?? []).map((x) => x.text ?? '').join('').trim() || null;
     if (title) conv.doc.content = conv.doc.content!.slice(1);
     if (!conv.doc.content!.length) conv.doc.content = [{ type: 'paragraph' }];
+  }
+  if (parts.headerFooter.length) {
+    // Headers/footers are not part of the article flow; they are kept (not lost) in a collapsed block at the end.
+    const block: PMNode = {
+      type: 'details',
+      content: [
+        { type: 'detailsSummary', content: [{ type: 'text', text: 'Колонтитулы исходного документа' }] },
+        { type: 'detailsContent', content: parts.headerFooter.map((t) => ({ type: 'paragraph', content: [{ type: 'text', text: t }] })) },
+      ],
+    };
+    const withBlock = ensureBlockIds({ ...conv.doc, content: [...(conv.doc.content ?? []), block] });
+    try {
+      getKbSchema().nodeFromJSON(withBlock).check();
+      conv.doc = withBlock;
+    } catch {
+      conv.doc = ensureBlockIds({ ...conv.doc, content: [...(conv.doc.content ?? []), ...parts.headerFooter.map((t) => ({ type: 'paragraph', content: [{ type: 'text', text: t }] }))] });
+    }
   }
   return { doc: conv.doc, title, warnings };
 }

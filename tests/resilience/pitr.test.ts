@@ -64,7 +64,7 @@ describe.skipIf(!available)('point-in-time recovery drill (R-BACKUP-011, R-BACKU
     const pool = join(dir, 'backups');
     const sync = () => script('backup.sh', ['--objects-only'], { BACKUP_DIR: pool, STORAGE_ROOT: objects, DATABASE_URL: init.url });
 
-    primary = await startServer({ databaseUrl: init.url, storage: { driver: 'fs', root: objects } });
+    primary = await startServer({ databaseUrl: init.url, storage: { driver: 'fs', root: objects } }, { worker: true }); // worker: search index + link graph
     const org = await setupOrg(primary);
     const o = org.owner;
     const outsider = await org.user('Посторонний PITR');
@@ -93,6 +93,20 @@ describe.skipIf(!available)('point-in-time recovery drill (R-BACKUP-011, R-BACKU
     fdB.append('file', new Blob([fileB]), 'b.bin');
     const attB = (await o.req('POST', '/api/v1/attachments', fdB)).attachments[0];
     await sync();
+    // Versions, search and backlinks before T (V17-F05): a named version of A, a page D linking to A, indexed.
+    const v = (await o.post(`/api/v1/pages/${a.id}/revisions`, { label: 'Редакция до PITR' })).revision;
+    const d = (await o.post('/api/v1/pages', { spaceId: sp.id, title: 'Страница D (ссылки)' })).page;
+    const { replaceContent } = await import('../../apps/server/src/collab/ydoc.js');
+    await primary.srv.services.hub.applyServerChange(d.id, null, (doc) => replaceContent(doc, { type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Смотри ' }, { type: 'pageMention', attrs: { pageId: a.id, title: 'Страница A' } }] }] }));
+    for (const id of [a.id, b.id, d.id]) await primary.srv.services.hub.flushPage(id);
+    const searchIds = async (api: Api, q: string) => (await api.get('/api/v1/search?q=' + encodeURIComponent(q))).results.map((x: any) => x.pageId);
+    for (let i = 0; i < 100; i++) {
+      const bl = (await o.get(`/api/v1/pages/${a.id}/backlinks`)).backlinks.map((x: any) => x.id);
+      if (bl.includes(d.id) && (await searchIds(o, 'базовой')).includes(b.id)) break;
+      await new Promise((r) => setTimeout(r, 100));
+    }
+    expect((await o.get(`/api/v1/pages/${a.id}/backlinks`)).backlinks.map((x: any) => x.id)).toContain(d.id);
+    expect(await searchIds(o, 'базовой')).toEqual(expect.arrayContaining([a.id, b.id]));
 
     await new Promise((r) => setTimeout(r, 1100));
     const target = (await primary.db.query('select clock_timestamp()::text t')).rows[0].t as string;
@@ -116,7 +130,7 @@ describe.skipIf(!available)('point-in-time recovery drill (R-BACKUP-011, R-BACKU
     expect(rec.stop).toMatch(/recovery stopping before/);
     const restoredObjects = join(dir, 'restored-objects');
     await script('restore-objects.sh', ['--db', rec.url, '--pool', join(pool, 'objects'), '--target', restoredObjects]);
-    recovered = await startServer({ databaseUrl: rec.url, storage: { driver: 'fs', root: restoredObjects } });
+    recovered = await startServer({ databaseUrl: rec.url, storage: { driver: 'fs', root: restoredObjects } }, { worker: true });
     const rto = Date.now() - t0;
 
     const ro = new Api(recovered.url);
@@ -139,6 +153,15 @@ describe.skipIf(!available)('point-in-time recovery drill (R-BACKUP-011, R-BACKU
     await expectStatus(rout.get(`/api/v1/pages/${a.id}`), 404);
     const audit = await ro.get('/api/v1/audit/verify');
     expect(audit.ok).toBe(true);
+    // Versions, search and backlinks as of T (V17-F05).
+    const revs = (await ro.get(`/api/v1/pages/${a.id}/revisions`)).revisions;
+    expect(revs.map((r: any) => r.label)).toContain('Редакция до PITR');
+    expect(textOf((await ro.get(`/api/v1/pages/${a.id}/revisions/${v.id}`)).revision.content)).toBe('Создано до базовой копии.');
+    expect((await ro.get(`/api/v1/pages/${a.id}/backlinks`)).backlinks.map((x: any) => x.id)).toEqual([d.id]);
+    const found = await searchIds(ro, 'базовой');
+    expect(found).toEqual(expect.arrayContaining([a.id, b.id]));
+    expect(await searchIds(ro, 'ПОРЧА')).not.toContain(b.id); // damage after T is not in the recovered index
+    expect(await searchIds(rout, 'базовой')).toEqual([]); // and the recovered index still respects ACL
     console.log(`[pitr] base backup ${base.ms} ms (${base.bytes} B), WAL switch ${sw.ms} ms, recovery ${rec.ms} ms, total RTO to serving API ${rto} ms; ${rec.stop}`);
   });
 });

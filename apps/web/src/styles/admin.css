@@ -151,3 +151,10 @@
 @media (prefers-reduced-motion: reduce) {
   .admin-spin { animation: none; }
 }
+
+/* access matrix & check (R-ADMIN-010, R-ADMIN-018) */
+.access-matrix-wrap { max-height: 70vh; overflow: auto; }
+.access-matrix th[scope="row"] { position: sticky; left: 0; background: var(--surface); z-index: 1; white-space: nowrap; }
+.access-matrix td { white-space: nowrap; text-align: center; }
+.access-matrix td.access-conflict, .access-conflict-legend { outline: 2px solid var(--danger, #c0392b); outline-offset: -2px; }
+.access-check-result { border: 1px solid var(--border); }

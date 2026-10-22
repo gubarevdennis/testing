@@ -21,6 +21,7 @@ import { isConnectionError } from './db/pool.js';
 import { createDenialLogger } from './services/denials.js';
 import { CollabHub } from './collab/hub.js';
 import { createMetrics, type Metrics } from './observability/metrics.js';
+import { Tracer, parseTraceparent, parseOtlpHeaders, type Span } from './observability/tracing.js';
 import type { BlobStore } from './storage/blob-store.js';
 import type { AuditActor } from './services/audit.js';
 import { safeEqual } from './lib/crypto.js';
@@ -30,6 +31,7 @@ declare module 'fastify' {
     user: AuthUser | null;
     session: SessionInfo | null;
     correlationId: string;
+    span: Span | null;
   }
 }
 
@@ -41,6 +43,7 @@ export interface Services {
   hub: CollabHub;
   metrics: Metrics;
   store: BlobStore;
+  tracer: Tracer;
 }
 
 export const SESSION_COOKIE = 'kb_session';
@@ -63,12 +66,13 @@ export function parse<S extends ZodTypeAny>(schema: S, data: unknown): z.infer<S
 
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
 
-export async function buildApp(base: Omit<Services, 'hub' | 'bus' | 'metrics'> & { metrics?: Metrics }): Promise<{ app: FastifyInstance; services: Services }> {
+export async function buildApp(base: Omit<Services, 'hub' | 'bus' | 'metrics' | 'tracer'> & { metrics?: Metrics; tracer?: Tracer }): Promise<{ app: FastifyInstance; services: Services }> {
   const metrics = base.metrics ?? createMetrics();
+  const tracer = base.tracer ?? new Tracer({ serviceName: base.cfg.tracing?.serviceName ?? 'kb', endpoint: base.cfg.tracing?.endpoint ?? null, headers: parseOtlpHeaders(base.cfg.tracing?.headers), log: base.log });
   const bus = new EventBus(base.db, base.log);
   await bus.start();
   const hub = new CollabHub(base.db, base.log, bus, metrics);
-  const services: Services = { ...base, metrics, bus, hub };
+  const services: Services = { ...base, metrics, bus, hub, tracer };
 
   const app = Fastify({
     loggerInstance: base.log as any,
@@ -82,6 +86,20 @@ export async function buildApp(base: Omit<Services, 'hub' | 'bus' | 'metrics'> &
   app.decorateRequest('user', null);
   app.decorateRequest('session', null);
   app.decorateRequest('correlationId', '');
+  app.decorateRequest('span', null);
+
+  // Tracing first, so that rejected requests (401/403/429) are traced too (R-OPS-003).
+  app.addHook('onRequest', async (req, reply) => {
+    const span = tracer.startSpan(`${req.method} ${req.routeOptions?.url ?? 'unknown'}`, {
+      parent: parseTraceparent(req.headers.traceparent),
+      kind: 'server',
+      attributes: { 'http.request.method': req.method, 'url.path': req.url.split('?')[0].slice(0, 300), 'http.route': req.routeOptions?.url ?? null, 'kb.correlation_id': String(req.id) },
+    });
+    req.span = span;
+    tracer.als.enterWith(span);
+    reply.header('traceparent', span.traceparent());
+    req.log = req.log.child({ traceId: span.traceId, spanId: span.spanId });
+  });
 
   await app.register(helmet, {
     contentSecurityPolicy: {
@@ -133,6 +151,8 @@ export async function buildApp(base: Omit<Services, 'hub' | 'bus' | 'metrics'> &
         req.session = s.session;
       }
     }
+    // Public-link pages (/pub/…) never use the session, so they need no CSRF token (their forms are anonymous).
+    if (req.url.startsWith('/pub/')) return;
     if (!SAFE_METHODS.has(req.method) && req.session && !req.url.startsWith('/api/v1/auth/login')) {
       const header = req.headers['x-csrf-token'];
       if (typeof header !== 'string' || !safeEqual(header, req.session.csrfToken)) throw forbidden('Проверка CSRF не пройдена — обновите страницу');
@@ -144,13 +164,20 @@ export async function buildApp(base: Omit<Services, 'hub' | 'bus' | 'metrics'> &
   app.addHook('onResponse', async (req, reply) => {
     const route = req.routeOptions?.url ?? 'unknown';
     metrics.httpDuration.labels(req.method, route, String(reply.statusCode)).observe(reply.elapsedTime / 1000);
+    if (req.span) {
+      req.span.setAttribute('http.response.status_code', reply.statusCode);
+      if (req.user) req.span.setAttribute('enduser.id', req.user.id);
+      req.span.end(reply.statusCode >= 500 ? 'error' : 'ok');
+    }
   });
 
   const logDenial = createDenialLogger(base.db, base.log);
   app.setErrorHandler((err: any, req, reply) => {
+    req.span?.recordError(err);
     if (err instanceof AppError) {
       if (err.status >= 500) req.log.error({ err }, err.message);
       if (err.status === 403) logDenial(req, err.message);
+      if (err.status === 404 && req.user && req.url.startsWith('/api/')) logDenial(req, err.message, 'not_found');
       return reply.status(err.status).send({ error: { code: err.code, message: err.message, details: err.details }, correlationId: req.correlationId });
     }
     if (err instanceof ZodError) return reply.status(400).send({ error: { code: 'validation_error', message: 'Некорректные данные запроса', details: err.issues }, correlationId: req.correlationId });
@@ -205,6 +232,7 @@ export async function buildApp(base: Omit<Services, 'hub' | 'bus' | 'metrics'> &
   app.addHook('onClose', async () => {
     await hub.shutdown();
     await bus.stop();
+    await tracer.shutdown();
   });
 
   return { app, services };

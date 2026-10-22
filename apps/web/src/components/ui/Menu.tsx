@@ -85,7 +85,7 @@ export function Menu({ trigger, items, placement = 'bottom-start', label, onOpen
                     className={'menu-item' + (e.danger ? ' danger' : '')}
                     data-active={active === myIdx}
                     disabled={e.disabled}
-                    title={e.disabled ? e.disabledReason : undefined}
+                    title={e.disabled ? (e.disabledReason ?? e.hint ?? 'Действие сейчас недоступно') : undefined}
                     {...getItemProps({
                       onClick() {
                         if (e.disabled) return;

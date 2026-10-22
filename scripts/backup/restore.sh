@@ -144,7 +144,7 @@ log "objects restored: $OBJ_COUNT ($OBJ_BYTES bytes), sha256 verified (${OBJ_MS}
 T=$(now_ms)
 MIGRATE_OUT="skipped"
 if [[ "$SKIP_MIGRATE" != "1" ]]; then
-  MIGRATE_OUT="$(DATABASE_URL="$TARGET_DATABASE_URL" STORAGE_DRIVER=fs STORAGE_ROOT="$TARGET_STORAGE_ROOT" kb_cli migrate up 2>&1)" || die "migrations failed: $MIGRATE_OUT"
+  MIGRATE_OUT="$(DATABASE_URL="$TARGET_DATABASE_URL" STORAGE_DRIVER=fs STORAGE_ROOT="$TARGET_STORAGE_ROOT" kb_cli migrate up --skip-backup-check 2>&1)" || die "migrations failed: $MIGRATE_OUT"
   log "migrations: $MIGRATE_OUT"
 fi
 MIGRATE_MS=$(( $(now_ms) - T ))

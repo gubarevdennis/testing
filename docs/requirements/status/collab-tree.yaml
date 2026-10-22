@@ -22,24 +22,23 @@
   evidence: tests/e2e/editor.spec.ts, tests/e2e/collab.spec.ts, tests/integration/content.test.ts (publishing workflow), tests/integration/acl.test.ts (moving changes audience)
   note: Отдельные шаги покрыты, но сквозного E2E «черновик → офлайн → перенос в отдел с предпросмотром → согласование → публикация → откат» нет
 - id: ROUTE-05
-  status: partial
-  evidence: tests/integration/collab.test.ts (concurrent editing, offline and reconnection), tests/e2e/collab.spec.ts
-  note: Абзац + обрыв проверены интеграционно; одновременная правка таблицы и структуры с обрывом связи у одного из редакторов в E2E не проверена
+  status: done
+  evidence: tests/e2e/collab-p0-editing.spec.ts (two editors change a paragraph, one table and the structure while one loses the connection …), tests/integration/collab-p0.test.ts
 - id: E-01
   status: done
   evidence: apps/server/src/collab/hub.ts#persist (ACK после tx); tests/resilience/crash-restart.test.ts, tests/resilience/db-connection-loss.test.ts
 - id: E-02
-  status: partial
-  evidence: packages/shared/src/collab-client.ts#restorePending, apps/web/src/sync/idb.ts, apps/web/src/components/page/SyncStatus.tsx; tests/integration/collab.test.ts (pending store)
-  note: 'Очередь переживает перезапуск; после перезагрузки вкладки без сети страница не открывается: GET /api/v1/pages/:id не кешируется (usePage в apps/web/src/hooks/data.ts, PageError в PageView) — очередь
-    в IndexedDB цела, но статус и локальный текст не видны до появления сети'
+  status: done
+  evidence: packages/shared/src/collab-client.ts#restorePending, apps/web/src/sync/idb.ts, apps/web/src/hooks/data.ts#usePage (метаданные страницы в IndexedDB), apps/web/public/sw.js, apps/web/src/pages/PageView.tsx
+    (баннер локальной копии); tests/e2e/collab-p0-offline.spec.ts (reload without network …), tests/integration/collab.test.ts (pending store)
 - id: E-03
   status: done
   evidence: apps/server/src/collab/hub.ts#acceptUpdate (dedupe по op_id); tests/integration/collab.test.ts, tests/resilience/crash-restart.test.ts
 - id: E-04
-  status: partial
-  evidence: apps/server/src/collab/hub.ts, tests/integration/collab.test.ts (delete block while editing)
-  note: CRDT не перезаписывает молча обычные правки, но правка внутри одновременно удалённого/перемещённого блока исчезает без объяснения (остаётся только в doc_updates/ревизиях); конфликтного UI нет
+  status: done
+  evidence: apps/web/src/editor/extensions/conflictGuard.ts (удаление и перенос), apps/server/src/routes/conflicts.ts, apps/web/src/editor/Editor.tsx (уведомление «Вернуть мою версию»); tests/e2e/conflict.spec.ts,
+    tests/e2e/collab-p0-editing.spec.ts (a block is moved …), tests/integration/conflicts.test.ts
+  note: Правка в одновременно удалённом/перемещённом блоке сохраняется как конфликтная копия (page_events conflict_copy), показывается уведомление и восстанавливается одним действием
 - id: E-05
   status: done
   evidence: apps/server/src/services/pages.ts (move/trash/restore в одной транзакции + lockTree)
@@ -163,8 +162,8 @@
   evidence: apps/server/src/routes/revisions.ts#restore; tests/integration/collab.test.ts, tests/e2e/collab.spec.ts
 - id: R-COLLAB-009
   status: partial
-  evidence: tests/integration/collab.test.ts
-  note: Есть тесты конфликтов при отключённой сети и отклонении невалидной схемы; нет тестов конфликтов при смене схемы (миграции) и копировании блока
+  evidence: tests/integration/collab.test.ts (отключённая сеть, невалидная схема), tests/integration/collab-p0.test.ts (копирование блока + правка)
+  note: Нет тестов конфликтов при смене схемы содержимого (миграции content_schema_version не реализованы)
 - id: R-HISTORY-005
   status: done
   evidence: apps/server/src/routes/revisions.ts (authors, summary, published), apps/web/src/components/page/HistoryPanel.tsx
@@ -216,17 +215,18 @@
   evidence: apps/web/src/layout/SidebarTree.tsx (клавиатура, pointer DnD, touch-хэндл), apps/web/src/layout/treeActions.tsx
   note: DnD и клавиатура дерева автотестами не проверены (название E2E упоминает keyboard navigation, но не проверяет)
 - id: SC-11
-  status: partial
-  evidence: apps/web/src/editor/clientExtensions.ts (Tiptap Collaboration → y-tiptap yUndoPlugin, own origin only; undoRedo disabled in packages/shared/src/editor/extensions.ts); tests/e2e/undo.spec.ts
-  note: 'Отмена форматирования/ввода работает; БАГ (найден tests/e2e/undo.spec.ts): apps/web/src/editor/extensions/blockIds.ts дописывает транзакцию с addToHistory=false, и y-prosemirror исключает из истории
-    отмены всё локальное изменение, создающее новые блоки (Enter, вставка, вставка таблицы) — Ctrl+Z их не отменяет'
+  status: done
+  evidence: apps/web/src/editor/extensions/blockIds.ts (присвоение id в том же шаге отмены), apps/web/src/editor/clientExtensions.ts; tests/e2e/undo.spec.ts (вставка, перемещение блока, вставка таблицы,
+    форматирование с сохранением выделения)
+  note: 'Ранее найденный баг blockIds/addToHistory исправлен: вставка, Enter и вставка таблицы отменяются'
 - id: SC-23
   status: done
   evidence: tests/integration/content.test.ts (OCR searchable with origin marker)
 - id: SC-25
-  status: partial
-  evidence: tests/integration/collab.test.ts (two editors same paragraph), tests/e2e/collab.spec.ts
-  note: Таблица одновременно двумя авторами не тестируется; серверная валидация схемы может отвергнуть слитое состояние таблицы (NACK invalid_update → фатальная ошибка у клиента)
+  status: done
+  evidence: tests/integration/collab-p0.test.ts (two editors change one table cell …), tests/e2e/collab-p0-editing.spec.ts (two editors change a paragraph, one table …), tests/integration/collab.test.ts
+    (same paragraph)
+  note: Таблица одновременно двумя авторами (одна ячейка, соседние строки, новая строка) сливается в валидный документ без NACK
 - id: SC-26
   status: done
   evidence: tests/integration/collab.test.ts (offline edits ... SC-26)
@@ -242,10 +242,8 @@
   evidence: apps/web/src/editor/Editor.tsx, apps/web/src/components/page/SyncStatus.tsx, apps/web/src/pages/PageView.tsx
   note: Кнопки «Сохранить» нет; статус скрыт в режиме чтения опубликованной версии (ожидаемо)
 - id: R-HISTORY-009
-  status: partial
-  evidence: apps/web/src/editor/clientExtensions.ts (Tiptap Collaboration → y-tiptap yUndoPlugin, own origin only; undoRedo disabled in packages/shared/src/editor/extensions.ts); tests/e2e/undo.spec.ts
-  note: 'БАГ (найден tests/e2e/undo.spec.ts): apps/web/src/editor/extensions/blockIds.ts дописывает транзакцию с addToHistory=false, и y-prosemirror исключает из истории отмены всё локальное изменение,
-    создающее новые блоки (Enter, вставка, вставка таблицы) — Ctrl+Z их не отменяет'
+  status: done
+  evidence: apps/web/src/editor/extensions/blockIds.ts, apps/web/src/editor/clientExtensions.ts; tests/e2e/undo.spec.ts (one undo reverts a paste of 100 blocks …)
 - id: R-PAGE-011
   status: partial
   evidence: apps/web/src/components/IconPicker.tsx
@@ -275,15 +273,13 @@
   status: done
   evidence: apps/web/src/admin/OrgSettingsSection.tsx, apps/server/src/jobs/worker.ts#maintenance
 - id: R-COLLAB-017
-  status: partial
-  evidence: apps/web/src/editor/Editor.tsx#FatalBanner, packages/shared/src/collab-client.ts NACK forbidden/persist_failed
-  note: Нет обработки переполнения IndexedDB; при отзыве прав (NACK forbidden / ACCESS) экспорт черновика не предлагается, а PageView пишет «Несохранённых изменений нет» даже при непустой очереди; при отказе
-    записи на сервере показывается «Сохранение…» без видимой ошибки
+  status: done
+  evidence: packages/shared/src/collab-client.ts (persist_failed → «Ошибка сохранения»; квота → ошибка), apps/web/src/editor/Editor.tsx#LocalCopyGuard/downloadLocalCopy, apps/server/src/collab/hub.ts#faults
+    (тестовая инъекция); tests/e2e/collab-p0-storage.spec.ts, tests/unit/collab-p0.test.ts (persist_failed …)
+  note: Ложного «Сохранено» нет; при переполнении хранилища, сбое сервера и отзыве прав — видимая ошибка и скачивание локальной копии
 - id: AT-47
-  status: partial
-  evidence: tests/e2e/undo.spec.ts
-  note: 'БАГ (найден tests/e2e/undo.spec.ts): apps/web/src/editor/extensions/blockIds.ts дописывает транзакцию с addToHistory=false, и y-prosemirror исключает из истории отмены всё локальное изменение,
-    создающее новые блоки (Enter, вставка, вставка таблицы) — Ctrl+Z их не отменяет'
+  status: done
+  evidence: apps/web/src/editor/extensions/blockIds.ts; tests/e2e/undo.spec.ts (one undo reverts a paste of 100 blocks …)
 - id: AT-53
   status: done
   evidence: apps/web/src/pages/PageView.tsx#patchPage, apps/web/src/hooks/useEvents.ts (page-changed/tree-changed)
@@ -292,9 +288,8 @@
   status: done
   evidence: apps/server/src/services/pages.ts#movePage (вложения привязаны к page_id), tests/integration/acl.test.ts
 - id: AT-56
-  status: partial
-  evidence: tests/integration/collab.test.ts (same paragraph)
-  note: Соседние строки таблицы не тестируются
+  status: done
+  evidence: tests/integration/collab-p0.test.ts (two editors change one table cell and neighbouring rows …), tests/e2e/collab-p0-editing.spec.ts
 - id: AT-57
   status: done
   evidence: tests/integration/collab.test.ts, tests/e2e/editor.spec.ts offline
@@ -303,9 +298,9 @@
   evidence: tests/integration/collab.test.ts (pending store, AT-58)
   note: Проверено на уровне провайдера (Node), не в браузере
 - id: AT-59
-  status: partial
-  evidence: tests/resilience/db-connection-loss.test.ts, apps/web/src/editor/Editor.tsx#FatalBanner
-  note: Ложного «Сохранено» нет (тест), но ошибка хранилища не видна (только «Сохранение…») и экспорт не предлагается вне фатального состояния
+  status: done
+  evidence: packages/shared/src/collab-client.ts (serverFailing), apps/web/src/editor/Editor.tsx#LocalCopyGuard; tests/e2e/collab-p0-storage.spec.ts (the server cannot store changes …), tests/unit/collab-p0.test.ts,
+    tests/resilience/db-connection-loss.test.ts
 - id: R-PAGE-013
   status: partial
   evidence: apps/web/src/layout/Sidebar.tsx, apps/web/src/layout/SidebarTree.tsx, apps/web/src/pages/SpacePage.tsx
@@ -322,20 +317,21 @@
   status: done
   evidence: packages/shared/src/collab-client.ts, apps/server/src/collab/hub.ts (awareness отдельно от Y.Doc)
 - id: R-COLLAB-019
-  status: partial
-  evidence: packages/shared/src/collab-client.ts (backoff+jitter, PING, ack timeout, opId), apps/server/src/collab/hub.ts dedupe
-  note: Нет backpressure (контроль bufferedAmount/размера очереди отправки)
+  status: done
+  evidence: 'packages/shared/src/collab-client.ts#sendPending (backpressure: maxInflightOps/maxInflightBytes/bufferedAmount), backoff+jitter, PING, ack timeout, opId; apps/server/src/collab/hub.ts dedupe;
+    tests/unit/collab-p0.test.ts (backpressure), tests/integration/collab-p0.test.ts, tests/integration/collab.test.ts (re-delivered operation)'
 - id: R-OFFLINE-003
-  status: partial
-  evidence: packages/shared/src/collab-client.ts#flushBatch, apps/web/src/sync/idb.ts
-  note: Запись в IndexedDB не ожидается (fire-and-forget, ошибки глушатся), статус «Сохранено на устройстве» показывается до/без подтверждения записи; durable-«Сохранено» корректно
+  status: done
+  evidence: packages/shared/src/collab-client.ts#persist/sendPending (операция уходит на сервер только после записи в IndexedDB; «Сохранено на устройстве» — только после записи), apps/web/src/sync/idb.ts;
+    tests/unit/collab-p0.test.ts, tests/unit/collab-client.test.ts, tests/e2e/collab-p0-offline.spec.ts
 - id: R-COLLAB-020
   status: done
   evidence: apps/server/src/collab/hub.ts#flushNow (snapshot каждые 300 seq), apps/server/src/jobs/worker.ts#maintenance, Y.decodeUpdate+validateDoc; tests/integration/collab.test.ts schema-invalid
 - id: R-COLLAB-021
-  status: partial
-  evidence: tests/integration/collab.test.ts, tests/integration/core.test.ts
-  note: 'Автоматизированы: один блок двумя, удаление/правка, смена прав, обрыв, повторное открытие; нет: одновременные перемещения блоков, истечение сессии, спящий ноутбук'
+  status: done
+  evidence: tests/integration/collab-p0.test.ts (одновременные перемещения, истечение сессии, спящий ноутбук, плохая сеть), tests/integration/collab.test.ts (один блок двумя, удаление/правка, смена прав,
+    обрыв), apps/server/src/collab/hub.ts#checkExpirations (истечение сессии закрывает живые сессии)
+  note: Одновременное перемещение одного и того же блока двумя авторами даёт два экземпляра блока (без потерь текста) — ограничение модели «перенос = удаление+вставка»
 - id: R-OFFLINE-004
   status: partial
   evidence: apps/web/src/sync/collab.ts (y-indexeddb реплика открытых страниц), apps/web/public/sw.js
@@ -351,26 +347,24 @@
   status: done
   evidence: tests/integration/collab.test.ts (AT-74)
 - id: AT-75
-  status: partial
-  evidence: packages/shared/src/collab-client.ts, apps/web/src/sync/idb.ts
-  note: 'после перезагрузки вкладки без сети страница не открывается: GET /api/v1/pages/:id не кешируется (usePage в apps/web/src/hooks/data.ts, PageError в PageView) — очередь в IndexedDB цела, но статус
-    и локальный текст не видны до появления сети'
+  status: done
+  evidence: apps/web/src/hooks/data.ts#usePage, apps/web/src/sync/idb.ts, packages/shared/src/collab-client.ts; tests/e2e/collab-p0-offline.spec.ts (reload without network reopens the local copy …)
 - id: AT-76
   status: done
   evidence: tests/integration/collab.test.ts (AT-76)
   note: Длительность 5 мин не моделируется; логика от длительности не зависит
 - id: AT-77
-  status: partial
-  evidence: tests/integration/collab.test.ts (AT-77)
-  note: Тест фиксирует, что правка в удалённом блоке исчезает из документа; ни сохранения, ни конфликтной отметки — по критерию ТЗ это молчаливая потеря
+  status: done
+  evidence: apps/web/src/editor/extensions/conflictGuard.ts, apps/server/src/routes/conflicts.ts; tests/e2e/conflict.spec.ts (edit vs concurrent delete …), tests/integration/conflicts.test.ts
+  note: 'Правка в удалённом блоке не теряется молча: конфликтная копия + «Вернуть мою версию»'
 - id: AT-86
   status: done
   evidence: apps/web/src/components/page/HistoryPanel.tsx, apps/server/src/routes/revisions.ts, apps/server/src/services/pages.ts#restorePage
   note: нет автотеста
 - id: AT-90
-  status: partial
-  evidence: apps/web/src/editor/Editor.tsx#FatalBanner (скачать Markdown), apps/web/src/pages/PageView.tsx#PageError
-  note: Извлечение правок только в фатальном состоянии; экран офлайна не даёт извлечь локальные правки; экрана конфликта нет
+  status: done
+  evidence: apps/web/src/editor/Editor.tsx#FatalBanner/downloadLocalCopy, apps/web/src/pages/PageView.tsx (офлайн-баннер со скачиванием), conflict toast; tests/e2e/collab-p0-storage.spec.ts (offline local-copy
+    screen …, device storage is full …), tests/e2e/collab-p0-editing.spec.ts (конфликт)
 - id: R-TREE-007
   status: partial
   evidence: apps/web/src/layout/Sidebar.tsx
@@ -395,14 +389,12 @@
   status: done
   evidence: apps/server/src/collab/hub.ts#flushNow (title из Y.Text), apps/web/src/components/page/SyncStatus.tsx; tests/integration/collab.test.ts (title)
 - id: R-HISTORY-011
-  status: partial
-  evidence: apps/web/src/editor/clientExtensions.ts (Tiptap Collaboration → y-tiptap yUndoPlugin, own origin only; undoRedo disabled in packages/shared/src/editor/extensions.ts); tests/e2e/undo.spec.ts
-  note: 'Ввод и форматирование отменяются, чужое не откатывается; БАГ (найден tests/e2e/undo.spec.ts): apps/web/src/editor/extensions/blockIds.ts дописывает транзакцию с addToHistory=false, и y-prosemirror
-    исключает из истории отмены всё локальное изменение, создающее новые блоки (Enter, вставка, вставка таблицы) — Ctrl+Z их не отменяет'
+  status: done
+  evidence: apps/web/src/editor/clientExtensions.ts (yUndoPlugin, только свои изменения); tests/e2e/undo.spec.ts, tests/e2e/collab-p0-editing.spec.ts (undo of a block move …, sequences)
 - id: R-OFFLINE-005
-  status: partial
-  evidence: packages/shared/src/collab-client.ts, apps/web/src/components/page/SyncStatus.tsx
-  note: Операция отправляется, не дожидаясь записи в IndexedDB; статусы реализованы
+  status: done
+  evidence: packages/shared/src/collab-client.ts (журнал до отправки), apps/web/src/components/page/SyncStatus.tsx; tests/unit/collab-p0.test.ts (an operation is sent … only after it was written to the
+    local journal), tests/e2e/collab-p0-offline.spec.ts
 - id: R-COLLAB-022
   status: manual
   evidence: apps/web/src/components/page/Presence.tsx, CollaborationCaret
@@ -411,13 +403,14 @@
   status: done
   evidence: packages/shared/src/collab-client.ts, apps/server/src/collab/hub.ts; tests/resilience/crash-restart.test.ts (ack lost)
 - id: R-OFFLINE-006
-  status: partial
-  evidence: apps/web/src/sync/idb.ts, packages/shared/src/collab-client.ts
-  note: Переживает закрытие вкладки; предупреждения о переполнении хранилища нет (QuotaExceeded не обрабатывается)
+  status: done
+  evidence: packages/shared/src/collab-client.ts#persist (QuotaExceeded → статус «Ошибка сохранения», onStorageError), apps/web/src/editor/Editor.tsx (предупреждение, баннер со скачиванием); tests/e2e/collab-p0-storage.spec.ts
+    (device storage is full …), tests/unit/collab-p0.test.ts
 - id: R-COLLAB-024
   status: partial
-  evidence: tests/integration/collab.test.ts, tests/integration/core.test.ts (COLLAB-194), tests/integration/content.test.ts (attachment versions)
-  note: Параллельные правки таблицы и вложения не тестируются; правила конфликтов удаления не сохраняют правку
+  evidence: tests/integration/collab-p0.test.ts (таблица, удаление таблицы+строка, перемещения), tests/e2e/collab-p0-editing.spec.ts, tests/integration/core.test.ts (COLLAB-194), tests/integration/content.test.ts
+    (attachment versions), tests/e2e/conflict.spec.ts
+  note: Блок, таблица, перемещение страницы и удаление/правка покрыты; одновременная загрузка новой версии одного вложения двумя пользователями не тестируется
 - id: R-COLLAB-025
   status: done
   evidence: packages/shared/src/collab-client.ts, apps/web/src/components/page/SyncStatus.tsx
@@ -436,9 +429,10 @@
   status: done
   evidence: tests/integration/collab.test.ts
 - id: UX13-10
-  status: partial
-  evidence: apps/web/src/editor/clientExtensions.ts (Tiptap Collaboration → y-tiptap yUndoPlugin, own origin only; undoRedo disabled in packages/shared/src/editor/extensions.ts)
-  note: Перенос блока = удаление+вставка; отмена удаляет перемещённую копию вместе с правками другого участника внутри неё; теста нет
+  status: done
+  evidence: apps/web/src/editor/clientExtensions.ts (yUndoPlugin, только свои изменения), apps/web/src/editor/extensions/conflictGuard.ts; tests/e2e/collab-p0-editing.spec.ts (undo of a block move never
+    silently drops a colleague's edits …)
+  note: Правка участника в перемещённом блоке после отмены переноса остаётся в документе (или возвращается из его конфликтной копии одним действием)
 - id: UX13-14
   status: done
   evidence: tests/integration/collab.test.ts, tests/integration/core.test.ts, tests/e2e/collab.spec.ts
@@ -615,10 +609,9 @@
   status: done
   evidence: apps/server/src/services/pages.ts#createPage (requestId), outbox (apps/server/src/jobs/worker.ts), imports idempotencyKey; tests/integration/core.test.ts
 - id: R-OFFLINE-007
-  status: partial
-  evidence: packages/shared/src/collab-client.ts, apps/web/src/sync/idb.ts, apps/web/src/components/page/SyncStatus.tsx
-  note: 'Очередь ключуется только pageId:generation, не пользователем: после выхода и входа другим пользователем в том же браузере чужие неподтверждённые операции будут отправлены от имени нового пользователя;
-    logout не чистит IndexedDB'
+  status: done
+  evidence: apps/web/src/sync/collab.ts (реплика и очередь ключуются userId:pageId:generation), apps/web/src/hooks/data.ts (кеш метаданных по пользователю), apps/web/src/layout/Sidebar.tsx (предупреждение
+    при выходе); tests/e2e/collab-p0-offline.spec.ts (one browser, two accounts …), tests/integration/collab-p0.test.ts (session expires …)
 - id: V17-F03
   status: done
   evidence: packages/shared/src/collab-client.ts, apps/web/src/sync/idb.ts; tests/integration/collab.test.ts (pending store)
@@ -755,9 +748,8 @@
   evidence: apps/web/src/layout/treeActions.tsx#movePage (toast «Отменить»)
 - id: R-HISTORY-017
   status: partial
-  evidence: apps/web/src/editor/clientExtensions.ts (Tiptap Collaboration → y-tiptap yUndoPlugin, own origin only; undoRedo disabled in packages/shared/src/editor/extensions.ts); tests/e2e/undo.spec.ts
-  note: 'Ctrl+Z / Ctrl+Shift+Z / Ctrl+Y работают для ввода и форматирования; БАГ (найден tests/e2e/undo.spec.ts): apps/web/src/editor/extensions/blockIds.ts дописывает транзакцию с addToHistory=false, и
-    y-prosemirror исключает из истории отмены всё локальное изменение, создающее новые блоки (Enter, вставка, вставка таблицы) — Ctrl+Z их не отменяет'
+  evidence: 'apps/web/src/editor/clientExtensions.ts; tests/e2e/undo.spec.ts, tests/e2e/collab-p0-editing.spec.ts (sequences: преобразование в заголовок, удаление)'
+  note: 'Ctrl+Z / Ctrl+Shift+Z / Ctrl+Y: ввод, формат, вставка, удаление, перенос, преобразование отменяются (тесты); отмена изменения размера (resize изображения/колонки) не тестируется'
 - id: R-HISTORY-018
   status: done
   evidence: apps/web/src/editor/clientExtensions.ts (Tiptap Collaboration → y-tiptap yUndoPlugin, own origin only; undoRedo disabled in packages/shared/src/editor/extensions.ts); tests/e2e/undo.spec.ts
@@ -848,13 +840,14 @@
   evidence: apps/server/src/collab/hub.ts#acceptUpdate (права, схема), apps/server/src/services/pages.ts (tx дерева)
   note: Нет транзакционной координации поверх CRDT для таблиц/колонок; только валидация схемы с откатом
 - id: R-COLLAB-032
-  status: partial
-  evidence: tests/integration/collab.test.ts, tests/integration/core.test.ts, tests/integration/content.test.ts
-  note: 'Нет автотестов: формат+удаление, перенос блока+правка, удаление таблицы+строка, два устройства, restore во время работы других с проверкой их несохранённых правок'
+  status: done
+  evidence: tests/integration/collab-p0.test.ts (формат+удаление, копирование+правка, перемещения, удаление таблицы+строка, два устройства), tests/e2e/collab-p0-editing.spec.ts (перенос+правка), tests/integration/core.test.ts
+    (двойной перенос страницы, COLLAB-194), tests/integration/collab.test.ts (restore во время работы других)
 - id: R-COLLAB-033
-  status: partial
-  evidence: apps/web/src/editor/Editor.tsx#FatalBanner
-  note: Уведомления о невозможности слияния нет; отвергнутые правки доступны для экспорта только при фатальной ошибке
+  status: done
+  evidence: apps/web/src/editor/extensions/conflictGuard.ts, apps/server/src/routes/conflicts.ts, apps/web/src/editor/Editor.tsx#FatalBanner; tests/e2e/conflict.spec.ts, tests/e2e/collab-p0-editing.spec.ts,
+    tests/e2e/collab-p0-storage.spec.ts
+  note: Невозможность слияния (удаление/перенос блока с правкой) — уведомление и конфликтная копия; отвергнутые правки доступны для скачивания
 - id: R-COLLAB-034
   status: manual
   evidence: apps/web/src/components/page/Presence.tsx (4 аватара + «+N»), apps/web/src/editor/clientExtensions.ts#caret
@@ -864,9 +857,9 @@
   evidence: apps/web/src/components/page/SyncStatus.tsx, packages/shared/src/collab-client.ts
   note: Сохранение курсора/прокрутки при reconnect обеспечивается тем, что редактор не перемонтируется; браузерного теста нет
 - id: R-COLLAB-036
-  status: missing
-  evidence: ''
-  note: Диалога сравнения при неслиемой операции нет
+  status: partial
+  evidence: apps/web/src/editor/Editor.tsx (уведомление о конфликте «Вернуть мою версию»), apps/server/src/routes/conflicts.ts (копия в истории, resolve restored/dismissed); tests/e2e/conflict.spec.ts
+  note: 'Конфликт не скрывается: копия сохраняется на сервере, уведомление с восстановлением; полноценного диалога сравнения с тремя вариантами нет'
 - id: R-COLLAB-037
   status: partial
   evidence: apps/server/src/services/consistency.ts (циклы/сироты/closure/разрывы журнала/снимки), apps/server/src/jobs/worker.ts#consistencyCheck → kb_integrity_errors, GET /api/v1/admin/consistency; tests/integration/history-tree.test.ts
@@ -892,9 +885,9 @@
   status: done
   evidence: tests/integration/collab.test.ts (COLLAB-192)
 - id: COLLAB-193
-  status: partial
-  evidence: tests/integration/collab.test.ts (COLLAB-193)
-  note: Проверено только удаление+правка, и правка теряется; форматирование и перемещение не проверены
+  status: done
+  evidence: apps/web/src/editor/extensions/conflictGuard.ts (deleted/moved); tests/e2e/conflict.spec.ts (удаление+правка), tests/e2e/collab-p0-editing.spec.ts (перенос+правка), tests/integration/collab-p0.test.ts
+    (форматирование+удаление, копирование+правка, одновременные перемещения)
 - id: COLLAB-194
   status: done
   evidence: tests/integration/core.test.ts (COLLAB-194)
@@ -917,9 +910,9 @@
   status: done
   evidence: 'apps/web/src/styles/layout.css (pointer: coarse → действия видимы)'
 - id: R-TREE-025
-  status: partial
-  evidence: apps/web/src/layout/treeActions.tsx#createPage, apps/server/src/services/pages.ts requestId
-  note: Esc на пустом черновике не отменяет создание (страница уже создана на сервере → мусорные «Без названия»); requestId генерируется заново на каждый клик, защиты от двойного нажатия в UI нет
+  status: done
+  evidence: apps/web/src/layout/treeActions.tsx#createPage (одна заявка на время запроса), apps/web/src/editor/Editor.tsx (Esc в пустом названии), apps/web/src/pages/PageView.tsx (discard-if-empty); tests/e2e/collab-p0-editing.spec.ts
+    (Esc …, double "+" on a slow network), tests/e2e/editor.spec.ts
 - id: R-TREE-026
   status: done
   evidence: apps/web/src/layout/SidebarTree.tsx#onKeyDown (стрелки, Enter, Space, F2, контекстное меню)
@@ -940,21 +933,23 @@
   status: done
   evidence: packages/shared/src/collab-client.ts, apps/web/src/sync/idb.ts; tests/integration/collab.test.ts, tests/resilience/crash-restart.test.ts
 - id: R-COLLAB-039
-  status: partial
-  evidence: packages/shared/src/collab-client.ts
-  note: Backoff+jitter и догоняющая синхронизация по state vector есть; резервного канала (SSE/HTTP) при недоступном WebSocket нет
+  status: done
+  evidence: packages/shared/src/collab-http.ts (HttpTunnelSocket), packages/shared/src/collab-client.ts (переключение после 2 неудач WebSocket, sync timeout, повтор WebSocket раз в 5 мин), apps/server/src/collab/tunnel.ts,
+    apps/server/src/routes/collab.ts (/api/v1/collab/:pageId/tunnel, long poll с подтверждением кадров); tests/integration/collab-p0.test.ts (WebSocket blocked …), tests/unit/collab-p0.test.ts (transport
+    fallback)
+  note: Резервный канал HTTPS (long polling) с теми же кадрами, проверками прав и ACK после commit; догоняющая синхронизация по state vector
 - id: R-COLLAB-040
   status: done
   evidence: apps/server/src/services/pages.ts (tx move/trash/restore), apps/server/src/routes/revisions.ts, apps/server/src/collab/hub.ts
 - id: R-COLLAB-041
-  status: partial
-  evidence: apps/web/src/editor/Editor.tsx
-  note: Редактор не перемонтируется при reconnect; сохранения обеих версий при несливаемом конфликте нет
+  status: done
+  evidence: apps/web/src/editor/extensions/conflictGuard.ts, apps/server/src/routes/conflicts.ts (копия в истории страницы), apps/web/src/editor/Editor.tsx (редактор не перемонтируется при reconnect); tests/e2e/collab-p0-editing.spec.ts,
+    tests/e2e/conflict.spec.ts
+  note: Обе версии сохраняются (результат слияния + конфликтная копия); построчного сравнения версий конфликта нет
 - id: R-OFFLINE-010
-  status: partial
-  evidence: apps/web/src/sync/collab.ts (visibilitychange/online reconnect), apps/web/src/sync/idb.ts
-  note: 'Две вкладки и сон не тестируются; после перезагрузки вкладки без сети страница не открывается: GET /api/v1/pages/:id не кешируется (usePage в apps/web/src/hooks/data.ts, PageError в PageView) —
-    очередь в IndexedDB цела, но статус и локальный текст не видны до появления сети; ограничения офлайна не обозначены'
+  status: done
+  evidence: apps/web/src/sync/collab.ts (online/offline/visibilitychange), apps/web/public/sw.js, apps/web/src/hooks/data.ts, apps/web/src/pages/PageView.tsx (баннер ограничений офлайна); tests/e2e/collab-p0-offline.spec.ts
+    (перезагрузка без сети, две вкладки), tests/e2e/collab-p0-storage.spec.ts (offline local-copy screen …), tests/integration/collab-p0.test.ts (sleeping laptop)
 - id: UX23-201
   status: done
   evidence: tests/e2e/content.spec.ts
@@ -963,9 +958,9 @@
   evidence: ''
   note: Escape на пустом новом черновике ничего не отменяет
 - id: UX23-203
-  status: partial
-  evidence: apps/server/src/services/pages.ts#createPage; tests/integration/core.test.ts (UX23-203)
-  note: Серверная идемпотентность по requestId проверена; UI генерирует новый requestId на каждый клик и не блокирует повторное нажатие
+  status: done
+  evidence: apps/web/src/layout/treeActions.tsx#createPage (повторное нажатие переиспользует запрос в полёте), apps/server/src/services/pages.ts requestId; tests/e2e/collab-p0-editing.spec.ts (double "+"
+    on a slow network creates exactly one page), tests/e2e/editor.spec.ts, tests/integration/core.test.ts
 - id: UX23-204
   status: done
   evidence: apps/web/src/layout/SidebarTree.tsx
@@ -999,9 +994,9 @@
   status: done
   evidence: tests/integration/collab.test.ts (UX23-215)
 - id: UX23-216
-  status: partial
-  evidence: apps/web/src/sync/idb.ts (общая очередь), apps/server/src/collab/hub.ts dedupe
-  note: Две вкладки делят IndexedDB-очередь; дубли гасятся op_id на сервере, но теста нет
+  status: done
+  evidence: apps/web/src/sync/idb.ts (общая очередь), apps/server/src/collab/hub.ts dedupe по op_id; tests/e2e/collab-p0-offline.spec.ts (two tabs of the same user …), tests/integration/collab-p0.test.ts
+    (the same user on two devices …)
 - id: UX23-217
   status: done
   evidence: tests/integration/collab.test.ts (UX23-217)
@@ -1029,9 +1024,10 @@
   status: done
   evidence: packages/shared/src/collab-client.ts, apps/server/src/collab/hub.ts (seq gap handling); tests/integration/collab.test.ts fuzz, tests/resilience/crash-restart.test.ts
 - id: R-COLLAB-045
-  status: partial
-  evidence: apps/server/src/collab/hub.ts
-  note: Правки разных/одного абзаца сливаются; перемещение/удаление блока теряют параллельную правку, «обе версии» не сохраняются
+  status: done
+  evidence: apps/server/src/collab/hub.ts, apps/web/src/editor/extensions/conflictGuard.ts; tests/integration/collab.test.ts (один абзац), tests/integration/collab-p0.test.ts (таблицы, перемещения), tests/e2e/conflict.spec.ts,
+    tests/e2e/collab-p0-editing.spec.ts
+  note: Слияние CRDT детерминировано; перемещение/удаление блока с параллельной правкой сохраняет «обе версии» через конфликтную копию
 - id: R-COLLAB-046
   status: done
   evidence: apps/server/src/collab/hub.ts (awareness вне Y.Doc)
@@ -1051,9 +1047,9 @@
   status: done
   evidence: tests/integration/collab.test.ts (two editors same paragraph)
 - id: OPS-006
-  status: partial
-  evidence: apps/web/src/editor/extensions/blockOps.ts#moveBlock
-  note: 'Перемещение блока = удаление+вставка: параллельная правка перемещаемого блока теряется; теста нет'
+  status: done
+  evidence: apps/web/src/editor/extensions/conflictGuard.ts, apps/web/src/editor/extensions/blockOps.ts#moveBlock; tests/e2e/collab-p0-editing.spec.ts (a block is moved …)
+  note: Параллельная правка перемещаемого блока сохраняется (конфликтная копия + восстановление)
 - id: OPS-009
   status: done
   evidence: tests/integration/collab.test.ts, tests/resilience/crash-restart.test.ts
@@ -1080,23 +1076,20 @@
   evidence: tests/e2e/content.spec.ts
   note: Из плана проверок автоматизировано только «+»; раскрытие, breadcrumbs, back/forward, избранное, виртуализация не проверяются
 - id: QA26-14
-  status: partial
-  evidence: tests/e2e/undo.spec.ts
-  note: 'Есть E2E обратимости ввода (1 и 10 шагов), форматирования, вставки 100 блоков, структуры, совместной работы; нет последовательностей 100/1000. БАГ (найден tests/e2e/undo.spec.ts): apps/web/src/editor/extensions/blockIds.ts
-    дописывает транзакцию с addToHistory=false, и y-prosemirror исключает из истории отмены всё локальное изменение, создающее новые блоки (Enter, вставка, вставка таблицы) — Ctrl+Z их не отменяет'
+  status: done
+  evidence: tests/e2e/undo.spec.ts (1 и 10 шагов, форматирование, вставка, структура, совместная работа), tests/e2e/collab-p0-editing.spec.ts (последовательности 100 и 1000, граница после перезагрузки)
 - id: QA26-15
   status: partial
   evidence: tests/integration/collab.test.ts, tests/integration/gaps.test.ts (pre-restore)
   note: Нет проверок после удаления/архивации, при совместной работе, очистки по сроку
 - id: QA26-19
-  status: partial
-  evidence: tests/integration/collab.test.ts
-  note: Проверено 2–3 клиента; нет 5/20 редакторов, одной ячейки таблицы, перемещения блока
+  status: done
+  evidence: tests/integration/collab-p0.test.ts (2, 5 and 20 editors …; одна ячейка; перемещения/удаление), tests/integration/collab.test.ts (restore, изменение прав в сессии)
 - id: QA26-20
   status: partial
-  evidence: tests/integration/collab.test.ts, tests/resilience/crash-restart.test.ts, tests/resilience/db-connection-loss.test.ts
-  note: 'Есть: обрыв сети, рестарт сервера, повторная доставка, потеря ACK; нет: высокий RTT/потери пакетов, истечение сессии, закрытие вкладки в браузере; смена Wi-Fi/LTE и смена ведущего узла — ограничение
-    окружения'
+  evidence: tests/integration/collab-p0.test.ts (высокий RTT/джиттер/обрывы, истечение сессии, спящий ноутбук), tests/e2e/collab-p0-offline.spec.ts (закрытие вкладки, перезагрузка, смена сети offline→online),
+    tests/resilience/crash-restart.test.ts, tests/integration/collab.test.ts (повторная доставка, рестарт сервера)
+  note: Не проверены смена ведущего узла БД/экземпляра под нагрузкой и реальная смена Wi-Fi/LTE (ограничение окружения)
 - id: R-PAGE-033
   status: done
   evidence: apps/server/src/services/pages.ts#createPage (наследование), tests/e2e/editor.spec.ts
@@ -1117,9 +1110,10 @@
   status: done
   evidence: apps/server/src/services/search.ts (ACL), apps/server/src/routes/collab.ts (events only for visible spaces)
 - id: R-COLLAB-049
-  status: partial
-  evidence: apps/server/src/services/pages.ts#movePage, blockOps.ts
-  note: Перенос страницы и правка независимы (без потерь); перенос блока + правка теряет правку; тестов нет
+  status: done
+  evidence: apps/web/src/editor/extensions/conflictGuard.ts (reason moved), apps/server/src/services/pages.ts#movePage; tests/e2e/collab-p0-editing.spec.ts (a block is moved by one editor while another
+    edits it …), tests/integration/core.test.ts (COLLAB-194)
+  note: 'Перенос блока = удаление+вставка копии в y-prosemirror: правка исходного блока возвращается из конфликтной копии одним действием; перенос страницы и правка независимы'
 - id: R-COLLAB-050
   status: done
   evidence: tests/resilience/crash-restart.test.ts, tests/resilience/db-connection-loss.test.ts, tests/integration/collab.test.ts

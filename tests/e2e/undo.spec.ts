@@ -68,9 +68,6 @@ test('undo/redo of formatting keeps the text and the selection (QA26-14, SC-11, 
 });
 
 test('one undo reverts a paste of 100 blocks and keeps the cursor position (AT-47, R-HISTORY-009, QA26-14)', async ({ page }) => {
-  // KNOWN BUG (found by this test): apps/web/src/editor/extensions/blockIds.ts appends an id-assigning transaction with
-  // addToHistory=false; y-prosemirror then records the whole local change (paste / new blocks) as non-undoable.
-  // Remove this line once block ids are assigned without excluding the user's change from undo history.
   const id = await fresh(page, 'Отмена вставки');
   await page.keyboard.type('До вставки');
   await page.waitForTimeout(STEP_PAUSE);
@@ -119,7 +116,6 @@ test('undo of a block move and of a block deletion is precise (UX-138, E2E-118, 
 });
 
 test('undo of a table insert (SC-11, R-HISTORY-017, QA26-14)', async ({ page }) => {
-  // KNOWN BUG: the same blockIds/addToHistory problem as the paste test — a newly inserted table is not undoable.
   await fresh(page, 'Отмена таблицы');
   await page.keyboard.type('Текст');
   await page.waitForTimeout(STEP_PAUSE);

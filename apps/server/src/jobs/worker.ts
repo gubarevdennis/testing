@@ -10,6 +10,7 @@ import { orgSettings } from '../services/org.js';
 import { checkConsistency, type ConsistencyReport } from '../services/consistency.js';
 import { attachedFilesText } from '../services/file-text.js';
 import type { BlobStore } from '../storage/blob-store.js';
+import { parseTraceparent } from '../observability/tracing.js';
 
 export interface JobContext {
   s: Services;
@@ -195,6 +196,11 @@ export class Worker {
   }
 
   async runJob(job: JobRow) {
+    // Each job run is its own trace (consumer span), continuing the request's trace when the job recorded one.
+    return this.s.tracer.withSpan(`job ${job.type}`, { parent: parseTraceparent(job.params?.traceparent) ?? null, kind: 'consumer', attributes: { 'kb.job.id': job.id, 'kb.job.type': job.type, 'kb.job.attempt': job.attempts } }, () => this.runJobInner(job));
+  }
+
+  private async runJobInner(job: JobRow) {
     const h = handlers.get(job.type);
     const db = this.s.db;
     const heartbeat = setInterval(() => void db.query(`update jobs set locked_until = now() + interval '10 minutes' where id = $1`, [job.id]).catch(() => undefined), 60_000);

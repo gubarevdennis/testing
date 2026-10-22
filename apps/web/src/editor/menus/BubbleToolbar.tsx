@@ -27,7 +27,8 @@ function confirmCodeLoss(loss: CodeConversionLoss) {
 function useFormatState(editor: Editor) {
   return useEditorState({
     editor,
-    selector: ({ editor: e }) => ({
+    // with a collapsed selection the bubble toolbar is hidden: typing does not pay for ~20 isActive() checks per key
+    selector: ({ editor: e }) => (e.state.selection.empty ? NO_SELECTION_FORMAT : {
       type: blockTypeLabel(e),
       bold: e.isActive('bold'),
       italic: e.isActive('italic'),
@@ -45,6 +46,12 @@ function useFormatState(editor: Editor) {
     }),
   });
 }
+
+type FormatState = {
+  type: string; bold: boolean; italic: boolean; underline: boolean; strike: boolean; code: boolean; link: boolean; sub: boolean; sup: boolean;
+  color: string | null; hl: string | null; hasHl: boolean; fontSize: string | null; align: 'left' | 'center' | 'right' | 'justify' | null;
+};
+const NO_SELECTION_FORMAT: FormatState = { type: 'Текст', bold: false, italic: false, underline: false, strike: false, code: false, link: false, sub: false, sup: false, color: null, hl: null, hasHl: false, fontSize: null, align: null };
 
 export function blockTypeLabel(editor: Editor) {
   if (editor.isActive('heading', { level: 1 })) return 'Заголовок 1';

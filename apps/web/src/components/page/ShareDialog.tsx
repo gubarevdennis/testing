@@ -10,7 +10,9 @@ import { toast } from '../ui/Toast';
 import { Tooltip } from '../ui/Tooltip';
 import { LEVEL_LABEL, fullTime } from '../../lib/format';
 import { useMe } from '../../state/session';
-import { DirectoryPicker, SubjectIcon, errMsg, type DirEntry } from './directory';
+import { DirectoryPicker, SubjectIcon, errMsg, type DirEntry, type DirGroup } from './directory';
+import { PublicLinksSection } from './PublicLinks';
+import { ExpiryPresets, startOfDay, timeZone, inDays } from '../space/SpaceAccess';
 
 interface Subject {
   name: string;
@@ -116,6 +118,12 @@ export function ShareDialog({ page, open, onClose }: { page: PageDto; open: bool
   const [picked, setPicked] = useState<DirEntry[]>([]);
   const [newLevel, setNewLevel] = useState<string>('view');
   const [expiry, setExpiry] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [reason, setReason] = useState('');
+  const [noDownload, setNoDownload] = useState(false);
+  const [noExport, setNoExport] = useState(false);
+  const [mayShare, setMayShare] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [explainOpen, setExplainOpen] = useState(false);
   const [requestOpen, setRequestOpen] = useState(false);
@@ -176,7 +184,18 @@ export function ShareDialog({ page, open, onClose }: { page: PageDto; open: bool
     const failed: DirEntry[] = [];
     for (const p of picked) {
       try {
-        await putGrant({ subjectType: p.type, subjectId: p.type === 'user' ? p.user.id : p.group.id, level: newLevel, expiresAt: endOfDay(expiry) });
+        await putGrant({
+          subjectType: p.type,
+          subjectId: p.type === 'user' ? p.user.id : p.group.id,
+          level: newLevel,
+          expiresAt: endOfDay(expiry),
+          startsAt: startOfDay(startDate),
+          reason: reason.trim() || null,
+          timeZone: timeZone(),
+          canDownload: noDownload ? false : null,
+          canExport: noExport ? false : null,
+          canShare: mayShare && (newLevel === 'edit' || newLevel === 'full') ? true : null,
+        });
       } catch (e) {
         failed.push(p);
         toast.error(`${p.type === 'user' ? p.user.name : p.group.name}: ${errMsg(e)}`);
@@ -187,6 +206,8 @@ export function ShareDialog({ page, open, onClose }: { page: PageDto; open: bool
     if (failed.length < picked.length) {
       toast.success('Доступ выдан');
       setExpiry('');
+      setStartDate('');
+      setReason('');
     }
     refresh();
   };
@@ -326,6 +347,8 @@ export function ShareDialog({ page, open, onClose }: { page: PageDto; open: bool
             {!canManage && ' — управлять доступом могут пользователи с полным доступом.'}
           </div>
 
+          {page.space.kind === 'personal' && <PersonalIndicator pageId={page.id} />}
+          {canManage && me.user.kind !== 'guest' && <SharePresets page={page} onPickGroup={(g) => setPicked((cur) => (cur.some((x) => x.type === 'group' && x.group.id === g.id) ? cur : [...cur, { type: 'group', group: g }]))} onAll={() => setGeneral('view')} onDone={refresh} />}
           {canManage && me.user.kind !== 'guest' && (
             <>
               <div className="kb-section-title">Пригласить</div>
@@ -361,6 +384,34 @@ export function ShareDialog({ page, open, onClose }: { page: PageDto; open: bool
                   {busy && <span className="spinner" />} Выдать доступ
                 </button>
               </div>
+              <div className="row" style={{ gap: 8, flexWrap: 'wrap', alignItems: 'center', marginTop: 6 }}>
+                <span className="kb-meta">Срок:</span>
+                <ExpiryPresets value={expiry} onChange={setExpiry} />
+                <button type="button" className="btn sm ghost" aria-expanded={moreOpen} onClick={() => setMoreOpen((v) => !v)}>
+                  {moreOpen ? 'Скрыть параметры' : 'Ещё параметры'}
+                </button>
+              </div>
+              {moreOpen && (
+                <div className="share-explain col" style={{ gap: 8, marginTop: 6 }}>
+                  <div className="row" style={{ gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+                    <label htmlFor="share-start" className="kb-meta">
+                      Доступ с
+                    </label>
+                    <input id="share-start" type="date" className="input" style={{ width: 150 }} value={startDate} min={inDays(0)} onChange={(e) => setStartDate(e.target.value)} />
+                    <span className="kb-meta">Часовой пояс: {timeZone()}</span>
+                  </div>
+                  <input className="input" aria-label="Основание доступа" placeholder="Основание (необязательно), например: «согласование договора»" value={reason} maxLength={500} onChange={(e) => setReason(e.target.value)} />
+                  <label className="checkbox">
+                    <input type="checkbox" checked={noDownload} onChange={(e) => setNoDownload(e.target.checked)} /> Запретить скачивание вложений
+                  </label>
+                  <label className="checkbox">
+                    <input type="checkbox" checked={noExport} onChange={(e) => setNoExport(e.target.checked)} /> Запретить экспорт
+                  </label>
+                  <label className="checkbox">
+                    <input type="checkbox" checked={mayShare} disabled={newLevel !== 'edit' && newLevel !== 'full'} onChange={(e) => setMayShare(e.target.checked)} /> Может делиться страницей (для редактирования)
+                  </label>
+                </div>
+              )}
               {picked.length > 0 && (
                 <div className="kb-meta" aria-live="polite" style={{ marginTop: 4 }}>
                   {previewLoading ? (
@@ -487,6 +538,7 @@ export function ShareDialog({ page, open, onClose }: { page: PageDto; open: bool
               Есть активные публичные ссылки: {data.publicLinks.length}. По ним страницу могут открыть люди вне организации.
             </div>
           )}
+          {canManage && me.user.kind !== 'guest' && <PublicLinksSection pageId={page.id} canDownloadPolicy={page.access.policy?.allowDownload !== false} />}
 
           <div className="row" style={{ gap: 8, marginTop: 16, flexWrap: 'wrap' }}>
             {canManage && me.user.kind !== 'guest' && (
@@ -618,6 +670,84 @@ function AccessRequest({ pageId, myLevel, onDone }: { pageId: string; myLevel: s
         </button>
       </div>
       <span className="kb-meta">Запрос получат сотрудники, которым выдан полный доступ к странице.</span>
+    </div>
+  );
+}
+
+/** «Личная» / «Не полностью личная» marker for pages of a personal space (R-ACL-051). */
+function PersonalIndicator({ pageId }: { pageId: string }) {
+  const q = useQuery({ queryKey: ['page-exposure', pageId], queryFn: ({ signal }) => get<{ shared: boolean; people: number; groups: number; org: boolean; publicLinks: number }>(`/api/v1/pages/${pageId}/exposure`, signal) });
+  if (!q.data) return null;
+  const d = q.data;
+  if (!d.shared)
+    return (
+      <div className="alert info personal-indicator" role="status" data-shared="false">
+        <Lock size={14} className="alert-icon" /> Личная страница: её видите только вы.
+      </div>
+    );
+  const parts = [d.people ? `${d.people} чел.` : '', d.groups ? `групп: ${d.groups}` : '', d.org ? 'вся организация' : '', d.publicLinks ? `публичных ссылок: ${d.publicLinks}` : ''].filter(Boolean);
+  return (
+    <div className="alert warning personal-indicator" role="status" data-shared="true">
+      <Globe2 size={14} className="alert-icon" /> Не полностью личная: доступ есть у других ({parts.join(', ')}).
+    </div>
+  );
+}
+
+/** One-click presets: only me, my department, the whole company (R-ACL-021). */
+function SharePresets({ page, onPickGroup, onAll, onDone }: { page: PageDto; onPickGroup(g: DirGroup): void; onAll(): void; onDone(): void }) {
+  const groups = useQuery({ queryKey: ['my-groups'], queryFn: ({ signal }) => get<{ groups: DirGroup[] }>('/api/v1/me/groups', signal), staleTime: 60_000 });
+  const depts = (groups.data?.groups ?? []).filter((g) => g.kind === 'department');
+  const onlyMe = async () => {
+    try {
+      await post(`/api/v1/pages/${page.id}/access/only-me`, {});
+    } catch (e) {
+      if (!(e instanceof ApiError && e.code === 'audience_change')) return toast.error(errMsg(e, 'Не удалось изменить доступ'));
+      const d = e.details as { removed: Array<{ name: string }>; removedCount: number; publicLinks: number };
+      const ok = await confirm({
+        title: 'Оставить доступ только вам?',
+        danger: true,
+        confirmLabel: 'Только я',
+        body: (
+          <div className="col" style={{ gap: 8 }}>
+            <p>Наследование прав будет отключено, все остальные разрешения{d.publicLinks ? ' и публичные ссылки' : ''} — отозваны.</p>
+            {d.removedCount > 0 ? (
+              <div>
+                <b>Потеряют доступ {people(d.removedCount)}:</b>
+                <div className="share-preview-names">
+                  {d.removed.map((x) => x.name).join(', ')}
+                  {d.removedCount > d.removed.length ? ` и ещё ${d.removedCount - d.removed.length}` : ''}
+                </div>
+              </div>
+            ) : (
+              <p className="muted">Кроме вас доступа ни у кого нет.</p>
+            )}
+          </div>
+        ),
+      });
+      if (!ok) return;
+      try {
+        await post(`/api/v1/pages/${page.id}/access/only-me`, { confirm: true });
+      } catch (e2) {
+        return toast.error(errMsg(e2, 'Не удалось изменить доступ'));
+      }
+    }
+    toast.success('Теперь страницу видите только вы');
+    onDone();
+  };
+  return (
+    <div className="row share-presets" role="group" aria-label="Быстрые варианты доступа" style={{ gap: 6, flexWrap: 'wrap', margin: '6px 0' }}>
+      <span className="kb-meta">Быстро:</span>
+      <button className="btn sm" onClick={onlyMe}>
+        <Lock size={13} /> Только я
+      </button>
+      {depts.map((g) => (
+        <button key={g.id} className="btn sm" onClick={() => onPickGroup(g)} title="Добавить отдел в список приглашённых">
+          Отдел: {g.name}
+        </button>
+      ))}
+      <button className="btn sm" onClick={onAll}>
+        <Globe2 size={13} /> Вся компания
+      </button>
     </div>
   );
 }

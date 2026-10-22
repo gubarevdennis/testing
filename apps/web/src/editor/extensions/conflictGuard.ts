@@ -9,13 +9,15 @@ export interface ConflictInfo {
   blockId: string | null;
   block: Record<string, unknown>;
   afterBlockId: string | null;
-  reason: 'deleted';
+  reason: 'deleted' | 'moved';
 }
 
 /**
- * Detects concurrent "edit vs delete": when a remote change removes a top-level block that this user edited during the
- * last minutes, the user's version of the block would vanish silently (CRDT merges drop edits inside deleted nodes).
- * The guard keeps the latest local version of every block the user touches and hands lost ones to `onConflict`.
+ * Detects concurrent "edit vs delete" and "edit vs move": when a remote change removes a top-level block that this user
+ * edited during the last minutes, the user's version of the block would vanish silently (CRDT merges drop edits inside
+ * deleted nodes). A block move is a delete + insert of a copy, so a remote move of a block the user was editing arrives
+ * as the same id at another place with the mover's (older) content. The guard keeps the latest local version of every
+ * block the user touches and hands lost ones to `onConflict`.
  */
 export const ConflictGuard = Extension.create<{ onConflict: (c: ConflictInfo) => void }>({
   name: 'conflictGuard',
@@ -64,10 +66,18 @@ export const ConflictGuard = Extension.create<{ onConflict: (c: ConflictInfo) =>
               touched.delete(id);
               continue;
             }
-            const wasThere = oldState.doc.content.size > 0 && hasTop(oldState.doc, id);
-            if (wasThere && !present.has(id)) {
+            const before = oldState.doc.content.size > 0 ? topWithPrev(oldState.doc, id) : null;
+            if (!before) continue;
+            if (!present.has(id)) {
               touched.delete(id);
               onConflict()({ blockId: id, block: t.json, afterBlockId: t.prev, reason: 'deleted' });
+              continue;
+            }
+            const after = topWithPrev(newState.doc, id);
+            // moved by someone else (new neighbour) and our text is gone with the old copy
+            if (after && after.prev !== before.prev && after.node.textContent !== before.node.textContent && !after.node.eq(before.node)) {
+              touched.delete(id);
+              onConflict()({ blockId: id, block: before.node.toJSON(), afterBlockId: after.prev, reason: 'moved' });
             }
           }
           return null;
@@ -77,10 +87,12 @@ export const ConflictGuard = Extension.create<{ onConflict: (c: ConflictInfo) =>
   },
 });
 
-function hasTop(doc: PMNode, id: string) {
-  let found = false;
+function topWithPrev(doc: PMNode, id: string): { node: PMNode; prev: string | null } | null {
+  let found: { node: PMNode; prev: string | null } | null = null;
+  let prev: string | null = null;
   doc.forEach((n) => {
-    if (n.attrs.id === id) found = true;
+    if (!found && n.attrs.id === id) found = { node: n, prev };
+    prev = n.attrs.id ?? prev;
   });
   return found;
 }

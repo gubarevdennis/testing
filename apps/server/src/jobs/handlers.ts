@@ -17,13 +17,17 @@ registerJob('ocr', async ({ s, job }) => {
     : (await s.db.query(`select id from ocr_results where attachment_id = $1 and version = $2 order by created_at desc limit 1`, [attachmentId, version])).rows[0]?.id;
   if (!v || !target) return { result: { skipped: true } };
   await s.db.query(`update ocr_results set status = 'processing', attempts = attempts + 1, updated_at = now() where id = $1`, [target]);
+  const started = process.hrtime.bigint();
+  const seconds = () => Number(process.hrtime.bigint() - started) / 1e9;
   try {
     const out = await recognize(await s.store.readBuffer(blobKey(v.blob_sha256)), { tessdataDir: s.cfg.tessdataDir, region, rotation, log: s.log });
     const status = !out.text ? 'partial' : out.confidence < 55 ? 'partial' : 'done';
+    s.metrics.ocrSeconds.labels(status).observe(seconds());
     await s.db.query(`update ocr_results set status = $2, text = $3, words = $4, confidence = $5, error = null, updated_at = now() where id = $1`, [target, status, out.text, JSON.stringify(out.words), out.confidence]);
     if (v.page_id) await indexPage(s.db, v.page_id, s.store);
     return { result: { status, confidence: out.confidence, chars: out.text.length } };
   } catch (e) {
+    s.metrics.ocrSeconds.labels('error').observe(seconds());
     await s.db.query(`update ocr_results set status = 'error', error = $2, updated_at = now() where id = $1`, [target, (e as Error).message.slice(0, 500)]);
     throw e;
   }
