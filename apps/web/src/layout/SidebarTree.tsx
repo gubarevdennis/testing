@@ -16,7 +16,8 @@ import { toast } from '../components/ui/Toast';
 import { queryClient } from '../App';
 import { useTreeScrollMemory, useRevealCurrentPage } from './treeState';
 
-const ROW_H = 32;
+// touch devices get 44 px rows (R-A11Y-008); must match .tree-row height in layout.css, or rows overlap
+const ROW_H = typeof matchMedia !== 'undefined' && matchMedia('(pointer: coarse)').matches ? 44 : 32;
 const INDENT = 14;
 
 export type Row =

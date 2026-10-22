@@ -10,6 +10,7 @@ import { toast } from '../../components/ui/Toast';
 import { confirm } from '../../components/ui/Confirm';
 import { loadMarkdown } from '../../lib/markdown';
 import { cleanCopiedDom } from './html';
+import { redactJson } from './redact';
 
 export interface ClipboardPayload {
   text: string;
@@ -60,7 +61,7 @@ export function fragmentHtml(editor: Editor, json: PMNode): string {
 
 /** Copies a range of whole blocks with formatting (text/html) and as text (text/plain) — block/section copy. */
 export async function copyBlocks(editor: Editor, from: number, to: number, success: string): Promise<boolean> {
-  const json = { type: 'doc', content: editor.state.doc.slice(from, to).content.toJSON() ?? [] } as PMNode;
+  const json = await redactJson({ type: 'doc', content: editor.state.doc.slice(from, to).content.toJSON() ?? [] } as PMNode);
   return copyWithFeedback({ text: docToPlainText(json), html: fragmentHtml(editor, json) }, success);
 }
 
@@ -70,7 +71,7 @@ export type CopyPageFormat = 'html' | 'text' | 'markdown';
 
 /** Copies the whole page: with formatting (HTML + plain text), as plain text, or as Markdown. */
 export async function copyPage(editor: Editor, title: string, format: CopyPageFormat): Promise<boolean> {
-  const json = editor.getJSON() as PMNode;
+  const json = await redactJson(editor.getJSON() as PMNode);
   const text = (title ? title + '\n\n' : '') + docToPlainText(json);
   if (format === 'text') return copyWithFeedback({ text }, 'Текст страницы скопирован');
   if (format === 'markdown') {

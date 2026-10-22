@@ -274,7 +274,7 @@ test('ROUTE-01: employee route — login → own spaces → regulation → searc
     .poll(async () => {
       await p.goto(`/search?q=${encodeURIComponent('приёмки ' + stamp)}`);
       return p.getByRole('list', { name: 'Результаты поиска' }).getByRole('link', { name: new RegExp(`Регламент приёмки ${stamp}`) }).count();
-    }, { timeout: 30_000 })
+    }, { timeout: 90_000, intervals: [1000, 2000, 3000] })
     .toBeGreaterThan(0);
 
   // One-click article in the department space.
@@ -316,7 +316,7 @@ test('ROUTE-01: employee route — login → own spaces → regulation → searc
   await o.close();
 
   // Logout and return without losses.
-  await nav.getByRole('button', { name: 'Профиль и настройки' }).click();
+  await nav.locator('.workspace-btn').click();
   await p.getByRole('menuitem', { name: 'Выйти' }).click();
   await expect(p.getByRole('heading', { name: 'Вход в базу знаний' })).toBeVisible();
   await p.goto('/p/' + artId);

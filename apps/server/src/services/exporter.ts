@@ -7,6 +7,7 @@ import { blobKey } from '../storage/blob-store.js';
 import { docToDocx } from '../convert/docx-export.js';
 import { validateDocx } from '../convert/docx-validate.js';
 import { docToHtml } from '../convert/html.js';
+import { redactInaccessibleRefs } from '../routes/acl-extra.js';
 
 export type ExportFormat = 'md' | 'docx' | 'html' | 'pdf';
 
@@ -70,6 +71,7 @@ export async function loadExportPages(s: Services, user: AuthUser, rootIds: stri
       content = rev.content;
       title = rev.title;
     } else content = (await s.hub.snapshot(id)).json;
+    content = await redactInaccessibleRefs(s.db, user, content); // titles of linked pages the exporter cannot open (AT-79)
     pages.push({ id, title, icon: p.icon, parentId: p.parent_id, spaceId: p.space_id, content, canDownload: a.actions.download, properties: p.properties, status: p.status, updatedAt: p.content_updated_at, author: p.author });
   }
   return { pages, skipped: ids.length - pages.length };

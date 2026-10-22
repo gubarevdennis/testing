@@ -35,6 +35,26 @@ export async function personalExposure(q: Queryable, pageId: string): Promise<{ 
   return { personal: true, shared: people + groups + links > 0 || org, people, groups, org, publicLinks: links };
 }
 
+/**
+ * Documents keep a snapshot of the title of every page they link to. Before content leaves the server over HTTP
+ * (reading API, export), titles of linked pages the reader cannot open are replaced (AT-79, D-11).
+ */
+export async function redactInaccessibleRefs(q: Queryable, user: AuthUser, doc: PMNode): Promise<PMNode> {
+  const ids = new Set<string>();
+  walk(doc, (n) => {
+    if ((n.type === 'pageLink' || n.type === 'pageMention') && typeof n.attrs?.pageId === 'string' && /^[0-9a-f-]{36}$/i.test(n.attrs.pageId)) ids.add(n.attrs.pageId);
+  });
+  if (!ids.size) return doc;
+  const acc = await accessForPages(q, user, [...ids]);
+  const hidden = [...ids].filter((id) => !acc.get(id)?.actions.view);
+  if (!hidden.length) return doc;
+  const out = structuredClone(doc);
+  walk(out, (n) => {
+    if ((n.type === 'pageLink' || n.type === 'pageMention') && hidden.includes(n.attrs?.pageId)) n.attrs = { ...n.attrs, title: 'Страница недоступна' };
+  });
+  return out;
+}
+
 // ------------------------------------------------------------------------------------------- public links
 
 interface LinkRow {
@@ -528,6 +548,20 @@ export async function aclExtraRoutes(app: FastifyInstance, s: Services) {
     });
     if (!body.dryRun) s.bus.emit({ type: 'acl-changed', orgId: admin.orgId });
     return out;
+  });
+
+  // ---------------------------------------------------------------- organisation (workspace) profile (R-SPACE-001)
+  app.patch('/api/v1/admin/org', async (req) => {
+    const user = requireUser(req);
+    if (!isOrgAdmin(user)) throw forbidden('Название организации меняет администратор');
+    const body = parse(z.object({ name: z.string().trim().min(1, 'Укажите название').max(200) }), req.body);
+    const org = await tx(s.db, async (q) => {
+      const cur = (await q.query('select name from organizations where id = $1 for update', [user.orgId])).rows[0];
+      const r = (await q.query('update organizations set name = $2, updated_at = now() where id = $1 returning id, name, slug', [user.orgId, body.name])).rows[0];
+      await audit(q, actorOf(req), { action: 'org.rename', targetType: 'org', targetId: user.orgId, details: { from: cur.name, to: body.name } });
+      return r;
+    });
+    return { org };
   });
 
   // ---------------------------------------------------------------- reminders before temporary access ends (R-ACL-063)

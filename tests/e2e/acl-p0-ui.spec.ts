@@ -88,3 +88,55 @@ test('R-ACL-075 QA26-24: the same access-control checks on a phone (Pixel 7 view
   const { defaultBrowserType: _ignored, ...pixel } = devices['Pixel 7'];
   await scenario(page, browser, 'телефон', pixel);
 });
+
+test('AT-79: copying a page does not put titles of linked pages the reader cannot open on the clipboard (Ctrl+C and «Копировать страницу»)', async ({ page, browser }) => {
+  test.setTimeout(150_000);
+  await ensureOwner(page);
+  const hiddenId = await newPage(page, 'Секретный проект Омега');
+  await page.keyboard.type('Не для всех.');
+  await expectSaved(page);
+  const docId = await newPage(page, 'Сводка для читателя');
+  await page.keyboard.type('Публичная часть сводки. См. ');
+  await page.keyboard.type('[[Секретный');
+  await page.getByRole('option', { name: /Секретный проект Омега/ }).first().click();
+  await page.keyboard.type('подробнее.');
+  await expectSaved(page);
+  expect(JSON.stringify((await (await page.request.get(`/api/v1/pages/${docId}/content`)).json()).content)).toContain(hiddenId);
+  const reader = await createUser(page.request, 'Читатель сводки', { pageGrants: [{ pageId: docId, level: 'view' }] });
+
+  const ctx = await browser.newContext();
+  const p = await ctx.newPage();
+  await p.goto('/p/' + docId);
+  await login_(p, reader.email, reader.password);
+  await ctx.grantPermissions(['clipboard-read', 'clipboard-write'], { origin: new URL(p.url()).origin });
+  await expect(editor(p)).toContainText('Публичная часть сводки.');
+  await expect(editor(p).getByText('Нет доступа к странице')).toBeVisible();
+  const read = () =>
+    p.evaluate(async () => {
+      const out: Record<string, string> = {};
+      for (const item of await navigator.clipboard.read()) for (const t of item.types) out[t] = await (await item.getType(t)).text();
+      return out;
+    });
+  // Native Ctrl+C of the whole document.
+  await editor(p).click();
+  await p.keyboard.press('Control+a');
+  await p.keyboard.press('Control+c');
+  let clip = await read();
+  expect(JSON.stringify(clip)).toContain('Публичная часть сводки.');
+  expect(JSON.stringify(clip)).not.toContain('Омега');
+  // Page menu: copy with formatting and as Markdown.
+  for (const label of ['С форматированием', 'Как Markdown']) {
+    await p.locator('.page-header-bar').getByRole('button', { name: 'Действия со страницей' }).click();
+    const sub = p.getByRole('menuitem', { name: 'Копировать страницу' });
+    const item = p.getByRole('menuitem', { name: label });
+    await sub.hover();
+    if (!(await item.isVisible().catch(() => false))) await sub.click();
+    await item.click();
+    await expect(p.getByText(/Страница скопирована/).first()).toBeVisible();
+    clip = await read();
+    expect(JSON.stringify(clip)).toContain('Публичная часть сводки.');
+    expect(JSON.stringify(clip), label).not.toContain('Омега');
+    expect(JSON.stringify(clip)).toContain('Страница недоступна');
+  }
+  await ctx.close();
+});

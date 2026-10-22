@@ -8,21 +8,21 @@
 
 | Приоритет | Всего | реализовано | частично | не реализовано | требует ручной проверки | ограничение окружения | процесс/документ | заменено | не оценено | покрыто тестами |
 |---|---|---|---|---|---|---|---|---|---|---|
-| P0 | 637 | 450 | 145 | 18 | 1 | 8 | 14 | 1 | 0 | 427 |
-| P1 | 588 | 218 | 283 | 32 | 32 | 7 | 15 | 1 | 0 | 95 |
+| P0 | 637 | 497 | 103 | 13 | 1 | 8 | 14 | 1 | 0 | 428 |
+| P1 | 588 | 227 | 276 | 30 | 32 | 7 | 15 | 1 | 0 | 95 |
 | P2 | 73 | 26 | 24 | 6 | 7 | 0 | 9 | 1 | 0 | 1 |
-| **Итого** | 1298 | 694 | 452 | 56 | 40 | 15 | 38 | 3 | 0 | 523 |
+| **Итого** | 1298 | 750 | 403 | 49 | 40 | 15 | 38 | 3 | 0 | 524 |
 
 ## По модулям
 
 | Модуль | Всего | реализовано | частично | не реализовано | ручная проверка | окружение | процесс | покрыто тестами |
 |---|---|---|---|---|---|---|---|---|
-| A11Y | 24 | 9 | 15 | 0 | 0 | 0 | 0 | 10 |
-| ACL | 139 | 113 | 26 | 0 | 0 | 0 | 0 | 87 |
-| ADMIN | 28 | 9 | 19 | 0 | 0 | 0 | 0 | 9 |
+| A11Y | 24 | 12 | 12 | 0 | 0 | 0 | 0 | 10 |
+| ACL | 139 | 126 | 13 | 0 | 0 | 0 | 0 | 88 |
+| ADMIN | 28 | 15 | 13 | 0 | 0 | 0 | 0 | 9 |
 | ARCHIVE | 30 | 26 | 3 | 0 | 0 | 0 | 1 | 18 |
-| AUDIT | 11 | 7 | 4 | 0 | 0 | 0 | 0 | 9 |
-| AUTH | 5 | 4 | 1 | 0 | 0 | 0 | 0 | 3 |
+| AUDIT | 11 | 11 | 0 | 0 | 0 | 0 | 0 | 9 |
+| AUTH | 5 | 5 | 0 | 0 | 0 | 0 | 0 | 3 |
 | BACKUP | 29 | 15 | 11 | 0 | 0 | 0 | 2 | 19 |
 | CLIPBOARD | 45 | 21 | 19 | 1 | 0 | 4 | 0 | 20 |
 | COLLAB | 80 | 70 | 8 | 0 | 2 | 0 | 0 | 60 |
@@ -34,63 +34,53 @@
 | HELP | 11 | 5 | 2 | 0 | 3 | 0 | 1 | 0 |
 | HISTORY | 63 | 51 | 9 | 3 | 0 | 0 | 0 | 39 |
 | IMPORT | 63 | 48 | 14 | 0 | 0 | 1 | 0 | 44 |
-| LAYOUT | 19 | 0 | 17 | 2 | 0 | 0 | 0 | 1 |
+| LAYOUT | 19 | 1 | 16 | 2 | 0 | 0 | 0 | 1 |
 | MEDIA | 43 | 27 | 13 | 1 | 0 | 1 | 0 | 12 |
 | OCR | 15 | 5 | 9 | 1 | 0 | 0 | 0 | 4 |
 | OFFLINE | 28 | 26 | 2 | 0 | 0 | 0 | 0 | 25 |
 | OPS | 29 | 9 | 14 | 0 | 1 | 3 | 2 | 10 |
 | ORG | 7 | 6 | 1 | 0 | 0 | 0 | 0 | 5 |
 | PAGE | 50 | 30 | 15 | 4 | 1 | 0 | 0 | 7 |
-| PERF | 44 | 0 | 28 | 16 | 0 | 0 | 0 | 6 |
+| PERF | 44 | 6 | 26 | 12 | 0 | 0 | 0 | 6 |
 | PROCESS | 57 | 9 | 11 | 7 | 2 | 0 | 28 | 0 |
-| PUBLISH | 15 | 8 | 5 | 2 | 0 | 0 | 0 | 4 |
-| QA | 56 | 3 | 27 | 10 | 10 | 3 | 3 | 4 |
+| PUBLISH | 15 | 9 | 5 | 1 | 0 | 0 | 0 | 4 |
+| QA | 56 | 6 | 25 | 9 | 10 | 3 | 3 | 4 |
 | SEARCH | 30 | 22 | 8 | 0 | 0 | 0 | 0 | 14 |
-| SECURITY | 15 | 9 | 4 | 1 | 0 | 0 | 1 | 9 |
-| SPACE | 15 | 9 | 5 | 1 | 0 | 0 | 0 | 8 |
+| SECURITY | 15 | 12 | 1 | 1 | 0 | 0 | 1 | 9 |
+| SPACE | 15 | 13 | 1 | 1 | 0 | 0 | 0 | 8 |
 | TABLE | 9 | 3 | 6 | 0 | 0 | 0 | 0 | 2 |
 | TEMPLATES | 14 | 10 | 4 | 0 | 0 | 0 | 0 | 0 |
 | TREE | 63 | 50 | 11 | 1 | 1 | 0 | 0 | 24 |
-| UI | 89 | 7 | 64 | 3 | 14 | 1 | 0 | 16 |
+| UI | 89 | 18 | 54 | 2 | 14 | 1 | 0 | 16 |
 
 ## Открытые P0/P1 (частично / не реализовано / не оценено)
 
 - **R-PROCESS-004** (P1, PROCESS, частично): Создать docs/ARCHITECTURE.md, DECISIONS.md, TEST_MATRIX.md, OPERATIONS.md, RELEASE_READINESS.md — RELEASE_READINESS.md not yet present at re-assessment (written by the lead)
-- **R-QA-001** (P0, QA, частично): Тестировать в реальном браузере: навигация, курсор, выделение, hover, меню, drag-and-drop, масштаб, таблицы, мобильная версия … — no DnD, hover, menu-edge or selection tests; paste is synthetic
+- **R-QA-001** (P0, QA, частично): Тестировать в реальном браузере: навигация, курсор, выделение, hover, меню, drag-and-drop, масштаб, таблицы, мобильная версия … — drag-and-drop and text selection by mouse not covered; paste is synthetic
 - **R-PROCESS-010** (P1, PROCESS, не реализовано): Итоговый отчёт: реализованное, трассировка, команды запуска, тесты, дефекты, производительность, резервирование, ограничения … — final report (RELEASE_READINESS) not written
-- **R-QA-002** (P0, QA, частично): «Всё протестировано» = доказанное покрытие каждого доступного элемента и действия через каталог состояний, матрицы переходов, pairwise … — no per-element state catalogue, transition matrix or pairwise suite
+- **R-QA-002** (P0, QA, частично): «Всё протестировано» = доказанное покрытие каждого доступного элемента и действия через каталог состояний, матрицы переходов, pairwise … — no per-element state catalogue or transition matrix
 - **R-UI-003** (P1, UI, частично): Минимизировать обязательные диалоги и клики; умные контекстные действия, наследование настроек и понятные значения по умолчанию — no audit of all key tasks for mandatory dialogs
 - **R-UI-004** (P1, UI, частично): Меню остаётся в пределах экрана — no test of menus at viewport edges
 - **R-UI-005** (P1, UI, частично): Последний контекст навигации восстанавливается — last route/page/space not restored after restart
 - **R-EDITOR-001** (P0, EDITOR, частично): Сохранять выделение, курсор, прокрутку, состояние дерева, открытые вкладки и данные при ререндере, навигации, синхронизации и сбоях сети — tests/e2e/clipboard.spec.ts:'caret position…'. Нет E2E на стабильность курсора при совместной правке
 - **R-HISTORY-002** (P0, HISTORY, частично): Все операции обратимы где возможно; опасные действия — точный предпросмотр последствий без бесконечных подтверждений — Не все операции обратимы: смена иконки/свойств/заголовка через API без отмены (только запись before в page_events)
 - **R-A11Y-001** (P1, A11Y, частично): Действия мышью, клавиатурой и на телефоне одинаково доступны — no mouse/keyboard/touch input matrix; touch never exercised in tests
-- **R-UI-006** (P0, UI, частично): Нет обрезаний, перекрытий, случайного скролла, прыжков layout, дрожания, ложных «сохранено» и скрытой утраты данных — no CLS measurement, no overlap/clipping detection, screenshots are only written to test-results/visual, never compared to a baseline
-- **ROUTE-01** (P0, AUTH, частично): Сотрудник: вход → свои пространства → регламент → поиск → статья в отделе одной кнопкой → форматирование → вставка Excel/изображения … — No single E2E for the full employee route (own spaces -> regulation -> search -> one-click page in department -> Excel/image paste -> link within rights -> logout/return).
 - **ROUTE-02** (P0, OFFLINE, частично): Автор: личный черновик → офлайн → синхронизация → перенос в отдел с предпросмотром видимости → согласование → публикация → обновление и … — Отдельные шаги покрыты, но сквозного E2E «черновик → офлайн → перенос в отдел с предпросмотром → согласование → публикация → откат» нет
-- **ROUTE-03** (P0, SPACE, частично): Руководитель пространства: дерево drag-and-drop → шаблоны → участники и доступ группы → контроль публикаций → восстановление удалённой ветки — Route cannot be completed in UI: no web UI to create spaces or to add groups/users to a space (SpacePage AccessTab is read-only; POST /api/v1/spaces and PUT /grants resourceType=space only via API). No E2E for the manager route.
-- **ROUTE-04** (P0, ADMIN, частично): Администратор: подразделение/группа → сотрудник → автодоступ к пространству → гость в раздел на срок → приостановка → отзыв сессий … — Group->space auto-access step needs API (no web UI to create spaces or to add groups/users to a space (SpacePage AccessTab is read-only; POST /api/v1/spaces and PUT /grants resourceType=space only via API)); guest page grants (pageGrants) not exposed in create-user UI; no admin "check access" screen; no E2E for admin route.
-- **ROUTE-06** (P0, AUDIT, частично): Аудитор проверяет кто и когда изменил документ, права, удаление, импорт, восстановление без скрытого доступа к посторонним материалам — No auditor E2E route test.
 - **R-QA-003** (P1, QA, не реализовано): Для каждого компонента перечислить состояния: default, hover, focus, active, disabled, loading, error, empty, overflow, mobile … — no component state catalogue
 - **R-QA-004** (P0, QA, не реализовано): Для каждого действия проверить нормальный путь, отмену, повтор, двойной клик, медленную сеть, офлайн, конфликт, недостаток прав … — no actions × conditions matrix
 - **R-UI-007** (P1, UI, частично): Кнопки/иконки: семантика, tooltip, hit target, доступность, реакция, идемпотентность — no per-button checks
-- **R-UI-008** (P1, UI, частично): Меню/popover: позиция, фокус, Esc, клик снаружи, вложенность, viewport — only exercised indirectly (CO history test); no Esc/outside/edge tests
 - **R-EDITOR-002** (P0, EDITOR, частично): Редактор: ввод, IME, выделение, преобразование блоков, курсор, форматирование, drag, copy/paste из Word/Excel/браузера, Undo/Redo — Основное есть (Tiptap). IME не тестируется; вставка HTML идёт штатным парсером ProseMirror без санитайзера: inline-стили Word (шрифт/размер/цвет) превращаются в marks; списки Word (MsoListParagraph) не становятся списками; картинки Word (file://, data:) не загружаются как вложения; RTF не обрабатывается; фикстур Word/GDocs нет
 - **R-TABLE-002** (P1, TABLE, частично): Таблицы: вставка, resize, wrap, merge, выделение диапазона, выравнивание, большие данные — Большие таблицы не проверялись (нет виртуализации/теста); есть только E2E вставки
 - **R-QA-005** (P0, QA, частично): Отказы: отключение сети, рестарт сервера, перезапуск вкладки, таймаут, конфликт, частичный сбой хранилища — timeouts and partial storage failure not covered
 - **R-QA-006** (P0, QA, частично): docs/TEST_MATRIX.md с ID каждого компонента/действия и ссылкой на тест; нет «нет теста» для критичного пути — not organised by component/action id; several critical paths still listed as gaps
 - **R-QA-007** (P1, QA, частично): Браузерная матрица 320/375/768/1024/1440/1920px, zoom 200%, мышь/клавиатура/сенсор; WebKit, Chromium, Firefox — only Chromium is installed (playwright.config.ts, DECISIONS D-18); touch input not exercised
 - **R-BACKUP-001** (P0, BACKUP, частично): RPO ≤5 минут и RTO ≤2 часа для катастрофического отказа — Confirmed at test scale only; production-volume drill pending
-- **R-PERF-001** (P1, PERF, не реализовано): Скорость измеряется p95/p99 при зафиксированной нагрузке, сети и устройствах; быстрый ввод важнее анимации — no p95/p99 report with fixed load/network/devices
-- **R-QA-010** (P0, QA, частично): Нагрузочные, длительные, конкурентные, отказоустойчивые и security-тесты с журналированием результатов — no load/longevity tests; no result journals
 - **R-OPS-003** (P0, OPS, частично): Инфраструктура эксплуатации: health checks, метрики, логи, трассировки, алерты, backup/restore, миграции, CI/CD, секреты, runbooks — No CD/deploy pipeline; secrets only via env/EnvironmentFile (no secrets manager)
 - **R-PROCESS-013** (P1, PROCESS, частично): Документация: REQUIREMENTS_TRACEABILITY, ARCHITECTURE, DECISIONS, TEST_MATRIX, UX_ACCEPTANCE, SECURITY, OPERATIONS, BACKUP_RESTORE … — RELEASE_READINESS.md not yet present at re-assessment (written by the lead)
-- **R-UI-009** (P0, UI, частично): Запрет: скрывать ошибки — 8 silent .catch(()=>undefined) (mostly benign: logout, telemetry, abort); no test that errors surface
 - **R-BACKUP-002** (P0, BACKUP, частично): Запрет: выпускать релиз без проверки реального восстановления — No formal release gate requiring a production restore protocol
-- **R-UI-011** (P0, UI, частично): Система сохраняет работу, объясняет состояние и позволяет исправить ошибку — not verified for all operations
+- **R-UI-011** (P0, UI, частично): Система сохраняет работу, объясняет состояние и позволяет исправить ошибку — cancel/status not verified for every operation
 - **R-ADMIN-001** (P1, ADMIN, частично): Администратор управляет подразделениями и пространствами, а не сотнями разрозненных ACL — Departments managed in UI, spaces are not: no web UI to create spaces or to add groups/users to a space (SpacePage AccessTab is read-only; POST /api/v1/spaces and PUT /grants resourceType=space only via API).
 - **R-PROCESS-018** (P0, PROCESS, частично): Продукт завершён только после доказанных проверок каждого критичного сценария — many critical scenarios lack passing tests
-- **R-SPACE-001** (P0, SPACE, частично): Организации/рабочие пространства, пространства знаний, древовидные разделы, папки и страницы — No org/workspace update UI/API beyond settings; no separate folder type (pages act as folders); space creation has no UI.
 - **R-COLLAB-005** (P1, COLLAB, частично): Совместная работа, комментарии, упоминания, согласование и публикация, история и восстановление — Функции есть; согласование/публикация и упоминания покрыты только интеграционными тестами, не E2E
 - **R-CLIPBOARD-001** (P0, CLIPBOARD, частично): Копирование в буфер как text/plain и text/html, «Копировать Markdown», копирование блоков, разделов и ссылок — Нет копирования раздела; блок копируется только как MD/ссылка
 - **R-ACL-009** (P1, ACL, частично): Роль «Редактор»: структурирует, актуализирует, управляет публикацией пространства — No distinct "Editor" role separate from Author: both are level edit, publish distinguished only via per-grant canPublish flag.
@@ -132,9 +122,7 @@
 - **R-PAGE-006** (P1, PAGE, частично): Оглавление, breadcrumbs, обратные ссылки, «связанные материалы», ссылки на блоки — Нет «связанных материалов»
 - **R-COMMENTS-001** (P1, COMMENTS, частично): Комментарии к выделению и блоку, ветки, @mention, разрешить/переоткрыть, привязка к версии и ID блока — revision_number = latest saved revision (may lag live content by up to the auto-revision interval).
 - **R-COLLAB-009** (P0, COLLAB, частично): Интеграционные тесты конфликтов при смене схемы, копировании блока, отключённой сети — Нет тестов конфликтов при смене схемы содержимого (миграции content_schema_version не реализованы)
-- **R-ACL-013** (P0, ACL, частично): RBAC: сисадмин, владелец, редактор, автор, читатель, аудитор; разрешения view/create/edit/comment/publish/delete/manage_members/export/audit — Acceptance requires role x permission matrix covered by tests; only scattered tests exist (A10, editor without share, export flags).
-- **R-AUDIT-001** (P0, AUDIT, частично): Аудит: вход, отказ, просмотр/скачивание, изменение, публикация, права, импорт/экспорт, удаление/восстановление, настройки; actor, UTC … — Page views are still not audited; 404 (hidden resource) responses not logged.
-- **R-SECURITY-002** (P0, SECURITY, частично): TLS, шифрование на хранении, секреты, CSRF/XSS/SSRF, rate limit, CSP, антивирус и проверка типа вложений, path traversal, sanitize … — No TLS/deploy config in repo (deploy/ empty), no encryption at rest, antivirus only when CLAMAV_HOST set; no OWASP test suite.
+- **R-SECURITY-002** (P0, SECURITY, частично): TLS, шифрование на хранении, секреты, CSRF/XSS/SSRF, rate limit, CSP, антивирус и проверка типа вложений, path traversal, sanitize … — No encryption at rest inside the application (left to disk/DB/S3), ClamAV not verified with a real daemon, no independent OWASP/ASVS test run; TLS is terminated by deploy/nginx.conf (not exercised by tests).
 - **R-PROCESS-022** (P1, PROCESS, не реализовано): Внешние зависимости, особенно платные, лицензируются и фиксируются до разработки — no licence register
 - **R-BACKUP-003** (P0, BACKUP, частично): Бэкапы: ежедневные полные, инкрементальные/журналы, отдельное защищённое хранилище, шифрование, мониторинг, регулярный тест восстановления — Separate protected/offsite storage is deployment responsibility (documented, not configured)
 - **R-UI-021** (P1, UI, частично): 8-пиксельная сетка, последовательные отступы, ≥3 уровня текстовой иерархии, контролируемая ширина чтения и таблиц — many hard-coded 6/10/14 px paddings off the 8px grid; no token check
@@ -156,14 +144,12 @@
 - **R-MEDIA-005** (P1, MEDIA, частично): API: POST /attachments, POST /ocr/jobs — Пути /ocr/jobs нет; OpenAPI-описания нет
 - **R-ACL-016** (P1, ACL, частично): API: GET/PATCH /permissions/{resourceType}/{id}; GET /audit с ограничением доступа — No GET/PATCH /permissions/{resourceType}/{id} endpoint shape.
 - **R-OPS-009** (P1, OPS, частично): Каждый эндпоинт: схемы, коды 400/401/403/404/409/413/422/429/500, права, лимиты, пагинация, идемпотентность, версия, аудит, примеры — No per-endpoint contract tests; OpenAPI lacks complete schemas/examples
-- **SC-04** (P0, PERF, частично): Документ 5 000 блоков и длинная таблица без скачков курсора и потери ввода — 5000 blocks + long table, cursor stability and lost input not tested
 - **SC-05** (P0, EDITOR, частично): Все inline-форматы, заголовки, вложенные списки, чек-листы, callout, toggle, формулы, ссылки, код, цитаты … — tests/unit/markdown.test.ts:'round-trips through import…' и property-тест покрывают заголовки/marks/списки/таблицы/callout/toggle; формулы, чек-листы, вложенные списки, код и цитаты в round-trip не проверяются
 - **SC-06** (P0, CLIPBOARD, частично): Вставка из Word и веб-страницы с заголовками, таблицами, ссылками, картинками; предпросмотр без мусорной HTML-разметки — tests/e2e/clipboard.spec.ts. Предпросмотра вставки нет; Картинки из Word (file://, VML) браузер не передаёт — пользователь получает уведомление с числом непереданных изображений; RTF не разбирается
 - **SC-18** (P1, IMPORT, частично): Массовый импорт 100 документов — список успешных/ошибочных, повтор только неудачных — No "retry only failed" action; no 100-document test
 - **SC-21** (P1, OCR, частично): Русский скриншот с таблицей, английским и артикулом → OCR → выбор фрагмента → копирование → вставка текстом — Скриншот с таблицей и выбор фрагмента не проверяются (название теста упоминает SC-21..24, но покрывает только распознавание)
 - **SC-22** (P0, OCR, частично): Видны оригинал, confidence, исправления, происхождение; ошибка OCR не удаляет изображение — Confidence скрыт при нормальном качестве, автор исправления не показывается
 - **SC-24** (P1, OCR, частично): Поворот, низкое качество, смешанный язык, область — сервис не ломается; ошибку можно повторить — Поворот/область только через API; тестов плохих изображений нет
-- **SC-33** (P0, SECURITY, частично): XSS/CSRF/SSRF/path traversal/ZIP-bomb/исполняемые файлы блокируются на сервере — SSRF not tested (no server-side fetch of user URLs); XSS covered only for SVG/markdown links.
 - **SC-34** (P1, A11Y, частично): Весь интерфейс без мыши; читаются метки кнопок и ошибок; контраст и reduced motion — keyboard pass covers switcher/help/tree only, not every screen
 - **SC-36** (P1, PERF, частично): На медленной сети анимация и автосохранение не блокируют текст; видно реальное состояние — slow-network throttling not tested
 - **SC-38** (P1, IMPORT, частично): Перенос 1 000 страниц с вложениями; количество объектов, связи и ACL сверены контрольными запросами — Archive migration of 1 000 pages not tested
@@ -179,12 +165,10 @@
 - **R-EDITOR-025** (P1, EDITOR, частично): Не писать rich-text редактор с нуля; взять зрелую платформу и проверить ограничения до фиксации архитектуры — В docs/DECISIONS.md нет решения о выборе редактора и проверке его ограничений
 - **R-UI-026** (P0, UI, частично): Не создавать UI-элементы без работающих действий, ошибок, состояний и автотестов — most UI (admin, ShareDialog, trash, templates, import UI, export, OCR dialog) has no browser test
 - **R-EDITOR-026** (P1, EDITOR, не реализовано): Для сложного блока описать представление во внутренней модели, DOCX, MD, clipboard и индексе — Нет документа с таблицей представлений сложных блоков (модель/DOCX/MD/clipboard/индекс)
-- **R-UI-027** (P0, UI, частично): Неподдерживаемая операция обязана иметь честное объяснение; молчаливая потеря данных запрещена — not systematically verified
+- **R-UI-027** (P0, UI, частично): Неподдерживаемая операция обязана иметь честное объяснение; молчаливая потеря данных запрещена — not systematically verified for all operations
 - **R-IMPORT-021** (P0, IMPORT, частично): Единый конвейер: DOCX, MD, CSV, XLSX, буфер (text/html, text/plain, text/markdown, изображения, файлы); пакетно … — Clipboard paste uses a separate client-side pipeline
 - **R-IMPORT-022** (P1, IMPORT, частично): Точки входа: кнопка «Импорт», /import, DnD на страницу/раздел, Ctrl/Cmd+V, меню таблицы «Импортировать данные», «Вставить как…» — No DnD onto page/tree section, no table menu "Импортировать данные", no "Вставить как…"
 - **R-IMPORT-023** (P1, IMPORT, частично): Предпросмотр до подтверждения: цель, количество страниц/строк/изображений, типы столбцов, предупреждения … — Implemented; no browser (e2e) test
-- **R-SECURITY-007** (P0, SECURITY, частично): Оригинал сохраняется по политике; проверка MIME, размера, вирусов, zip-bomb, URL, HTML, макросов; без исполнения встроенного кода — Virus scanning only for attachment uploads (not imports) and only when CLAMAV_HOST configured (env-blocked to verify).
-- **R-SECURITY-008** (P0, SECURITY, частично): Относительные пути изображений из ZIP; удалённые изображения копируются с проверкой URL/SSRF — Remote images are not copied — kept as external hotlinks (convert/html.ts); no SSRF-checked fetcher or test.
 - **R-CLIPBOARD-016** (P1, CLIPBOARD, частично): Вставка Markdown: «распознать разметку» / «вставить исходный текст»; HTML сохраняет заголовки, списки, ссылки, таблицы, картинки — Выбора режима нет (только эвристика/горячая клавиша); картинки из HTML не загружаются
 - **R-MEDIA-006** (P0, MEDIA, частично): Изображение из буфера: локальный предпросмотр сразу, фоновая загрузка; ошибка не уничтожает блок и позволяет повторить — Заглушка — декорация, а не блок: не синхронизируется и пропадает при перезагрузке/закрытии
 - **R-COLLECTION-002** (P1, COLLECTION, частично): Мастер сопоставления: текст, число, дата, checkbox, select, URL, email, пользователь, файл; подсветка несовместимых … — Типы «пользователь» и «файл» в мастере отсутствуют
@@ -197,7 +181,7 @@
 - **R-FILES-002** (P1, FILES, частично): Вложения: DnD, Ctrl/Cmd+V, выбор, пакетно, прогресс каждого, пауза/повтор, предпросмотр, скачать, ссылка, переименовать, удалить по правам — Нет паузы, переименования и удаления вложения в UI (API PATCH/DELETE есть), копирования ссылки на файл
 - **R-MEDIA-007** (P0, MEDIA, частично): Изображения inline/блоком, размер, выравнивание, подпись, alt, lightbox, оригинал; thumbnail не заменяет оригинал; не теряются при переносе — tests/integration/content.test.ts:'uploads an image, stores the original byte-exact with checksum…'. Нет inline-изображений в строке; копия блока на другую страницу ссылается на вложение исходной страницы (права)
 - **R-UI-029** (P1, UI, частично): Микроанимации 120–220 мс для hover, меню, перестановки, дерева; не анимировать ввод; reduced-motion — no measurement/test
-- **R-PERF-006** (P1, PERF, частично): Ввод p95 <50 мс; локальная правка <100 мс; удалённая правка p95 <500 мс; восстановление после обрыва <10 с — remote p95 and reconnect <10 s not measured
+- **R-PERF-006** (P1, PERF, частично): Ввод p95 <50 мс; локальная правка <100 мс; удалённая правка p95 <500 мс; восстановление после обрыва <10 с — input p95 not met at 4x; remote edit p95 1.4 s at 100+20 (143 ms at 20+5); reconnect not measured
 - **R-BACKUP-006** (P0, BACKUP, частично): Бэкапы БД, объектов, метаданных; шифрование, offsite, ежемесячный тест восстановления; RPO ≤5 мин, RTO ≤2 ч — Offsite copy and monthly restore test are operational procedures not yet run; RPO/RTO only at test scale
 - **AT-51** (P1, CLIPBOARD, частично): Вставка диапазона 20×10 из Excel сохраняет геометрию и значения — tests/e2e/collab.spec.ts:'paste: spreadsheet range becomes a table; Markdown becomes formatted blocks' — только TSV 3×3; 20×10 из Excel не проверялся
 - **AT-52** (P1, COLLECTION, частично): Фильтры, сортировка, группы, закрепление колонок, итоги на 10 000 строк — Закрепления колонок и UI нет; производительность на 10 000 строк не измерена
@@ -217,7 +201,7 @@
 - **R-COLLECTION-008** (P1, COLLECTION, частично): Виртуализация, sticky headers, навигация стрелками/Tab, массовая правка, undo, экспорт CSV/XLSX — Нет UI (виртуализация, sticky, клавиатура, undo); кнопки экспорта нет
 - **R-OFFLINE-004** (P1, OFFLINE, частично): Офлайн для выбранных страниц/пространств; индикатор несинхронизированных правок; квота устройства; права офлайн недоступны — Нет выбора страниц/пространств для офлайна, нет квоты устройства, нет общего индикатора несинхронизированных страниц (pagesWithPending в idb.ts не используется)
 - **R-PERF-007** (P1, PERF, не реализовано): Условия замеров: ноутбук 8 GB, Chromium, RTT 80 мс, 20 Mbps, low-end mobile; p50/p95/p99; 10/100 редакторов; 1/10/100 тыс. слов и строк — no measurement conditions/report (8GB laptop, RTT 80ms, low-end mobile, 10/100 editors)
-- **R-PERF-008** (P1, PERF, частично): Ввод: p95 ≤50 мс, p99 ≤100 мс для статьи 10 тыс. слов — 10k words not reached (≈5k); p99 not computed; with 40 samples the "p95" index is the 38th value
+- **R-PERF-008** (P1, PERF, частично): Ввод: p95 ≤50 мс, p99 ≤100 мс для статьи 10 тыс. слов — budget NOT met in this environment: 4x p95 504–827 ms, p99 824–1169 ms; 1x p95 64 ms, p99 157 ms (overloaded 4-vCPU container). Budget assertion runs only with KB_PERF_ENFORCE=1 (open defect PERF-D1)
 - **R-PERF-009** (P1, PERF, не реализовано): Переход между кэшированными статьями p95 ≤300 мс; первая загрузка p95 ≤2 с — cached navigation and first-load p95 not measured
 - **R-PERF-010** (P1, PERF, частично): Синхронизация между клиентами p95 ≤500 мс при RTT 80 мс; durable-подтверждение p95 ≤2 с — client-to-client sync p95 at RTT 80ms not measured
 - **R-PERF-011** (P1, PERF, не реализовано): Скролл и DnD 60 FPS; INP p75 ≤200 мс; без long tasks >200 мс при наборе — no FPS/INP/long-task measurement
@@ -240,11 +224,9 @@
 - **AT-67** (P1, CLIPBOARD, частично): Вставка таблицы Word со списками и картинками; структура и ссылки — Таблицы и списки сохраняются; Картинки из Word (file://, VML) браузер не передаёт — пользователь получает уведомление с числом непереданных изображений; RTF не разбирается
 - **AT-68** (P1, MEDIA, частично): Вставка изображения из clipboard: alt, превью, файл — alt при вставке не заполняется
 - **AT-71** (P1, CLIPBOARD, частично): Вставка диапазона Excel в простую таблицу и в коллекцию по выбору — Выбора «в коллекцию» нет
-- **AT-79** (P0, ACL, частично): Копирование не раскрывает скрытые поля и недоступные вложения — Browser clipboard copy of hidden fields/inaccessible attachments not verified by any test.
 - **AT-80** (P1, UI, частично): Переключение светлой/тёмной темы без скачков и нечитаемых элементов — dark theme not axe-audited
-- **AT-81** (P1, UI, частично): Адаптивность 320–1920 px и zoom 200% — overlaps/clipping not checked
 - **AT-83** (P1, LAYOUT, частично): Длинная таблица и код не вызывают overflow всей страницы — VS sample has only a 3-column table, no long code; no dedicated test
-- **AT-84** (P1, PERF, частично): Статья 10 тыс. слов соответствует SLO ввода и переключения — ≈5k words, page switching not measured
+- **AT-84** (P1, PERF, частично): Статья 10 тыс. слов соответствует SLO ввода и переключения — typing SLO not met (see R-PERF-008); page switching time not measured
 - **AT-85** (P1, PERF, не реализовано): 10 одновременных авторов соответствуют SLO синхронизации — no 10-author sync latency test
 - **AT-89** (P1, QA, частично): Visual regression всех ключевых экранов и состояний — only 2 of the key screens have baselines
 - **R-TREE-007** (P1, TREE, частично): Левая панель: поиск, избранное, недавние, пространства и дерево, кнопка «Новая страница» — Нет «Недавних» в левой панели
@@ -261,18 +243,16 @@
 - **R-UI-038** (P1, UI, частично): Светлая/тёмная тема без скачков размеров; адаптивность от мобильного до 4K; фиксированные панели не закрывают текст — no 4K; theme-switch size stability not measured
 - **R-QA-022** (P1, QA, частично): Скриншотные эталоны для всех ключевых состояний; статья выглядит законченной в чтении и редактировании — baselines only for 2 states; article reading/editing not baselined
 - **R-UI-039** (P1, UI, частично): Функциональные анимации: дерево, меню, drag-preview, создание блока, загрузка, панель, подтверждение; 120–220 мс — untested
-- **R-PERF-013** (P0, PERF, частично): Ввод, прокрутка, сохранение никогда не ждут анимации; не анимировать весь документ — not measured
-- **R-UI-040** (P1, UI, частично): reduced-motion; skeleton без мигания; спокойные ошибки; нет внезапных смещений layout — CLS not measured
+- **R-UI-040** (P1, UI, частично): reduced-motion; skeleton без мигания; спокойные ошибки; нет внезапных смещений layout — home screen CLS ≈ 0.03 (skeleton/list height mismatch, PERF-D3)
 - **R-COLLAB-024** (P0, COLLAB, частично): Параллельные изменения на одном блоке, таблице, вложении, при перемещении страницы; предсказуемые правила конфликтов удаления и прав — Блок, таблица, перемещение страницы и удаление/правка покрыты; одновременная загрузка новой версии одного вложения двумя пользователями не тестируется
 - **R-PERF-014** (P1, PERF, не реализовано): p50/p95/p99 на реальных устройствах: 1/100/1000 блоков, 20 таблиц, 100 изображений, несколько редакторов … — no device/throttling report
-- **R-PERF-015** (P1, PERF, частично): Ввод p95 ≤50 мс; кэшированная статья p95 ≤300 мс; синхронизация p95 ≤500 мс; нет long tasks >100 мс при наборе — cached open, sync p95 and long tasks not measured
+- **R-PERF-015** (P1, PERF, частично): Ввод p95 ≤50 мс; кэшированная статья p95 ≤300 мс; синхронизация p95 ≤500 мс; нет long tasks >100 мс при наборе — budgets not met in this environment (PERF-D1); cached open not measured
 - **R-PERF-016** (P1, PERF, частично): Виртуализация больших таблиц с клавиатурой и копированием; конвертации/OCR в фоне — tables not virtualised
 - **R-OPS-015** (P1, OPS, частично): Мониторинг ошибок синхронизации, очередей импорта, времени подтверждения, конфликтов, потерянных вложений, восстановления — No conflict metric; no dedicated "lost attachment" alert besides integrity errors
 - **UX13-02** (P0, CLIPBOARD, частично): Вставка из Word 5 уровней заголовков, списков, таблиц, картинок; сравнение структуры — tests/e2e/clipboard.spec.ts (заголовки, вложенные списки, таблица). Картинки из Word (file://, VML) браузер не передаёт — пользователь получает уведомление с числом непереданных изображений; RTF не разбирается
 - **UX13-03** (P0, MEDIA, не реализовано): Вставка изображения, закрытие вкладки во время загрузки, восстановление — Закрытие вкладки теряет незавершённую загрузку; восстановления нет
 - **UX13-04** (P1, TABLE, частично): Вставка 1000 строк из Excel, выбор типа таблицы, сохранение — Нет выбора типа таблицы; 1000 строк не проверялось
 - **UX13-06** (P1, CLIPBOARD, частично): Несколько блоков → Word и Markdown; сравнение — Направление в Word не проверено (env)
-- **UX13-09** (P0, PERF, не реализовано): 20 минут непрерывного ввода без рывков и потерянных символов — no 20-minute continuous typing test
 - **UX13-11** (P1, LAYOUT, частично): Длинная статья на мобильном, все элементы читаемы — no long article on mobile
 - **UX13-13** (P1, UI, частично): Переключение темы без смещения контента — no CLS test on theme switch
 - **UX13-16** (P1, EXPORT, частично): Экспорт DOCX/MD и обратный импорт с автоматическим отчётом расхождений — No automatic user-facing discrepancy report
@@ -281,33 +261,27 @@
 - **R-TREE-010** (P1, TREE, частично): Строка узла: отдельные зоны стрелки, иконки, названия, действий; стрелка только раскрывает, название только открывает; высота 36 px … — Зоны разделены; высота строки 32 px вместо 36, на touch 40 px вместо 44
 - **R-TREE-011** (P1, TREE, частично): Ширина 280 px, настройка 240–420 px; многоточие, tooltip, фокус, полное название; глубокая вложенность — фокус ветки и breadcrumbs … — Нет «фокуса ветки» для глубокой вложенности
 - **R-TREE-016** (P1, TREE, частично): Контекстное меню: подстраница, переименовать, иконка, переместить, дублировать, ссылка, избранное, права, архив/корзина … — Нет пункта «Права/Поделиться» в контекстном меню дерева
-- **R-ACL-021** (P0, ACL, частично): Режимы «Только я», «Конкретные пользователи и группы», «Вся компания»; публичная ссылка выключена, только политикой админа — No explicit "Только я" mode.
 - **R-ACL-022** (P1, ACL, частично): Уровни: просмотр, комментарии, редактирование, полный контроль; отдельно структура, экспорт, предоставление доступа — Separate structure/export/share flags are API-only; ShareDialog exposes only levels.
-- **R-ACL-025** (P0, ACL, частично): Отзыв доступа немедленно на сервере, аннулирование временных URL; политика срока жизни локальных копий — No lifetime policy for local (IndexedDB) copies.
-- **R-AUDIT-002** (P0, AUDIT, частично): Приглашения/отзыв логируются; права на сервере для каждой операции и файлов; тесты сочетаний родитель/дочерний/группы — Combinatorial parent/child/group tests are limited to a handful of cases.
 - **R-EDITOR-038** (P0, EDITOR, частично): H1–H3, стили, ссылки, индексы, цитаты, разделители, списки, чекбоксы, таблицы, колонки, оглавление, сноски, toggle — Сносок (footnotes) в схеме нет — Markdown-импорт сносок разворачивает их в текст
 - **R-LAYOUT-006** (P1, LAYOUT, частично): Колонки: DnD с видимыми границами, на узких экранах вертикально — untested
 - **R-EDITOR-042** (P1, EDITOR, частично): Панель форматирования не закрывает выделение и не перехватывает фокус; slash-меню стрелки/Enter/Esc; touch-панель без hover — Touch-варианта панели/ручки нет: ручка блока только по hover
 - **R-EXPORT-020** (P1, EXPORT, частично): Режим чтения совпадает с редактором; печать, PDF, DOCX, MD имеют матрицу соответствия и отчёт ограничений — No published conformity matrix document
-- **R-ACL-026** (P0, ACL, частично): ACL/группы/политики; effective permissions с инвалидируемым кешем; проверка в API, WS, поиске, экспорте, превью, скачивании — No permission cache exists, so "cache invalidated" is only vacuously true; acl_epoch is not read by HTTP layer.
+- **R-ACL-026** (P0, ACL, частично): ACL/группы/политики; effective permissions с инвалидируемым кешем; проверка в API, WS, поиске, экспорте, превью, скачивании — No permission cache by design (D-24): rights are computed per request in one query and acl_epoch drives WS re-checks. A cache keyed by acl_epoch would be correct only if every change (including direct DB edits and time-based expiry) bumped the epoch, and saves no queries — so the 'cache is invalidated' acceptance is not demonstrable.
 - **R-UI-042** (P1, UI, частично): Состояния: loading, empty, ready, saving, saved, offline, reconnecting, conflict, denied, failed — reconnecting/conflict/failed not tested
 - **E2E-095** (P1, TREE, частично): 12 уровней вложенности доступны через фокус ветки — Фокуса ветки нет; 12 уровней только отступами
 - **E2E-100** (P1, PERF, частично): Виртуализация 10 000 узлов без потери клавиатурной навигации — not tested with 10 000 nodes
-- **E2E-106** (P0, ACL, частично): Права корректны при одновременном переносе и редактировании — No test of concurrent move + editing permissions.
-- **E2E-109** (P0, ACL, частично): Публичная ссылка запрещена политикой — Public links not implemented, so "creation rejected by policy" cannot be exercised; no test.
 - **E2E-112** (P1, A11Y, частично): Подсветка контрастна в двух темах — highlight palettes c-yellow/hl-yellow, c-orange/hl-orange not exercised by the audit
 - **E2E-114** (P1, EXPORT, частично): Toggle с изображением корректно экспортируется — No test for toggle containing an image
 - **E2E-117** (P1, LAYOUT, частично): Колонки перестраиваются на мобильном — no test
-- **E2E-120** (P0, PERF, не реализовано): 200 быстрых операций форматирования без зависания и потери символов — no 200-formatting-ops stress test
 - **R-PERF-017** (P1, PERF, частично): p95 раскрытия кэшированной ветки ≤100 мс; удалённая подгрузка с состоянием ожидания; p95 форматирования ≤50 мс — not measured
 - **R-UI-043** (P1, UI, частично): Нулевые перекрытия/обрезания критичных элементов на 320/375/768/1024/1440 px при 100% и 200% — overlaps not detected; 200% only at one width
 - **R-QA-025** (P1, QA, частично): Chrome, Firefox, Safari, Edge; клавиатура, touch, reduced-motion, темы; визуальные скриншоты всех состояний дерева, окна доступа, блоков — only Chromium is installed (playwright.config.ts, DECISIONS D-18); no screenshots of tree/share dialog/block states
 - **R-ORG-003** (P1, ORG, частично): Каждая сущность: стабильный UUID, имя, описание, владелец, статус, аудит изменений — Groups have no owner/status fields; spaces have no explicit owner field (only grants).
-- **R-ACL-036** (P0, ACL, частично): Разрешение пользователю/группе/отделу/пространству с датой окончания, часовым поясом, автором и основанием — No space-as-subject; time zone not stored; ShareDialog has no reason field (reason API-only).
+- **R-ACL-036** (P0, ACL, частично): Разрешение пользователю/группе/отделу/пространству с датой окончания, часовым поясом, автором и основанием — A space as a subject («участники пространства X») is not supported — grant to the group/department that forms the space instead.
 - **R-ACL-037** (P1, ACL, частично): Быстрые сроки: 1 день, 7 дней, 30 дней, дата, бессрочно — No quick presets 1/7/30 days.
 - **R-ACL-042** (P1, ACL, частично): Пресеты «Только я», «Приглашённые», «Отдел», «Вся компания» с предупреждением о последствиях; «Дополнительно» скрывает редкие политики — No "Только я" and "Отдел" presets, no "Дополнительно" section.
 - **R-ADMIN-005** (P1, ADMIN, частично): Создание сотрудника: имя, email, тип, отдел, руководитель, группы; предпросмотр доступных пространств — Accessible spaces are shown only after creation, not as a preview before confirming.
-- **R-ACL-046** (P0, ACL, частично): Версионированный кеш прав с инвалидацией при изменении членства/ACL; не доверять клиентскому скрытию — No versioned permission cache implemented (rights recomputed per request).
+- **R-ACL-046** (P0, ACL, частично): Версионированный кеш прав с инвалидацией при изменении членства/ACL; не доверять клиентскому скрытию — No permission cache by design (D-24): rights are computed per request in one query and acl_epoch drives WS re-checks. A cache keyed by acl_epoch would be correct only if every change (including direct DB edits and time-based expiry) bumped the epoch, and saves no queries — so the 'cache is invalidated' acceptance is not demonstrable.
 - **R-UI-046** (P1, UI, частично): Акценты: синий ссылки, зелёный успех, янтарный предупреждение, красный ошибка, сиреневый заметки; тёмная тема; WCAG AA — dark theme not audited
 - **R-EDITOR-045** (P1, EDITOR, частично): Эмодзи/иконки, обложки, цвет текста/фона/блока, цитаты, toggle, колонки, подсказки; стили сохраняются при копировании/экспорте — Нет UI обложки (API pages.cover есть), подсказок (tooltip-блоков), цвета блока кроме выносок
 - **R-UI-047** (P1, UI, частично): Анимации меню, дерева, DnD, панелей 120–220 мс; reduced-motion; не блокируют фокус, набор, переключение — non-blocking of focus/typing not tested
@@ -324,15 +298,12 @@
 - **R-SEARCH-016** (P1, SEARCH, частично): Быстрые результаты при вводе, клавиатура, недавние, избранное, пустые состояния, переход к абзацу, сохранение фильтров — Избранное в быстром поиске отсутствует; фильтры сохраняются только в URL
 - **R-SEARCH-017** (P1, SEARCH, частично): p95 подсказки ≤300 мс, p95 полные результаты ≤800 мс при 100 тыс. страниц; права в выдаче ≤5 с, прямой доступ блокируется немедленно — Права применяются немедленно; p95 ≤300/≤800 мс на 100 тыс. страниц не измерялись (нагрузочного теста поиска нет)
 - **R-PUBLISH-008** (P1, PUBLISH, частично): Публикация в компании, пространстве, отделам/людям; внешняя только по политике; предпросмотр аудитории, вложений, дочерних, индексации … — No choice of publication audience (company/departments/people), no preview of audience/attachments/children/indexing.
-- **R-PUBLISH-009** (P0, PUBLISH, не реализовано): Публичная ссылка: отзыв, срок, пароль, noindex по умолчанию, контроль скачивания; предупреждение, что скачанное нельзя отозвать — Public links (revoke, expiry, password, noindex, download control) not implemented.
 - **R-HISTORY-013** (P0, HISTORY, частично): Сравнение двух версий с подсветкой; восстановление статьи или блока как новая версия — Восстановление блока не создаёт новую версию сразу (только событие restored-block)
 - **R-ADMIN-009** (P1, ADMIN, частично): Админ-центр: обзор, люди, отделы, группы, пространства, роли, гости, приглашения, публикации, аудит; поиск, фильтры, массовые операции … — Missing sections: overview, spaces, roles, guests/invitations dashboard, publications; no bulk operations.
-- **R-ADMIN-010** (P0, ADMIN, частично): Матрица эффективного доступа пользователь × пространство/страница: уровень, источник, срок, владелец, конфликты … — No user x space/page effective-access matrix screen; owner/conflicts columns missing.
 - **R-ADMIN-011** (P1, ADMIN, частично): Мастер сотрудника: приглашение, роль, отделы, группы, пространства, срок, предпросмотр; отзыв/перевод пересчитывает права — No spaces step and no pre-confirmation preview in the wizard.
 - **R-ADMIN-012** (P1, ADMIN, частично): Панель контроля: внешние ссылки, истекающие приглашения, открытые пространства, сиротские страницы, владельцы, массовые экспорты … — No control panel for external links, expiring invitations, open spaces, orphan pages, ownerless pages, mass exports.
 - **V16-S06** (P1, PUBLISH, не реализовано): Внешняя публикация предупреждает о дочерних и вложениях, поддерживает отзыв — External publication (public links) not implemented.
 - **V16-S11** (P0, HISTORY, частично): Сравнение версий текста и свойств; восстановление не стирает историю — Сравнение свойств между версиями отсутствует (ревизия хранит только заголовок и содержимое) — по свойствам только журнал updated
-- **V16-S15** (P0, ADMIN, частично): Админ видит эффективные права с причиной и сроком без скрытого доступа к приватному — Admin UI has no entry point to it (ExplainBox only inside ShareDialog for users with share right).
 - **V16-S16** (P1, ADMIN, частично): Массовая смена прав: подтверждение, лог, отчёт результата — No UI; preview only echoes grants (no audience); no result report beyond count.
 - **V16-S17** (P1, UI, частично): Мобильный и десктопный интерфейс без перекрытий названий, меню, фильтров — overlaps not detected
 - **V16-S18** (P1, PERF, не реализовано): Нагрузочные тесты поиска, импорта, экспорта, публикации с p95/p99 и ошибками — no load tests for search/import/export/publish
@@ -351,8 +322,6 @@
 - **R-ADMIN-014** (P1, ADMIN, частично): Вкладки: Сотрудники, Отделы, Группы, Пространства, Доступы, Публикации, Аудит, Резервирование, Импорт/экспорт … — No Spaces, Access, Publications, Import/Export tabs; no bulk operations with preview/report.
 - **R-ADMIN-015** (P1, ADMIN, частично): Мастер приглашения: имя/email → роль → отделы → пространства → срок (гость) → подтверждение; затем эффективные права — No spaces step in the wizard.
 - **V17-F01** (P0, CLIPBOARD, частично): Вставка многостраничного документа с таблицами, изображениями, ссылками; Undo возвращает исходное — Изображения Word не переносятся; теста многостраничной вставки и Undo нет
-- **V17-F02** (P0, PERF, не реализовано): 100 читателей и 20 редакторов; p95/p99; без потери подтверждённых изменений — no 100 readers + 20 editors load test
-- **V17-F09** (P1, LAYOUT, частично): Макеты 320–1920 px без перекрытий, прыжков, горизонтального скролла, потерянных элементов — overlaps, jumps, lost elements not detected
 - **R-OPS-018** (P1, OPS, частично): Инструкции и автопроверки на контрольные вопросы: ночной инцидент, восстановимость бэкапа, переезд без поставщика … — No explicit Q&A section answering each control question
 - **R-ARCHIVE-010** (P1, ARCHIVE, частично): Состав: README.md, spaces/…--page-id.md, assets/images, assets/files, databases/*.csv + schema.json, metadata/*.json, versions/ … — File names lack --page-id suffix; assets not split into images/files; versions under metadata/
 - **R-ARCHIVE-014** (P1, ARCHIVE, частично): Настройки: «Скачать архив организации», «Скачать пространство», «Скачать страницу», «Восстановить из архива» — No "download space" action in settings UI
@@ -365,13 +334,10 @@
 - **R-EDITOR-049** (P0, EDITOR, частично): Блочный редактор: ручка, «+», slash, преобразование, множественное выделение, дублирование, перемещение, Undo/Redo, автосохранение … — Нет множественного выделения блоков (только текстовое), нет переноса в другую страницу
 - **R-A11Y-007** (P1, A11Y, частично): Панели не перекрывают текст; IME, экранные читалки, touch, zoom 200%; палитра с проверкой контраста — IME, screen readers, real touch not available
 - **R-QA-029** (P0, QA, не реализовано): Для каждого действия: исходное состояние, happy path, пусто, медленная сеть, офлайн, потеря прав, конфликт, квота, неверный файл … — no per-action condition matrix
-- **R-UI-052** (P0, UI, частично): Сообщение об ошибке отвечает: что случилось, сохранены ли данные, что делать, как повторить — generic "Ошибка NNN" messages from api/client.ts:67; no template enforcement
-- **R-UI-053** (P0, UI, частично): Запрет тупиков: модалка без выхода, бесконечный spinner, недоступная кнопка без причины, потерянное выделение, исчезнувший блок — no dead-end E2E; App "loading" spinner unbounded
 - **R-QA-030** (P1, QA, не реализовано): Реестр состояний каждого компонента: idle/hover/focus/loading/empty/success/error/offline/permission denied/conflict … — no component state registry
-- **R-PERF-019** (P0, PERF, частично): Тяжёлые операции в фоне; ввод не блокируется OCR, загрузкой, экспортом — typing during upload/OCR/export not tested
+- **R-PERF-019** (P0, PERF, частично): Тяжёлые операции в фоне; ввод не блокируется OCR, загрузкой, экспортом — typing during upload/OCR/export not measured
 - **V18-A09** (P1, LAYOUT, частично): Выравнивание изображения не ломается на телефоне — untested at 375px
 - **V18-A15** (P1, PERF, частично): Медленная сеть не тормозит набор — no slow-network typing measurement
-- **V18-A18** (P1, A11Y, частично): 200% zoom без наложений — overlaps not detected
 - **V18-A19** (P1, A11Y, частично): Все основные действия доступны с клавиатуры — no keyboard pass test
 - **V18-A22** (P1, IMPORT, частично): Повторный импорт предлагает стратегию конфликтов — Documents: no conflict strategy on re-import (new copies created)
 - **V18-A23** (P1, UI, частично): Длительная операция имеет отмену или объясняет её невозможность — export/OCR cancel or explanation not verified in UI
@@ -383,20 +349,15 @@
 - **R-EDITOR-051** (P1, EDITOR, частично): Раскрывающиеся заголовки; содержание справа для длинной статьи; переход к заголовку без перекрытия шапкой; длинные заголовки — Нет UI раскрывающегося заголовка, нет оглавления справа, нет scroll-margin под шапку
 - **R-PAGE-030** (P1, PAGE, не реализовано): Peek-предпросмотр в боковой панели/модальном слое при наличии места; «открыть полностью», «закрыть», Esc, back … — Peek-предпросмотра нет
 - **R-COMMENTS-003** (P1, COMMENTS, частично): Комментарии к выделению, упоминания, уведомления без спама; выделение и курсор сохраняются после закрытия панели — Preservation of selection/cursor after closing the panel not verified; spam control is basic (participants only).
-- **R-UI-058** (P1, UI, частично): Без hover на touch: доступные кнопки и меню, безопасные размеры касания; клавиатура не перекрывает редактор — no visualViewport handling for on-screen keyboard; touch untested
-- **R-UI-059** (P0, UI, частично): Popover/tooltip/menu/drawer/dialog: anchor, границы viewport, fallback-сторона, max-height, скролл, z-index, focus trap, возврат фокуса … — no positioning tests
-- **R-UI-060** (P0, UI, частично): Hover не выполняет действий; click/Enter/Space выполняют; hover-меню не мерцают; у hover-действий есть видимый/клавиатурный эквивалент — no test
+- **R-UI-058** (P1, UI, частично): Без hover на touch: доступные кнопки и меню, безопасные размеры касания; клавиатура не перекрывает редактор — no visualViewport handling for the on-screen keyboard
 - **R-TREE-021** (P1, TREE, частично): Дочерние страницы в sidebar и в теле родителя на одной модели данных — Дочерние в теле родителя — отдельные узлы pageLink, не синхронизированы с деревом (созданная в дереве не появляется в теле)
 - **R-UI-061** (P0, UI, не реализовано): Для каждой операции документировать: пусто, успех, загрузка, отмена, ошибка, нет прав, потеря сети, конфликт, назад, перезагрузка … — no per-operation state documentation (no TEST_MATRIX/UX_ACCEPTANCE)
-- **R-UI-062** (P0, UI, частично): Нельзя создавать страницу «в никуда», терять черновик, закрывать диалог с критичными данными без предупреждения, прятать возврат — untested
+- **R-UI-062** (P0, UI, частично): Нельзя создавать страницу «в никуда», терять черновик, закрывать диалог с критичными данными без предупреждения, прятать возврат — warning before closing a dialog with critical unsaved input is not tested
 - **UX-127** (P1, PAGE, не реализовано): Открыть в предпросмотре и закрыть Esc — Peek-предпросмотра нет
 - **UX-128** (P1, PAGE, не реализовано): Открыть страницу полностью из предпросмотра — Peek-предпросмотра нет
-- **UX-131** (P1, UI, не реализовано): Переход назад сохраняет scroll — untested
 - **UX-135** (P1, EDITOR, частично): Раскрытие toggle heading — Toggle раскрывается; создать раскрывающийся заголовок из UI нельзя
 - **UX-139** (P1, UI, частично): Меню у нижнего края — flip вверх — untested
 - **UX-140** (P1, UI, частично): Меню у правого края — без выхода за экран — untested
-- **UX-141** (P0, UI, частично): Hover не вызывает случайного клика — untested
-- **UX-146** (P1, UI, частично): Мобильное добавление блока без hover — untested
 - **R-EDITOR-052** (P0, EDITOR, частично): v2.0 — статус P0, применяется совместно с ранее определёнными; все команды мышью и клавиатурой, критические — touch — Touch: нет DnD/ручки блока; resize изображения без клавиатуры
 - **R-EDITOR-053** (P0, EDITOR, частично): Блочный редактор с выделением и копированием как в текстовом процессоре; согласованы курсор, выделение, IME, автосохранение, Undo/Redo … — Согласованность курсора/IME/undo при автосохранении не покрыта тестами
 - **R-EDITOR-057** (P1, EDITOR, частично): Состояния normal/hover/focus/selected/mixed-format/loading/disabled/error/success/readonly/offline/conflict/collaboration … — Нет mixed-format состояния в панели (isActive=false при смешанном)
@@ -423,9 +384,7 @@
 - **E215** (P0, EDITOR, частично): E2E: перенос между страницами — Команды переноса блока на другую страницу и E2E нет
 - **E221** (P0, EDITOR, частично): E2E: IME — E2E (CDP Input.imeSetComposition) нет
 - **E223** (P1, A11Y, частично): E2E: клавиатура без мыши — no keyboard-only E2E
-- **E224** (P1, A11Y, частично): E2E: доступность меню — no focus/role assertions
 - **R-PERF-021** (P1, PERF, частично): Палитра после выделения p95 ≤100 мс; форматирование p95 ≤50 мс; ввод p95 ≤50 мс; без layout shift при hover — palette/formatting latency and hover layout shift not measured
-- **R-A11Y-008** (P1, A11Y, частично): Достаточные области попадания и подсказки, touch ≥44×44 CSS px; reduced-motion; контраст AA; видимый focus ring — touch target sizes not asserted by a test
 - **R-QA-033** (P0, QA, частично): Не принимать по скриншотам: ручное UX-тестирование с сотрудниками, браузерные автотесты, тесты потери сети, обратимый экспорт — manual UX testing with employees not done
 - **R-EDITOR-074** (P1, EDITOR, частично): Единый DnD: «+» и ⋮⋮ на hover без сдвига контента; на touch — долгое нажатие или меню «Переместить» — На touch нет долгого нажатия/меню «Переместить» (ручка только hover)
 - **R-EDITOR-075** (P0, EDITOR, частично): Drag preview, линия вставки, подсветка колонки/контейнера, автопрокрутка, недопустимые цели; отпускание — одна атомарная операция — Нет подсветки колонки/контейнера и недопустимых целей
@@ -449,19 +408,16 @@
 - **R-COLLAB-031** (P0, COLLAB, частично): Серверная валидация схемы, прав, инвариантов; транзакционная координация поверх CRDT для таблиц, колонок, удаления/перемещения страниц, ACL — Нет транзакционной координации поверх CRDT для таблиц/колонок; только валидация схемы с откатом
 - **R-COLLAB-036** (P0, COLLAB, частично): Неслиемая операция — диалог сравнения: сохранить обе, принять серверную, сохранить локальную копию; не скрывать конфликт — Конфликт не скрывается: копия сохраняется на сервере, уведомление с восстановлением; полноценного диалога сравнения с тремя вариантами нет
 - **R-COLLAB-037** (P0, COLLAB, частично): Журнал с ack, retry/backoff, идемпотентность, sequence/vector clocks, проверка согласованности, контроль orphan-блоков и циклов … — Проверка согласованности сделана и тестируется; безопасная миграция схемы содержимого (content_schema_version) по-прежнему не реализована
-- **R-QA-034** (P0, QA, частично): Property-based/fuzz, partition/latency/reorder/duplicate, 2–20 редакторов, нагрузка, восстановление из snapshot+log … — 2 clients only; no partition/reorder injection, 20 editors, load
+- **R-QA-034** (P0, QA, частично): Property-based/fuzz, partition/latency/reorder/duplicate, 2–20 редакторов, нагрузка, восстановление из snapshot+log … — no partition/reorder/duplicate injection; 20-editor run is manual
 - **UX22-183** (P1, MEDIA, частично): iOS/Android pinch, pan, double tap, инерция, смена ориентации, safe areas — Нет инерции, safe-area; проверка на iOS/Android невозможна здесь (env)
 - **HIST-190** (P1, HISTORY, частично): История: автор, время, diff, фильтры; доступна на телефоне — Фильтров автора/даты нет
-- **R-SPACE-007** (P0, SPACE, частично): Перенос в общую область: пространство и родитель, предпросмотр пути, аудитории, прав, вложений; подтверждение … — No path preview in confirmation, no link to the new location; confirmation shown only when audience widens/personal source.
-- **R-ACL-051** (P0, ACL, частично): «Поделиться» личной страницей — осознанная операция с адресатами, уровнем, сроком; индикация «не полностью личная» … — No "не полностью личная" indicator on shared personal pages.
-- **R-ADMIN-016** (P0, ADMIN, частично): Увольнение/блокировка: политика передачи/архивации личных материалов с аудитом без раскрытия частных заметок … — No policy to transfer/archive personal materials; no restricted emergency-access procedure.
 - **R-SPACE-008** (P1, SPACE, частично): Квоты ненавязчиво; при превышении содержимое не удаляется, доступны безопасные действия — No quota usage indicator in UI.
 - **R-TREE-023** (P1, TREE, частично): Группы «Моё пространство», «Командные», «Избранное», «Недавние»; сохраняются раскрытия, выбранная страница, ширина, прокрутка … — Нет группы «Недавние» в панели, не сохраняются прокрутка и выбранная позиция между сессиями
 - **R-PERF-023** (P1, PERF, частично): Тысячи страниц: ленивые дочерние, виртуализация, стабильная прокрутка, мгновенное раскрытие загруженных ветвей — not tested at 10 000 nodes
 - **R-COLLAB-038** (P1, COLLAB, частично): WebSocket или аналог для присутствия, курсоров, изменений, уведомлений, дерева; HTTPS для загрузки, файлов, поиска, критических команд … — Решение описано, нагрузочных испытаний транспорта нет
 - **R-UI-066** (P1, UI, частично): Непрерывная прокрутка и подгрузка вместо технической пагинации: дерево, поиск, недавние, шаблоны — "Показать ещё/Загрузить ещё" buttons in SearchPage.tsx:531, HistoryPanel.tsx:194, AuditSection.tsx:285 instead of continuous loading
 - **R-PERF-024** (P1, PERF, частично): Серверная курсорная пагинация, виртуализация, предзагрузка, сохранение позиции; для аудита и истории — переход к дате/фильтру — lists not virtualised; history has no jump-to-date
-- **R-PERF-025** (P1, PERF, частично): Длинные документы без блокировки набора; ленивые медиа с резервированием размеров; виртуализация таблиц не ломает выделение … — no table virtualisation; long documents untested beyond 400 paragraphs
+- **R-PERF-025** (P1, PERF, частично): Длинные документы без блокировки набора; ленивые медиа с резервированием размеров; виртуализация таблиц не ломает выделение … — no virtualisation; typing on 5 000 blocks p50 ≈ 190 ms (PERF-D2)
 - **R-PERF-026** (P1, PERF, частично): Отклик типичных действий ~100 мс; раскрытие загруженной ветки без сетевого ожидания; численные SLA после профилирования — other actions not profiled
 - **R-PERF-027** (P1, PERF, частично): Метрики: INP, время первого взаимодействия, sync p95/p99, пропуски кадров DnD, размер очереди, время reconnect; бюджеты регрессии в CI — no INP/reconnect/DnD metrics; CI exists but has no performance budgets
 - **R-UI-067** (P1, UI, частично): Пустое дерево, пустая статья, нет прав, нет сети, ошибка загрузки — ясное сообщение и безопасный шаг; без зависших экранов — untested
@@ -469,7 +425,7 @@
 - **UX23-212** (P1, PERF, частично): Раскрытие дерева на 10 000 страниц не блокирует интерфейс — not tested with 10 000 pages
 - **UX23-221** (P1, SEARCH, частично): Поиск с десятками тысяч результатов подгружается плавно — Кандидатов не более 3000, offset ≤5000 — десятки тысяч результатов недоступны
 - **UX23-223** (P1, UI, частично): Мобильное создание и перенос без hover — move without hover untested
-- **R-UI-068** (P0, UI, частично): Никакие функции не ведут в тупик, нет нерабочих кнопок и незавершённых состояний — no dead-end inventory/tests
+- **R-UI-068** (P0, UI, частично): Никакие функции не ведут в тупик, нет нерабочих кнопок и незавершённых состояний — no inventory of every button/state; other screens (admin, import) not covered by dead-end E2E
 - **R-PROCESS-049** (P1, PROCESS, частично): При неоднозначности — варианты и выбор по приоритету: данные/права, корректность, простота, скорость/доступность, визуал, сопровождение … — not every decision has an ADR
 - **R-PROCESS-051** (P0, PROCESS, не реализовано): Реестр открытых вопросов и дефектов с владельцем и тестом; 0 критических/высоких; средние/низкие исправлены или письменно приняты — no open-issues/defects registry
 - **R-PERF-028** (P1, PERF, частично): Локальный отклик набора и действий p95 ≤100 мс в типовом документе; честная индикация тяжёлых операций — typing only; other local actions unmeasured
@@ -478,31 +434,24 @@
 - **R-OPS-021** (P1, OPS, частично): Поддерживаемые размеры документов, вложений, число редакторов и профили нагрузки определены, измерены и в паспорте эксплуатации — No operations passport with supported document/attachment sizes, editor counts, load profiles
 - **R-QA-036** (P0, QA, не реализовано): Для каждого сценария: обычный, граничный, ошибочный, конкурентный, восстановительный пути по 16 группам функций — no scenario × path matrix
 - **R-QA-037** (P0, QA, частично): Сквозные испытания A–L: одна строка и разные блоки; перенос+правка; структура таблицы; обрыв при записи и перезапуск … — no mapping of the 12 trials to tests
-- **R-QA-038** (P0, QA, частично): Автоматизация unit/component/integration/API/E2E/property/load/chaos; рандомизированные конкурентные последовательности … — no component/load/contract tests; no regression-per-defect traceability
+- **R-QA-038** (P0, QA, частично): Автоматизация unit/component/integration/API/E2E/property/load/chaos; рандомизированные конкурентные последовательности … — no component/contract tests; load test exists (scripts/load) but is not in CI
 - **R-OPS-022** (P0, OPS, частично): Поставка: deployment без секретов в репо, миграции и откат, health/readiness, метрики/логи/трейсы, алерты, бэкапы и restore-тесты … — CD pipeline and operations passport missing
 - **R-PROCESS-052** (P0, PROCESS, не реализовано): До запуска: тестовая эксплуатация, нагрузка, доступность, угрозы и права, тест восстановления, ручная UX-проверка, регрессии, пилот … — no gate checklist; no pilot, load, a11y audit, manual UX check
 - **R-PROCESS-053** (P0, PROCESS, частично): «Готово» только после прохождения gate, не после написания кода — gate currently fails (open P0s), so "готово" is not claimed
 - **OPS-007** (P0, TABLE, частично): Конкурирующие операции над таблицей — Теста конкурирующих операций над таблицей нет
 - **OPS-012** (P1, UI, частично): Корректное отображение долгих операций — no browser test
 - **OPS-013** (P1, OPS, частично): Мониторинг и тревоги — Rules not loaded into Prometheus / fired in a drill here (promtool unavailable)
-- **OPS-014** (P0, AUDIT, частично): Полный аудит изменений — Content edits only in page_events, not in the tamper-evident audit; views not logged.
 - **OPS-015** (P1, QA, частично): Мобильная и планшетная регрессия — single phone test; no tablet project
 - **OPS-016** (P1, A11Y, частично): Доступность с клавиатуры — no keyboard pass
 - **OPS-017** (P1, PERF, не реализовано): Нагрузка и длительная сессия без деградации — no long-session/load degradation test
 - **OPS-018** (P0, PROCESS, не реализовано): Нет открытых критических/высоких дефектов при приёмке — no defect registry
-- **R-ACL-056** (P0, ACL, частично): Админ-роль не открывает личные пространства; экстренный доступ только по утверждённой политике с причиной и аудитом — No emergency access procedure with reason/approval/audit.
 - **R-ACL-057** (P1, ACL, частично): Объекты: организация, подразделение, группа, пространство, папка/страница, дочерняя, вложение, версия, шаблон; области «Только я» … — Scopes "Группа", "Подразделение", "Гости по приглашению", "Только я" not offered as presets; no grants on templates/attachments.
 - **R-ACL-060** (P1, ACL, частично): Диалог доступа: область, люди/группы/подразделения, уровень, срок, статус (активен/ожидает/приостановлен/истёк) … — No status (active/pending/suspended/expired) display; starts_at not exposed in UI.
 - **R-ACL-061** (P1, ACL, частично): Быстрые действия: пригласить гостя, добавить сотрудника, подразделение, вся компания, роль, срок начала/окончания, приостановить … — No start date, suspend/resume of a grant, grouping/filters or bulk assignment with preview in UI.
 - **R-ACL-062** (P1, ACL, частично): Опасные действия подтверждаются без лишних диалогов, с отменой где безопасно — No undo for grant revocation/changes.
-- **R-ACL-063** (P0, ACL, частично): Временный доступ: начало/конец с часовым поясом, серверное истечение, прекращение выдачи, отмена ссылок и подписок … — No owner reminder before expiry; time zone not stored (timestamptz only).
-- **R-ACL-068** (P0, ACL, частично): Перемещение между подразделениями/пространствами: прежняя и будущая аудитория, сохраняемые/меняемые права … — Affected links and guests not listed separately.
-- **R-ADMIN-018** (P0, ADMIN, частично): «Проверить доступ»: пользователь + документ → может/не может, действия, цепочка наследования без имитации входа — No admin "Проверить доступ" screen; only ExplainBox inside ShareDialog for users with share right.
 - **R-ADMIN-019** (P1, ADMIN, частично): Поиск, фильтры, пустые состояния, пакетные операции с предпросмотром; администрирование на мобильном/планшете без hover-only — No batch operations; admin on mobile/tablet not verified.
 - **ACL-170** (P1, ADMIN, частично): Массовое назначение показывает точную аудиторию до подтверждения — Bulk preview does not compute exact audience; no bulk UI.
 - **ACL-174** (P1, A11Y, частично): Все операции доступа клавиатурой, с экрана 320px и на планшете — no test at 320px/keyboard/tablet
-- **R-ACL-075** (P0, ACL, частично): Готовность прав только после тестов на сервере, API, UI, поиске, вложениях, подписках, конкурентных изменениях, мобильных — Gate not met: no UI/browser or mobile ACL tests.
-- **R-ACL-076** (P0, ACL, частично): Нет скрытых исключений, молчаливого расширения аудитории, рассинхронизации отображаемых и фактических прав … — Least-privilege decisions not consolidated in DECISIONS.md; no UI-vs-server consistency test.
 - **QA26-01** (P0, QA, не реализовано): Система не готова, пока не проверено каждое доступное действие, визуальный элемент и переход состояния; «в основном работает» не критерий — no inventory of actions
 - **QA26-03** (P0, QA, не реализовано): Запись матрицы на каждый экран/элемент/состояние/действие: ID, компонент, состояние, устройство, ввод, предусловия, действие, ожидание … — no matrix records
 - **QA26-04** (P0, QA, не реализовано): Инвентаризация из маршрутов и реестра компонентов; пропущенные действия блокируют релиз — no route/component inventory
@@ -518,16 +467,11 @@
 - **QA26-20** (P0, COLLAB, частично): Сбои: сеть, высокий RTT, потери, Wi-Fi/LTE, закрытие вкладки, обновление, рестарт сервера, истечение сессии, повторная доставка … — Не проверены смена ведущего узла БД/экземпляра под нагрузкой и реальная смена Wi-Fi/LTE (ограничение окружения)
 - **QA26-22** (P1, PERF, частично): SLO (калибруемые): локальный отклик p95 ≤100 мс; контекстная панель p95 ≤150 мс; загруженная страница p95 ≤500 мс; ~60 fps … — panel/page-load/fps not measured
 - **QA26-23** (P1, QA, частично): 320–1920 px, zoom 100/125/150/200%, темы, Safari/Chrome/Firefox/Edge, iOS/Android, длинные строки, переполнение, меню у границ … — zoom only 200% (no 125/150); only Chromium is installed (playwright.config.ts, DECISIONS D-18)
-- **QA26-24** (P0, ACL, частично): Роли, наследование, личные/гостевые/временные доступы, отзыв в сессии, вложения, поиск, экспорт под ACL; без обходов через URL/API — No browser/mobile ACL tests.
 - **QA26-25** (P0, OPS, частично): Нагрузочное, soak, стресс, регрессия, доступность, отказоустойчивость; наблюдаемость, алерты, журналы без секретов, миграции, откат … — No load/soak/stress test protocols
 - **QA26-27** (P0, QA, не реализовано): Статус PASS/FAIL/BLOCKED/N/A с обоснованием, ссылкой на запуск и версией сборки; CI, E2E, visual regression, ручной UX-аудит … — no PASS/FAIL/BLOCKED per scenario with build/run links
 - **QA26-28** (P0, PROCESS, частично): Перед релизом: 100% действий покрыто; 100% критичных пройдено; 0 blocker/critical; 0 сценариев потери данных, обхода ACL … — gate defined but not met; "100% действий покрыто" not measurable (no action inventory)
-- **QA26-29** (P1, PROCESS, частично): Сдать отчёт о покрытии, протоколы восстановления, измерения производительности, реестр решений, руководство администратора, runbooks — performance measurements and a coverage report per run missing
-- **QA26-30** (P0, QA, не реализовано): Pairwise по осям роль × устройство/ввод × контент × сеть × параллельность × история × размер … — no pairwise suite
-- **QA26-31** (P0, QA, частично): Инварианты: данные не исчезают; порядок/иерархия корректны; права не расширяются без подтверждения; round-trip сохраняет семантику … — no systematic invariant suite in CI
-- **R-SPACE-010** (P0, SPACE, частично): Типы: личное (закрыто), общекорпоративное, подразделение, закрытое (по приглашению), гостевой проект (минимум доступа) — Spaces can be created only via API (no UI).
+- **QA26-29** (P1, PROCESS, частично): Сдать отчёт о покрытии, протоколы восстановления, измерения производительности, реестр решений, руководство администратора, runbooks — coverage report per run missing
 - **R-UI-069** (P1, UI, частично): Дочерняя статья, DnD, копирование, публикация — минимум действий; исключения доступа скрыты до запроса — DnD/copy/publish action counts not measured
-- **R-ADMIN-020** (P0, ADMIN, частично): Сотрудник → подразделение/группа/роль → автоматический доступ к пространствам — Assigning a department/group to a space has no UI.
 - **R-ADMIN-022** (P1, ADMIN, частично): Временные приглашения, гости, приостановка, отзыв сессий, массовое управление группами — No bulk group management.
 - **R-SEARCH-018** (P0, SEARCH, частично): Приватные материалы не включаются в общие индексы и уведомления — Личные материалы лежат в общей таблице search_index и отсекаются только фильтром ACL при запросе
 - **R-BACKUP-019** (P0, BACKUP, частично): Регулярная проверка бэкапов реальным восстановлением, контрольными суммами и сравнением импорт-экспорт-импорт — Regular production verification is an operational process
@@ -553,7 +497,7 @@
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| R-QA-001 | P0 | Тестировать в реальном браузере: навигация, курсор, выделение, hover, меню, drag-and-drop, масштаб, таблицы, мобильная версия … | частично | tests/e2e/editor.spec.ts, tests/e2e/content.spec.ts, tests/e2e/collab.spec.ts, tests/e2e/visual.spec.ts, tests/e2e/mobile.layout.spec.ts (Chromium); no DnD, hover, menu-edge or selection tests; paste is synthetic |  |
+| R-QA-001 | P0 | Тестировать в реальном браузере: навигация, курсор, выделение, hover, меню, drag-and-drop, масштаб, таблицы, мобильная версия … | частично | tests/e2e/* incl. ui-p0-interaction (menus at edges, hover, focus), ui-p0-layout (320–1920, real zoom), ui-p0-touch (touch phone context), perf-typing (caret), a11y; drag-and-drop and text selection by mouse not covered; paste is synthetic |  |
 
 ### PROCESS
 
@@ -622,7 +566,7 @@
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| R-QA-002 | P0 | «Всё протестировано» = доказанное покрытие каждого доступного элемента и действия через каталог состояний, матрицы переходов, pairwise … | частично | docs/TEST_MATRIX.md (area × condition matrix, generated catalogue of every automated test); no per-element state catalogue, transition matrix or pairwise suite |  |
+| R-QA-002 | P0 | «Всё протестировано» = доказанное покрытие каждого доступного элемента и действия через каталог состояний, матрицы переходов, pairwise … | частично | docs/TEST_MATRIX.md (area × condition matrix, generated test catalogue); pairwise generator tests/support/pairwise.ts; no per-element state catalogue or transition matrix |  |
 
 ### UI
 
@@ -672,13 +616,13 @@
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| R-UI-006 | P0 | Нет обрезаний, перекрытий, случайного скролла, прыжков layout, дрожания, ложных «сохранено» и скрытой утраты данных | частично | tests/e2e/editor.spec.ts "Сохранено" only after server ack; tests/resilience/db-connection-loss.test.ts; tests/e2e/visual.spec.ts horizontal overflow; no CLS measurement, no overlap/clipping detection, screenshots are only written to test-results/visual, never compared to a baseline | tests/e2e/ui-p0-layout.spec.ts: R-UI-006, R-UI-040: opening a page and typing cause no layout shift (CLS < 0.02)<br>tests/e2e/ui-p0-layout.spec.ts: R-UI-006: switching pages, opening and closing the side panel cause no layout shift<br>tests/e2e/ui-p0-layout.spec.ts: R-UI-006, V17-F09: no overlapping, clipped or off-screen controls at 320–1920 px (${theme} |
+| R-UI-006 | P0 | Нет обрезаний, перекрытий, случайного скролла, прыжков layout, дрожания, ложных «сохранено» и скрытой утраты данных | реализовано | tests/e2e/ui-p0-layout.spec.ts "R-UI-006, R-UI-040: opening a page and typing cause no layout shift (CLS < 0.02)" (measured CLS 0.001), "R-UI-006: switching pages, opening and closing the side panel…", "R-UI-006, V17-F09: no overlapping, clipped or off-screen controls at 320–1920 px (light/dark)" (hit-testing every visible control), "V18-A18, AT-81: real 200 % zoom…"; pixel baselines tests/e2e/a11y.spec.ts; honest "Сохранено" tests/e2e/editor.spec.ts; home screen load CLS ≈ 0.03 (asserted < 0.1, docs/PERFORMANCE.md PERF-D3); dismissible overlays (toasts, onboarding hint) are allowed to cover content | tests/e2e/ui-p0-layout.spec.ts: R-UI-006, R-UI-040: opening a page and typing cause no layout shift (CLS < 0.02)<br>tests/e2e/ui-p0-layout.spec.ts: R-UI-006: switching pages, opening and closing the side panel cause no layout shift<br>tests/e2e/ui-p0-layout.spec.ts: R-UI-006, V17-F09: no overlapping, clipped or off-screen controls at 320–1920 px (${theme} |
 
 ### AUTH
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| ROUTE-01 | P0 | Сотрудник: вход → свои пространства → регламент → поиск → статья в отделе одной кнопкой → форматирование → вставка Excel/изображения … | частично | tests/e2e/editor.spec.ts, collab.spec.ts cover login/create/format/paste/search pieces; No single E2E for the full employee route (own spaces -> regulation -> search -> one-click page in department -> Excel/image paste -> link within rights -> logout/return). | tests/e2e/acl-p0-routes.spec.ts: ROUTE-01: employee route — login → own spaces → regulation → search → one-click article in |
+| ROUTE-01 | P0 | Сотрудник: вход → свои пространства → регламент → поиск → статья в отделе одной кнопкой → форматирование → вставка Excel/изображения … | реализовано | tests/e2e/acl-p0-routes.spec.ts 'ROUTE-01: employee route …': login, own spaces, regulation via space overview, search, one-click page in the department space, bold formatting, Excel (HTML table+TSV) and image paste, link to a page within rights (outsider gets «нет доступа»), logout and return with content intact | tests/e2e/acl-p0-routes.spec.ts: ROUTE-01: employee route — login → own spaces → regulation → search → one-click article in |
 
 ### OFFLINE
 
@@ -690,13 +634,13 @@
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| ROUTE-03 | P0 | Руководитель пространства: дерево drag-and-drop → шаблоны → участники и доступ группы → контроль публикаций → восстановление удалённой ветки | частично | tree DnD (SidebarTree), templates (TemplatesPage), PublishBar, TrashPage restore; Route cannot be completed in UI: no web UI to create spaces or to add groups/users to a space (SpacePage AccessTab is read-only; POST /api/v1/spaces and PUT /grants resourceType=space only via API). No E2E for the manager route. | tests/e2e/acl-p0-routes.spec.ts: ROUTE-03: space manager route — members and group access → template → tree drag-and-drop → |
+| ROUTE-03 | P0 | Руководитель пространства: дерево drag-and-drop → шаблоны → участники и доступ группы → контроль публикаций → восстановление удалённой ветки | реализовано | tests/e2e/acl-p0-routes.spec.ts 'ROUTE-03: space manager route …': an ordinary employee creates a space (CreateSpaceDialog), adds a group on «Участники» (SpaceMembersEditor), creates a page from a template, moves it by drag-and-drop in the sidebar tree, switches the space to «После публикации» and publishes (reader sees only the published version), deletes the branch and restores it from the trash | tests/e2e/acl-p0-routes.spec.ts: ROUTE-03: space manager route — members and group access → template → tree drag-and-drop → |
 
 ### ADMIN
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| ROUTE-04 | P0 | Администратор: подразделение/группа → сотрудник → автодоступ к пространству → гость в раздел на срок → приостановка → отзыв сессий … | частично | admin UsersSection/GroupsSection/ExpiringSection/AuditSection/ArchivesSection; POST /admin/users/:id/status, revoke-sessions, /access/explain; Group->space auto-access step needs API (no web UI to create spaces or to add groups/users to a space (SpacePage AccessTab is read-only; POST /api/v1/spaces and PUT /grants resourceType=space only via API)); guest page grants (pageGrants) not exposed in create-user UI; no admin "check access" screen; no E2E for admin route. | tests/e2e/acl-p0-routes.spec.ts: ROUTE-04: administrator route — department → employee → automatic space access → guest on  |
+| ROUTE-04 | P0 | Администратор: подразделение/группа → сотрудник → автодоступ к пространству → гость в раздел на срок → приостановка → отзыв сессий … | реализовано | tests/e2e/acl-p0-routes.spec.ts 'ROUTE-04: administrator route …': department in Groups UI → employee with the department in Users UI → space for the department (automatic access verified by logging in) → guest user + page grant for 7 days via ShareDialog in a guests-allowed space → suspension (open session gets 401) → «Завершить все сеансы» → «Проверить доступ» explains the guest's access (source, term) → audit journal filter → organisation archive created, downloaded and restored into a new isolated space | tests/e2e/acl-p0-routes.spec.ts: ROUTE-04: administrator route — department → employee → automatic space access → guest on  |
 
 ### COLLAB
 
@@ -708,7 +652,7 @@
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| ROUTE-06 | P0 | Аудитор проверяет кто и когда изменил документ, права, удаление, импорт, восстановление без скрытого доступа к посторонним материалам | частично | audit titles/names of pages/spaces the viewer cannot open are masked (routes/admin.ts maskPrivateTitles); tests/integration/acl-gaps.test.ts: auditor sees events but not titles; No auditor E2E route test. | tests/integration/acl-gaps.test.ts: audit: private titles masked, denials logged (ROUTE-06, R-AUDIT-001, OPS-014)<br>tests/e2e/acl-p0-admin.spec.ts: ROUTE-06: the auditor reads who changed what in the journal but does not see titles or con |
+| ROUTE-06 | P0 | Аудитор проверяет кто и когда изменил документ, права, удаление, импорт, восстановление без скрытого доступа к посторонним материалам | реализовано | tests/e2e/acl-p0-admin.spec.ts 'ROUTE-06: the auditor reads who changed what …' (auditor sees events and actors in the journal, private titles masked, no access to the page itself); routes/admin.ts maskPrivateTitles; tests/integration/acl-p0.test.ts R-AUDIT-001/OPS-014 (views, edits, hidden-resource probes in the journal) | tests/integration/acl-gaps.test.ts: audit: private titles masked, denials logged (ROUTE-06, R-AUDIT-001, OPS-014)<br>tests/e2e/acl-p0-admin.spec.ts: ROUTE-06: the auditor reads who changed what in the journal but does not see titles or con |
 
 ### COLLAB
 
@@ -796,7 +740,7 @@
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
 | R-UI-007 | P1 | Кнопки/иконки: семантика, tooltip, hit target, доступность, реакция, идемпотентность | частично | aria-label + Tooltip on icon buttons; ui.css .icon-btn 28px (44px coarse); no per-button checks |  |
-| R-UI-008 | P1 | Меню/popover: позиция, фокус, Esc, клик снаружи, вложенность, viewport | частично | Menu.tsx: role=menu, useDismiss (Esc/outside), nested SubMenu, FloatingFocusManager returnFocus; only exercised indirectly (CO history test); no Esc/outside/edge tests | tests/e2e/ui-p0-interaction.spec.ts: R-UI-059, R-UI-008, E224: menus at viewport edges flip/shift inside the window, keep keybo |
+| R-UI-008 | P1 | Меню/popover: позиция, фокус, Esc, клик снаружи, вложенность, viewport | реализовано | tests/e2e/ui-p0-interaction.spec.ts "R-UI-059, R-UI-008, E224: …" (position in viewport, ArrowDown focus, Esc + focus return, outside click); nested submenus not exercised | tests/e2e/ui-p0-interaction.spec.ts: R-UI-059, R-UI-008, E224: menus at viewport edges flip/shift inside the window, keep keybo |
 
 ### TREE
 
@@ -872,13 +816,13 @@
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| R-PERF-001 | P1 | Скорость измеряется p95/p99 при зафиксированной нагрузке, сети и устройствах; быстрый ввод важнее анимации | не реализовано | tests/e2e/collab.spec.ts "typing latency on a long document stays within budget": 400 paragraphs (~5k words), 40 samples, execCommand insertText -> next rAF, no CPU/network throttling; last run p95≈31 ms; no p95/p99 report with fixed load/network/devices |  |
+| R-PERF-001 | P1 | Скорость измеряется p95/p99 при зафиксированной нагрузке, сети и устройствах; быстрый ввод важнее анимации | реализовано | docs/PERFORMANCE.md (conditions, method, p50/p95/p99 for typing, long session, load); measured on an overloaded shared container, not the reference stand |  |
 
 ### QA
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| R-QA-010 | P0 | Нагрузочные, длительные, конкурентные, отказоустойчивые и security-тесты с журналированием результатов | частично | resilience + collab property tests, ACL/CSRF/zip-slip/security-headers tests; no load/longevity tests; no result journals |  |
+| R-QA-010 | P0 | Нагрузочные, длительные, конкурентные, отказоустойчивые и security-тесты с журналированием результатов | реализовано | load scripts/load/collab-load.mjs (journal test-results/load/*.json), longevity tests/e2e/perf-session.spec.ts + perf-typing (journal test-results/perf/results.jsonl), concurrency tests/integration/qa-invariants.test.ts + collab tests, resilience tests/resilience/*, security tests (CSRF/ACL/zip-slip/headers); CI uploads test-results/ as an artifact; docs/PERFORMANCE.md; load test is run manually, not in CI |  |
 
 ### PROCESS
 
@@ -940,7 +884,7 @@
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| R-UI-009 | P0 | Запрет: скрывать ошибки | частично | api/client.ts ApiError messages, Toast, ErrorBoundary + lib/telemetry.ts reportError; 8 silent .catch(()=>undefined) (mostly benign: logout, telemetry, abort); no test that errors surface | tests/unit/ui-error-template.test.ts: error message template (R-UI-052, R-UI-009)<br>tests/e2e/ui-p0-interaction.spec.ts: R-UI-009, R-UI-052: failed actions are shown with what happened, that nothing was saved, a<br>tests/e2e/ui-p0-interaction.spec.ts: R-UI-009: no uncaught script errors occurred in any scenario above |
+| R-UI-009 | P0 | Запрет: скрывать ошибки | реализовано | fixed silent failure of sidebar "Новая страница" (unhandled rejection); tests/e2e/ui-p0-interaction.spec.ts "R-UI-009, R-UI-052: failed actions are shown…" (500 / 403 / network abort → visible toast) and "R-UI-009: no uncaught script errors occurred in any scenario above"; window error/unhandledrejection → lib/telemetry.ts; remaining .catch(() => undefined) are benign (telemetry, logout, storage.persist, service worker, best-effort cleanup) | tests/unit/ui-error-template.test.ts: error message template (R-UI-052, R-UI-009)<br>tests/e2e/ui-p0-interaction.spec.ts: R-UI-009, R-UI-052: failed actions are shown with what happened, that nothing was saved, a<br>tests/e2e/ui-p0-interaction.spec.ts: R-UI-009: no uncaught script errors occurred in any scenario above |
 
 ### QA
 
@@ -1006,7 +950,7 @@
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| R-UI-011 | P0 | Система сохраняет работу, объясняет состояние и позволяет исправить ошибку | частично | sync-status (Editor.tsx), offline banner (AppShell), undo toasts, version restore (CO history test); not verified for all operations |  |
+| R-UI-011 | P0 | Система сохраняет работу, объясняет состояние и позволяет исправить ошибку | частично | sync-status, offline banner, undo toasts, version restore; error template (R-UI-052) says whether data was saved; boot timeout screen with retry; cancel/status not verified for every operation |  |
 
 ### ADMIN
 
@@ -1081,7 +1025,7 @@
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| R-SPACE-001 | P0 | Организации/рабочие пространства, пространства знаний, древовидные разделы, папки и страницы | частично | organizations (bootstrap only), spaces CRUD routes/spaces.ts, pages CRUD routes/pages.ts; No org/workspace update UI/API beyond settings; no separate folder type (pages act as folders); space creation has no UI. | tests/e2e/acl-p0-spaces.spec.ts: R-SPACE-001 R-SPACE-010 R-ADMIN-020: a space is created in the UI and a department gets ac |
+| R-SPACE-001 | P0 | Организации/рабочие пространства, пространства знаний, древовидные разделы, папки и страницы | реализовано | PATCH /api/v1/admin/org + admin/OrgNameCard.tsx (organisation name), spaces CRUD (routes/spaces.ts) with UI creation (components/space/SpaceAccess.tsx CreateSpaceDialog, Sidebar «Новое пространство»), pages-as-sections CRUD; tests/integration/acl-p0.test.ts 'R-SPACE-001: organisation → space → section → page …'; tests/e2e/acl-p0-spaces.spec.ts; Sections are pages with children (no separate folder entity) — the tree treats any page as a folder. | tests/integration/acl-p0.test.ts: hierarchy CRUD (R-SPACE-001)<br>tests/integration/acl-p0.test.ts: R-SPACE-001: organisation → space → section → page: every level can be created, renamed an<br>tests/e2e/acl-p0-spaces.spec.ts: R-SPACE-001 R-SPACE-010 R-ADMIN-020: a space is created in the UI and a department gets ac |
 
 ### EDITOR
 
@@ -1481,7 +1425,7 @@
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| R-ACL-013 | P0 | RBAC: сисадмин, владелец, редактор, автор, читатель, аудитор; разрешения view/create/edit/comment/publish/delete/manage_members/export/audit | частично | LEVELS/ACTIONS/ACTION_MIN_LEVEL in packages/shared/src/permissions.ts; org roles; Acceptance requires role x permission matrix covered by tests; only scattered tests exist (A10, editor without share, export flags). | tests/integration/acl-p0.test.ts: role × permission matrix (R-ACL-013, R-AUDIT-002)<br>tests/integration/acl-p0.test.ts: R-ACL-013: every role × permission cell of the matrix is enforced by the API (table-driven |
+| R-ACL-013 | P0 | RBAC: сисадмин, владелец, редактор, автор, читатель, аудитор; разрешения view/create/edit/comment/publish/delete/manage_members/export/audit | реализовано | tests/integration/acl-p0.test.ts 'R-ACL-013: every role × permission cell of the matrix is enforced by the API (table-driven)': владелец/редактор/автор/читатель/сисадмин/аудитор × view/create/edit/comment/publish/delete/manage_members/export/audit; Roles map to space grant levels (+canPublish=false for «автор») and organisation roles (admin, auditor). | tests/integration/acl-p0.test.ts: role × permission matrix (R-ACL-013, R-AUDIT-002)<br>tests/integration/acl-p0.test.ts: R-ACL-013: every role × permission cell of the matrix is enforced by the API (table-driven |
 | R-ACL-014 | P0 | ACL наследуются от пространства и родителя, исключения с предпросмотром эффективных прав; по умолчанию закрыто; публичные ссылки выключены | реализовано | inheritance (APPLICABLE_GRANTS_SQL), exceptions, POST /pages/:id/access/preview, default deny (combine), publicLinksEnabled=false; tests/integration/gaps.test.ts: audience preview | tests/integration/gaps.test.ts: audience_change conflict lists who would newly gain access; preview endpoint computes adde |
 
 ### AUTH
@@ -1500,13 +1444,13 @@
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| R-AUDIT-001 | P0 | Аудит: вход, отказ, просмотр/скачивание, изменение, публикация, права, импорт/экспорт, удаление/восстановление, настройки; actor, UTC … | частично | all fields present; 403 denials audited as access.denied with rate limit (services/denials.ts); tests/integration/acl-gaps.test.ts; Page views are still not audited; 404 (hidden resource) responses not logged. | tests/integration/acl-gaps.test.ts: audit: private titles masked, denials logged (ROUTE-06, R-AUDIT-001, OPS-014)<br>tests/integration/acl-p0.test.ts: audit of reads and hidden resources (R-AUDIT-001, OPS-014)<br>tests/integration/acl-p0.test.ts: R-AUDIT-001 OPS-014: opening a document is audited (rate limited) and probing a hidden pag |
+| R-AUDIT-001 | P0 | Аудит: вход, отказ, просмотр/скачивание, изменение, публикация, права, импорт/экспорт, удаление/восстановление, настройки; actor, UTC … | реализовано | page views audited as page.view (rate limited per user+page, services/denials.ts createViewLogger), hidden-resource 404s as access.not_found, 403 as access.denied; all fields present; tests/integration/acl-p0.test.ts 'R-AUDIT-001 OPS-014: opening a document is audited …' | tests/integration/acl-gaps.test.ts: audit: private titles masked, denials logged (ROUTE-06, R-AUDIT-001, OPS-014)<br>tests/integration/acl-p0.test.ts: audit of reads and hidden resources (R-AUDIT-001, OPS-014)<br>tests/integration/acl-p0.test.ts: R-AUDIT-001 OPS-014: opening a document is audited (rate limited) and probing a hidden pag |
 
 ### SECURITY
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| R-SECURITY-002 | P0 | TLS, шифрование на хранении, секреты, CSRF/XSS/SSRF, rate limit, CSP, антивирус и проверка типа вложений, path traversal, sanitize … | частично | CSRF double submit (app.ts), helmet CSP, rate-limit, sanitize-html, SVG sanitising, type sniffing (inspectFile), zip-slip protection, optional ClamAV; No TLS/deploy config in repo (deploy/ empty), no encryption at rest, antivirus only when CLAMAV_HOST set; no OWASP test suite. | tests/integration/acl-p0.test.ts: malicious inputs (SC-33, R-SECURITY-002, R-SECURITY-007)<br>tests/integration/acl-p0.test.ts: SC-33 R-SECURITY-002: XSS in imported HTML/Markdown is neutralised, CSRF without token and |
+| R-SECURITY-002 | P0 | TLS, шифрование на хранении, секреты, CSRF/XSS/SSRF, rate limit, CSP, антивирус и проверка типа вложений, path traversal, sanitize … | частично | CSRF double submit (app.ts), helmet CSP, rate-limit, sanitize-html, SVG sanitising, type sniffing (inspectFile), zip-slip protection, optional ClamAV; SSRF-guarded remote fetcher (services/remote-fetch.ts); tests/integration/acl-p0.test.ts 'SC-33 R-SECURITY-002: …' (XSS in imports, CSRF, path traversal, sandboxed HTML files); No encryption at rest inside the application (left to disk/DB/S3), ClamAV not verified with a real daemon, no independent OWASP/ASVS test run; TLS is terminated by deploy/nginx.conf (not exercised by tests). | tests/integration/acl-p0.test.ts: malicious inputs (SC-33, R-SECURITY-002, R-SECURITY-007)<br>tests/integration/acl-p0.test.ts: SC-33 R-SECURITY-002: XSS in imported HTML/Markdown is neutralised, CSRF without token and |
 | R-SECURITY-003 | P0 | Контент не уходит во внешние OCR/AI API без админ-включения, договора и видимого указания | реализовано | OCR local tesseract.js with bundled rus/eng data (apps/server/src/ocr/ocr.ts); no AI/external calls |  |
 
 ### PROCESS
@@ -1732,7 +1676,7 @@
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| SC-04 | P0 | Документ 5 000 блоков и длинная таблица без скачков курсора и потери ввода | частично | tests/e2e/collab.spec.ts "typing latency on a long document stays within budget": 400 paragraphs (~5k words), 40 samples, execCommand insertText -> next rAF, no CPU/network throttling; last run p95≈31 ms; 5000 blocks + long table, cursor stability and lost input not tested | tests/e2e/perf-typing.spec.ts: SC-04: 5 000 blocks and a long table: typing keeps the caret in place and loses no charact |
+| SC-04 | P0 | Документ 5 000 блоков и длинная таблица без скачков курсора и потери ввода | реализовано | tests/e2e/perf-typing.spec.ts "SC-04: 5 000 blocks and a long table: typing keeps the caret in place and loses no characters" (document imported server-side, 240 chars in a paragraph + 80 in a 200-row table cell, exact text, caret offset, no scroll jump, server copy); latency on 5 000 blocks is poor (p50 ≈ 190 ms, docs/PERFORMANCE.md PERF-D2) — tracked under R-PERF-025 | tests/e2e/perf-typing.spec.ts: SC-04: 5 000 blocks and a long table: typing keeps the caret in place and loses no charact |
 
 ### EDITOR
 
@@ -1856,7 +1800,7 @@
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| SC-33 | P0 | XSS/CSRF/SSRF/path traversal/ZIP-bomb/исполняемые файлы блокируются на сервере | частично | CSRF, path traversal, zip bomb, executables tested; 403s audited (tests/integration/acl-gaps.test.ts); SSRF not tested (no server-side fetch of user URLs); XSS covered only for SVG/markdown links. | tests/integration/content.test.ts: rejects executables even with a fake extension and dangerous types (SC-19, SC-33)<br>tests/integration/content.test.ts: sanitises SVG and serves user content in a sandbox (SC-12, SC-33, R-MEDIA-011)<br>tests/integration/import-pipeline.test.ts: antivirus quarantine for imports and archive restore (R-IMPORT-032, R-ARCHIVE-016, SC-33)<br>… ещё 5 |
+| SC-33 | P0 | XSS/CSRF/SSRF/path traversal/ZIP-bomb/исполняемые файлы блокируются на сервере | реализовано | tests/integration/acl-p0.test.ts 'SC-33 R-SECURITY-008: …' (SSRF classification and fetcher: loopback, private, link-local/metadata, decimal and IPv6-mapped forms, unsafe schemes, credentials, redirects into the internal network), 'SC-33 R-SECURITY-002: XSS in imported HTML/Markdown …, CSRF …, path traversal …'; existing tests for executables, SVG, zip bomb (content.test.ts, import-export.test.ts) | tests/integration/content.test.ts: rejects executables even with a fake extension and dangerous types (SC-19, SC-33)<br>tests/integration/content.test.ts: sanitises SVG and serves user content in a sandbox (SC-12, SC-33, R-MEDIA-011)<br>tests/integration/import-pipeline.test.ts: antivirus quarantine for imports and archive restore (R-IMPORT-032, R-ARCHIVE-016, SC-33)<br>… ещё 5 |
 
 ### A11Y
 
@@ -2048,7 +1992,7 @@
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| R-UI-027 | P0 | Неподдерживаемая операция обязана иметь честное объяснение; молчаливая потеря данных запрещена | частично | Menu disabledReason, import/export fidelity reports (import-export.test.ts); not systematically verified |  |
+| R-UI-027 | P0 | Неподдерживаемая операция обязана иметь честное объяснение; молчаливая потеря данных запрещена | частично | Menu disabledReason now on every disabled page/tree action (tested for a view-only user in tests/e2e/ui-p0-interaction.spec.ts), import/export fidelity reports; not systematically verified for all operations |  |
 
 ### PROCESS
 
@@ -2099,7 +2043,7 @@
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| R-SECURITY-007 | P0 | Оригинал сохраняется по политике; проверка MIME, размера, вирусов, zip-bomb, URL, HTML, макросов; без исполнения встроенного кода | частично | originals kept byte-exact; MIME sniffing, size, zip bomb, URL/HTML sanitising, macros ignored; ClamAV for attachments; Virus scanning only for attachment uploads (not imports) and only when CLAMAV_HOST configured (env-blocked to verify). | tests/integration/acl-p0.test.ts: malicious inputs (SC-33, R-SECURITY-002, R-SECURITY-007)<br>tests/integration/acl-p0.test.ts: R-SECURITY-007: malicious fixtures are rejected — infected attachment and import (antiviru |
+| R-SECURITY-007 | P0 | Оригинал сохраняется по политике; проверка MIME, размера, вирусов, zip-bomb, URL, HTML, макросов; без исполнения встроенного кода | реализовано | antivirus for attachments, imports (incl. assets inside ZIP/DOCX) and archive restore; type sniffing; tests/integration/acl-p0.test.ts 'R-SECURITY-007: malicious fixtures are rejected …' (fake clamd INSTREAM: infected attachment and import rejected and audited, disguised PE/ELF rejected, clean original byte-exact); tests/integration/import-pipeline.test.ts; Verified against a protocol-compatible fake clamd; a real ClamAV daemon is not available in this environment (CLAMAV_HOST). | tests/integration/acl-p0.test.ts: malicious inputs (SC-33, R-SECURITY-002, R-SECURITY-007)<br>tests/integration/acl-p0.test.ts: R-SECURITY-007: malicious fixtures are rejected — infected attachment and import (antiviru |
 
 ### IMPORT
 
@@ -2115,7 +2059,7 @@
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| R-SECURITY-008 | P0 | Относительные пути изображений из ZIP; удалённые изображения копируются с проверкой URL/SSRF | частично | relative ZIP image paths resolved, traversal blocked (tests/integration/import-export.test.ts AT-69); Remote images are not copied — kept as external hotlinks (convert/html.ts); no SSRF-checked fetcher or test. | tests/integration/acl-p0.test.ts: SSRF-guarded remote images (R-SECURITY-008, SC-33)<br>tests/integration/acl-p0.test.ts: SC-33 R-SECURITY-008: internal, loopback, link-local, mapped and reserved addresses are cl<br>tests/integration/acl-p0.test.ts: SC-33 R-SECURITY-008: the fetcher refuses internal targets, unsafe schemes, credentials an<br>… ещё 1 |
+| R-SECURITY-008 | P0 | Относительные пути изображений из ZIP; удалённые изображения копируются с проверкой URL/SSRF | реализовано | services/remote-fetch.ts (SSRF-guarded fetcher: every resolved address checked, pinned connection, re-checked redirects, size/time limits, REMOTE_FETCH_ALLOW_HOSTS) + services/remote-images.ts (import copies remote images as attachments, internal addresses removed with a report warning); tests/integration/acl-p0.test.ts 'R-SECURITY-008: on import remote images are copied …', 'SC-33 R-SECURITY-008: …'; Images in pasted HTML are still hot-linked by the browser (docs/SECURITY.md limitation 1). | tests/integration/acl-p0.test.ts: SSRF-guarded remote images (R-SECURITY-008, SC-33)<br>tests/integration/acl-p0.test.ts: SC-33 R-SECURITY-008: internal, loopback, link-local, mapped and reserved addresses are cl<br>tests/integration/acl-p0.test.ts: SC-33 R-SECURITY-008: the fetcher refuses internal targets, unsafe schemes, credentials an<br>… ещё 1 |
 
 ### CLIPBOARD
 
@@ -2231,7 +2175,7 @@
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| R-PERF-006 | P1 | Ввод p95 <50 мс; локальная правка <100 мс; удалённая правка p95 <500 мс; восстановление после обрыва <10 с | частично | tests/e2e/collab.spec.ts "typing latency on a long document stays within budget": 400 paragraphs (~5k words), 40 samples, execCommand insertText -> next rAF, no CPU/network throttling; last run p95≈31 ms; remote p95 and reconnect <10 s not measured |  |
+| R-PERF-006 | P1 | Ввод p95 <50 мс; локальная правка <100 мс; удалённая правка p95 <500 мс; восстановление после обрыва <10 с | частично | tests/e2e/perf-typing.spec.ts, scripts/load/collab-load.mjs (remote p95), docs/PERFORMANCE.md; input p95 not met at 4x; remote edit p95 1.4 s at 100+20 (143 ms at 20+5); reconnect not measured |  |
 
 ### COLLAB
 
@@ -2500,7 +2444,7 @@
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
 | R-PERF-007 | P1 | Условия замеров: ноутбук 8 GB, Chromium, RTT 80 мс, 20 Mbps, low-end mobile; p50/p95/p99; 10/100 редакторов; 1/10/100 тыс. слов и строк | не реализовано | n/a; no measurement conditions/report (8GB laptop, RTT 80ms, low-end mobile, 10/100 editors) |  |
-| R-PERF-008 | P1 | Ввод: p95 ≤50 мс, p99 ≤100 мс для статьи 10 тыс. слов | частично | tests/e2e/collab.spec.ts "typing latency on a long document stays within budget": 400 paragraphs (~5k words), 40 samples, execCommand insertText -> next rAF, no CPU/network throttling; last run p95≈31 ms; 10k words not reached (≈5k); p99 not computed; with 40 samples the "p95" index is the 38th value | tests/e2e/perf-typing.spec.ts: R-PERF-008, AT-84: typing in a 10 000-word article with CPU throttled 4x — 240 samples, p9 |
+| R-PERF-008 | P1 | Ввод: p95 ≤50 мс, p99 ≤100 мс для статьи 10 тыс. слов | частично | tests/e2e/perf-typing.spec.ts "R-PERF-008, AT-84: typing in a 10 000-word article with CPU throttled 4x — 240 samples, p95/p99 journaled…" (11 090 words, CDP throttling 4x, keydown→next frame, no lost characters); docs/PERFORMANCE.md; budget NOT met in this environment: 4x p95 504–827 ms, p99 824–1169 ms; 1x p95 64 ms, p99 157 ms (overloaded 4-vCPU container). Budget assertion runs only with KB_PERF_ENFORCE=1 (open defect PERF-D1) | tests/e2e/perf-typing.spec.ts: R-PERF-008, AT-84: typing in a 10 000-word article with CPU throttled 4x — 240 samples, p9 |
 | R-PERF-009 | P1 | Переход между кэшированными статьями p95 ≤300 мс; первая загрузка p95 ≤2 с | не реализовано | vite build: entry index.js 140 KB gz + index.css 23 KB gz; opening a page also loads PageView chunk 1.32 MB / 413 KB gz (katex + all highlight.js languages bundled eagerly) => ~576 KB gz before first edit; cached navigation and first-load p95 not measured |  |
 | R-PERF-010 | P1 | Синхронизация между клиентами p95 ≤500 мс при RTT 80 мс; durable-подтверждение p95 ≤2 с | частично | server histogram kb_collab_persist_seconds (observability/metrics.ts); client-to-client sync p95 at RTT 80ms not measured |  |
 | R-PERF-011 | P1 | Скролл и DnD 60 FPS; INP p75 ≤200 мс; без long tasks >200 мс при наборе | не реализовано | n/a; no FPS/INP/long-task measurement |  |
@@ -2654,14 +2598,14 @@
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
 | AT-78 | P0 | Потеря права редактирования в сессии — сервер отклоняет операции, локальные правки извлекаемы | реализовано | apps/server/src/collab/hub.ts nack forbidden, collab-client keeps pending, Editor.tsx "Скачать локальную копию"; tests/integration/collab.test.ts AT-78 | tests/integration/collab.test.ts: read-only user cannot write; revoking edit switches session to read-only; revoking view cl |
-| AT-79 | P0 | Копирование не раскрывает скрытые поля и недоступные вложения | частично | duplicatePage copies only visible pages and attachments only with download right (services/pages.ts); Browser clipboard copy of hidden fields/inaccessible attachments not verified by any test. |  |
+| AT-79 | P0 | Копирование не раскрывает скрытые поля и недоступные вложения | реализовано | duplicatePage copies only visible pages and attachments only with download right (services/pages.ts); clipboard: comment anchors and DOM ids stripped, titles of linked pages the reader cannot open replaced by «Страница недоступна» in Ctrl+C HTML/text and in «Копировать страницу» HTML/Markdown (apps/web/src/editor/clipboard/redact.ts); the reading API and exports redact them on the server (routes/acl-extra.ts redactInaccessibleRefs); tests/integration/acl-p0.test.ts 'AT-79: the reading API and exports replace titles …'; tests/e2e/acl-p0-ui.spec.ts 'AT-79: copying a page does not put titles of linked pages the reader cannot open on the clipboard …'; Attachment links in copied HTML point to the API, which re-checks download rights on use. The live collaborative document (WebSocket/CRDT) still carries the title snapshot of linked pages for anybody who can read it; HTTP reading, export and clipboard are redacted. | tests/integration/acl-p0.test.ts: linked page titles (AT-79)<br>tests/integration/acl-p0.test.ts: AT-79: the reading API and exports replace titles of linked pages the reader cannot open; <br>tests/e2e/acl-p0-ui.spec.ts: AT-79: copying a page does not put titles of linked pages the reader cannot open on the cl |
 
 ### UI
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
 | AT-80 | P1 | Переключение светлой/тёмной темы без скачков и нечитаемых элементов | частично | tests/e2e/a11y.spec.ts axe audit (light theme); tokens.css dual theme; dark theme not axe-audited | tests/e2e/a11y.spec.ts: WCAG 2.1 AA automated audit of key screens (R-A11Y-003, AT-80, E2E-112) |
-| AT-81 | P1 | Адаптивность 320–1920 px и zoom 200% | частично | tests/e2e/visual.spec.ts 320–1920 × themes; tests/e2e/a11y.spec.ts real 200% zoom (640×400 CSS px at DPR 2) on 5 screens, no horizontal overflow; overlaps/clipping not checked | tests/e2e/ui-p0-layout.spec.ts: V18-A18, AT-81: real 200 % zoom (DPR 2, 640×400 CSS px) — no overlaps or clipped controls<br>tests/e2e/a11y.spec.ts: real 200% browser zoom (1280x800 at 2x = 640x400 CSS px) keeps every key screen usable (AT |
+| AT-81 | P1 | Адаптивность 320–1920 px и zoom 200% | реализовано | tests/e2e/visual.spec.ts + tests/e2e/ui-p0-layout.spec.ts (320–1920 overlap/clipping both themes, real 200 % zoom) | tests/e2e/ui-p0-layout.spec.ts: V18-A18, AT-81: real 200 % zoom (DPR 2, 640×400 CSS px) — no overlaps or clipped controls<br>tests/e2e/a11y.spec.ts: real 200% browser zoom (1280x800 at 2x = 640x400 CSS px) keeps every key screen usable (AT |
 
 ### A11Y
 
@@ -2679,7 +2623,7 @@
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| AT-84 | P1 | Статья 10 тыс. слов соответствует SLO ввода и переключения | частично | tests/e2e/collab.spec.ts "typing latency on a long document stays within budget": 400 paragraphs (~5k words), 40 samples, execCommand insertText -> next rAF, no CPU/network throttling; last run p95≈31 ms; ≈5k words, page switching not measured | tests/e2e/perf-typing.spec.ts: R-PERF-008, AT-84: typing in a 10 000-word article with CPU throttled 4x — 240 samples, p9 |
+| AT-84 | P1 | Статья 10 тыс. слов соответствует SLO ввода и переключения | частично | tests/e2e/perf-typing.spec.ts "R-PERF-008, AT-84: …"; docs/PERFORMANCE.md; typing SLO not met (see R-PERF-008); page switching time not measured | tests/e2e/perf-typing.spec.ts: R-PERF-008, AT-84: typing in a 10 000-word article with CPU throttled 4x — 240 samples, p9 |
 | AT-85 | P1 | 10 одновременных авторов соответствуют SLO синхронизации | не реализовано | tests/e2e/collab.spec.ts uses 2 authors; no 10-author sync latency test |  |
 
 ### HISTORY
@@ -2880,13 +2824,13 @@
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| R-PERF-013 | P0 | Ввод, прокрутка, сохранение никогда не ждут анимации; не анимировать весь документ | частично | only chrome animations; editor content not animated; not measured | tests/e2e/perf-typing.spec.ts: R-PERF-013: typing starts no animations on document content (input latency journaled) |
+| R-PERF-013 | P0 | Ввод, прокрутка, сохранение никогда не ждут анимации; не анимировать весь документ | реализовано | tests/e2e/perf-typing.spec.ts "R-PERF-013: typing starts no animations on document content (input latency journaled)" (no animationstart/transitionrun inside .kb-editor, document.getAnimations() empty) | tests/e2e/perf-typing.spec.ts: R-PERF-013: typing starts no animations on document content (input latency journaled) |
 
 ### UI
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| R-UI-040 | P1 | reduced-motion; skeleton без мигания; спокойные ошибки; нет внезапных смещений layout | частично | base.css skeleton shimmer; reduced-motion; CLS not measured | tests/e2e/ui-p0-layout.spec.ts: R-UI-006, R-UI-040: opening a page and typing cause no layout shift (CLS < 0.02) |
+| R-UI-040 | P1 | reduced-motion; skeleton без мигания; спокойные ошибки; нет внезапных смещений layout | частично | tests/e2e/ui-p0-layout.spec.ts CLS on page open 0.001, page switch/side panel < 0.02; reduced-motion test; home screen CLS ≈ 0.03 (skeleton/list height mismatch, PERF-D3) | tests/e2e/ui-p0-layout.spec.ts: R-UI-006, R-UI-040: opening a page and typing cause no layout shift (CLS < 0.02) |
 
 ### OFFLINE
 
@@ -2919,7 +2863,7 @@
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
 | R-PERF-014 | P1 | p50/p95/p99 на реальных устройствах: 1/100/1000 блоков, 20 таблиц, 100 изображений, несколько редакторов … | не реализовано | n/a; no device/throttling report |  |
-| R-PERF-015 | P1 | Ввод p95 ≤50 мс; кэшированная статья p95 ≤300 мс; синхронизация p95 ≤500 мс; нет long tasks >100 мс при наборе | частично | tests/e2e/collab.spec.ts "typing latency on a long document stays within budget": 400 paragraphs (~5k words), 40 samples, execCommand insertText -> next rAF, no CPU/network throttling; last run p95≈31 ms; cached open, sync p95 and long tasks not measured |  |
+| R-PERF-015 | P1 | Ввод p95 ≤50 мс; кэшированная статья p95 ≤300 мс; синхронизация p95 ≤500 мс; нет long tasks >100 мс при наборе | частично | docs/PERFORMANCE.md (typing p95, long tasks count, sync p95); budgets not met in this environment (PERF-D1); cached open not measured |  |
 | R-PERF-016 | P1 | Виртуализация больших таблиц с клавиатурой и копированием; конвертации/OCR в фоне | частично | conversions/OCR server-side; tables not virtualised |  |
 
 ### COLLAB
@@ -3010,7 +2954,7 @@
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| UX13-09 | P0 | 20 минут непрерывного ввода без рывков и потерянных символов | не реализовано | n/a; no 20-minute continuous typing test | tests/e2e/perf-session.spec.ts: E2E-120, UX13-09: long session — 200 formatting toggles and continuous typing; exact final |
+| UX13-09 | P0 | 20 минут непрерывного ввода без рывков и потерянных символов | реализовано | tests/e2e/perf-session.spec.ts "E2E-120, UX13-09: long session — …" run with KB_LONG_SESSION_MIN=20 on 2026-10-22 (20.6 min, 198 lines / 14 612 chars + 200 formatting toggles, exact text, server copy and reload match); CI runs the 1-minute variant; latency over the 20 min: p50 47, p95 267, p99 468 ms on an overloaded container (docs/PERFORMANCE.md) | tests/e2e/perf-session.spec.ts: E2E-120, UX13-09: long session — 200 formatting toggles and continuous typing; exact final |
 
 ### HISTORY
 
@@ -3119,17 +3063,17 @@
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| R-ACL-021 | P0 | Режимы «Только я», «Конкретные пользователи и группы», «Вся компания»; публичная ссылка выключена, только политикой админа | частично | apps/web/src/components/page/ShareDialog.tsx general access: "Только приглашённые"/"Все сотрудники"; specific users/groups; public links off by default; No explicit "Только я" mode. | tests/integration/acl-p0.test.ts: public links (R-PUBLISH-009, E2E-109, R-ACL-021)<br>tests/integration/acl-p0.test.ts: sharing details (R-ACL-051, R-ACL-021, R-ACL-036, R-ACL-063)<br>tests/integration/acl-p0.test.ts: R-ACL-021: «Только я» shows who loses access, requires confirmation and leaves only the au<br>… ещё 1 |
+| R-ACL-021 | P0 | Режимы «Только я», «Конкретные пользователи и группы», «Вся компания»; публичная ссылка выключена, только политикой админа | реализовано | ShareDialog presets «Только я» (POST /pages/:id/access/only-me with preview of who loses access), «Отдел: …» (GET /me/groups), «Вся компания»; specific users/groups; public links off unless publicLinksEnabled; tests/integration/acl-p0.test.ts 'R-ACL-021: «Только я» …', 'E2E-109 …'; tests/e2e/acl-p0-spaces.spec.ts 'R-ACL-021 R-ACL-036 …' | tests/integration/acl-p0.test.ts: public links (R-PUBLISH-009, E2E-109, R-ACL-021)<br>tests/integration/acl-p0.test.ts: sharing details (R-ACL-051, R-ACL-021, R-ACL-036, R-ACL-063)<br>tests/integration/acl-p0.test.ts: R-ACL-021: «Только я» shows who loses access, requires confirmation and leaves only the au<br>… ещё 1 |
 | R-ACL-022 | P1 | Уровни: просмотр, комментарии, редактирование, полный контроль; отдельно структура, экспорт, предоставление доступа | частично | levels view/comment/edit/full; grant flags canExport/canDownload/canShare/canPublish (grants table, setGrant); Separate structure/export/share flags are API-only; ShareDialog exposes only levels. |  |
 | R-ACL-023 | P0 | Наследование с видимыми исключениями; «Почему у этого человека есть доступ»; запреты политики не обходятся дочерней страницей | реализовано | ShareDialog inherited list + ExplainBox (GET /access/explain), deny wins (combine), space policy (allowGuests/export) cannot be overridden by child grants; tests/integration/acl.test.ts ACL-161 |  |
 | R-ACL-024 | P0 | При переносе показать, кто приобретёт/потеряет доступ; приватная страница не индексируется в чужом поиске, превью, упоминаниях, истории … | реализовано | previewMove audience diff (services/pages.ts), search/preview/backlinks/attachments filtered by ACL; tests/integration/acl.test.ts ACL-165 |  |
-| R-ACL-025 | P0 | Отзыв доступа немедленно на сервере, аннулирование временных URL; политика срока жизни локальных копий | частично | signed links re-checked; export download re-check (tests/integration/acl-gaps.test.ts); No lifetime policy for local (IndexedDB) copies. | tests/e2e/acl-p0-ui.spec.ts: QA26-24 R-ACL-075 R-ACL-076: in the browser the UI shows exactly the server rights; no byp |
+| R-ACL-025 | P0 | Отзыв доступа немедленно на сервере, аннулирование временных URL; политика срока жизни локальных копий | реализовано | signed links/exports re-checked; local copies: offline use only for 30 days, removed from the device when the server answers 404 (apps/web/src/sync/localCopies.ts, hooks/data.ts usePage); tests/e2e/acl-p0-ui.spec.ts 'QA26-24 R-ACL-075 R-ACL-076 … removes access and the local copy (R-ACL-025)'; tests/integration/acl-gaps.test.ts; Replica is kept while unsent edits are queued (never destroyed silently). | tests/e2e/acl-p0-ui.spec.ts: QA26-24 R-ACL-075 R-ACL-076: in the browser the UI shows exactly the server rights; no byp |
 
 ### AUDIT
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| R-AUDIT-002 | P0 | Приглашения/отзыв логируются; права на сервере для каждой операции и файлов; тесты сочетаний родитель/дочерний/группы | частично | audit: user.create (incl. groups), user.invite_resend/revoke, grant.create/update/revoke; tests/integration/acl.test.ts; Combinatorial parent/child/group tests are limited to a handful of cases. | tests/integration/acl-p0.test.ts: role × permission matrix (R-ACL-013, R-AUDIT-002)<br>tests/integration/acl-p0.test.ts: R-AUDIT-002: combinatorial parent / child / group inheritance matches an independent oracl |
+| R-AUDIT-002 | P0 | Приглашения/отзыв логируются; права на сервере для каждой операции и файлов; тесты сочетаний родитель/дочерний/группы | реализовано | tests/integration/acl-p0.test.ts 'R-AUDIT-002: combinatorial parent / child / group inheritance matches an independent oracle, and every grant is audited' (36 combinations of space-group level × parent grant/deny × inheritance × child grant); user.create/grant.* audited | tests/integration/acl-p0.test.ts: role × permission matrix (R-ACL-013, R-AUDIT-002)<br>tests/integration/acl-p0.test.ts: R-AUDIT-002: combinatorial parent / child / group inheritance matches an independent oracl |
 
 ### EDITOR
 
@@ -3180,7 +3124,7 @@
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| R-ACL-026 | P0 | ACL/группы/политики; effective permissions с инвалидируемым кешем; проверка в API, WS, поиске, экспорте, превью, скачивании | частично | effective access computed per request (accessForPages), acl_epoch bumped on every change (apps/server/src/acl/engine.ts bumpAclEpoch), checks in API/WS/search/export/preview/download; No permission cache exists, so "cache invalidated" is only vacuously true; acl_epoch is not read by HTTP layer. |  |
+| R-ACL-026 | P0 | ACL/группы/политики; effective permissions с инвалидируемым кешем; проверка в API, WS, поиске, экспорте, превью, скачивании | частично | effective access computed per request (accessForPages), acl_epoch bumped on every change (apps/server/src/acl/engine.ts bumpAclEpoch), checks in API/WS/search/export/preview/download; decision documented in docs/DECISIONS.md D-24; No permission cache by design (D-24): rights are computed per request in one query and acl_epoch drives WS re-checks. A cache keyed by acl_epoch would be correct only if every change (including direct DB edits and time-based expiry) bumped the epoch, and saves no queries — so the 'cache is invalidated' acceptance is not demonstrable. |  |
 
 ### EDITOR
 
@@ -3238,7 +3182,7 @@
 | E2E-103 | P1 | Наследуемые права объясняются в интерфейсе | реализовано | apps/web/src/components/page/ShareDialog.tsx "Унаследованный доступ" with via labels + ExplainBox inheritance chain; No browser test. |  |
 | E2E-104 | P0 | Исключение дочерней страницы применяется | реализовано | tests/integration/acl.test.ts: restricted child page (ACL-160) | tests/integration/acl.test.ts: restricted child page is not accessible through parent rights (ACL-160, R-ACL-034, E2E-104 |
 | E2E-105 | P0 | Отзыв доступа закрывает WebSocket-подписку | реализовано | tests/integration/collab.test.ts: revoking view closes it (E2E-105) | tests/integration/collab.test.ts: read-only user cannot write; revoking edit switches session to read-only; revoking view cl<br>tests/integration/collab.test.ts: a user without access cannot open the live channel (S03/E2E-105) |
-| E2E-106 | P0 | Права корректны при одновременном переносе и редактировании | частично | movePage under lockTree + acl-changed -> hub.recheckAccess; No test of concurrent move + editing permissions. | tests/integration/acl-p0.test.ts: move preview (R-SPACE-007, R-ACL-068) and concurrent move + edit (E2E-106)<br>tests/integration/acl-p0.test.ts: E2E-106: moving a page while it is being edited re-evaluates rights for the open editor; l |
+| E2E-106 | P0 | Права корректны при одновременном переносе и редактировании | реализовано | tests/integration/acl-p0.test.ts 'E2E-106: moving a page while it is being edited re-evaluates rights for the open editor; later edits are not saved' | tests/integration/acl-p0.test.ts: move preview (R-SPACE-007, R-ACL-068) and concurrent move + edit (E2E-106)<br>tests/integration/acl-p0.test.ts: E2E-106: moving a page while it is being edited re-evaluates rights for the open editor; l |
 | E2E-107 | P0 | Групповые права пересчитываются после изменения состава | реализовано | tests/integration/acl.test.ts: removing a user from a department revokes access | tests/integration/acl.test.ts: removing a user from a department revokes access; personal grants remain (R-ACL-039, E2E-1 |
 
 ### EXPORT
@@ -3251,7 +3195,7 @@
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| E2E-109 | P0 | Публичная ссылка запрещена политикой | частично | publicLinksEnabled org setting; no share-link endpoint; Public links not implemented, so "creation rejected by policy" cannot be exercised; no test. | tests/integration/acl-p0.test.ts: public links (R-PUBLISH-009, E2E-109, R-ACL-021)<br>tests/integration/acl-p0.test.ts: E2E-109: creating a public link is rejected while the organisation policy forbids it (defa<br>tests/e2e/acl-p0-spaces.spec.ts: E2E-109 R-PUBLISH-009: public links are off by policy; once enabled a link opens without l |
+| E2E-109 | P0 | Публичная ссылка запрещена политикой | реализовано | tests/integration/acl-p0.test.ts 'E2E-109: creating a public link is rejected while the organisation policy forbids it (default)'; tests/e2e/acl-p0-spaces.spec.ts 'E2E-109 R-PUBLISH-009 …' | tests/integration/acl-p0.test.ts: public links (R-PUBLISH-009, E2E-109, R-ACL-021)<br>tests/integration/acl-p0.test.ts: E2E-109: creating a public link is rejected while the organisation policy forbids it (defa<br>tests/e2e/acl-p0-spaces.spec.ts: E2E-109 R-PUBLISH-009: public links are off by policy; once enabled a link opens without l |
 
 ### AUDIT
 
@@ -3317,7 +3261,7 @@
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| E2E-120 | P0 | 200 быстрых операций форматирования без зависания и потери символов | не реализовано | n/a; no 200-formatting-ops stress test | tests/e2e/perf-session.spec.ts: E2E-120, UX13-09: long session — 200 formatting toggles and continuous typing; exact final |
+| E2E-120 | P0 | 200 быстрых операций форматирования без зависания и потери символов | реализовано | tests/e2e/perf-session.spec.ts "E2E-120, UX13-09: long session — 200 formatting toggles and continuous typing; exact final text, nothing lost, saved on the server" | tests/e2e/perf-session.spec.ts: E2E-120, UX13-09: long session — 200 formatting toggles and continuous typing; exact final |
 | R-PERF-017 | P1 | p95 раскрытия кэшированной ветки ≤100 мс; удалённая подгрузка с состоянием ожидания; p95 форматирования ≤50 мс | частично | virtualised tree, cached children via react-query; not measured |  |
 
 ### UI
@@ -3366,7 +3310,7 @@
 | R-ACL-033 | P0 | При конфликте — запрет верхнего уровня для гостей/внешних и минимально достаточный доступ … | реализовано | deny wins; space allowGuests and org guestsEnabled=false (engine orgGuestsDisabled) override any grant; tests/integration/acl.test.ts, tests/integration/acl-gaps.test.ts | tests/integration/acl-gaps.test.ts: organisation guest switch beats existing grants (R-ACL-033) |
 | R-ACL-034 | P0 | Защищённая дочерняя страница не доступна из-за прав на родителя | реализовано | tests/integration/acl.test.ts: restricted child page is not accessible through parent rights | tests/integration/acl.test.ts: restricted child page is not accessible through parent rights (ACL-160, R-ACL-034, E2E-104 |
 | R-ACL-035 | P0 | Перенос между пространствами: предпросмотр изменений доступа и подтверждение при расширении аудитории | реализовано | previewMove/movePage requiresConfirmation (audience_change 409); tests/integration/acl.test.ts ACL-165 | tests/integration/acl.test.ts: moving a private page to an open space requires confirmation and shows who gains access; u |
-| R-ACL-036 | P0 | Разрешение пользователю/группе/отделу/пространству с датой окончания, часовым поясом, автором и основанием | частично | grants: subject user/group(department)/org, expires_at, granted_by, reason; No space-as-subject; time zone not stored; ShareDialog has no reason field (reason API-only). | tests/integration/acl-p0.test.ts: sharing details (R-ACL-051, R-ACL-021, R-ACL-036, R-ACL-063)<br>tests/integration/acl-p0.test.ts: R-ACL-036 R-ACL-063: start, end, time zone, author and reason are stored; the granter is r<br>tests/e2e/acl-p0-spaces.spec.ts: R-ACL-021 R-ACL-036: share dialog — department preset, quick expiry, start date, reason, f |
+| R-ACL-036 | P0 | Разрешение пользователю/группе/отделу/пространству с датой окончания, часовым поясом, автором и основанием | частично | grants store subject user/group(department)/org, starts_at, expires_at, time_zone (IANA, from the browser), granted_by, reason; ShareDialog «Ещё параметры» (start date, reason, flags) and SpaceMembersEditor (term, reason); tests/integration/acl-p0.test.ts 'R-ACL-036 R-ACL-063: …'; tests/e2e/acl-p0-spaces.spec.ts 'R-ACL-021 R-ACL-036 …'; A space as a subject («участники пространства X») is not supported — grant to the group/department that forms the space instead. | tests/integration/acl-p0.test.ts: sharing details (R-ACL-051, R-ACL-021, R-ACL-036, R-ACL-063)<br>tests/integration/acl-p0.test.ts: R-ACL-036 R-ACL-063: start, end, time zone, author and reason are stored; the granter is r<br>tests/e2e/acl-p0-spaces.spec.ts: R-ACL-021 R-ACL-036: share dialog — department preset, quick expiry, start date, reason, f |
 | R-ACL-037 | P1 | Быстрые сроки: 1 день, 7 дней, 30 дней, дата, бессрочно | частично | apps/web/src/components/page/ShareDialog.tsx date input (empty = бессрочно); No quick presets 1/7/30 days. |  |
 | R-ACL-038 | P0 | Истечение на сервере независимо от клиента; WebSocket и ссылки на вложения немедленно перепроверяют доступ | реализовано | hub.checkExpirations() every 5 s (KB_ACL_EXPIRY_CHECK_MS) detects grant/membership/account expiry and grant start, emits acl-changed -> recheckAccess downgrades/closes WS; events WS also checks session/account expiry; tests/integration/acl-gaps.test.ts: time-based expiry in live sessions; Detection latency up to the check interval (5 s). | tests/integration/acl-gaps.test.ts: time-based expiry in live sessions (R-ACL-038, V15-A07, ACL-156, R-ACL-063, R-ACL-003)<br>tests/integration/acl-gaps.test.ts: expiry of a temporary department membership is detected the same way (R-ACL-038) |
 
@@ -3412,7 +3356,7 @@
 |---|---|---|---|---|---|
 | R-ACL-044 | P0 | Серверная авторизация на API, WS-подписке, вложении, поиске, экспорте, превью, OCR | реализовано | requirePage/loadAttachment in API, WS, attachments, search, export, previews/tiles, OCR |  |
 | R-ACL-045 | P0 | RBAC + ACL/группы/наследование + политики; effective_permission(subject, resource, action, time) с трассировкой источников | реализовано | apps/server/src/acl/engine.ts combine(grants, subjects, policy, {now}) with sources/denies/explanation; GET /access/explain; "time" parameter not exposed in API. |  |
-| R-ACL-046 | P0 | Версионированный кеш прав с инвалидацией при изменении членства/ACL; не доверять клиентскому скрытию | частично | acl_epoch table + bumpAclEpoch; client never trusted; No versioned permission cache implemented (rights recomputed per request). |  |
+| R-ACL-046 | P0 | Версионированный кеш прав с инвалидацией при изменении членства/ACL; не доверять клиентскому скрытию | частично | acl_epoch table + bumpAclEpoch; client never trusted; decision documented in docs/DECISIONS.md D-24; No permission cache by design (D-24): rights are computed per request in one query and acl_epoch drives WS re-checks. A cache keyed by acl_epoch would be correct only if every change (including direct DB edits and time-based expiry) bumped the epoch, and saves no queries — so the 'cache is invalidated' acceptance is not demonstrable. |  |
 
 ### FILES
 
@@ -3590,7 +3534,7 @@
 |---|---|---|---|---|---|
 | R-PUBLISH-007 | P0 | Статусы Черновик/На согласовании/Опубликовано/Архив; публикация — неизменяемая ревизия; читатели видят опубликованную | реализовано | publish() marks immutable revision kind publish; readers in publish mode see it | tests/integration/content.test.ts: readers see the published revision while the draft evolves; approval required when configu |
 | R-PUBLISH-008 | P1 | Публикация в компании, пространстве, отделам/людям; внешняя только по политике; предпросмотр аудитории, вложений, дочерних, индексации … | частично | publish within the space audience; PublishBar confirm; No choice of publication audience (company/departments/people), no preview of audience/attachments/children/indexing. |  |
-| R-PUBLISH-009 | P0 | Публичная ссылка: отзыв, срок, пароль, noindex по умолчанию, контроль скачивания; предупреждение, что скачанное нельзя отозвать | не реализовано | share_links table only (no routes); Public links (revoke, expiry, password, noindex, download control) not implemented. | tests/integration/acl-p0.test.ts: public links (R-PUBLISH-009, E2E-109, R-ACL-021)<br>tests/integration/acl-p0.test.ts: R-PUBLISH-009: link works anonymously with noindex, honours password, expiry, download con<br>tests/integration/acl-p0.test.ts: R-PUBLISH-009: a link stops when its creator loses the right to share; children only when <br>… ещё 1 |
+| R-PUBLISH-009 | P0 | Публичная ссылка: отзыв, срок, пароль, noindex по умолчанию, контроль скачивания; предупреждение, что скачанное нельзя отозвать | реализовано | routes/acl-extra.ts: POST/GET /pages/:id/share-links, DELETE /share-links/:id, anonymous /pub/:token (noindex header+meta by default, expiry, argon2 password with audited failures, download flag + space policy, children only when included, link dies on revoke / policy off / creator losing share), admin list; ShareDialog PublicLinksSection with the «скачанное нельзя отозвать» acknowledgement; tests/integration/acl-p0.test.ts 'R-PUBLISH-009: …' (2 tests); tests/e2e/acl-p0-spaces.spec.ts 'E2E-109 R-PUBLISH-009 …' | tests/integration/acl-p0.test.ts: public links (R-PUBLISH-009, E2E-109, R-ACL-021)<br>tests/integration/acl-p0.test.ts: R-PUBLISH-009: link works anonymously with noindex, honours password, expiry, download con<br>tests/integration/acl-p0.test.ts: R-PUBLISH-009: a link stops when its creator loses the right to share; children only when <br>… ещё 1 |
 
 ### PAGE
 
@@ -3633,7 +3577,7 @@
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
 | R-ADMIN-009 | P1 | Админ-центр: обзор, люди, отделы, группы, пространства, роли, гости, приглашения, публикации, аудит; поиск, фильтры, массовые операции … | частично | AdminPage tabs: users, groups, settings, audit, archives, health, expiring; search & filters in UsersSection; Missing sections: overview, spaces, roles, guests/invitations dashboard, publications; no bulk operations. |  |
-| R-ADMIN-010 | P0 | Матрица эффективного доступа пользователь × пространство/страница: уровень, источник, срок, владелец, конфликты … | частично | GET /access/explain?userId (per-space levels) and ?pageId (sources, expiry, denies); No user x space/page effective-access matrix screen; owner/conflicts columns missing. | tests/integration/acl-p0.test.ts: effective access for administrators (R-ADMIN-010, V16-S15, R-ADMIN-018)<br>tests/integration/acl-p0.test.ts: R-ADMIN-010 V16-S15: users × spaces matrix shows level, source, expiry, conflicts and mana |
+| R-ADMIN-010 | P0 | Матрица эффективного доступа пользователь × пространство/страница: уровень, источник, срок, владелец, конфликты … | реализовано | GET /api/v1/admin/access-matrix (users × non-personal spaces: level, source incl. group names, earliest expiry, deny+allow conflicts, managers) + admin «Доступ → Матрица доступа»; pages via «Проверить доступ»; tests/integration/acl-p0.test.ts 'R-ADMIN-010 V16-S15: …'; tests/e2e/acl-p0-admin.spec.ts | tests/integration/acl-p0.test.ts: effective access for administrators (R-ADMIN-010, V16-S15, R-ADMIN-018)<br>tests/integration/acl-p0.test.ts: R-ADMIN-010 V16-S15: users × spaces matrix shows level, source, expiry, conflicts and mana |
 | R-ADMIN-011 | P1 | Мастер сотрудника: приглашение, роль, отделы, группы, пространства, срок, предпросмотр; отзыв/перевод пересчитывает права | частично | CreateUserDialog (role, departments, groups, expiry), TransferDialog recalculates; No spaces step and no pre-confirmation preview in the wizard. |  |
 
 ### ACL
@@ -3716,7 +3660,7 @@
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| V16-S15 | P0 | Админ видит эффективные права с причиной и сроком без скрытого доступа к приватному | частично | GET /access/explain returns level/sources/expiry, page title hidden "(скрыто)"; tests/integration/acl.test.ts S15; Admin UI has no entry point to it (ExplainBox only inside ShareDialog for users with share right). | tests/integration/acl.test.ts: explains why a user has access (ACL-161, V15-A09, V16-S15, R-ACL-078)<br>tests/integration/acl-p0.test.ts: effective access for administrators (R-ADMIN-010, V16-S15, R-ADMIN-018)<br>tests/integration/acl-p0.test.ts: R-ADMIN-010 V16-S15: users × spaces matrix shows level, source, expiry, conflicts and mana<br>… ещё 1 |
+| V16-S15 | P0 | Админ видит эффективные права с причиной и сроком без скрытого доступа к приватному | реализовано | admin «Доступ» section (AccessSection.tsx): check access + matrix; private titles shown as «(скрыто)», admin still gets 404 on the page; tests/integration/acl-p0.test.ts 'R-ADMIN-010 V16-S15: …'; tests/e2e/acl-p0-admin.spec.ts 'R-ADMIN-018 V16-S15: …' | tests/integration/acl.test.ts: explains why a user has access (ACL-161, V15-A09, V16-S15, R-ACL-078)<br>tests/integration/acl-p0.test.ts: effective access for administrators (R-ADMIN-010, V16-S15, R-ADMIN-018)<br>tests/integration/acl-p0.test.ts: R-ADMIN-010 V16-S15: users × spaces matrix shows level, source, expiry, conflicts and mana<br>… ещё 1 |
 | V16-S16 | P1 | Массовая смена прав: подтверждение, лог, отчёт результата | частично | POST /api/v1/grants/bulk (preview/apply, per-grant audit); No UI; preview only echoes grants (no audience); no result report beyond count. |  |
 
 ### UI
@@ -3912,7 +3856,7 @@
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| V17-F02 | P0 | 100 читателей и 20 редакторов; p95/p99; без потери подтверждённых изменений | не реализовано | n/a; no 100 readers + 20 editors load test |  |
+| V17-F02 | P0 | 100 читателей и 20 редакторов; p95/p99; без потери подтверждённых изменений | реализовано | scripts/load/collab-load.mjs (100 readers + 20 editors, REST + WebSocket, seeded 5×200-block pages, 120 s); results in docs/PERFORMANCE.md and test-results/load/*.json — 1 527 acknowledged edits, 0 lost, 0 duplicated, p95/p99 reported; p95 sync ≈ 1.4 s exceeds the 500 ms SLO on a shared 4-vCPU container (tracked by R-PERF-006/R-PERF-015); not a CI test — run manually |  |
 
 ### OFFLINE
 
@@ -3954,7 +3898,7 @@
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| V17-F09 | P1 | Макеты 320–1920 px без перекрытий, прыжков, горизонтального скролла, потерянных элементов | частично | tests/e2e/visual.spec.ts 320–1920: no horizontal scroll, key controls visible; overlaps, jumps, lost elements not detected | tests/e2e/ui-p0-layout.spec.ts: R-UI-006, V17-F09: no overlapping, clipped or off-screen controls at 320–1920 px (${theme} |
+| V17-F09 | P1 | Макеты 320–1920 px без перекрытий, прыжков, горизонтального скролла, потерянных элементов | реализовано | tests/e2e/ui-p0-layout.spec.ts "R-UI-006, V17-F09: no overlapping, clipped or off-screen controls at 320–1920 px (light/dark)"; fixed onboarding hint covering the mobile drawer navigation | tests/e2e/ui-p0-layout.spec.ts: R-UI-006, V17-F09: no overlapping, clipped or off-screen controls at 320–1920 px (${theme} |
 
 ### QA
 
@@ -4075,8 +4019,8 @@
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| R-UI-052 | P0 | Сообщение об ошибке отвечает: что случилось, сохранены ли данные, что делать, как повторить | частично | ErrorBoundary/PageError/offline texts answer what/saved/what to do; generic "Ошибка NNN" messages from api/client.ts:67; no template enforcement | tests/unit/ui-error-template.test.ts: error message template (R-UI-052, R-UI-009)<br>tests/unit/ui-error-template.test.ts: R-UI-052: server failure on a change says it was not saved, how to retry and gives the req<br>tests/unit/ui-error-template.test.ts: R-UI-052: missing rights explain what to do; reads do not talk about saving<br>… ещё 2 |
-| R-UI-053 | P0 | Запрет тупиков: модалка без выхода, бесконечный spinner, недоступная кнопка без причины, потерянное выделение, исчезнувший блок | частично | Dialog Esc/close + focus return; disabledReason in menus; no dead-end E2E; App "loading" spinner unbounded | tests/e2e/ui-p0-interaction.spec.ts: R-UI-059, R-UI-053: dialogs trap focus, always have a visible exit and Esc, and return foc<br>tests/e2e/ui-p0-interaction.spec.ts: R-UI-053: a server that does not answer gives an explanation and a retry instead of an end<br>tests/e2e/ui-p0-interaction.spec.ts: R-UI-053, R-UI-068: disabled actions always say why (view-only user) |
+| R-UI-052 | P0 | Сообщение об ошибке отвечает: что случилось, сохранены ли данные, что делать, как повторить | реализовано | apps/web/src/api/client.ts explainError (what happened + "Изменение не сохранено" + what to do/retry + request code); tests/unit/ui-error-template.test.ts "R-UI-052: …"; tests/e2e/ui-p0-interaction.spec.ts "R-UI-009, R-UI-052: …"; validation (400), auth (401) and not-found (404) messages stay field/page-specific by design; client-only messages are hand-written per call site | tests/unit/ui-error-template.test.ts: error message template (R-UI-052, R-UI-009)<br>tests/unit/ui-error-template.test.ts: R-UI-052: server failure on a change says it was not saved, how to retry and gives the req<br>tests/unit/ui-error-template.test.ts: R-UI-052: missing rights explain what to do; reads do not talk about saving<br>… ещё 2 |
+| R-UI-053 | P0 | Запрет тупиков: модалка без выхода, бесконечный spinner, недоступная кнопка без причины, потерянное выделение, исчезнувший блок | реализовано | tests/e2e/ui-p0-interaction.spec.ts "R-UI-053: a server that does not answer gives an explanation and a retry instead of an endless spinner" (App.tsx boot timeout 12 s, was unbounded), "R-UI-059, R-UI-053: dialogs trap focus, always have a visible exit and Esc, and return focus to the opener", "R-UI-053, R-UI-068: disabled actions always say why (view-only user)"; lost selection / disappearing block are covered by editor tests of other modules, not re-tested here | tests/e2e/ui-p0-interaction.spec.ts: R-UI-059, R-UI-053: dialogs trap focus, always have a visible exit and Esc, and return foc<br>tests/e2e/ui-p0-interaction.spec.ts: R-UI-053: a server that does not answer gives an explanation and a retry instead of an end<br>tests/e2e/ui-p0-interaction.spec.ts: R-UI-053, R-UI-068: disabled actions always say why (view-only user) |
 
 ### QA
 
@@ -4094,7 +4038,7 @@
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| R-PERF-019 | P0 | Тяжёлые операции в фоне; ввод не блокируется OCR, загрузкой, экспортом | частично | OCR/import/export server jobs; uploads via XHR; typing during upload/OCR/export not tested |  |
+| R-PERF-019 | P0 | Тяжёлые операции в фоне; ввод не блокируется OCR, загрузкой, экспортом | частично | OCR/import/export server jobs; uploads via XHR; typing during upload/OCR/export not measured |  |
 
 ### ARCHIVE
 
@@ -4177,7 +4121,7 @@
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| V18-A18 | P1 | 200% zoom без наложений | частично | tests/e2e/a11y.spec.ts real 200% zoom test (no horizontal overflow); overlaps not detected | tests/e2e/ui-p0-layout.spec.ts: V18-A18, AT-81: real 200 % zoom (DPR 2, 640×400 CSS px) — no overlaps or clipped controls<br>tests/e2e/a11y.spec.ts: real 200% browser zoom (1280x800 at 2x = 640x400 CSS px) keeps every key screen usable (AT |
+| V18-A18 | P1 | 200% zoom без наложений | реализовано | tests/e2e/ui-p0-layout.spec.ts "V18-A18, AT-81: real 200 % zoom (DPR 2, 640×400 CSS px) — no overlaps or clipped controls" | tests/e2e/ui-p0-layout.spec.ts: V18-A18, AT-81: real 200 % zoom (DPR 2, 640×400 CSS px) — no overlaps or clipped controls<br>tests/e2e/a11y.spec.ts: real 200% browser zoom (1280x800 at 2x = 640x400 CSS px) keeps every key screen usable (AT |
 | V18-A19 | P1 | Все основные действия доступны с клавиатуры | частично | keyboard handlers across shell/tree/editor; no keyboard pass test |  |
 
 ### OFFLINE
@@ -4284,9 +4228,9 @@
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| R-UI-058 | P1 | Без hover на touch: доступные кнопки и меню, безопасные размеры касания; клавиатура не перекрывает редактор | частично | @media (pointer: coarse) reveals tree/page actions, 44px buttons and menu items, floating "+" insert button; no visualViewport handling for on-screen keyboard; touch untested | tests/e2e/ui-p0-touch.spec.ts: UX-146, R-UI-058: on a touch phone the floating "+" inserts a block without hover |
-| R-UI-059 | P0 | Popover/tooltip/menu/drawer/dialog: anchor, границы viewport, fallback-сторона, max-height, скролл, z-index, focus trap, возврат фокуса … | частично | Menu/Tooltip floating-ui (flip/shift/size/portal), Dialog focus trap + return; no positioning tests | tests/e2e/ui-p0-interaction.spec.ts: R-UI-059, R-UI-008, E224: menus at viewport edges flip/shift inside the window, keep keybo<br>tests/e2e/ui-p0-interaction.spec.ts: R-UI-059, R-UI-053: dialogs trap focus, always have a visible exit and Esc, and return foc |
-| R-UI-060 | P0 | Hover не выполняет действий; click/Enter/Space выполняют; hover-меню не мерцают; у hover-действий есть видимый/клавиатурный эквивалент | частично | hover only reveals controls/tooltips; actions on click; no test | tests/e2e/ui-p0-interaction.spec.ts: R-UI-060, UX-141: hovering controls performs no action; hover-only tree actions have a key |
+| R-UI-058 | P1 | Без hover на touch: доступные кнопки и меню, безопасные размеры касания; клавиатура не перекрывает редактор | частично | @media (pointer: coarse) 44 px targets, floating "+" (tests/e2e/ui-p0-touch.spec.ts); no visualViewport handling for the on-screen keyboard | tests/e2e/ui-p0-touch.spec.ts: UX-146, R-UI-058: on a touch phone the floating "+" inserts a block without hover |
+| R-UI-059 | P0 | Popover/tooltip/menu/drawer/dialog: anchor, границы viewport, fallback-сторона, max-height, скролл, z-index, focus trap, возврат фокуса … | реализовано | tests/e2e/ui-p0-interaction.spec.ts "R-UI-059, R-UI-008, E224: menus at viewport edges flip/shift inside the window, keep keyboard focus, close with Esc or outside click and return focus" (+ tooltip at the right edge) and dialog focus-trap test; fixed: focus returned to <body> after a dialog opened from a menu item (Dialog.tsx now returns it to the menu trigger); drawer/sheet positioning covered by ui-p0-layout overlap checks | tests/e2e/ui-p0-interaction.spec.ts: R-UI-059, R-UI-008, E224: menus at viewport edges flip/shift inside the window, keep keybo<br>tests/e2e/ui-p0-interaction.spec.ts: R-UI-059, R-UI-053: dialogs trap focus, always have a visible exit and Esc, and return foc |
+| R-UI-060 | P0 | Hover не выполняет действий; click/Enter/Space выполняют; hover-меню не мерцают; у hover-действий есть видимый/клавиатурный эквивалент | реализовано | tests/e2e/ui-p0-interaction.spec.ts "R-UI-060, UX-141: hovering controls performs no action; hover-only tree actions have a keyboard equivalent" (hover over ~70 controls: URL, dialogs, menus, tree and content unchanged; Shift+F10/Menu key opens tree row actions — added in SidebarTree.tsx) | tests/e2e/ui-p0-interaction.spec.ts: R-UI-060, UX-141: hovering controls performs no action; hover-only tree actions have a key |
 
 ### TREE
 
@@ -4301,7 +4245,7 @@
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
 | R-UI-061 | P0 | Для каждой операции документировать: пусто, успех, загрузка, отмена, ошибка, нет прав, потеря сети, конфликт, назад, перезагрузка … | не реализовано | n/a; no per-operation state documentation (no TEST_MATRIX/UX_ACCEPTANCE) |  |
-| R-UI-062 | P0 | Нельзя создавать страницу «в никуда», терять черновик, закрывать диалог с критичными данными без предупреждения, прятать возврат | частично | pending store + beforeunload (sync/collab.ts), Dialog persistent flag; untested | tests/e2e/ui-p0-interaction.spec.ts: R-UI-062: a new page is never created "nowhere" and a draft survives an immediate reload |
+| R-UI-062 | P0 | Нельзя создавать страницу «в никуда», терять черновик, закрывать диалог с критичными данными без предупреждения, прятать возврат | частично | tests/e2e/ui-p0-interaction.spec.ts "R-UI-062: a new page is never created "nowhere" and a draft survives an immediate reload" (breadcrumbs + tree entry; reload without waiting keeps the text); warning before closing a dialog with critical unsaved input is not tested | tests/e2e/ui-p0-interaction.spec.ts: R-UI-062: a new page is never created "nowhere" and a draft survives an immediate reload |
 
 ### COLLAB
 
@@ -4348,7 +4292,7 @@
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| UX-131 | P1 | Переход назад сохраняет scroll | не реализовано | apps/web/src/hooks/useScrollRestore.ts used by PageView (sessionStorage per history entry, restore on POP); untested | tests/e2e/ui-p0-touch.spec.ts: UX-131: Back restores the reading position of a long page |
+| UX-131 | P1 | Переход назад сохраняет scroll | реализовано | tests/e2e/ui-p0-touch.spec.ts "UX-131: Back restores the reading position of a long page" (±50 px; a new navigation starts at the top) | tests/e2e/ui-p0-touch.spec.ts: UX-131: Back restores the reading position of a long page |
 
 ### SEARCH
 
@@ -4393,7 +4337,7 @@
 |---|---|---|---|---|---|
 | UX-139 | P1 | Меню у нижнего края — flip вверх | частично | Menu flip middleware; untested |  |
 | UX-140 | P1 | Меню у правого края — без выхода за экран | частично | Menu shift middleware; untested |  |
-| UX-141 | P0 | Hover не вызывает случайного клика | частично | no hover-triggered actions found in code; untested | tests/e2e/ui-p0-interaction.spec.ts: R-UI-060, UX-141: hovering controls performs no action; hover-only tree actions have a key |
+| UX-141 | P0 | Hover не вызывает случайного клика | реализовано | tests/e2e/ui-p0-interaction.spec.ts "R-UI-060, UX-141: hovering controls performs no action…" | tests/e2e/ui-p0-interaction.spec.ts: R-UI-060, UX-141: hovering controls performs no action; hover-only tree actions have a key |
 
 ### EDITOR
 
@@ -4418,7 +4362,7 @@
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| UX-146 | P1 | Мобильное добавление блока без hover | частично | apps/web/src/editor/Editor.tsx TouchInsertButton ("+" on pointer:coarse opens the block menu); untested | tests/e2e/ui-p0-touch.spec.ts: UX-146, R-UI-058: on a touch phone the floating "+" inserts a block without hover |
+| UX-146 | P1 | Мобильное добавление блока без hover | реализовано | tests/e2e/ui-p0-touch.spec.ts "UX-146, R-UI-058: on a touch phone the floating "+" inserts a block without hover" (fixed: onboarding hint covered the "+") | tests/e2e/ui-p0-touch.spec.ts: UX-146, R-UI-058: on a touch phone the floating "+" inserts a block without hover |
 
 ### A11Y
 
@@ -4613,7 +4557,7 @@
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
 | E223 | P1 | E2E: клавиатура без мыши | частично | tests/e2e/editor.spec.ts slash menu by keyboard; no keyboard-only E2E |  |
-| E224 | P1 | E2E: доступность меню | частично | Menu role=menu/menuitem; tests/e2e/collab.spec.ts history uses getByRole("menuitem"); no focus/role assertions | tests/e2e/ui-p0-interaction.spec.ts: R-UI-059, R-UI-008, E224: menus at viewport edges flip/shift inside the window, keep keybo |
+| E224 | P1 | E2E: доступность меню | реализовано | tests/e2e/ui-p0-interaction.spec.ts "R-UI-059, R-UI-008, E224: …" (role=menu/menuitem, keyboard focus, focus return) | tests/e2e/ui-p0-interaction.spec.ts: R-UI-059, R-UI-008, E224: menus at viewport edges flip/shift inside the window, keep keybo |
 
 ### EXPORT
 
@@ -4637,7 +4581,7 @@
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| R-A11Y-008 | P1 | Достаточные области попадания и подсказки, touch ≥44×44 CSS px; reduced-motion; контраст AA; видимый focus ring | частично | @media (pointer: coarse) icon-btn/btn 44px, menu-item 44px (ui.css), touch-insert 48px; focus ring; axe contrast audit; touch target sizes not asserted by a test | tests/e2e/ui-p0-touch.spec.ts: R-A11Y-008: touch targets on a phone are at least 44×44 CSS px |
+| R-A11Y-008 | P1 | Достаточные области попадания и подсказки, touch ≥44×44 CSS px; reduced-motion; контраст AA; видимый focus ring | реализовано | tests/e2e/ui-p0-touch.spec.ts "R-A11Y-008: touch targets on a phone are at least 44×44 CSS px" (fixed: nav items 32 px, section buttons, tree chevrons, icon-only buttons; tree virtual rows now 44 px on touch); axe contrast audit tests/e2e/a11y.spec.ts | tests/e2e/ui-p0-touch.spec.ts: R-A11Y-008: touch targets on a phone are at least 44×44 CSS px |
 
 ### QA
 
@@ -4862,7 +4806,7 @@
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| R-QA-034 | P0 | Property-based/fuzz, partition/latency/reorder/duplicate, 2–20 редакторов, нагрузка, восстановление из snapshot+log … | частично | collab.test.ts randomised convergence with disconnects; D-02 resend dedupe test; 2 clients only; no partition/reorder injection, 20 editors, load |  |
+| R-QA-034 | P0 | Property-based/fuzz, partition/latency/reorder/duplicate, 2–20 редакторов, нагрузка, восстановление из snapshot+log … | частично | collab.test.ts randomised convergence; tests/integration/qa-invariants.test.ts (HTTP fallback, offline-reconnect, concurrent editor); scripts/load/collab-load.mjs 20 editors on 5 pages, 0 lost/duplicated; no partition/reorder/duplicate injection; 20-editor run is manual |  |
 
 ### MEDIA
 
@@ -4947,19 +4891,19 @@
 | R-SPACE-004 | P0 | «Моё пространство» создаётся при первом входе; доступно только владельцу; не в корпоративном поиске других | реализовано | ensurePersonalSpace on user creation/login (apps/server/src/services/org.ts); tests/integration/core.test.ts: personal space invisible to others and admins | tests/integration/core.test.ts: each employee gets a private personal space invisible to others and to admins (UX23-199, A |
 | R-SPACE-005 | P1 | В личном пространстве любые страницы, блоки, вложенность, таблицы, вложения, шаблоны, черновики; автосохранение и история как в командных | реализовано | personal space is an ordinary space (same pages/blocks/attachments/templates/history) |  |
 | R-SPACE-006 | P0 | Личные страницы не публикуются и не доступны по ссылке автоматически; публикация/перенос — явное действие с проверкой прав | реализовано | setGrant org widening confirm; move from personal requires confirmation (previewMove personalSource) |  |
-| R-SPACE-007 | P0 | Перенос в общую область: пространство и родитель, предпросмотр пути, аудитории, прав, вложений; подтверждение … | частично | MoveDialog + treeActions movePage: confirm with gained/lost, descendants, attachments; Undo toast; No path preview in confirmation, no link to the new location; confirmation shown only when audience widens/personal source. | tests/integration/acl-p0.test.ts: move preview (R-SPACE-007, R-ACL-068) and concurrent move + edit (E2E-106)<br>tests/integration/acl-p0.test.ts: R-SPACE-007 R-ACL-068: preview lists target path, public links and guests losing access; a |
+| R-SPACE-007 | P0 | Перенос в общую область: пространство и родитель, предпросмотр пути, аудитории, прав, вложений; подтверждение … | реализовано | previewMove impact (services/move-impact.ts): from/to path, gained/lost audience, guests losing access, public links, descendants, attachments; confirmation dialog shows them; success toast names the new location with «Открыть» link and «Отменить»; tests/integration/acl-p0.test.ts 'R-SPACE-007 R-ACL-068: …'; tests/e2e/acl-p0-routes.spec.ts ROUTE-03 (tree move) | tests/integration/acl-p0.test.ts: move preview (R-SPACE-007, R-ACL-068) and concurrent move + edit (E2E-106)<br>tests/integration/acl-p0.test.ts: R-SPACE-007 R-ACL-068: preview lists target path, public links and guests losing access; a |
 
 ### ACL
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| R-ACL-051 | P0 | «Поделиться» личной страницей — осознанная операция с адресатами, уровнем, сроком; индикация «не полностью личная» … | частично | sharing personal page via ShareDialog (recipients, level, expiry); org widening requires confirmWiden; No "не полностью личная" indicator on shared personal pages. | tests/integration/acl-p0.test.ts: sharing details (R-ACL-051, R-ACL-021, R-ACL-036, R-ACL-063)<br>tests/integration/acl-p0.test.ts: R-ACL-051: a personal page shared with anybody is marked «не полностью личная» (also its c<br>tests/e2e/acl-p0-spaces.spec.ts: R-ACL-051: a shared personal page shows «Не полностью личная» in the header and in the sha |
+| R-ACL-051 | P0 | «Поделиться» личной страницей — осознанная операция с адресатами, уровнем, сроком; индикация «не полностью личная» … | реализовано | pageDto.personalShared + GET /pages/:id/exposure; header badge «Не полностью личная» and ShareDialog indicator; tests/integration/acl-p0.test.ts 'R-ACL-051: …'; tests/e2e/acl-p0-spaces.spec.ts 'R-ACL-051: …' | tests/integration/acl-p0.test.ts: sharing details (R-ACL-051, R-ACL-021, R-ACL-036, R-ACL-063)<br>tests/integration/acl-p0.test.ts: R-ACL-051: a personal page shared with anybody is marked «не полностью личная» (also its c<br>tests/e2e/acl-p0-spaces.spec.ts: R-ACL-051: a shared personal page shows «Не полностью личная» in the header and in the sha |
 
 ### ADMIN
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| R-ADMIN-016 | P0 | Увольнение/блокировка: политика передачи/архивации личных материалов с аудитом без раскрытия частных заметок … | частично | transferOwnership excludes personal spaces; deactivation audited; No policy to transfer/archive personal materials; no restricted emergency-access procedure. | tests/integration/acl-p0.test.ts: emergency access and offboarding (R-ACL-056, R-ADMIN-016)<br>tests/integration/acl-p0.test.ts: R-ADMIN-016: offboarding hands over only already-shared personal documents; private notes  |
+| R-ADMIN-016 | P0 | Увольнение/блокировка: политика передачи/архивации личных материалов с аудитом без раскрытия частных заметок … | реализовано | POST /api/v1/admin/users/:id/offboard-personal (archive / transfer_shared with dry run; only already-shared documents go to the successor; counts-only audit) + admin «Доступ → Увольнение: личные материалы»; emergency access procedure (see R-ACL-056); tests/integration/acl-p0.test.ts 'R-ADMIN-016: offboarding …', 'R-ACL-056: …' | tests/integration/acl-p0.test.ts: emergency access and offboarding (R-ACL-056, R-ADMIN-016)<br>tests/integration/acl-p0.test.ts: R-ADMIN-016: offboarding hands over only already-shared personal documents; private notes  |
 
 ### SPACE
 
@@ -5033,7 +4977,7 @@
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
 | R-PERF-024 | P1 | Серверная курсорная пагинация, виртуализация, предзагрузка, сохранение позиции; для аудита и истории — переход к дате/фильтру | частично | cursor pagination (useInfiniteQuery), audit datetime-local filter (AuditSection.tsx:189); lists not virtualised; history has no jump-to-date |  |
-| R-PERF-025 | P1 | Длинные документы без блокировки набора; ленивые медиа с резервированием размеров; виртуализация таблиц не ломает выделение … | частично | ImageView lazy + aspect-ratio reservation; no table virtualisation; long documents untested beyond 400 paragraphs |  |
+| R-PERF-025 | P1 | Длинные документы без блокировки набора; ленивые медиа с резервированием размеров; виртуализация таблиц не ломает выделение … | частично | ImageView lazy + aspect-ratio; tests/e2e/perf-typing.spec.ts SC-04 (5 000 blocks, table 200 rows, no lost input); no virtualisation; typing on 5 000 blocks p50 ≈ 190 ms (PERF-D2) |  |
 | R-PERF-026 | P1 | Отклик типичных действий ~100 мс; раскрытие загруженной ветки без сетевого ожидания; численные SLA после профилирования | частично | tests/e2e/collab.spec.ts "typing latency on a long document stays within budget": 400 paragraphs (~5k words), 40 samples, execCommand insertText -> next rAF, no CPU/network throttling; last run p95≈31 ms; other actions not profiled |  |
 | R-PERF-027 | P1 | Метрики: INP, время первого взаимодействия, sync p95/p99, пропуски кадров DnD, размер очереди, время reconnect; бюджеты регрессии в CI | частично | lib/telemetry.ts input latency → kb_client_input_latency_ms; server histograms; no INP/reconnect/DnD metrics; CI exists but has no performance budgets |  |
 
@@ -5172,7 +5116,7 @@
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| R-UI-068 | P0 | Никакие функции не ведут в тупик, нет нерабочих кнопок и незавершённых состояний | частично | see R-UI-026; no dead-end inventory/tests | tests/e2e/ui-p0-interaction.spec.ts: R-UI-053, R-UI-068: disabled actions always say why (view-only user) |
+| R-UI-068 | P0 | Никакие функции не ведут в тупик, нет нерабочих кнопок и незавершённых состояний | частично | tests/e2e/ui-p0-interaction.spec.ts dead-end tests (endless spinner, dialogs exit/Esc, disabled actions with reasons — disabledReason added to page and tree menus, Menu falls back to hint); no inventory of every button/state; other screens (admin, import) not covered by dead-end E2E | tests/e2e/ui-p0-interaction.spec.ts: R-UI-053, R-UI-068: disabled actions always say why (view-only user) |
 
 ### PROCESS
 
@@ -5252,7 +5196,7 @@
 |---|---|---|---|---|---|
 | R-QA-036 | P0 | Для каждого сценария: обычный, граничный, ошибочный, конкурентный, восстановительный пути по 16 группам функций | не реализовано | n/a; no scenario × path matrix |  |
 | R-QA-037 | P0 | Сквозные испытания A–L: одна строка и разные блоки; перенос+правка; структура таблицы; обрыв при записи и перезапуск … | частично | crash-restart typing, concurrent paragraph edits, paste table; no mapping of the 12 trials to tests |  |
-| R-QA-038 | P0 | Автоматизация unit/component/integration/API/E2E/property/load/chaos; рандомизированные конкурентные последовательности … | частично | unit/integration/E2E/property/chaos present; no component/load/contract tests; no regression-per-defect traceability |  |
+| R-QA-038 | P0 | Автоматизация unit/component/integration/API/E2E/property/load/chaos; рандомизированные конкурентные последовательности … | частично | unit/integration/E2E/property/chaos present; no component/contract tests; load test exists (scripts/load) but is not in CI |  |
 
 ### OPS
 
@@ -5334,7 +5278,7 @@
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| OPS-014 | P0 | Полный аудит изменений | частично | audit_events (incl. denials) + page_events journal; tests/integration/acl-gaps.test.ts; Content edits only in page_events, not in the tamper-evident audit; views not logged. | tests/integration/acl-gaps.test.ts: audit: private titles masked, denials logged (ROUTE-06, R-AUDIT-001, OPS-014)<br>tests/integration/acl-p0.test.ts: audit of reads and hidden resources (R-AUDIT-001, OPS-014)<br>tests/integration/acl-p0.test.ts: R-AUDIT-001 OPS-014: opening a document is audited (rate limited) and probing a hidden pag<br>… ещё 2 |
+| OPS-014 | P0 | Полный аудит изменений | реализовано | logical edit operations → page.edit in audit_events after commit (collab/hub.ts flushNow), page.view, access.not_found/denied, all admin/ACL changes; tests/integration/acl-p0.test.ts 'OPS-014: a logical edit operation is written to the audit log …', 'R-AUDIT-001 OPS-014: …' | tests/integration/acl-gaps.test.ts: audit: private titles masked, denials logged (ROUTE-06, R-AUDIT-001, OPS-014)<br>tests/integration/acl-p0.test.ts: audit of reads and hidden resources (R-AUDIT-001, OPS-014)<br>tests/integration/acl-p0.test.ts: R-AUDIT-001 OPS-014: opening a document is audited (rate limited) and probing a hidden pag<br>… ещё 2 |
 
 ### QA
 
@@ -5367,7 +5311,7 @@
 | R-ACL-053 | P1 | Единый лаконичный интерфейс доступа без знания ACL/RBAC; роль, членство, область видимости, разрешения — независимые сущности | реализовано | model separates org_role, group_members, space visibility, grants (migrations/0001_core.sql) |  |
 | R-ACL-054 | P0 | Эффективные права с объяснением происхождения; deny by default; все проверки на сервере (API, поиск, вложения, экспорт, превью, история, WS) | реализовано | combine deny-by-default + explanation; checks in API/search/attachments/export/preview/history/WS |  |
 | R-ACL-055 | P1 | Субъекты: владелец организации, администратор, руководитель подразделения (делегирование), сотрудник, гость, группа, подразделение … | реализовано | subjects: user (owner/admin/people_admin/employee/guest), group (department/group with manager), org |  |
-| R-ACL-056 | P0 | Админ-роль не открывает личные пространства; экстренный доступ только по утверждённой политике с причиной и аудитом | частично | admin gets no access to personal spaces (personalOwner only); tests/integration/acl.test.ts A03; No emergency access procedure with reason/approval/audit. | tests/integration/acl-p0.test.ts: emergency access and offboarding (R-ACL-056, R-ADMIN-016)<br>tests/integration/acl-p0.test.ts: R-ACL-056: emergency access needs a second administrator, a reason and a time limit; read-<br>tests/e2e/acl-p0-admin.spec.ts: R-ACL-056: emergency access is requested with a reason, approved by a second administrator |
+| R-ACL-056 | P0 | Админ-роль не открывает личные пространства; экстренный доступ только по утверждённой политике с причиной и аудитом | реализовано | emergency_access table + /api/v1/admin/emergency-access (request with reason ≥20 chars and 1–72 h, approval by a DIFFERENT admin, read-only grant without export/download/share, owner notified, request/approve/reject/revoke audited) + admin UI; tests/integration/acl-p0.test.ts 'R-ACL-056: …'; tests/e2e/acl-p0-admin.spec.ts 'R-ACL-056: …' | tests/integration/acl-p0.test.ts: emergency access and offboarding (R-ACL-056, R-ADMIN-016)<br>tests/integration/acl-p0.test.ts: R-ACL-056: emergency access needs a second administrator, a reason and a time limit; read-<br>tests/e2e/acl-p0-admin.spec.ts: R-ACL-056: emergency access is requested with a reason, approved by a second administrator |
 | R-ACL-057 | P1 | Объекты: организация, подразделение, группа, пространство, папка/страница, дочерняя, вложение, версия, шаблон; области «Только я» … | частично | grants on space/page; attachments/versions inherit page; templates org/space scoped; Scopes "Группа", "Подразделение", "Гости по приглашению", "Только я" not offered as presets; no grants on templates/attachments. |  |
 
 ### SPACE
@@ -5385,7 +5329,7 @@
 | R-ACL-060 | P1 | Диалог доступа: область, люди/группы/подразделения, уровень, срок, статус (активен/ожидает/приостановлен/истёк) … | частично | apps/web/src/components/page/ShareDialog.tsx: scope, people/groups, level, expiry, source (via); No status (active/pending/suspended/expired) display; starts_at not exposed in UI. |  |
 | R-ACL-061 | P1 | Быстрые действия: пригласить гостя, добавить сотрудника, подразделение, вся компания, роль, срок начала/окончания, приостановить … | частично | ShareDialog (add user/group/org, level, end date, revoke); GroupsSection; grants/bulk API; No start date, suspend/resume of a grant, grouping/filters or bulk assignment with preview in UI. |  |
 | R-ACL-062 | P1 | Опасные действия подтверждаются без лишних диалогов, с отменой где безопасно | частично | confirm() on revoke/inheritance/widening; Undo toast for moves; No undo for grant revocation/changes. |  |
-| R-ACL-063 | P0 | Временный доступ: начало/конец с часовым поясом, серверное истечение, прекращение выдачи, отмена ссылок и подписок … | частично | hub.checkExpirations() every 5 s (KB_ACL_EXPIRY_CHECK_MS) detects grant/membership/account expiry and grant start, emits acl-changed -> recheckAccess downgrades/closes WS; events WS also checks session/account expiry; starts_at/expires_at server-side; tests/integration/acl-gaps.test.ts; No owner reminder before expiry; time zone not stored (timestamptz only). | tests/integration/acl-gaps.test.ts: time-based expiry in live sessions (R-ACL-038, V15-A07, ACL-156, R-ACL-063, R-ACL-003)<br>tests/integration/acl-p0.test.ts: sharing details (R-ACL-051, R-ACL-021, R-ACL-036, R-ACL-063)<br>tests/integration/acl-p0.test.ts: R-ACL-036 R-ACL-063: start, end, time zone, author and reason are stored; the granter is r |
+| R-ACL-063 | P0 | Временный доступ: начало/конец с часовым поясом, серверное истечение, прекращение выдачи, отмена ссылок и подписок … | реализовано | server-side expiry (hub.checkExpirations), grants.time_zone, reminder to the granter 24 h before expiry (remindExpiringGrants every 10 min, idempotent via reminder_sent_at; POST /admin/grants/remind-expiring); tests/integration/acl-p0.test.ts 'R-ACL-036 R-ACL-063: …'; tests/integration/acl-gaps.test.ts | tests/integration/acl-gaps.test.ts: time-based expiry in live sessions (R-ACL-038, V15-A07, ACL-156, R-ACL-063, R-ACL-003)<br>tests/integration/acl-p0.test.ts: sharing details (R-ACL-051, R-ACL-021, R-ACL-036, R-ACL-063)<br>tests/integration/acl-p0.test.ts: R-ACL-036 R-ACL-063: start, end, time zone, author and reason are stored; the granter is r |
 
 ### AUTH
 
@@ -5401,7 +5345,7 @@
 | R-ACL-065 | P1 | Наследование сверху вниз; для дочерней «Наследовать»/«Настроить отдельно» с предупреждением | реализовано | apps/web/src/components/page/ShareDialog.tsx inheritance toggle with warning; POST /pages/:id/inheritance |  |
 | R-ACL-066 | P0 | Формальная модель исключений: запреты приоритетнее разрешений; затем прямые назначения и членства | реализовано | combine: deny > allow, then max of direct/group/org; tests/integration/acl.test.ts: explicit deny wins over group allow; Formal model documented only in code comments. | tests/integration/acl.test.ts: explicit deny wins over group allow (R-ACL-066) |
 | R-ACL-067 | P0 | Отсутствие доступа к родителю не раскрывает его метаданные при прямом доступе к дочерней; проверка одинакова в UI и API | реализовано | breadcrumbs hide inaccessible ancestors, explain chain titles "…", tree hasChildren filtered |  |
-| R-ACL-068 | P0 | Перемещение между подразделениями/пространствами: прежняя и будущая аудитория, сохраняемые/меняемые права … | частично | previewMove: from/to, gained/lost subjects, descendants, attachments count; Affected links and guests not listed separately. | tests/integration/acl-p0.test.ts: move preview (R-SPACE-007, R-ACL-068) and concurrent move + edit (E2E-106)<br>tests/integration/acl-p0.test.ts: R-SPACE-007 R-ACL-068: preview lists target path, public links and guests losing access; a |
+| R-ACL-068 | P0 | Перемещение между подразделениями/пространствами: прежняя и будущая аудитория, сохраняемые/меняемые права … | реализовано | move preview lists previous/future paths, gained/lost subjects, guests (with loses-access flag, confirmation required when guests lose access) and affected public links; tests/integration/acl-p0.test.ts 'R-SPACE-007 R-ACL-068: …' | tests/integration/acl-p0.test.ts: move preview (R-SPACE-007, R-ACL-068) and concurrent move + edit (E2E-106)<br>tests/integration/acl-p0.test.ts: R-SPACE-007 R-ACL-068: preview lists target path, public links and guests losing access; a |
 | R-ACL-069 | P0 | Нельзя незаметно открыть закрытый документ всей компании; повышение видимости подтверждает уполномоченный | реализовано | setGrant org widening -> 409 audience_change + preview, space visibility open requires confirmWiden; tests/integration/acl.test.ts | tests/integration/acl.test.ts: opening the page to the whole company requires explicit confirmation (R-ACL-069) |
 | R-ACL-070 | P0 | Копирование статьи не копирует чувствительные приглашения автоматически; отмена перемещения согласованно возвращает структуру и права | реализовано | duplicatePage skips guest grants; move undo payload restores position (rights follow inheritance); No test for duplicate + guest grants. |  |
 
@@ -5421,7 +5365,7 @@
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| R-ADMIN-018 | P0 | «Проверить доступ»: пользователь + документ → может/не может, действия, цепочка наследования без имитации входа | частично | GET /api/v1/access/explain (no impersonation); No admin "Проверить доступ" screen; only ExplainBox inside ShareDialog for users with share right. | tests/integration/acl-p0.test.ts: effective access for administrators (R-ADMIN-010, V16-S15, R-ADMIN-018)<br>tests/integration/acl-p0.test.ts: R-ADMIN-018: «Проверить доступ» explains a decision without impersonation (no session is c<br>tests/e2e/acl-p0-admin.spec.ts: R-ADMIN-018 V16-S15: the administrator checks a user\'s access to a document — decision, a |
+| R-ADMIN-018 | P0 | «Проверить доступ»: пользователь + документ → может/не может, действия, цепочка наследования без имитации входа | реализовано | admin «Доступ → Проверить доступ» (user + link/ID/title → can/cannot, per-action table, sources, denies, inheritance chain) over GET /access/explain, no impersonation; tests/integration/acl-p0.test.ts 'R-ADMIN-018: …'; tests/e2e/acl-p0-admin.spec.ts 'R-ADMIN-018 V16-S15: …', acl-p0-routes.spec.ts ROUTE-04 | tests/integration/acl-p0.test.ts: effective access for administrators (R-ADMIN-010, V16-S15, R-ADMIN-018)<br>tests/integration/acl-p0.test.ts: R-ADMIN-018: «Проверить доступ» explains a decision without impersonation (no session is c<br>tests/e2e/acl-p0-admin.spec.ts: R-ADMIN-018 V16-S15: the administrator checks a user\'s access to a document — decision, a |
 | R-ADMIN-019 | P1 | Поиск, фильтры, пустые состояния, пакетные операции с предпросмотром; администрирование на мобильном/планшете без hover-only | частично | UsersSection search/filters/empty states; mobile layout tests (tests/e2e/mobile.layout.spec.ts) do not cover admin; No batch operations; admin on mobile/tablet not verified. |  |
 
 ### ACL
@@ -5527,8 +5471,8 @@
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| R-ACL-075 | P0 | Готовность прав только после тестов на сервере, API, UI, поиске, вложениях, подписках, конкурентных изменениях, мобильных | частично | server/API ACL tests incl. tests/integration/acl-gaps.test.ts; Gate not met: no UI/browser or mobile ACL tests. | tests/e2e/acl-p0-ui.spec.ts: QA26-24 R-ACL-075 R-ACL-076: in the browser the UI shows exactly the server rights; no byp<br>tests/e2e/acl-p0-ui.spec.ts: R-ACL-075 QA26-24: the same access-control checks on a phone (Pixel 7 viewport, touch) |
-| R-ACL-076 | P0 | Нет скрытых исключений, молчаливого расширения аудитории, рассинхронизации отображаемых и фактических прав … | частично | UI uses server actions; widening confirmations; exception markers; Least-privilege decisions not consolidated in DECISIONS.md; no UI-vs-server consistency test. | tests/e2e/acl-p0-ui.spec.ts: QA26-24 R-ACL-075 R-ACL-076: in the browser the UI shows exactly the server rights; no byp |
+| R-ACL-075 | P0 | Готовность прав только после тестов на сервере, API, UI, поиске, вложениях, подписках, конкурентных изменениях, мобильных | реализовано | server/API/search/attachments/subscriptions (acl*.test.ts, collab.test.ts), concurrent move+edit (tests/integration/acl-p0.test.ts E2E-106), browser tests/e2e/acl-p0-ui.spec.ts on desktop and on a Pixel 7 viewport ('R-ACL-075 QA26-24: the same access-control checks on a phone'); The phone check runs in the desktop Chromium project with a Pixel 7 viewport/touch profile (no real devices, D-18). | tests/e2e/acl-p0-ui.spec.ts: QA26-24 R-ACL-075 R-ACL-076: in the browser the UI shows exactly the server rights; no byp<br>tests/e2e/acl-p0-ui.spec.ts: R-ACL-075 QA26-24: the same access-control checks on a phone (Pixel 7 viewport, touch) |
+| R-ACL-076 | P0 | Нет скрытых исключений, молчаливого расширения аудитории, рассинхронизации отображаемых и фактических прав … | реализовано | least-privilege decisions consolidated in docs/DECISIONS.md D-24; UI built from server actions; tests/e2e/acl-p0-ui.spec.ts 'QA26-24 R-ACL-075 R-ACL-076: … the UI shows exactly the server rights …' | tests/e2e/acl-p0-ui.spec.ts: QA26-24 R-ACL-075 R-ACL-076: in the browser the UI shows exactly the server rights; no byp |
 
 ### QA
 
@@ -5632,7 +5576,7 @@
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| QA26-24 | P0 | Роли, наследование, личные/гостевые/временные доступы, отзыв в сессии, вложения, поиск, экспорт под ACL; без обходов через URL/API | частично | tests/integration/acl.test.ts, tests/integration/collab.test.ts, tests/integration/content.test.ts, tests/integration/import-export.test.ts, tests/integration/core.test.ts, tests/integration/acl-gaps.test.ts; No browser/mobile ACL tests. | tests/e2e/acl-p0-ui.spec.ts: QA26-24 R-ACL-075 R-ACL-076: in the browser the UI shows exactly the server rights; no byp<br>tests/e2e/acl-p0-ui.spec.ts: R-ACL-075 QA26-24: the same access-control checks on a phone (Pixel 7 viewport, touch) |
+| QA26-24 | P0 | Роли, наследование, личные/гостевые/временные доступы, отзыв в сессии, вложения, поиск, экспорт под ACL; без обходов через URL/API | реализовано | tests/integration/acl.test.ts, acl-gaps.test.ts, acl-p0.test.ts, collab.test.ts, content.test.ts, import-export.test.ts; browser and phone-viewport checks tests/e2e/acl-p0-ui.spec.ts (no bypass via URL/API, revocation in session) | tests/e2e/acl-p0-ui.spec.ts: QA26-24 R-ACL-075 R-ACL-076: in the browser the UI shows exactly the server rights; no byp<br>tests/e2e/acl-p0-ui.spec.ts: R-ACL-075 QA26-24: the same access-control checks on a phone (Pixel 7 viewport, touch) |
 
 ### OPS
 
@@ -5652,14 +5596,14 @@
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
 | QA26-28 | P0 | Перед релизом: 100% действий покрыто; 100% критичных пройдено; 0 blocker/critical; 0 сценариев потери данных, обхода ACL … | частично | scripts/release-gate.py (P0 open → fail; unassessed → fail); gate defined but not met; "100% действий покрыто" not measurable (no action inventory) |  |
-| QA26-29 | P1 | Сдать отчёт о покрытии, протоколы восстановления, измерения производительности, реестр решений, руководство администратора, runbooks | частично | docs/OPERATIONS.md, BACKUP_RESTORE.md (restore drills), SECURITY.md, DECISIONS.md, TEST_MATRIX.md (test catalogue); performance measurements and a coverage report per run missing |  |
+| QA26-29 | P1 | Сдать отчёт о покрытии, протоколы восстановления, измерения производительности, реестр решений, руководство администратора, runbooks | частично | docs/OPERATIONS.md, BACKUP_RESTORE.md, SECURITY.md, DECISIONS.md, TEST_MATRIX.md, PERFORMANCE.md; coverage report per run missing |  |
 
 ### QA
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| QA26-30 | P0 | Pairwise по осям роль × устройство/ввод × контент × сеть × параллельность × история × размер … | не реализовано | n/a; no pairwise suite | tests/integration/qa-invariants.test.ts: pairwise matrix with product invariants (QA26-30, QA26-31)<br>tests/integration/qa-invariants.test.ts: QA26-30: the generated matrix covers every pair of server-side axes<br>tests/unit/qa-pairwise.test.ts: pairwise test-case generator (QA26-30)<br>… ещё 2 |
-| QA26-31 | P0 | Инварианты: данные не исчезают; порядок/иерархия корректны; права не расширяются без подтверждения; round-trip сохраняет семантику … | частично | collab convergence, core.test concurrent moves no cycle, markdown text-never-lost property, ACL widening confirmation; no systematic invariant suite in CI | tests/integration/qa-invariants.test.ts: pairwise matrix with product invariants (QA26-30, QA26-31)<br>tests/integration/qa-invariants.test.ts: QA26-31 case ${idx + 1}/${CASES.length}: ${caseName(c)}<br>tests/unit/qa-pairwise.test.ts: invariant helpers (QA26-31)<br>… ещё 1 |
+| QA26-30 | P0 | Pairwise по осям роль × устройство/ввод × контент × сеть × параллельность × история × размер … | реализовано | tests/support/pairwise.ts (all-pairs generator); tests/unit/qa-pairwise.test.ts "QA26-30: covers every pair of role × device/input × content × network × concurrency × history × size…" (7 200 combinations → <40 cases) + property test; tests/integration/qa-invariants.test.ts runs the server-side pairwise matrix (role × network × concurrency × content × history × size, 13 cases) in CI; device/input axis is only generated, not executed (browser matrix is Chromium-only) | tests/integration/qa-invariants.test.ts: pairwise matrix with product invariants (QA26-30, QA26-31)<br>tests/integration/qa-invariants.test.ts: QA26-30: the generated matrix covers every pair of server-side axes<br>tests/unit/qa-pairwise.test.ts: pairwise test-case generator (QA26-30)<br>… ещё 2 |
+| QA26-31 | P0 | Инварианты: данные не исчезают; порядок/иерархия корректны; права не расширяются без подтверждения; round-trip сохраняет семантику … | реализовано | tests/integration/qa-invariants.test.ts "QA26-31 case n/13: …" checks after every case: nothing acknowledged lost/duplicated, block order preserved, readers' changes never reach the server and never show "saved", replicas converge to the server copy, versions survive restore; Markdown round-trip invariants live in tests/unit/markdown.test.ts (property-based) | tests/integration/qa-invariants.test.ts: pairwise matrix with product invariants (QA26-30, QA26-31)<br>tests/integration/qa-invariants.test.ts: QA26-31 case ${idx + 1}/${CASES.length}: ${caseName(c)}<br>tests/unit/qa-pairwise.test.ts: invariant helpers (QA26-31)<br>… ещё 1 |
 
 ### ACL
 
@@ -5671,7 +5615,7 @@
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| R-SPACE-010 | P0 | Типы: личное (закрыто), общекорпоративное, подразделение, закрытое (по приглашению), гостевой проект (минимум доступа) | частично | SPACE_KINDS org/department/project/private/personal/archive; allowGuests policy for guest projects; Spaces can be created only via API (no UI). | tests/e2e/acl-p0-spaces.spec.ts: R-SPACE-001 R-SPACE-010 R-ADMIN-020: a space is created in the UI and a department gets ac |
+| R-SPACE-010 | P0 | Типы: личное (закрыто), общекорпоративное, подразделение, закрытое (по приглашению), гостевой проект (минимум доступа) | реализовано | SPACE_KINDS + CreateSpaceDialog (Проект/Подразделение/Закрытое/Общекорпоративное for admins, visibility, guests policy in Settings); tests/e2e/acl-p0-spaces.spec.ts 'R-SPACE-001 R-SPACE-010 R-ADMIN-020 …', tests/e2e/acl-p0-routes.spec.ts ROUTE-04 (guest-enabled department space) | tests/e2e/acl-p0-spaces.spec.ts: R-SPACE-001 R-SPACE-010 R-ADMIN-020: a space is created in the UI and a department gets ac |
 | R-SPACE-011 | P1 | Видимость: открытое, закрытое с видимым названием, приватное, невидимое посторонним | реализовано | visibility open/closed/private enforced in GET /spaces; SpacePage SettingsTab |  |
 | R-SPACE-012 | P2 | Админ задаёт шаблон пространства и права по умолчанию | не реализовано | -; No admin-defined space template / default rights. |  |
 
@@ -5691,7 +5635,7 @@
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| R-ADMIN-020 | P0 | Сотрудник → подразделение/группа/роль → автоматический доступ к пространствам | частично | group-based space grants + userSubjects; tests/integration/acl.test.ts A04; Assigning a department/group to a space has no UI. | tests/integration/acl.test.ts: new employee of a department automatically gets its space (V15-A04, V16-S13, V15-A01, ACL-<br>tests/e2e/acl-p0-spaces.spec.ts: R-SPACE-001 R-SPACE-010 R-ADMIN-020: a space is created in the UI and a department gets ac |
+| R-ADMIN-020 | P0 | Сотрудник → подразделение/группа/роль → автоматический доступ к пространствам | реализовано | department/group grants on spaces from the UI (CreateSpaceDialog members, SpaceMembersEditor) + userSubjects; tests/e2e/acl-p0-spaces.spec.ts 'R-SPACE-001 R-SPACE-010 R-ADMIN-020 …' (department member sees the space and can create pages, outsider cannot) | tests/integration/acl.test.ts: new employee of a department automatically gets its space (V15-A04, V16-S13, V15-A01, ACL-<br>tests/e2e/acl-p0-spaces.spec.ts: R-SPACE-001 R-SPACE-010 R-ADMIN-020: a space is created in the UI and a department gets ac |
 | R-ADMIN-021 | P1 | Перевод между отделами пересчитывает права с предпросмотром | реализовано | TransferDialog with transfer-preview diff |  |
 | R-ADMIN-022 | P1 | Временные приглашения, гости, приостановка, отзыв сессий, массовое управление группами | частично | guest invitations with expiry, suspend, revoke sessions (UsersSection), group membership with expiry; No bulk group management. |  |
 

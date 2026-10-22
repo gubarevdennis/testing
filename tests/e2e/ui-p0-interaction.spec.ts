@@ -54,7 +54,7 @@ test('R-UI-059, R-UI-008, E224: menus at viewport edges flip/shift inside the wi
   await trigger.click();
   const menu = page.getByRole('menu');
   await expect(menu).toBeVisible();
-  expectInside(await inViewport(page, '.menu'));
+  await expect(async () => expectInside(await inViewport(page, '.menu'))).toPass({ timeout: 3000 }); // after the pop-in animation
   await page.keyboard.press('ArrowDown');
   await expect.poll(() => page.evaluate(() => document.activeElement?.getAttribute('role'))).toMatch(/menuitem/);
   await page.keyboard.press('Escape');
@@ -76,8 +76,8 @@ test('R-UI-059, R-UI-008, E224: menus at viewport edges flip/shift inside the wi
   await last.focus();
   await page.keyboard.press('Shift+F10'); // keyboard path to the hover-only row actions
   await expect(menu).toBeVisible();
+  await expect(async () => expectInside(await inViewport(page, '.menu'))).toPass({ timeout: 3000 });
   const b = await inViewport(page, '.menu');
-  expectInside(b);
   const menuH = b.bottom - b.top;
   if (b.vh - (rowBox.y + rowBox.height) < menuH) expect(b.bottom, 'not enough room below: the menu must flip above the row').toBeLessThanOrEqual(rowBox.y + rowBox.height + 1);
   await page.keyboard.press('ArrowDown');

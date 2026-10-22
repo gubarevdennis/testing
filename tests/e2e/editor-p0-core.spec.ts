@@ -245,7 +245,7 @@ test('key matrix: Enter, Enter on empty item, Tab/Shift+Tab, Backspace at the st
   await expect(ed.locator('p', { hasText: 'После списка' })).toHaveCount(1);
   expect(await ed.locator('li', { hasText: 'После списка' }).count()).toBe(0);
   // Backspace at the start of a list item → the item becomes a paragraph
-  await caretIn(page, 'Временно вложен');
+  await page.keyboard.press('ArrowUp'); // from "После списка" to the last item "Временно вложен"
   await page.keyboard.press('Home');
   await page.keyboard.press('Backspace');
   expect(await ed.locator('li', { hasText: 'Временно вложен' }).count()).toBe(0);

@@ -695,3 +695,51 @@ describe('malicious inputs (SC-33, R-SECURITY-002, R-SECURITY-007)', () => {
     }
   });
 });
+
+describe('hierarchy CRUD (R-SPACE-001)', () => {
+  it('R-SPACE-001: organisation → space → section → page: every level can be created, renamed and removed/restored; changes are audited', async () => {
+    // Organisation (workspace) level: administrators rename it; others cannot.
+    const member = await org.user('Сотрудник без прав администратора');
+    await expectStatus(member.patch('/api/v1/admin/org', { name: 'Захват' }), 403);
+    const renamed = await org.owner.patch('/api/v1/admin/org', { name: 'ООО Тест (переименовано)' });
+    expect(renamed.org.name).toBe('ООО Тест (переименовано)');
+    expect((await org.owner.get('/api/v1/auth/me')).org.name).toBe('ООО Тест (переименовано)');
+    expect((await org.owner.get('/api/v1/audit?action=org.rename')).events.length).toBe(1);
+    // Space level.
+    const sp = (await org.owner.post('/api/v1/spaces', { name: 'Иерархия', kind: 'project', visibility: 'private' })).space;
+    await org.owner.patch(`/api/v1/spaces/${sp.id}`, { name: 'Иерархия 2' });
+    // Section (a page with children) and page level.
+    const section = (await org.owner.post('/api/v1/pages', { spaceId: sp.id, title: 'Раздел' })).page;
+    const page = (await org.owner.post('/api/v1/pages', { spaceId: sp.id, parentId: section.id, title: 'Страница' })).page;
+    await org.owner.patch(`/api/v1/pages/${page.id}`, { title: 'Страница 2' });
+    const children = await org.owner.get(`/api/v1/spaces/${sp.id}/tree?parentId=${section.id}`);
+    expect(children.nodes.map((n: any) => n.title)).toEqual(['Страница 2']);
+    await org.owner.del(`/api/v1/pages/${section.id}`);
+    await org.owner.post(`/api/v1/pages/${section.id}/restore`);
+    expect((await org.owner.get(`/api/v1/pages/${page.id}`)).page.deletedAt).toBeNull();
+    await org.owner.del(`/api/v1/spaces/${sp.id}`, { confirmName: 'Иерархия 2' });
+    await org.owner.post(`/api/v1/spaces/${sp.id}/restore`);
+    expect((await org.owner.get(`/api/v1/spaces/${sp.id}`)).space.name).toBe('Иерархия 2');
+    const log = (await org.owner.get(`/api/v1/audit?targetId=${sp.id}`)).events.map((e: any) => e.action);
+    expect(log).toEqual(expect.arrayContaining(['space.create', 'space.update', 'space.delete', 'space.restore']));
+  });
+});
+
+describe('linked page titles (AT-79)', () => {
+  it('AT-79: the reading API and exports replace titles of linked pages the reader cannot open; the author still sees them', async () => {
+    const { replaceContent } = await import('../../apps/server/src/collab/ydoc.js');
+    const hidden = (await org.owner.post('/api/v1/pages', { spaceId: org.personalSpaceId, title: 'Тайный проект Сигма' })).page;
+    const doc = (await org.owner.post('/api/v1/pages', { spaceId: org.personalSpaceId, title: 'Открытая сводка' })).page;
+    await ts.srv.services.hub.applyServerChange(doc.id, null, (d) =>
+      replaceContent(d, { type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'См. ' }, { type: 'pageMention', attrs: { pageId: hidden.id, title: 'Тайный проект Сигма' } }] }, { type: 'pageLink', attrs: { pageId: hidden.id, title: 'Тайный проект Сигма' } }] }),
+    );
+    const reader = await org.user('Читатель сводки API');
+    await org.owner.put('/api/v1/grants', { resourceType: 'page', resourceId: doc.id, subjectType: 'user', subjectId: reader.id, level: 'view' });
+    const forReader = JSON.stringify((await reader.get(`/api/v1/pages/${doc.id}/content`)).content);
+    expect(forReader).not.toContain('Сигма');
+    expect(forReader).toContain('Страница недоступна');
+    const md = await (await reader.raw('GET', `/api/v1/pages/${doc.id}/export?format=md`)).text();
+    expect(md).not.toContain('Сигма');
+    expect(JSON.stringify((await org.owner.get(`/api/v1/pages/${doc.id}/content`)).content)).toContain('Тайный проект Сигма');
+  });
+});

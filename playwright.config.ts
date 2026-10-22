@@ -20,7 +20,7 @@ export default defineConfig({
   workers: 1,
   retries: 0,
   reporter: [['list'], ['html', { open: 'never', outputFolder: 'test-results/e2e-report' }]],
-  outputDir: 'test-results/e2e',
+  outputDir: process.env.E2E_OUTPUT ?? 'test-results/e2e',
   use: {
     baseURL: `http://127.0.0.1:${PORT}`,
     trace: 'retain-on-failure',

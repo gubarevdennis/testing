@@ -8,6 +8,7 @@
  */
 import { sanitizeHref, safeImageSrc, FONT_FAMILIES, FONT_SIZES } from '@kb/shared';
 import { TEXT_COLORS, HIGHLIGHTS } from '../palette';
+import { redactDomRefs } from './redact';
 
 export interface PastedImage {
   dataUri: string;
@@ -294,6 +295,7 @@ export function dataUriToFile(uri: string, name: string): File {
  * data-block-id, data-attachment-id) stay so a paste into the knowledge base restores the same blocks.
  */
 export function cleanCopiedDom(root: ParentNode, origin: string) {
+  redactDomRefs(root); // titles of linked pages the reader cannot open (AT-79)
   root.querySelectorAll('[data-comment-thread]').forEach((el) => unwrap(el));
   root.querySelectorAll('[id]').forEach((el) => el.removeAttribute('id'));
   root.querySelectorAll('[contenteditable],[draggable]').forEach((el) => {

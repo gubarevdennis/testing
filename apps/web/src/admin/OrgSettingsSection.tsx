@@ -5,6 +5,7 @@ import { useSession } from '../state/session';
 import { confirm } from '../components/ui/Confirm';
 import { toast } from '../components/ui/Toast';
 import { ErrorState, LoadingRows, SectionHeader, errMsg } from './common';
+import { OrgNameCard } from './OrgNameCard';
 
 interface OrgSettings {
   requireMfa: boolean;
@@ -141,6 +142,7 @@ export function OrgSettingsSection() {
   return (
     <section>
       <SectionHeader title="Настройки организации" sub="Политики безопасности, внешнего доступа и хранения данных. Все изменения записываются в журнал аудита." />
+      <OrgNameCard />
       <form
         className="col admin-settings-form"
         style={{ gap: 20 }}

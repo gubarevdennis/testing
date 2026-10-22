@@ -3,7 +3,8 @@ import { useLocation, useNavigationType } from 'react-router-dom';
 
 /**
  * Remembers the scroll position of a scroll container per history entry and restores it on Back/Forward.
- * New navigations (links) start at the top. Content may render late (editor sync), so restoring retries briefly.
+ * Opening a page again from the tree or a link returns to where the reader was on that page (R-EDITOR-047), unless the
+ * link points to a block (?block=… / #anchor). Content may render late (editor sync), so restoring retries briefly.
  */
 export function useScrollRestore<T extends HTMLElement>() {
   const ref = useRef<T>(null);
@@ -15,8 +16,17 @@ export function useScrollRestore<T extends HTMLElement>() {
     const key = 'kb:scroll:' + location.key;
     let tries = 0;
     let timer: ReturnType<typeof setTimeout> | null = null;
-    const saved = Number(sessionStorage.getItem(key) ?? NaN);
-    if (navType === 'POP' && Number.isFinite(saved)) {
+    const pathKey = 'kb:scroll:path:' + location.pathname;
+    const read = (k: string) => {
+      try {
+        return Number(sessionStorage.getItem(k) ?? NaN);
+      } catch {
+        return NaN;
+      }
+    };
+    const targeted = /[?&]block=/.test(location.search) || !!location.hash;
+    const saved = navType === 'POP' ? read(key) : targeted ? NaN : read(pathKey);
+    if (Number.isFinite(saved)) {
       const restore = () => {
         el.scrollTop = saved;
         if (Math.abs(el.scrollTop - saved) > 2 && tries++ < 30) timer = setTimeout(restore, 100);
@@ -26,6 +36,7 @@ export function useScrollRestore<T extends HTMLElement>() {
     const onScroll = () => {
       try {
         sessionStorage.setItem(key, String(el.scrollTop));
+        sessionStorage.setItem(pathKey, String(el.scrollTop));
       } catch {
         /* storage full or unavailable */
       }
@@ -35,6 +46,6 @@ export function useScrollRestore<T extends HTMLElement>() {
       if (timer) clearTimeout(timer);
       el.removeEventListener('scroll', onScroll);
     };
-  }, [location.key, navType]);
+  }, [location.key, location.pathname, location.search, location.hash, navType]);
   return ref;
 }

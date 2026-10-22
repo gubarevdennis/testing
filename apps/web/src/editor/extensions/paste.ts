@@ -5,6 +5,7 @@ import { yUndoPluginKey } from '@tiptap/y-tiptap';
 import { looksLikeTsv, parseTsv, rowsToTable, sanitizeHref, tableToRows, rowsToTsv, type PMNode } from '@kb/shared';
 import { markdownNow } from '../../lib/markdown';
 import { cleanPastedHtml, cleanCopiedDom, dataUriToFile } from '../clipboard/html';
+import { isHiddenRef, HIDDEN_PAGE_TITLE } from '../clipboard/redact';
 import { startUploads } from './uploads';
 import { notePaste } from './pasteOptions';
 import { toast } from '../../components/ui/Toast';
@@ -47,6 +48,15 @@ export const SmartPaste = Extension.create({
             if (slice.content.childCount === 1 && first?.type.name === 'table') return rowsToTsv(tableToRows(first.toJSON() as PMNode));
             // a cell range (CellSelection) is a slice of table rows: Ctrl+C must give TSV as well (R-TABLE-003)
             if (first?.type.name === 'tableRow') return rowsToTsv(tableToRows({ type: 'table', content: (slice.content.toJSON() as PMNode[]) ?? [] } as PMNode));
+            // Titles of linked pages the reader cannot open never reach the clipboard (AT-79).
+            let hidden = false;
+            slice.content.descendants((n) => {
+              if ((n.type.name === 'pageMention' || n.type.name === 'pageLink') && isHiddenRef(n.attrs.pageId)) hidden = true;
+            });
+            if (hidden)
+              return slice.content.textBetween(0, slice.content.size, '\n\n', (n) =>
+                n.type.name === 'pageMention' || n.type.name === 'pageLink' ? (isHiddenRef(n.attrs.pageId) ? HIDDEN_PAGE_TITLE : n.attrs.title || 'Страница') : n.type.name === 'hardBreak' ? '\n' : '',
+              );
             return '';
           },
           handleKeyDown(_view, e) {

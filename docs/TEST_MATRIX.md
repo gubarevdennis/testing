@@ -32,21 +32,21 @@
 
 * Только Chromium: Firefox, Safari/WebKit и реальные мобильные устройства недоступны в окружении (ручной чек-лист в `UX_ACCEPTANCE.md`).
 * Буфер обмена в E2E эмулируется событием `paste` с синтетическим `DataTransfer`; вставка из реальных Word/Excel/Google Docs проверяется фикстурами, а не живыми приложениями.
-* Нет нагрузочных тестов (100 тыс. страниц, 20 одновременных редакторов, 100 читателей) — нужен стенд.
-* Задержка ввода измерена на 400 абзацах без троттлинга CPU (p95 ≈ 31 мс); требование ТЗ — 10 тыс. слов и p99 — не доказано.
+* Нагрузка 100 читателей + 20 редакторов — скрипт `scripts/load/collab-load.mjs` (запуск вручную, не в CI); прогон на общем контейнере: 0 потерь, но p95 синхронизации ≈ 1,4 с (`PERFORMANCE.md`). 100 тыс. страниц не проверялось — нужен стенд.
+* Задержка ввода: `tests/e2e/perf-typing.spec.ts` (11 тыс. слов, CPU 4×, 240 замеров, p95/p99) — бюджет 50/100 мс в этом окружении **не выполнен**, проверяется только при `KB_PERF_ENFORCE=1`; целостность (0 потерянных символов, курсор) проверяется всегда. Подробно — `PERFORMANCE.md`.
 * Неполные E2E: окно «Поделиться», корзина, шаблоны, импорт, экспорт и администрирование проверены интеграционно и axe-аудитом, но без сквозных пользовательских сценариев.
 * Конфликт «правка блока ↔ удаление блока другим автором» сейчас не создаёт копию конфликта (тест фиксирует текущее поведение) — открытый P0.
 
 ## Каталог автоматических тестов (сгенерировано)
 
-Всего автоматических тестов: **209** (без учёта параметризованных повторов и 12 комбинаций раскладок).
+Всего автоматических тестов: **369** (без учёта параметризованных повторов и 12 комбинаций раскладок).
 
 
 Сгенерировано `python3 scripts/requirements/test_matrix.py`. ID требований в названиях связывают тест с реестром (см. `REQUIREMENTS_TRACEABILITY.md`).
 
 ### Юнит-тесты (vitest)
 
-Запуск: `npm run test:unit`. Тестов: **38**.
+Запуск: `npm run test:unit`. Тестов: **63**.
 
 | Файл | Группа | Тест |
 |---|---|---|
@@ -62,11 +62,28 @@
 | `tests/unit/collab-client.test.ts` | offline status honesty (R-OFFLINE-003, R-OFFLINE-005, R-OFFLINE-006) | "saved on this device" appears only after the local write has completed |
 | `tests/unit/collab-client.test.ts` | offline status honesty (R-OFFLINE-003, R-OFFLINE-005, R-OFFLINE-006) | a full or broken local store is reported as an error, never as saved |
 | `tests/unit/collab-client.test.ts` | offline status honesty (R-OFFLINE-003, R-OFFLINE-005, R-OFFLINE-006) | acknowledged operations are removed from the store only after their write finished |
+| `tests/unit/collab-p0.test.ts` | backpressure (R-COLLAB-019) | never more than maxInflightOps unacknowledged operations; the rest follows as ACKs arrive, in order, each exactly once (R-COLLAB-019) |
+| `tests/unit/collab-p0.test.ts` | backpressure (R-COLLAB-019) | a full socket send buffer pauses sending until it drains; a byte budget limits large operations in flight (R-COLLAB-019) |
+| `tests/unit/collab-p0.test.ts` | local journal before sending (R-OFFLINE-003, R-OFFLINE-005) | an operation is sent to the server only after it was written to the local journal (R-OFFLINE-005, R-OFFLINE-003) |
+| `tests/unit/collab-p0.test.ts` | local journal before sending (R-OFFLINE-003, R-OFFLINE-005) | if the local journal cannot be written, the operation is still sent (the server is then the only copy) and the status is honest (R-OFFLINE-006) |
+| `tests/unit/collab-p0.test.ts` | server storage failure is visible (AT-59, R-COLLAB-017) | persist_failed turns the status into an error with an explanation (never "Сохранение…" forever), retries, and clears after a durable ACK (AT-59, R-COLLAB-017) |
+| `tests/unit/collab-p0.test.ts` | transport fallback (R-COLLAB-039) | after repeated WebSocket failures the provider switches to the HTTP channel without waiting out the backoff (R-COLLAB-039) |
+| `tests/unit/collab-p0.test.ts` | transport fallback (R-COLLAB-039) | a channel that opens but never delivers SYNC is treated as broken (proxy swallowing frames) (R-COLLAB-039) |
 | `tests/unit/editor-convert.test.ts` | block conversion keeps content (R-EDITOR-003, R-EDITOR-067, AT-64) | AT-64: paragraph → H2 → paragraph keeps text, marks and the block id |
 | `tests/unit/editor-convert.test.ts` | block conversion keeps content (R-EDITOR-003, R-EDITOR-067, AT-64) | R-EDITOR-003: list, checklist, quote and callout conversions keep the text and the paragraph id |
 | `tests/unit/editor-convert.test.ts` | block conversion keeps content (R-EDITOR-003, R-EDITOR-067, AT-64) | R-EDITOR-067: converting to code keeps mentions/formulas as text and asks before removing formatting |
 | `tests/unit/editor-convert.test.ts` | block conversion keeps content (R-EDITOR-003, R-EDITOR-067, AT-64) | R-EDITOR-067: declining the confirmation leaves formatted text unchanged |
 | `tests/unit/editor-convert.test.ts` | caret memory (R-EDITOR-001, R-EDITOR-037) | R-EDITOR-037: caret is stored relative to the block id and survives edits before the block |
+| `tests/unit/editor-p0-clipboard.test.ts` | tracker cleanup in pasted HTML (R-CLIPBOARD-024) | R-CLIPBOARD-024: removes utm_*/fbclid/gclid/yclid parameters, keeps others and the fragment |
+| `tests/unit/editor-p0-clipboard.test.ts` | tracker cleanup in pasted HTML (R-CLIPBOARD-024) | R-CLIPBOARD-024: tracking pixels and analytics counters are dropped from pasted HTML, links are cleaned |
+| `tests/unit/editor-p0-clipboard.test.ts` | copying a section of a heading (R-CLIPBOARD-001) | R-CLIPBOARD-001: a section ends before the next heading of the same or a higher level and includes subsections |
+| `tests/unit/editor-p0-clipboard.test.ts` | paste options (R-CLIPBOARD-009) | R-CLIPBOARD-009: «Объединить» keeps structure and emphasis, drops headings, colours and highlights; «Только текст» gives paragraphs |
+| `tests/unit/editor-table-ops.test.ts` | table operations (R-TABLE-003) | moves a row up and down; header cells stay in the header row; ids are kept |
+| `tests/unit/editor-table-ops.test.ts` | table operations (R-TABLE-003) | moves a column left and right with its cell attributes |
+| `tests/unit/editor-table-ops.test.ts` | table operations (R-TABLE-003) | moves a selected range of rows together |
+| `tests/unit/editor-table-ops.test.ts` | table operations (R-TABLE-003) | sorts body rows by the caret column: numbers numerically, text in Russian order, empty cells last, header fixed |
+| `tests/unit/editor-table-ops.test.ts` | table operations (R-TABLE-003) | refuses to move or sort a table with merged cells instead of tearing it apart |
+| `tests/unit/editor-table-ops.test.ts` | table operations (R-TABLE-003) | compareCells: "1 000,5" > "999"; "Ж" < "Я"; "ё" sorts with "е" |
 | `tests/unit/markdown.test.ts` | markdown import | parses GFM structure into valid document |
 | `tests/unit/markdown.test.ts` | markdown import | takes leading H1 as title |
 | `tests/unit/markdown.test.ts` | markdown import | converts GitHub alerts into callouts |
@@ -79,6 +96,9 @@
 | `tests/unit/markdown.test.ts` | markdown export | round-trips through import with structure preserved |
 | `tests/unit/markdown.test.ts` | markdown export | clean mode omits kb markers |
 | `tests/unit/markdown.test.ts` | markdown property: text is never lost | docToMarkdown -> markdownToDoc preserves plain text and block types |
+| `tests/unit/qa-pairwise.test.ts` | pairwise test-case generator (QA26-30) | QA26-30: covers every pair of role × device/input × content × network × concurrency × history × size with far fewer cases than the product |
+| `tests/unit/qa-pairwise.test.ts` | pairwise test-case generator (QA26-30) | QA26-30: any random set of axes gets a complete pairwise cover (property) |
+| `tests/unit/qa-pairwise.test.ts` | invariant helpers (QA26-31) | QA26-31: detect lost, duplicated and reordered content |
 | `tests/unit/schema-migrations.test.ts` | document schema versions (R-EDITOR-023, R-EDITOR-043) | R-EDITOR-023: current documents pass unchanged; older ones are migrated step by step |
 | `tests/unit/schema-migrations.test.ts` | document schema versions (R-EDITOR-023, R-EDITOR-043) | R-EDITOR-023: refuses newer schemas and gaps in the migration chain |
 | `tests/unit/schema-migrations.test.ts` | document schema versions (R-EDITOR-023, R-EDITOR-043) | R-EDITOR-043: dangerous URLs are detected; unusable ones are cleaned without losing text |
@@ -88,10 +108,15 @@
 | `tests/unit/totp.test.ts` | TOTP (RFC 6238) — second factor | base32 round trip |
 | `tests/unit/totp.test.ts` | TOTP (RFC 6238) — second factor | reference vector at T=%i |
 | `tests/unit/totp.test.ts` | TOTP (RFC 6238) — second factor | rejects wrong and far-off codes |
+| `tests/unit/ui-error-template.test.ts` | error message template (R-UI-052, R-UI-009) | R-UI-052: server failure on a change says it was not saved, how to retry and gives the request code |
+| `tests/unit/ui-error-template.test.ts` | error message template (R-UI-052, R-UI-009) | R-UI-052: missing rights explain what to do; reads do not talk about saving |
+| `tests/unit/ui-error-template.test.ts` | error message template (R-UI-052, R-UI-009) | R-UI-052: conflict, size and rate limits name the next step |
+| `tests/unit/ui-error-template.test.ts` | error message template (R-UI-052, R-UI-009) | does not repeat what the server message already says |
+| `tests/unit/ui-error-template.test.ts` | error message template (R-UI-052, R-UI-009) | keeps validation, auth and not-found messages as they are (shown next to the field / page) |
 
 ### Интеграционные тесты API на реальном PostgreSQL (vitest)
 
-Запуск: `npm run test:integration`. Тестов: **117**.
+Запуск: `npm run test:integration`. Тестов: **179**.
 
 | Файл | Группа | Тест |
 |---|---|---|
@@ -109,6 +134,29 @@
 | `tests/integration/acl-gaps.test.ts` | copy into another space asks to confirm the audience (R-ACL-050) | duplicating a personal page into an open space requires confirmation |
 | `tests/integration/acl-gaps.test.ts` | comments are bound to a revision and a block (R-COMMENTS-001) | stores the revision number and the comment survives edits of its block |
 | `tests/integration/acl-gaps.test.ts` | OpenAPI description (R-SPACE-002, R-ACL-016) | is generated from the registered routes |
+| `tests/integration/acl-p0.test.ts` | role × permission matrix (R-ACL-013, R-AUDIT-002) | R-ACL-013: every role × permission cell of the matrix is enforced by the API (table-driven) |
+| `tests/integration/acl-p0.test.ts` | role × permission matrix (R-ACL-013, R-AUDIT-002) | R-AUDIT-002: combinatorial parent / child / group inheritance matches an independent oracle, and every grant is audited |
+| `tests/integration/acl-p0.test.ts` | public links (R-PUBLISH-009, E2E-109, R-ACL-021) | E2E-109: creating a public link is rejected while the organisation policy forbids it (default) |
+| `tests/integration/acl-p0.test.ts` | public links (R-PUBLISH-009, E2E-109, R-ACL-021) | R-PUBLISH-009: link works anonymously with noindex, honours password, expiry, download control, and stops after revoke |
+| `tests/integration/acl-p0.test.ts` | public links (R-PUBLISH-009, E2E-109, R-ACL-021) | R-PUBLISH-009: a link stops when its creator loses the right to share; children only when included; foreign pages never |
+| `tests/integration/acl-p0.test.ts` | emergency access and offboarding (R-ACL-056, R-ADMIN-016) | R-ACL-056: emergency access needs a second administrator, a reason and a time limit; read-only; owner notified; audited |
+| `tests/integration/acl-p0.test.ts` | emergency access and offboarding (R-ACL-056, R-ADMIN-016) | R-ADMIN-016: offboarding hands over only already-shared personal documents; private notes stay private; counts-only audit |
+| `tests/integration/acl-p0.test.ts` | sharing details (R-ACL-051, R-ACL-021, R-ACL-036, R-ACL-063) | R-ACL-051: a personal page shared with anybody is marked «не полностью личная» (also its children); the mark disappears on revoke |
+| `tests/integration/acl-p0.test.ts` | sharing details (R-ACL-051, R-ACL-021, R-ACL-036, R-ACL-063) | R-ACL-021: «Только я» shows who loses access, requires confirmation and leaves only the author |
+| `tests/integration/acl-p0.test.ts` | sharing details (R-ACL-051, R-ACL-021, R-ACL-036, R-ACL-063) | R-ACL-036 R-ACL-063: start, end, time zone, author and reason are stored; the granter is reminded once before expiry |
+| `tests/integration/acl-p0.test.ts` | effective access for administrators (R-ADMIN-010, V16-S15, R-ADMIN-018) | R-ADMIN-010 V16-S15: users × spaces matrix shows level, source, expiry, conflicts and managers without personal spaces |
+| `tests/integration/acl-p0.test.ts` | effective access for administrators (R-ADMIN-010, V16-S15, R-ADMIN-018) | R-ADMIN-018: «Проверить доступ» explains a decision without impersonation (no session is created for the user) |
+| `tests/integration/acl-p0.test.ts` | move preview (R-SPACE-007, R-ACL-068) and concurrent move + edit (E2E-106) | R-SPACE-007 R-ACL-068: preview lists target path, public links and guests losing access; a move that cuts guests off needs confirmation |
+| `tests/integration/acl-p0.test.ts` | move preview (R-SPACE-007, R-ACL-068) and concurrent move + edit (E2E-106) | E2E-106: moving a page while it is being edited re-evaluates rights for the open editor; later edits are not saved |
+| `tests/integration/acl-p0.test.ts` | SSRF-guarded remote images (R-SECURITY-008, SC-33) | SC-33 R-SECURITY-008: internal, loopback, link-local, mapped and reserved addresses are classified as blocked |
+| `tests/integration/acl-p0.test.ts` | SSRF-guarded remote images (R-SECURITY-008, SC-33) | SC-33 R-SECURITY-008: the fetcher refuses internal targets, unsafe schemes, credentials and redirects into the internal network |
+| `tests/integration/acl-p0.test.ts` | SSRF-guarded remote images (R-SECURITY-008, SC-33) | R-SECURITY-008: on import remote images are copied into the knowledge base; internal addresses are removed and reported |
+| `tests/integration/acl-p0.test.ts` | audit of reads and hidden resources (R-AUDIT-001, OPS-014) | R-AUDIT-001 OPS-014: opening a document is audited (rate limited) and probing a hidden page is logged as access.not_found |
+| `tests/integration/acl-p0.test.ts` | content edits in the tamper-evident audit (OPS-014) | OPS-014: a logical edit operation is written to the audit log with its author and change counts; the hash chain stays valid |
+| `tests/integration/acl-p0.test.ts` | malicious inputs (SC-33, R-SECURITY-002, R-SECURITY-007) | SC-33 R-SECURITY-002: XSS in imported HTML/Markdown is neutralised, CSRF without token and path traversal in file names are refused |
+| `tests/integration/acl-p0.test.ts` | malicious inputs (SC-33, R-SECURITY-002, R-SECURITY-007) | R-SECURITY-007: malicious fixtures are rejected — infected attachment and import (antivirus), disguised executables; originals of clean files are kept byte-exact |
+| `tests/integration/acl-p0.test.ts` | hierarchy CRUD (R-SPACE-001) | R-SPACE-001: organisation → space → section → page: every level can be created, renamed and removed/restored; changes are audited |
+| `tests/integration/acl-p0.test.ts` | linked page titles (AT-79) | AT-79: the reading API and exports replace titles of linked pages the reader cannot open; the author still sees them |
 | `tests/integration/acl.test.ts` | department spaces and inheritance | new employee of a department automatically gets its space (V15-A04, V16-S13, V15-A01, ACL-152, ACL-159, ACL-162, R-ORG-005, R-ADMIN-020, R-ACL-081, UX v2.7) |
 | `tests/integration/acl.test.ts` | department spaces and inheritance | nested departments: member of a sub-department inherits parent department access (R-ORG-001) |
 | `tests/integration/acl.test.ts` | department spaces and inheritance | removing a user from a department revokes access; personal grants remain (R-ACL-039, E2E-107) |
@@ -130,6 +178,16 @@
 | `tests/integration/acl.test.ts` | concurrency and audit of ACL (ACL-169, ACL-172, A13) | transfer preview shows spaces gained and lost (V15-A16, R-ADMIN-006, R-ADMIN-023) |
 | `tests/integration/acl.test.ts` | space policy | export/download flags are reflected in actions (R-ACL-031) |
 | `tests/integration/archive.test.ts` | organisation archive round trip (F06, V18-A01, V18-A02, V18-A03, V18-A04, V18-A24, SC-38, S20) | export → readable without the app → restore into a clean installation → verified (V18-A05, R-ACL-049, R-SECURITY-010, E-10, V17-F06, QA26-16, R-ARCHIVE-004, R-ARCHIVE-006, R-ARCHIVE-007, R-ARCHIVE-008, R-ARCHIVE-011, R-ARCHIVE-013, R-ARCHIVE-016, R-BACKUP-005, R-EXPORT-002, R-EXPORT-024, R-EXPORT-026) |
+| `tests/integration/collab-p0.test.ts` | HTTP fallback channel (R-COLLAB-039) | WebSocket blocked: the client switches to the HTTP channel, gets ACK only after commit and exchanges edits with WebSocket editors (R-COLLAB-039, R-COLLAB-019) |
+| `tests/integration/collab-p0.test.ts` | HTTP fallback channel (R-COLLAB-039) | the HTTP channel enforces the same access rules: no session → 401, foreign tunnel → 404, reader cannot write |
+| `tests/integration/collab-p0.test.ts` | many editors, tables, moves (QA26-19, AT-56, SC-25, R-COLLAB-024, R-COLLAB-032) | 2, 5 and 20 editors type into one paragraph at the same time: every character survives and all replicas are identical (QA26-19) |
+| `tests/integration/collab-p0.test.ts` | many editors, tables, moves (QA26-19, AT-56, SC-25, R-COLLAB-024, R-COLLAB-032) | two editors change one table cell and neighbouring rows while a third adds a row; the merged table is valid and loses nothing (AT-56, SC-25, R-COLLAB-024, QA26-19, ROUTE-05) |
+| `tests/integration/collab-p0.test.ts` | many editors, tables, moves (QA26-19, AT-56, SC-25, R-COLLAB-024, R-COLLAB-032) | table deleted while another editor adds a row: the result is a valid document, never an orphan row (R-COLLAB-032, R-COLLAB-024) |
+| `tests/integration/collab-p0.test.ts` | many editors, tables, moves (QA26-19, AT-56, SC-25, R-COLLAB-024, R-COLLAB-032) | format + delete, block copy + edit and concurrent block moves converge without duplicates of text or lost characters (R-COLLAB-032, R-COLLAB-021, R-COLLAB-009, R-COLLAB-024, COLLAB-193) |
+| `tests/integration/collab-p0.test.ts` | many editors, tables, moves (QA26-19, AT-56, SC-25, R-COLLAB-024, R-COLLAB-032) | the same user on two devices edits offline on both; nothing is lost or doubled (R-COLLAB-032, UX23-216) |
+| `tests/integration/collab-p0.test.ts` | session expiry, sleep, unreliable network (R-COLLAB-021, QA26-20) | session expires during editing: unsent edits are never shown as saved and are delivered after signing in again (R-COLLAB-021, QA26-20) |
+| `tests/integration/collab-p0.test.ts` | session expiry, sleep, unreliable network (R-COLLAB-021, QA26-20) | sleeping laptop: a silently dead connection is detected by the acknowledgement timeout, edits are re-sent once and converge (R-COLLAB-021, QA26-20, R-OFFLINE-010) |
+| `tests/integration/collab-p0.test.ts` | session expiry, sleep, unreliable network (R-COLLAB-021, QA26-20) | high latency, jitter and dropped connections: random edits of three editors converge with 0 losses and 0 duplicates (QA26-20, R-COLLAB-019) |
 | `tests/integration/collab.test.ts` | durability contract | "saved" is reported only after the update is committed to the journal (E-13, D-10, R-COLLAB-003, R-COLLAB-014, R-COLLAB-016, R-COLLAB-025, R-COLLAB-029, R-COLLAB-043) |
 | `tests/integration/collab.test.ts` | durability contract | re-delivered operation is acknowledged once and not duplicated (D-02, E-03, UX23-214, R-COLLAB-019, R-COLLAB-023, R-COLLAB-044, R-OFFLINE-009) |
 | `tests/integration/collab.test.ts` | concurrent editing | two editors typing in the same paragraph converge without loss (SC-25, AT-74, COLLAB-192, UX23-217, OPS-005, R-COLLAB-001, UX13-08) |
@@ -147,6 +205,7 @@
 | `tests/integration/collab.test.ts` | history: revisions, restore, journal | title is edited collaboratively and synced to the tree (R-PAGE-019) |
 | `tests/integration/collab.test.ts` | randomised convergence (COLLAB-198, R-COLLAB-008, R-COLLAB-030, R-COLLAB-044, property-based) | random concurrent edits with random disconnects converge to the server state |
 | `tests/integration/collab.test.ts` | access to the live channel | a user without access cannot open the live channel (S03/E2E-105) |
+| `tests/integration/conflicts.test.ts` | conflict copies (E-04, R-COLLAB-045, R-COLLAB-049) | an editor stores the lost version of a block; it is listed and can be marked restored; readers cannot write |
 | `tests/integration/content.test.ts` | attachments | uploads an image, stores the original byte-exact with checksum, creates previews (A10, R-MEDIA-010, V18-A10, R-FILES-003) |
 | `tests/integration/content.test.ts` | attachments | rejects executables even with a fake extension and dangerous types (SC-19, SC-33) |
 | `tests/integration/content.test.ts` | attachments | sanitises SVG and serves user content in a sandbox (SC-12, SC-33, R-MEDIA-011) |
@@ -174,6 +233,8 @@
 | `tests/integration/core.test.ts` | page tree | duplicates a branch with new ids (R-PAGE-021) |
 | `tests/integration/core.test.ts` | audit | is hash-chained and append-only (R-AUDIT-005) |
 | `tests/integration/core.test.ts` | audit | regular user cannot read the org audit log (SC-39) |
+| `tests/integration/editor-p0.test.ts` | save and open keep the structure identical (SC-05) | SC-05: a document with all inline formats, headings, nested lists, checklists, callout, toggle, formulas, links, code and quotes is stored and reopened identically |
+| `tests/integration/editor-p0.test.ts` | save and open keep the structure identical (SC-05) | SC-05: Markdown export with markers and re-import keep the same structure (formulas, checklists, nested lists, code, quotes) |
 | `tests/integration/files-integrity.test.ts` | upload checksum computed by the client (R-FILES-004, R-FILES-011) | R-FILES-011: a streamed upload is completed only when the client checksum matches the received bytes |
 | `tests/integration/files-integrity.test.ts` | upload checksum computed by the client (R-FILES-004, R-FILES-011) | R-FILES-004: a checksum different from the one declared at start is refused |
 | `tests/integration/files-integrity.test.ts` | periodic integrity verification of stored files (R-FILES-007) | R-FILES-007: a corrupted or missing stored file is detected, audited and shown to administrators |
@@ -210,16 +271,42 @@
 | `tests/integration/import-export.test.ts` | export (SC-13, S09, UX13-16) | exports a page to MD/DOCX/HTML/PDF; DOCX opens in LibreOffice; MD round-trips (R-EXPORT-001, R-EXPORT-006, R-EXPORT-013, R-EXPORT-016, R-EXPORT-022, V16-S09, V18-A21, E225, UX13-16) |
 | `tests/integration/import-export.test.ts` | export (SC-13, S09, UX13-16) | branch export to Markdown ZIP: readable tree, relative links, assets, checksums, report (R-EXPORT-008, R-EXPORT-009, R-EXPORT-015, SC-15) |
 | `tests/integration/import-export.test.ts` | export (SC-13, S09, UX13-16) | export respects rights: no export permission => 403; private pages never leak into branch export (SC-20, V17-F07, R-ACL-017, R-EXPORT-011, E2E-108) |
+| `tests/integration/import-pipeline.test.ts` | antivirus quarantine for imports and archive restore (R-IMPORT-032, R-ARCHIVE-016, SC-33) | an infected file is rejected at upload, nothing is stored, and the rejection is audited (R-IMPORT-032, D-09) |
+| `tests/integration/import-pipeline.test.ts` | antivirus quarantine for imports and archive restore (R-IMPORT-032, R-ARCHIVE-016, SC-33) | an infected asset inside a ZIP is found after extraction; a clean file in the same upload is still imported (R-IMPORT-032, R-IMPORT-006) |
+| `tests/integration/import-pipeline.test.ts` | antivirus quarantine for imports and archive restore (R-IMPORT-032, R-ARCHIVE-016, SC-33) | fails closed when the scanner is unreachable (R-IMPORT-032) |
+| `tests/integration/import-pipeline.test.ts` | antivirus quarantine for imports and archive restore (R-IMPORT-032, R-ARCHIVE-016, SC-33) | archive restore: each attachment is scanned; an infected one blocks the restore (R-ARCHIVE-016, R-ARCHIVE-006) |
+| `tests/integration/import-pipeline.test.ts` | import job stage log and kept originals (R-IMPORT-032, R-IMPORT-014, R-IMPORT-042, R-IMPORT-037) | records every pipeline stage on the job: upload → scan → detect → parse → normalize → media → validate → preview → commit → index (R-IMPORT-032) |
+| `tests/integration/import-pipeline.test.ts` | import job stage log and kept originals (R-IMPORT-032, R-IMPORT-014, R-IMPORT-042, R-IMPORT-037) | the original MD, ZIP and CSV files are attached to the imported page for the author (R-IMPORT-014, R-IMPORT-042, UX13-05) |
+| `tests/integration/import-pipeline.test.ts` | XLSX range selection and 100-row preview (R-IMPORT-031, R-IMPORT-041, R-IMPORT-030, R-IMPORT-036) | previews up to 100 rows and imports only the selected range (R-IMPORT-031, R-IMPORT-041, R-IMPORT-030, AT-49) |
+| `tests/integration/import-pipeline.test.ts` | XLSX range selection and 100-row preview (R-IMPORT-031, R-IMPORT-041, R-IMPORT-030, R-IMPORT-036) | rejects a malformed or empty range with a clear error (R-IMPORT-031) |
+| `tests/integration/io-p0-export.test.ts` | DOCX validity (R-EXPORT-006) | exported DOCX with every block type passes Open XML package/schema validation and opens in LibreOffice; corrupted packages are detected (R-EXPORT-006, R-EXPORT-022) |
+| `tests/integration/io-p0-export.test.ts` | DOCX validity (R-EXPORT-006) | docToDocx output for imported-style content keeps anchors as bookmarks and internal links (R-EXPORT-006, R-IMPORT-026) |
+| `tests/integration/io-p0-export.test.ts` | background export: cancel, integrity, layouts (R-EXPORT-022) | a queued export is cancelled before it runs; a running export stops at the next page; nothing can be downloaded; audited (R-EXPORT-022) |
+| `tests/integration/io-p0-export.test.ts` | background export: cancel, integrity, layouts (R-EXPORT-022) | branch export: one DOCX with a table of contents, or separate files in a ZIP with report and checksums; downloads carry the SHA-256 (R-EXPORT-022, R-EXPORT-001) |
+| `tests/integration/io-p0-export.test.ts` | consistent snapshot (V18-A06) | organisation archive taken during concurrent transactional changes and live editing is a consistent snapshot (V18-A06) |
+| `tests/integration/io-p0-export.test.ts` | archive restore target and resumable upload (R-ARCHIVE-006, R-ARCHIVE-016, R-EXPORT-002) | archive uploaded through an interrupted, resumed upload session is restored into a NEW isolated space or merged into an existing space; originals untouched, verification passes (R-ARCHIVE-006, R-ARCHIVE-016, R-EXPORT-002) |
+| `tests/integration/io-p0-import.test.ts` | DOCX structure mapping (IMPORT P0) | Word captions, footnotes, three numbering levels, headers/footers, bookmarks and the TOC field become semantic blocks; images are page assets with order, alt and caption (R-IMPORT-007, R-IMPORT-025, R-IMPORT-026, R-IMPORT-027, R-IMPORT-034) |
+| `tests/integration/io-p0-import.test.ts` | DOCX structure mapping (IMPORT P0) | complex Word constructs (SmartArt, text boxes, fields, floating objects, tracked changes, comments) keep their text and are listed in the compatibility report, never lost silently (R-IMPORT-009, R-IMPORT-034) |
+| `tests/integration/io-p0-import.test.ts` | reference corpus accuracy (R-IMPORT-019) | reference DOCX and Markdown corpus: ≥99% of characters and 100% of structural elements survive import; nothing is lost silently (R-IMPORT-019, R-IMPORT-025) |
+| `tests/integration/io-p0-import.test.ts` | import → edit → export chains (SC-13, SC-15) | Word-style DOCX with headings, 3 list levels, links, 2 tables, images and code → import → edit → DOCX export valid for Word (Open XML) and LibreOffice, structure preserved (SC-13, R-EXPORT-006, R-EXPORT-012, R-IMPORT-007) |
+| `tests/integration/io-p0-import.test.ts` | import → edit → export chains (SC-13, SC-15) | Markdown ZIP with a GFM table, task list, code and relative images → import → ZIP export → every relative link resolves locally → re-import gives the same content (SC-15, R-EXPORT-002, R-IMPORT-010) |
+| `tests/integration/io-p0-import.test.ts` | batch edge cases (QA26-17) | long Cyrillic names with special characters, an empty file, a large file and a broken file in one batch: valid files import, problems are reported per file, selective commit imports only the chosen pages (QA26-17, R-IMPORT-021) |
+| `tests/integration/io-p0-import.test.ts` | formatting through DOCX and HTML (R-EXPORT-012, R-EXPORT-025) | inline formatting (bold, italic, underline, strike, code, sub/sup, highlight, colour, links) survives DOCX export → import and is present in HTML export (R-EXPORT-012, R-EXPORT-025) |
+| `tests/integration/io-p0-ops.test.ts` | distributed tracing (R-OPS-003, R-OPS-022) | HTTP requests and background jobs are OpenTelemetry spans: W3C traceparent is continued and returned, jobs join the trace of the request that created them, spans reach the OTLP collector (R-OPS-003, R-OPS-022) |
+| `tests/integration/io-p0-ops.test.ts` | metrics behind the new alerts (R-OPS-003) | WebSocket reconnects, import results by format and OCR latency are exported (R-OPS-003) |
+| `tests/integration/io-p0-ops.test.ts` | metrics behind the new alerts (R-OPS-003) | every alert rule uses metrics the application or the backup scripts export and links to an existing runbook with an owner (R-OPS-003, R-OPS-022) |
+| `tests/integration/qa-invariants.test.ts` | pairwise matrix with product invariants (QA26-30, QA26-31) | QA26-30: the generated matrix covers every pair of server-side axes |
+| `tests/integration/qa-invariants.test.ts` | pairwise matrix with product invariants (QA26-30, QA26-31) | QA26-31 case ${idx + 1}/${CASES.length}: ${caseName(c)} |
 | `tests/integration/security-headers.test.ts` | security headers for user content (SECURITY) | app pages: CSP forbids framing the app and limits frames to same origin and allow-listed video hosts |
 | `tests/integration/security-headers.test.ts` | security headers for user content (SECURITY) | uploaded SVG/HTML-like content is served sandboxed with nosniff; PDF is script-free but viewable |
 
 ### Отказоустойчивость и восстановление (vitest, отдельные процессы сервера)
 
-Запуск: `npm run test:resilience`. Тестов: **18**.
+Запуск: `npm run test:resilience`. Тестов: **22**.
 
 | Файл | Группа | Тест |
 |---|---|---|
-| `tests/resilience/backup-restore.test.ts` | backup → restore drill (SC-30, AT-60, AT-87, V16-S20, OPS-011, QA26-18) | restores content, attachment bytes, history, permissions and the audit chain into a new installation (E-08, D-08, R-BACKUP-001, R-BACKUP-002, R-BACKUP-015, R-BACKUP-019, V18-A25) |
+| `tests/resilience/backup-restore.test.ts` | backup → restore drill (SC-30, AT-60, AT-87, V16-S20, OPS-011, QA26-18) | restores content, attachment bytes, history, permissions and the audit chain into a new installation; search works and respects ACL (E-08, D-08, R-BACKUP-001, R-BACKUP-002, R-BACKUP-015, R-BACKUP-019, V18-A25, V16-S20) |
 | `tests/resilience/backup-restore.test.ts` | backup → restore drill (SC-30, AT-60, AT-87, V16-S20, OPS-011, QA26-18) | a damaged backup is rejected by restore and verification (E-08, AT-60) |
 | `tests/resilience/crash-restart.test.ts` | server crash during editing (OPS-009, V17-F04, E-01) | acknowledged edits survive a SIGKILL; in-flight and offline edits are kept and applied once after restart (E-02, E-13, OPS-003) |
 | `tests/resilience/crash-restart.test.ts` | server crash during editing (OPS-009, V17-F04, E-01) | an operation persisted before the crash whose acknowledgement was lost is not duplicated on resend (E-03, D-02, OPS-004) |
@@ -231,16 +318,20 @@
 | `tests/resilience/db-connection-loss.test.ts` | database connection loss during editing (SC-30, E-13, D-10) | database lost between applying and committing an operation: no "saved", and it is not silently dropped (E-01, E-13, D-01) |
 | `tests/resilience/db-connection-loss.test.ts` | database connection loss during editing (SC-30, E-13, D-10) | a transaction whose connection is killed before COMMIT is retried transparently (E-01, R-OPS-002) |
 | `tests/resilience/db-connection-loss.test.ts` | database connection loss during editing (SC-30, E-13, D-10) | requests during a database outage get 503 with a Russian message instead of 500 (R-OPS-006, D-10) |
+| `tests/resilience/io-p0-partial-restore.test.ts` | partial restore from a backup (R-BACKUP-015) | space restore from a backup restored into a temporary database: impact preview with per-page diff, then pages come back as new versions or recreated pages with their files, without overwriting live data (R-BACKUP-015, R-BACKUP-019) |
 | `tests/resilience/migrations.test.ts` | schema migrations: rollback and re-apply (E-14, OPS-002, R-OPS-001) | every migration rolls back and re-applies step by step with data present; the application keeps working (E-14, OPS-002, R-OPS-001, R-OPS-004, R-OPS-007) |
 | `tests/resilience/migrations.test.ts` | schema migrations: rollback and re-apply (E-14, OPS-002, R-OPS-001) | a complete rollback to an empty schema and a fresh re-apply both succeed (E-14, R-OPS-007) |
 | `tests/resilience/migrations.test.ts` | schema migrations: rollback and re-apply (E-14, OPS-002, R-OPS-001) | an older release refuses to start against a newer schema instead of running on it (OPS-002, E-14, R-OPS-004) |
+| `tests/resilience/migrations.test.ts` | schema migrations: rollback and re-apply (E-14, OPS-002, R-OPS-001) | pending migrations on a database with data are refused until a fresh full backup is recorded; backup.sh unlocks them, the CLI enforces it too (R-OPS-001, R-OPS-004) |
+| `tests/resilience/pitr.test.ts` |  | recovers database and files to the moment before the incident; later damage is absent, earlier data, files, ACL and audit intact (R-BACKUP-011, R-BACKUP-008, V17-F05, R-BACKUP-001, R-BACKUP-010, R-BACKUP-018, SC-30) |
+| `tests/resilience/pitr.test.ts` |  | PostgreSQL server binaries are not installed: run scripts/backup/pitr-drill.sh manually (see wal-archive.md) |
 | `tests/resilience/storage-failure.test.ts` | object storage failure on upload (SC-30, D-03) | blob area not writable → clean error, no orphan rows; retry after recovery stores the file (D-03, E-01) |
 | `tests/resilience/storage-failure.test.ts` | object storage failure on upload (SC-30, D-03) | disk full while committing the object → clean error, resumable session marked failed; a new upload succeeds (D-03) |
 | `tests/resilience/storage-failure.test.ts` | object storage failure on upload (SC-30, D-03) | temporary area unusable → readiness reports storage error, upload fails cleanly, both recover (R-OPS-006, D-03) |
 
 ### Браузерные E2E (Playwright, Chromium)
 
-Запуск: `npm run test:e2e`. Тестов: **36**.
+Запуск: `npm run test:e2e`. Тестов: **105**.
 
 | Файл | Группа | Тест |
 |---|---|---|
@@ -249,6 +340,19 @@
 | `tests/e2e/a11y.spec.ts` |  | reduced motion: animations and transitions are effectively disabled (R-A11Y-002, AT-82) |
 | `tests/e2e/a11y.spec.ts` |  | real 200% browser zoom (1280x800 at 2x = 640x400 CSS px) keeps every key screen usable (AT-81, UX-147, V18-A18) |
 | `tests/e2e/a11y.spec.ts` |  | pixel baselines for stable screens (R-QA-008, AT-89) |
+| `tests/e2e/acl-p0-admin.spec.ts` |  | R-ADMIN-018 V16-S15: the administrator checks a user\'s access to a document — decision, actions, sources — without impersonation and without seeing private titles |
+| `tests/e2e/acl-p0-admin.spec.ts` |  | R-ACL-056: emergency access is requested with a reason, approved by a second administrator and appears in the audit log |
+| `tests/e2e/acl-p0-admin.spec.ts` |  | ROUTE-06: the auditor reads who changed what in the journal but does not see titles or content of documents without access |
+| `tests/e2e/acl-p0-routes.spec.ts` |  | ROUTE-04: administrator route — department → employee → automatic space access → guest on a section for a term → suspension → sessions revoked → explanation → audit and backup → restore of a test copy |
+| `tests/e2e/acl-p0-routes.spec.ts` |  | ROUTE-03: space manager route — members and group access → template → tree drag-and-drop → publication control → restore of a deleted branch |
+| `tests/e2e/acl-p0-routes.spec.ts` |  | ROUTE-01: employee route — login → own spaces → regulation → search → one-click article in the department → formatting → Excel and image paste → link within rights → logout and return without losses |
+| `tests/e2e/acl-p0-spaces.spec.ts` |  | R-SPACE-001 R-SPACE-010 R-ADMIN-020: a space is created in the UI and a department gets access automatically; members are managed on the «Участники» tab |
+| `tests/e2e/acl-p0-spaces.spec.ts` |  | R-ACL-021 R-ACL-036: share dialog — department preset, quick expiry, start date, reason, flags, then «Только я» with the list of who loses access |
+| `tests/e2e/acl-p0-spaces.spec.ts` |  | R-ACL-051: a shared personal page shows «Не полностью личная» in the header and in the share dialog |
+| `tests/e2e/acl-p0-spaces.spec.ts` |  | E2E-109 R-PUBLISH-009: public links are off by policy; once enabled a link opens without login, is not indexed and stops after revocation |
+| `tests/e2e/acl-p0-ui.spec.ts` |  | QA26-24 R-ACL-075 R-ACL-076: in the browser the UI shows exactly the server rights; no bypass via URL or API; revocation removes access and the local copy (R-ACL-025) |
+| `tests/e2e/acl-p0-ui.spec.ts` |  | R-ACL-075 QA26-24: the same access-control checks on a phone (Pixel 7 viewport, touch) |
+| `tests/e2e/acl-p0-ui.spec.ts` |  | AT-79: copying a page does not put titles of linked pages the reader cannot open on the clipboard (Ctrl+C and «Копировать страницу») |
 | `tests/e2e/clipboard.spec.ts` |  | Word paste keeps headings, nested and numbered lists, links and tables without Office styles (AT-44, UX13-02, E209, R-CLIPBOARD-020, R-CLIPBOARD-022) |
 | `tests/e2e/clipboard.spec.ts` |  | web HTML paste: scripts removed, embedded image uploaded as an attachment (E210, SC-06, R-CLIPBOARD-009) |
 | `tests/e2e/clipboard.spec.ts` |  | page menu copies the page with formatting, as text and as Markdown (R-CLIPBOARD-002, R-CLIPBOARD-004, SC-08) |
@@ -258,26 +362,82 @@
 | `tests/e2e/clipboard.spec.ts` |  | caret position of a page is restored when it is opened again (R-EDITOR-037, R-EDITOR-001) |
 | `tests/e2e/clipboard.spec.ts` |  | registry block from the slash menu shows the new collection (R-COLLECTION-001) |
 | `tests/e2e/clipboard.spec.ts` |  | image viewer: click on a selected image opens it; zoom is limited to 10–800 % (R-MEDIA-015, R-MEDIA-019, R-MEDIA-021) |
+| `tests/e2e/collab-p0-editing.spec.ts` |  | two editors change a paragraph, one table and the structure while one loses the connection: no confirmed text is lost (ROUTE-05, SC-25, AT-56, R-COLLAB-024) |
+| `tests/e2e/collab-p0-editing.spec.ts` |  | a block is moved by one editor while another edits it: the edit is kept as a conflict copy and restored in one click (OPS-006, R-COLLAB-049, R-COLLAB-045, R-COLLAB-041, R-COLLAB-033, E-04, COLLAB-193, AT-90) |
+| `tests/e2e/collab-p0-editing.spec.ts` |  | undo of a block move never silently drops a colleague's edits (UX13-10, R-HISTORY-011) |
+| `tests/e2e/collab-p0-editing.spec.ts` |  | undo/redo sequences of 100 and 1000 steps, transform and delete are reversible; history does not cross a reload (QA26-14, R-HISTORY-017, R-HISTORY-011) |
+| `tests/e2e/collab-p0-editing.spec.ts` |  | Esc in the empty title of a new page cancels it; a double "+" on a slow network creates exactly one page (R-TREE-025, UX23-203) |
+| `tests/e2e/collab-p0-offline.spec.ts` |  | reload without network reopens the local copy with an honest status; the queue is delivered after reconnect (E-02, AT-75, R-OFFLINE-010, R-OFFLINE-003, R-OFFLINE-005, AT-90) |
+| `tests/e2e/collab-p0-offline.spec.ts` |  | two tabs of the same user edit one page online and offline: no loss, no duplicates (UX23-216, R-OFFLINE-010) |
+| `tests/e2e/collab-p0-offline.spec.ts` |  | one browser, two accounts: a user's unsent changes are never sent or shown under another account (R-OFFLINE-007) |
+| `tests/e2e/collab-p0-storage.spec.ts` |  | device storage is full: explicit warning, error status instead of "saved on device", local copy can be downloaded (R-OFFLINE-006, R-COLLAB-017, AT-90) |
+| `tests/e2e/collab-p0-storage.spec.ts` |  | the server cannot store changes: visible error (never endless "Сохранение…"), local copy offered, automatic retry succeeds (AT-59, R-COLLAB-017) |
+| `tests/e2e/collab-p0-storage.spec.ts` |  | offline local-copy screen lets the user extract local edits (AT-90, R-OFFLINE-010) |
 | `tests/e2e/collab.spec.ts` |  | two people edit the same page: changes converge, presence is shown, revoking edit makes it read-only (E219, R-COLLAB-006, R-COLLAB-012) |
 | `tests/e2e/collab.spec.ts` |  | history: save a version, change text, restore the version (R-HISTORY-004, UX13-14, UX21-201) |
 | `tests/e2e/collab.spec.ts` |  | search finds a page by a word from its body and jumps to the block (V16-S01, R-SEARCH-005) |
 | `tests/e2e/collab.spec.ts` |  | paste: spreadsheet range becomes a table; Markdown becomes formatted blocks |
 | `tests/e2e/collab.spec.ts` |  | typing latency on a long document stays within budget |
+| `tests/e2e/conflict.spec.ts` |  | edit vs concurrent delete: the editor keeps a conflict copy and can put the block back (E-04, AT-77, COLLAB-193, R-COLLAB-045, UX13-10) |
 | `tests/e2e/content.spec.ts` |  | image: upload via file chooser, resize presets, caption, full-screen viewer with zoom |
 | `tests/e2e/content.spec.ts` |  | sidebar tree: "+" creates a child page under the selected parent with focus in the title (R-TREE-002, UX-121, UX23-201) |
 | `tests/e2e/content.spec.ts` |  | comment on a selection appears in the comments panel |
+| `tests/e2e/editor-p0-blocks.spec.ts` |  | text blocks: paragraph, H1–H6, lead, quote and divider are created from the "/" menu; body text is hyphenated (R-EDITOR-007) |
+| `tests/e2e/editor-p0-blocks.spec.ts` |  | selection modes: word, paragraph, Shift+arrows, across blocks, Ctrl+A block → article, Esc → block, several blocks (R-EDITOR-068, E201) |
+| `tests/e2e/editor-p0-blocks.spec.ts` |  | formatting keeps the selection: bold, italic and toolbar underline apply to the same range (E202) |
+| `tests/e2e/editor-p0-blocks.spec.ts` |  | moving blocks: one block by keyboard and block menu, several selected blocks together — order and ids kept (E213, UX21-186) |
+| `tests/e2e/editor-p0-clipboard.spec.ts` |  | paste options: «Сохранить форматирование», «Объединить», «Только текст»; scripts and trackers removed (R-CLIPBOARD-009, R-CLIPBOARD-024) |
+| `tests/e2e/editor-p0-clipboard.spec.ts` |  | copy: a text selection, a block and a section of a heading go to the clipboard as text/html and text/plain (R-CLIPBOARD-001) |
+| `tests/e2e/editor-p0-core.spec.ts` |  | caret and selection stay in place while a colleague edits, during autosave and after a network failure (R-EDITOR-022, R-EDITOR-001) |
+| `tests/e2e/editor-p0-core.spec.ts` |  | IME composition commits once, coexists with a colleague typing and autosave, and undo reverts only own input (E221, R-EDITOR-021, R-EDITOR-053) |
+| `tests/e2e/editor-p0-core.spec.ts` |  | Cyrillic, Russian quotes, emoji and a very long URL are typed, saved and laid out correctly (R-EDITOR-021, R-EDITOR-033) |
+| `tests/e2e/editor-p0-core.spec.ts` |  | a document of 100 000+ characters (50+ pages pasted at once) stays editable: caret after the paste, one undo step, saved in full (R-EDITOR-021, R-EDITOR-033) |
+| `tests/e2e/editor-p0-core.spec.ts` |  | key matrix: Enter, Enter on empty item, Tab/Shift+Tab, Backspace at the start and on empty blocks behave by the documented rules (R-EDITOR-065, R-EDITOR-034, E208) |
+| `tests/e2e/editor-p0-media.spec.ts` |  | pasted image: instant local preview, upload error keeps the block, retry completes it with alt (R-MEDIA-006, R-MEDIA-008) |
+| `tests/e2e/editor-p0-media.spec.ts` |  | closing the tab during an image upload: the block and the file are restored and the upload finishes on next open (UX13-03, R-MEDIA-006) |
+| `tests/e2e/editor-p0-media.spec.ts` |  | cancelling an upload removes only that block (R-MEDIA-006) |
+| `tests/e2e/editor-p0-table.spec.ts` |  | table structure: insert/delete rows and columns, header row/column, merge and split, alignment, column width (R-TABLE-003) |
+| `tests/e2e/editor-p0-table.spec.ts` |  | table data: copy a cell range as TSV, paste a range from Excel, move rows and columns, sort by a column (R-TABLE-003) |
+| `tests/e2e/editor-p0-table.spec.ts` |  | concurrent table operations of two people (row added offline vs column added offline) converge to the same rectangular table (OPS-007) |
 | `tests/e2e/editor.spec.ts` |  | first run: organisation setup, personal space and empty states |
 | `tests/e2e/editor.spec.ts` |  | create page, type with Markdown shortcuts, "Сохранено" only after server ack, survives reload (R-PAGE-018, R-PAGE-033, AT-61, UX13-01, UX-144) |
 | `tests/e2e/editor.spec.ts` |  | offline edits are kept locally and delivered after reconnect (E220, AT-57) |
 | `tests/e2e/editor.spec.ts` |  | slash menu inserts a table and a callout; "> " creates a toggle |
 | `tests/e2e/editor.spec.ts` |  | an empty page created by mistake disappears when left; a double click creates one page (R-TREE-025, UX23-203, UX23-202) |
+| `tests/e2e/io-p0-roundtrip.spec.ts` |  | DOCX import → edit in the editor → DOCX and Markdown export from the page menu keep the structure and the edit (E225, SC-13, R-EXPORT-006, R-EXPORT-012) |
+| `tests/e2e/io-p0-roundtrip.spec.ts` |  | Markdown file import → edit → Markdown export round trip (E225, R-EXPORT-012) |
+| `tests/e2e/io-p0-roundtrip.spec.ts` |  | background export of a branch can be cancelled from the dialog; separate-files ZIP option (R-EXPORT-022) |
+| `tests/e2e/io-p0-roundtrip.spec.ts` |  | archive restore dialog: the administrator chooses a new isolated space as the target (R-ARCHIVE-006, R-ARCHIVE-016) |
 | `tests/e2e/mobile.layout.spec.ts` |  | mobile: drawer navigation, editor usable, no horizontal scroll |
+| `tests/e2e/perf-session.spec.ts` |  | E2E-120, UX13-09: long session — 200 formatting toggles and continuous typing; exact final text, nothing lost, saved on the server |
+| `tests/e2e/perf-typing.spec.ts` |  | R-PERF-008, AT-84: typing in a 10 000-word article with CPU throttled 4x — 240 samples, p95/p99 journaled against 50/100 ms, no lost characters |
+| `tests/e2e/perf-typing.spec.ts` |  | SC-04: 5 000 blocks and a long table: typing keeps the caret in place and loses no characters |
+| `tests/e2e/perf-typing.spec.ts` |  | R-PERF-013: typing starts no animations on document content (input latency journaled) |
+| `tests/e2e/ui-p0-interaction.spec.ts` |  | prepare pages |
+| `tests/e2e/ui-p0-interaction.spec.ts` |  | R-UI-059, R-UI-008, E224: menus at viewport edges flip/shift inside the window, keep keyboard focus, close with Esc or outside click and return focus |
+| `tests/e2e/ui-p0-interaction.spec.ts` |  | R-UI-059, R-UI-053: dialogs trap focus, always have a visible exit and Esc, and return focus to the opener |
+| `tests/e2e/ui-p0-interaction.spec.ts` |  | R-UI-060, UX-141: hovering controls performs no action; hover-only tree actions have a keyboard equivalent |
+| `tests/e2e/ui-p0-interaction.spec.ts` |  | R-UI-053: a server that does not answer gives an explanation and a retry instead of an endless spinner |
+| `tests/e2e/ui-p0-interaction.spec.ts` |  | R-UI-053, R-UI-068: disabled actions always say why (view-only user) |
+| `tests/e2e/ui-p0-interaction.spec.ts` |  | R-UI-062: a new page is never created "nowhere" and a draft survives an immediate reload |
+| `tests/e2e/ui-p0-interaction.spec.ts` |  | R-UI-009, R-UI-052: failed actions are shown with what happened, that nothing was saved, and what to do |
+| `tests/e2e/ui-p0-interaction.spec.ts` |  | R-UI-009: no uncaught script errors occurred in any scenario above |
+| `tests/e2e/ui-p0-layout.spec.ts` |  | prepare a page with headings, long words, a list and a table |
+| `tests/e2e/ui-p0-layout.spec.ts` |  | R-UI-006, R-UI-040: opening a page and typing cause no layout shift (CLS < 0.02) |
+| `tests/e2e/ui-p0-layout.spec.ts` |  | R-UI-006: switching pages, opening and closing the side panel cause no layout shift |
+| `tests/e2e/ui-p0-layout.spec.ts` |  | R-UI-006, V17-F09: no overlapping, clipped or off-screen controls at 320–1920 px (${theme}) |
+| `tests/e2e/ui-p0-layout.spec.ts` |  | V18-A18, AT-81: real 200 % zoom (DPR 2, 640×400 CSS px) — no overlaps or clipped controls |
+| `tests/e2e/ui-p0-touch.spec.ts` |  | UX-146, R-UI-058: on a touch phone the floating "+" inserts a block without hover |
+| `tests/e2e/ui-p0-touch.spec.ts` |  | R-A11Y-008: touch targets on a phone are at least 44×44 CSS px |
+| `tests/e2e/ui-p0-touch.spec.ts` |  | UX-131: Back restores the reading position of a long page |
 | `tests/e2e/undo.spec.ts` |  | undo/redo of typing: 1 and 10 steps, Ctrl+Shift+Z and Ctrl+Y; result is saved (QA26-14, UX21-196, UX21-198, R-HISTORY-017, R-HISTORY-018, HIST-188) |
 | `tests/e2e/undo.spec.ts` |  | undo/redo of formatting keeps the text and the selection (QA26-14, SC-11, R-HISTORY-011, R-HISTORY-017) |
 | `tests/e2e/undo.spec.ts` |  | one undo reverts a paste of 100 blocks and keeps the cursor position (AT-47, R-HISTORY-009, QA26-14) |
-| `tests/e2e/undo.spec.ts` |  | undo of a block move, a table insert and a block deletion (UX-138, UX13-10, SC-11, E2E-118, QA26-14) |
+| `tests/e2e/undo.spec.ts` |  | undo of a block move and of a block deletion is precise (UX-138, E2E-118, QA26-14) |
+| `tests/e2e/undo.spec.ts` |  | undo of a table insert (SC-11, R-HISTORY-017, QA26-14) |
 | `tests/e2e/undo.spec.ts` |  | undo reverts only the user's own changes, never a colleague's (SC-27, UX21-200, R-HISTORY-021, R-HISTORY-027, HIST-188) |
 | `tests/e2e/visual.spec.ts` |  | prepare a representative page |
 | `tests/e2e/visual.spec.ts` |  | layout ${w}x${h} ${theme}: no horizontal overflow, key controls reachable |
 | `tests/e2e/visual.spec.ts` |  | 200% zoom (CSS zoom) keeps the page usable |
+| `tests/e2e/zz-tmp-profile.spec.ts` |  | profile setContent |
 

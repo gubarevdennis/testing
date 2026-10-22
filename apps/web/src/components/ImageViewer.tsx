@@ -274,7 +274,7 @@ function ViewerInner({ img, index, total }: { img: ViewerImage; index: number; t
 
   const pct = Math.round(t.scale * 100);
   return (
-    <div className="viewer" role="dialog" aria-modal="true" aria-label={img.alt || img.caption || 'Просмотр изображения'}>
+    <div className="viewer" role="dialog" aria-modal="true" aria-label={'Просмотр изображения' + (img.caption || img.alt ? ': ' + (img.caption || img.alt) : '')}>
       <div className="viewer-top">
         <span className="viewer-count">{total > 1 ? `${index + 1} / ${total}` : ''}</span>
         <div className="viewer-tools">

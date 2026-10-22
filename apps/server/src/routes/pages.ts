@@ -10,7 +10,7 @@ import { orgSettings } from '../services/org.js';
 import { badRequest, conflict, forbidden, notFound } from '../lib/errors.js';
 import { setTitle } from '../collab/ydoc.js';
 import { keyBetween } from '@kb/shared';
-import { personalExposure } from './acl-extra.js';
+import { personalExposure, redactInaccessibleRefs } from './acl-extra.js';
 import { createViewLogger } from '../services/denials.js';
 
 const uuid = z.string().uuid();
@@ -151,10 +151,10 @@ export async function pageRoutes(app: FastifyInstance, s: Services) {
     if (acc.policy.publishingMode === 'publish' && !acc.actions.edit) {
       if (!p.published_revision_id) return { mode: 'published', published: false, content: null, title: p.title };
       const rev = (await s.db.query('select number, content, title, created_at from page_revisions where id = $1', [p.published_revision_id])).rows[0];
-      return { mode: 'published', published: true, content: rev.content, title: rev.title, revision: { number: rev.number, createdAt: rev.created_at } };
+      return { mode: 'published', published: true, content: await redactInaccessibleRefs(s.db, user, rev.content), title: rev.title, revision: { number: rev.number, createdAt: rev.created_at } };
     }
     const snap = await s.hub.snapshot(id);
-    return { mode: 'live', content: snap.json, seq: snap.seq, title: p.title };
+    return { mode: 'live', content: await redactInaccessibleRefs(s.db, user, snap.json), seq: snap.seq, title: p.title };
   });
 
   app.patch('/api/v1/pages/:id', async (req) => {

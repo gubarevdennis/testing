@@ -4,7 +4,15 @@ import { ensureOwner, newPage, editor, expectSaved, apiContent, paste, createUse
 test.describe.configure({ mode: 'serial' });
 
 const toolbar = (page: Page) => page.getByRole('toolbar', { name: 'Таблица' });
-const grid = (page: Page) => editor(page).locator('table').first().evaluate((t) => [...t.querySelectorAll('tr')].map((r) => [...r.children].map((c) => (c.tagName === 'TH' ? '#' : '') + (c as HTMLElement).innerText.trim())));
+const grid = (page: Page) =>
+  editor(page)
+    .locator('table')
+    .first()
+    .evaluate((t) => {
+      const c = t.cloneNode(true) as HTMLElement;
+      c.querySelectorAll('.collab-caret').forEach((x) => x.remove()); // colleagues' caret labels
+      return [...c.querySelectorAll('tr')].map((r) => [...r.children].map((x) => (x.tagName === 'TH' ? '#' : '') + (x as HTMLElement).textContent!.trim()));
+    });
 const cell = (page: Page, text: string) => editor(page).locator('td, th').filter({ hasText: new RegExp('^' + text + '$') }).first();
 
 async function tableMenu(page: Page, item: string) {
@@ -158,9 +166,11 @@ test('concurrent table operations of two people (row added offline vs column add
   await ctx2.setOffline(true);
   await cell(page, 'Болт').click();
   await toolbar(page).getByRole('button', { name: 'Строка ниже' }).click();
+  await editor(page).locator('table tr').nth(2).locator('td').first().click(); // the new row
   await page.keyboard.type('A3');
   await cell(p2, 'Название').click();
   await toolbar(p2).getByRole('button', { name: 'Столбец справа' }).click();
+  await p2.keyboard.press('Tab');
   await p2.keyboard.type('Цена');
   await page.context().setOffline(false);
   await ctx2.setOffline(false);

@@ -32,7 +32,7 @@
 .icon-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 .icon-btn.sm { width: 24px; height: 24px; }
 .icon-btn.lg { width: 36px; height: 36px; }
-@media (pointer: coarse) { .icon-btn, .icon-btn.sm { width: 44px; height: 44px; } .btn { min-height: 44px; } }
+@media (pointer: coarse) { .icon-btn, .icon-btn.sm { width: 44px; height: 44px; } .btn { min-height: 44px; min-width: 44px; } }
 
 .spinner { width: 16px; height: 16px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: kb-spin 0.7s linear infinite; display: inline-block; opacity: 0.8; }
 

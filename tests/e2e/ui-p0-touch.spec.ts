@@ -81,7 +81,11 @@ test('UX-131: Back restores the reading position of a long page', async ({ page 
   expect(Math.abs((await scroller.evaluate((e) => e.scrollTop)) - before)).toBeLessThan(50);
   // a fresh navigation to the same page starts at the top
   await page.getByRole('navigation', { name: 'Навигация' }).getByRole('link', { name: 'Главная' }).click();
-  await page.getByRole('tree', { name: 'Страницы' }).getByRole('link', { name: 'Длинная статья' }).click();
+  await page.locator('body').click({ position: { x: 5, y: 5 } });
+  await page.keyboard.press('Control+k');
+  await page.keyboard.type('Длинная статья');
+  await page.getByRole('dialog', { name: 'Быстрый переход' }).getByRole('option', { name: /Длинная статья/ }).first().click();
+  await expect(page).toHaveURL(new RegExp(id));
   await expect(editor(page).locator('p').first()).toBeVisible();
   expect(await scroller.evaluate((e) => e.scrollTop)).toBeLessThan(50);
 });

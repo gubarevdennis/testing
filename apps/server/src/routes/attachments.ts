@@ -5,11 +5,12 @@ import { mkdir, stat, rm, open } from 'node:fs/promises';
 import { join } from 'node:path';
 import { randomUUID, createHash } from 'node:crypto';
 import { pipeline } from 'node:stream/promises';
-import type { Readable } from 'node:stream';
+import { Readable } from 'node:stream';
 import { tx } from '../db/pool.js';
 import { actorOf, parse, requireUser, type Services } from '../app.js';
 import { requirePage, pageAccess, type AuthUser } from '../acl/engine.js';
 import { streamToTemp } from '../storage/blob-store.js';
+import { fetchRemote, RemoteFetchError } from '../services/remote-fetch.js';
 import { inspectFile, sanitizeSvgFile, scanForViruses, safeFilename, createAttachment, registerBlob, makeImageDerivatives, isInlineSafe, derivedKey, removeTemp, IMAGE_MIME } from '../services/attachments.js';
 import { audit, auditStandalone } from '../services/audit.js';
 import { badRequest, conflict, forbidden, notFound, tooLarge, unprocessable } from '../lib/errors.js';
@@ -187,6 +188,49 @@ export async function attachmentRoutes(app: FastifyInstance, s: Services) {
     }
     if (!results.length && errors.length === 1) throw unprocessable('upload_rejected', errors[0].error, errors);
     return { attachments: results, errors };
+  });
+
+  // ---- image by URL (R-MEDIA-009): fetched by the server through the SSRF guard and stored as a regular attachment,
+  // so the page never depends on (or leaks readers to) the external host
+  app.post('/api/v1/attachments/from-url', async (req) => {
+    const user = requireUser(req);
+    const body = parse(z.object({ url: z.string().min(1).max(4000), pageId: uuid.nullable() }), req.body);
+    if (body.pageId) await requirePage(s.db, user, body.pageId, 'edit');
+    if (!s.cfg.remoteFetch?.enabled) throw unprocessable('remote_disabled', 'Загрузка изображений по ссылке отключена администратором');
+    let r;
+    try {
+      r = await fetchRemote(body.url.trim(), { timeoutMs: s.cfg.remoteFetch.timeoutMs, maxBytes: Math.min(s.cfg.remoteFetch.maxBytes, s.cfg.maxUploadBytes), allowHosts: s.cfg.remoteFetch.allowHosts, accept: /^image\//i });
+    } catch (e) {
+      if (e instanceof RemoteFetchError) {
+        const msg: Record<string, string> = {
+          bad_url: 'Некорректный адрес: нужна ссылка http(s) без логина и пароля',
+          blocked_address: 'Адрес во внутренней сети недоступен для загрузки (защита от SSRF)',
+          too_large: 'Изображение по ссылке слишком большое',
+          timeout: 'Сервер по ссылке не ответил вовремя',
+          bad_status: 'По ссылке ничего не найдено',
+          bad_type: 'По ссылке находится не изображение',
+          too_many_redirects: 'Слишком много перенаправлений',
+          network: 'Не удалось получить изображение по ссылке',
+        };
+        throw unprocessable('remote_' + e.code, msg[e.code] ?? e.message);
+      }
+      throw e;
+    }
+    let name = 'image';
+    try {
+      name = decodeURIComponent(new URL(r.finalUrl).pathname.split('/').pop() || 'image');
+    } catch {
+      /* default name */
+    }
+    name = safeFilename(name);
+    if (!/\.[a-z0-9]{2,5}$/i.test(name)) name += '.' + (r.contentType.split('/')[1]?.split(/[;+]/)[0] || 'img');
+    const tmp = await streamToTemp(s.store, Readable.from(r.data), s.cfg.maxUploadBytes);
+    const info = await inspectFile(tmp.path, name, r.contentType).catch(() => null);
+    if (!info || info.kind !== 'image') {
+      await removeTemp(tmp.path);
+      throw unprocessable('remote_bad_type', 'По ссылке находится не изображение');
+    }
+    return { attachment: await ingestFile(s, req, user, tmp, name, { pageId: body.pageId, declaredMime: r.contentType }) };
   });
 
   // ---- resumable uploads (large files, unstable networks)

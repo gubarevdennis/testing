@@ -63,7 +63,8 @@ body.resizing * { cursor: col-resize !important; }
 /* action area keeps its width; it only fades in, so nothing shifts */
 .tree-actions { display: flex; align-items: center; gap: 0; padding-right: 2px; opacity: 0; transition: opacity var(--t-fast); }
 .tree-row:hover .tree-actions, .tree-row:focus-within .tree-actions, .tree-actions:has([aria-expanded='true']) { opacity: 1; }
-@media (pointer: coarse) { .tree-actions { opacity: 1; } .tree-handle { opacity: 0.7; } .tree-row { height: 40px; } }
+/* touch: every target at least 44×44 CSS px (R-A11Y-008) */
+@media (pointer: coarse) { .tree-actions { opacity: 1; } .tree-handle { opacity: 0.7; } .tree-row { height: 44px; } .tree-chevron { width: 44px; height: 44px; flex: none; } .nav-item, .tree-section-btn { min-height: 44px; } }
 .tree-row-wrap.drop-inside .tree-row { background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--accent); }
 .tree-row-wrap.drop-invalid .tree-row { background: var(--danger-soft); }
 .tree-drop-line { position: absolute; right: 4px; height: 2px; background: var(--accent); border-radius: 2px; pointer-events: none; z-index: 3; }
