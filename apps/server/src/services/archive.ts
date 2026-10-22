@@ -13,7 +13,7 @@ import type { Services } from '../app.js';
 import type { Tx } from '../db/pool.js';
 import { blobKey } from '../storage/blob-store.js';
 import { pagePaths, relative, slugify, type ExportPage } from './exporter.js';
-import { readZipSafe } from './importer.js';
+import { readZipSafe, assertBufferClean } from './importer.js';
 import { jsonToUpdate, updateToJson } from '../collab/ydoc.js';
 import { insertAncestors } from './pages.js';
 import { audit, type AuditActor } from './audit.js';
@@ -258,6 +258,8 @@ export interface ArchiveAnalysis {
   conflicts: { pages: number; spaces: number; attachments: number };
   users: Array<{ email: string; name: string; match: 'existing' | 'unresolved' }>;
   warnings: string[];
+  /** Files rejected by the antivirus (each attachment of the archive is scanned when CLAMAV_HOST is set). */
+  malware: Array<{ path: string; message: string }>;
 }
 
 export async function analyzeArchive(s: Services, orgId: string, buf: Buffer): Promise<{ analysis: ArchiveAnalysis; entries: Map<string, Buffer> }> {
@@ -293,10 +295,24 @@ export async function analyzeArchive(s: Services, orgId: string, buf: Buffer): P
   };
   const existing = new Set((await s.db.query('select lower(email) e from users where org_id = $1', [orgId])).rows.map((r) => r.e));
   const users = (j('metadata/users.json') as any[]).map((u) => ({ email: u.email, name: u.name, match: existing.has(String(u.email).toLowerCase()) ? ('existing' as const) : ('unresolved' as const) }));
+  const malware: Array<{ path: string; message: string }> = [];
+  if (s.cfg.clamavHost) {
+    const paths = new Set<string>(atts.map((a) => a.path).filter((p: unknown): p is string => typeof p === 'string'));
+    for (const path of paths) {
+      const data = entries.get(path);
+      if (!data) continue;
+      try {
+        await assertBufferClean(s, data, path);
+      } catch (e: any) {
+        malware.push({ path, message: e.message });
+      }
+    }
+  }
   const warnings: string[] = [];
+  if (malware.length) warnings.push(`Антивирус отклонил файлы архива (${malware.length}) — восстановление невозможно, пока они в архиве.`);
   if (conflicts.pages || conflicts.spaces) warnings.push('Часть идентификаторов уже существует — объекты будут восстановлены с новыми идентификаторами, внутренние ссылки будут переназначены.');
   if (users.some((u) => u.match === 'unresolved')) warnings.push('Пользователи, отсутствующие в системе, будут созданы как «неразрешённые идентичности» (приостановлены, без доступа) до сопоставления администратором.');
-  return { analysis: { ok: !checksumErrors.length && !missingFiles.length, manifest, checksumErrors, missingFiles, conflicts, users, warnings }, entries };
+  return { analysis: { ok: !checksumErrors.length && !missingFiles.length && !malware.length, manifest, checksumErrors, missingFiles, conflicts, users, warnings, malware }, entries };
 }
 
 /** Restores an archive into the current organisation in ONE transaction; returns a verification report. */

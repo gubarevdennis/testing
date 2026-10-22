@@ -91,7 +91,12 @@ transaction …`, then `archive recovery complete`.
 
 ## 5. Measured drill (2026-10-22, scratch PostgreSQL 16 cluster, 4 vCPU VM)
 
-This was run with `scratch/pitr-drill.sh`, which is not shipped. The procedure is the one above.
+The drill is scripted: `scripts/backup/pitr-drill.sh init|basebackup|switch|recover|destroy --dir D`. It is
+automated end to end with the application in `tests/resilience/pitr.test.ts`, which is skipped (with a message) when
+the PostgreSQL server binaries are not installed. The latest automated run took: base backup 1.1 s, WAL switch and
+archiving 0.35 s, recovery to T 1.1 s, and 1.6 s until the API was serving from the recovered data.
+
+The first manual run produced:
 
 | Step | Result |
 |---|---|

@@ -16,6 +16,7 @@ import { importExportRoutes } from './import-export.js';
 import { archiveRoutes } from './archives.js';
 import { retentionRoutes } from './retention.js';
 import { draftRoutes } from './drafts.js';
+import { conflictRoutes } from './conflicts.js';
 
 export async function registerRoutes(app: FastifyInstance, s: Services) {
   await healthRoutes(app, s);
@@ -23,6 +24,7 @@ export async function registerRoutes(app: FastifyInstance, s: Services) {
   await spaceRoutes(app, s);
   await pageRoutes(app, s);
   await draftRoutes(app, s);
+  await conflictRoutes(app, s);
   await revisionRoutes(app, s);
   await accessRoutes(app, s);
   await collabRoutes(app, s);

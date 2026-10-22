@@ -1,8 +1,8 @@
 # Статус требований модулей COLLAB, OFFLINE, HISTORY, TREE, PAGE, SEARCH (оценка по коду и тестам).
 - id: R-TREE-001
   status: done
-  evidence: apps/server/src/services/pages.ts (closure table page_ancestors, лимита глубины нет)
-  note: нет автотеста на глубину >15
+  evidence: apps/server/src/services/pages.ts#assertDepth; tests/integration/history-tree.test.ts
+  note: Техлимит 15 уровней (как в ТЗ §B), обоснован единым ограничением API
 - id: R-COLLAB-001
   status: done
   evidence: apps/server/src/collab/hub.ts, packages/shared/src/collab-client.ts; tests/integration/collab.test.ts (randomised convergence, offline), tests/resilience/crash-restart.test.ts
@@ -99,8 +99,8 @@
   evidence: apps/server/src/ocr/ocr.ts
 - id: R-TREE-005
   status: partial
-  evidence: apps/server/src/services/pages.ts, apps/server/migrations/0001_core.sql
-  note: Organization→Space→Page без отдельной сущности Workspace; API-лимит глубины 15 не реализован
+  evidence: apps/server/src/services/pages.ts#assertDepth (create/move/duplicate), apps/server/src/services/importer.ts (проверка плана); tests/integration/history-tree.test.ts
+  note: Лимит 15 уровней с понятной ошибкой реализован и тестируется; отдельной сущности Workspace нет (организация = рабочее пространство)
 - id: R-PAGE-001
   status: partial
   evidence: apps/server/migrations/0001_core.sql (pages)
@@ -129,8 +129,8 @@
   evidence: apps/server/src/services/search.ts (matchedIn image), apps/web/src/pages/SearchPage.tsx; tests/integration/content.test.ts (OCR)
 - id: R-SEARCH-003
   status: partial
-  evidence: apps/server/src/jobs/worker.ts#indexPage
-  note: Комментарии и содержимое файлов (DOCX/PDF) не индексируются, только имена файлов; тегов нет
+  evidence: apps/server/src/jobs/worker.ts#indexPage (комментарии, текст DOCX/TXT вложений), apps/server/src/services/file-text.ts, migrations/0006; tests/integration/history-tree.test.ts
+  note: Комментарии и DOCX/TXT индексируются; текст PDF не извлекается (PDF-парсер не установлен), тегов нет
 - id: R-SEARCH-004
   status: done
   evidence: apps/server/src/services/search.ts; tests/integration/content.test.ts (morphology, typo, wrong layout), tests/integration/gaps.test.ts
@@ -216,9 +216,10 @@
   evidence: apps/web/src/layout/SidebarTree.tsx (клавиатура, pointer DnD, touch-хэндл), apps/web/src/layout/treeActions.tsx
   note: DnD и клавиатура дерева автотестами не проверены (название E2E упоминает keyboard navigation, но не проверяет)
 - id: SC-11
-  status: done
-  evidence: apps/web/src/editor/clientExtensions.ts (Tiptap Collaboration → y-tiptap yUndoPlugin, own origin only; undoRedo disabled in packages/shared/src/editor/extensions.ts)
-  note: нет автотеста
+  status: partial
+  evidence: apps/web/src/editor/clientExtensions.ts (Tiptap Collaboration → y-tiptap yUndoPlugin, own origin only; undoRedo disabled in packages/shared/src/editor/extensions.ts); tests/e2e/undo.spec.ts
+  note: 'Отмена форматирования/ввода работает; БАГ (найден tests/e2e/undo.spec.ts): apps/web/src/editor/extensions/blockIds.ts дописывает транзакцию с addToHistory=false, и y-prosemirror исключает из истории
+    отмены всё локальное изменение, создающее новые блоки (Enter, вставка, вставка таблицы) — Ctrl+Z их не отменяет'
 - id: SC-23
   status: done
   evidence: tests/integration/content.test.ts (OCR searchable with origin marker)
@@ -231,8 +232,8 @@
   evidence: tests/integration/collab.test.ts (offline edits ... SC-26)
 - id: SC-27
   status: done
-  evidence: apps/web/src/editor/clientExtensions.ts (Tiptap Collaboration → y-tiptap yUndoPlugin, own origin only; undoRedo disabled in packages/shared/src/editor/extensions.ts)
-  note: нет автотеста
+  evidence: apps/web/src/editor/clientExtensions.ts (Tiptap Collaboration → y-tiptap yUndoPlugin, own origin only; undoRedo disabled in packages/shared/src/editor/extensions.ts); tests/e2e/undo.spec.ts
+    (совместная работа)
 - id: SC-28
   status: done
   evidence: tests/integration/collab.test.ts (SC-28)
@@ -241,9 +242,10 @@
   evidence: apps/web/src/editor/Editor.tsx, apps/web/src/components/page/SyncStatus.tsx, apps/web/src/pages/PageView.tsx
   note: Кнопки «Сохранить» нет; статус скрыт в режиме чтения опубликованной версии (ожидаемо)
 - id: R-HISTORY-009
-  status: done
-  evidence: apps/web/src/editor/clientExtensions.ts (Tiptap Collaboration → y-tiptap yUndoPlugin, own origin only; undoRedo disabled in packages/shared/src/editor/extensions.ts)
-  note: нет автотеста
+  status: partial
+  evidence: apps/web/src/editor/clientExtensions.ts (Tiptap Collaboration → y-tiptap yUndoPlugin, own origin only; undoRedo disabled in packages/shared/src/editor/extensions.ts); tests/e2e/undo.spec.ts
+  note: 'БАГ (найден tests/e2e/undo.spec.ts): apps/web/src/editor/extensions/blockIds.ts дописывает транзакцию с addToHistory=false, и y-prosemirror исключает из истории отмены всё локальное изменение,
+    создающее новые блоки (Enter, вставка, вставка таблицы) — Ctrl+Z их не отменяет'
 - id: R-PAGE-011
   status: partial
   evidence: apps/web/src/components/IconPicker.tsx
@@ -278,9 +280,10 @@
   note: Нет обработки переполнения IndexedDB; при отзыве прав (NACK forbidden / ACCESS) экспорт черновика не предлагается, а PageView пишет «Несохранённых изменений нет» даже при непустой очереди; при отказе
     записи на сервере показывается «Сохранение…» без видимой ошибки
 - id: AT-47
-  status: done
-  evidence: apps/web/src/editor/clientExtensions.ts (Tiptap Collaboration → y-tiptap yUndoPlugin, own origin only; undoRedo disabled in packages/shared/src/editor/extensions.ts)
-  note: нет автотеста
+  status: partial
+  evidence: tests/e2e/undo.spec.ts
+  note: 'БАГ (найден tests/e2e/undo.spec.ts): apps/web/src/editor/extensions/blockIds.ts дописывает транзакцию с addToHistory=false, и y-prosemirror исключает из истории отмены всё локальное изменение,
+    создающее новые блоки (Enter, вставка, вставка таблицы) — Ctrl+Z их не отменяет'
 - id: AT-53
   status: done
   evidence: apps/web/src/pages/PageView.tsx#patchPage, apps/web/src/hooks/useEvents.ts (page-changed/tree-changed)
@@ -382,9 +385,9 @@
   status: done
   evidence: packages/shared/src/editor/nodes/links.ts
 - id: R-TREE-008
-  status: partial
-  evidence: apps/web/src/state/ui.ts (expanded/collapsedSections в localStorage)
-  note: Последняя открытая статья после перезапуска не восстанавливается
+  status: done
+  evidence: 'apps/web/src/layout/treeState.ts (последняя страница), apps/web/src/pages/Home.tsx («Продолжить: …»), apps/web/src/state/ui.ts'
+  note: нет автотеста
 - id: R-PAGE-018
   status: done
   evidence: apps/web/src/layout/Sidebar.tsx#newPage; tests/e2e/editor.spec.ts
@@ -392,9 +395,10 @@
   status: done
   evidence: apps/server/src/collab/hub.ts#flushNow (title из Y.Text), apps/web/src/components/page/SyncStatus.tsx; tests/integration/collab.test.ts (title)
 - id: R-HISTORY-011
-  status: done
-  evidence: apps/web/src/editor/clientExtensions.ts (Tiptap Collaboration → y-tiptap yUndoPlugin, own origin only; undoRedo disabled in packages/shared/src/editor/extensions.ts)
-  note: нет автотеста
+  status: partial
+  evidence: apps/web/src/editor/clientExtensions.ts (Tiptap Collaboration → y-tiptap yUndoPlugin, own origin only; undoRedo disabled in packages/shared/src/editor/extensions.ts); tests/e2e/undo.spec.ts
+  note: 'Ввод и форматирование отменяются, чужое не откатывается; БАГ (найден tests/e2e/undo.spec.ts): apps/web/src/editor/extensions/blockIds.ts дописывает транзакцию с addToHistory=false, и y-prosemirror
+    исключает из истории отмены всё локальное изменение, создающее новые блоки (Enter, вставка, вставка таблицы) — Ctrl+Z их не отменяет'
 - id: R-OFFLINE-005
   status: partial
   evidence: packages/shared/src/collab-client.ts, apps/web/src/components/page/SyncStatus.tsx
@@ -459,9 +463,9 @@
   status: done
   evidence: apps/web/src/styles/layout.css (.tree-row grid, .tree-actions opacity)
 - id: R-TREE-013
-  status: partial
-  evidence: apps/web/src/styles/layout.css (.chev transition), apps/web/src/styles/tokens.css (reduced-motion)
-  note: При переходе на страницу предки в дереве не раскрываются автоматически
+  status: done
+  evidence: apps/web/src/layout/treeState.ts#useRevealCurrentPage (раскрытие пространства и предков открытой страницы), styles/layout.css
+  note: нет автотеста
 - id: R-TREE-014
   status: done
   evidence: apps/web/src/layout/SidebarTree.tsx (before/after/inside, Alt+Shift+↑/↓), apps/web/src/layout/treeActions.tsx (undo-тост, подтверждение аудитории), MoveDialog
@@ -511,8 +515,7 @@
   evidence: tests/integration/content.test.ts (applies ACL before results)
 - id: E2E-118
   status: done
-  evidence: apps/web/src/editor/clientExtensions.ts (Tiptap Collaboration → y-tiptap yUndoPlugin, own origin only; undoRedo disabled in packages/shared/src/editor/extensions.ts)
-  note: нет автотеста
+  evidence: apps/web/src/editor/clientExtensions.ts (Tiptap Collaboration → y-tiptap yUndoPlugin, own origin only; undoRedo disabled in packages/shared/src/editor/extensions.ts); tests/e2e/undo.spec.ts
 - id: R-SEARCH-011
   status: done
   evidence: apps/server/src/services/search.ts
@@ -526,8 +529,8 @@
   note: Глобальный, пространство (фильтр) и страница (Ctrl+F) есть; поиска по таблицам/свойствам как области и переключения области одним действием в Ctrl+K нет
 - id: R-SEARCH-013
   status: partial
-  evidence: apps/server/src/jobs/worker.ts#indexPage, apps/server/src/services/search.ts
-  note: Нет индексации содержимого вложенных DOCX/PDF; остальное (заголовки, текст, свойства, OCR, морфология, опечатки, транслит, синонимы) есть
+  evidence: apps/server/src/jobs/worker.ts#indexPage, apps/server/src/services/file-text.ts; tests/integration/history-tree.test.ts
+  note: DOCX/TXT индексируются; содержимое PDF — нет (нет PDF-парсера в зависимостях)
 - id: R-SEARCH-014
   status: done
   evidence: apps/server/src/services/search.ts; tests/integration/content.test.ts
@@ -557,21 +560,20 @@
   evidence: apps/server/src/routes/revisions.ts#restore-block, apps/web/src/components/page/HistoryPanel.tsx
   note: Восстановление блока не создаёт новую версию сразу (только событие restored-block)
 - id: R-HISTORY-014
-  status: partial
-  evidence: apps/server/src/routes/revisions.ts#restore, apps/server/src/collab/hub.ts#applyServerChange
-  note: Неподтверждённые операции других сливаются CRDT, но редакторы не предупреждаются о восстановлении
+  status: done
+  evidence: apps/server/src/routes/revisions.ts#restoreContent (pre-restore + CRDT), событие page-restored (apps/server/src/routes/collab.ts /api/v1/events), apps/web/src/hooks/useEvents.ts (toast со ссылкой
+    на версию до восстановления); tests/integration/history-tree.test.ts
 - id: R-HISTORY-015
-  status: partial
-  evidence: apps/server/src/jobs/worker.ts#maintenance, apps/server/src/services/pages.ts#purgePages
-  note: legal_hold учитывается, но установить его через API/UI нельзя
+  status: done
+  evidence: apps/server/src/routes/retention.ts (PUT /api/v1/admin/legal-hold, аудит), apps/web/src/components/page/PageInfoPanel.tsx#LegalHold, apps/server/src/jobs/worker.ts#maintenance; tests/integration/history-tree.test.ts
 - id: R-PAGE-022
-  status: partial
-  evidence: apps/web/src/components/page/PageInfoPanel.tsx
-  note: Панель только для чтения; обязательность свойств из шаблона не применяется
+  status: done
+  evidence: apps/web/src/components/page/PageInfoPanel.tsx#PropertiesEditor, apps/server/src/routes/pages.ts (requiredProperties из шаблона)
+  note: Обязательные свойства шаблона подсвечиваются; нет автотеста
 - id: R-PAGE-023
-  status: missing
-  evidence: ''
-  note: Редактирования свойств в контексте нет (API PATCH properties есть, UI нет)
+  status: done
+  evidence: apps/web/src/components/page/PageInfoPanel.tsx#PropertiesEditor (PATCH с expectedVersion, конфликт версий)
+  note: нет автотеста
 - id: R-PAGE-024
   status: done
   evidence: apps/web/src/pages/PageView.tsx#menuItems (видимость/disabled по правам)
@@ -656,9 +658,9 @@
   evidence: blocks.tsx#RefLabel/PageLinkView/PageMentionView, apps/web/src/lib/pageRefs.ts
   note: Заголовок обновляется при повторном resolve (staleTime 60 с), не мгновенно
 - id: R-TREE-019
-  status: partial
-  evidence: apps/web/src/layout/SidebarTree.tsx
-  note: Зоны клика разделены, lazy-load с индикатором и retry есть; позиция прокрутки дерева не сохраняется между сессиями
+  status: done
+  evidence: apps/web/src/layout/SidebarTree.tsx + apps/web/src/layout/treeState.ts#useTreeScrollMemory (прокрутка в localStorage), expanded в apps/web/src/state/ui.ts
+  note: нет автотеста
 - id: R-TREE-020
   status: done
   evidence: apps/web/src/layout/SidebarTree.tsx, apps/web/src/layout/treeActions.tsx
@@ -720,8 +722,7 @@
   note: нет автотеста
 - id: UX-138
   status: done
-  evidence: apps/web/src/editor/clientExtensions.ts (Tiptap Collaboration → y-tiptap yUndoPlugin, own origin only; undoRedo disabled in packages/shared/src/editor/extensions.ts) (moveBlock + Mod-z)
-  note: нет автотеста
+  evidence: apps/web/src/editor/clientExtensions.ts (Tiptap Collaboration → y-tiptap yUndoPlugin, own origin only; undoRedo disabled in packages/shared/src/editor/extensions.ts) (moveBlock + Mod-z); tests/e2e/undo.spec.ts
 - id: UX-144
   status: done
   evidence: tests/e2e/editor.spec.ts
@@ -754,11 +755,13 @@
   evidence: apps/web/src/layout/treeActions.tsx#movePage (toast «Отменить»)
 - id: R-HISTORY-017
   status: partial
-  evidence: apps/web/src/editor/clientExtensions.ts (Tiptap Collaboration → y-tiptap yUndoPlugin, own origin only; undoRedo disabled in packages/shared/src/editor/extensions.ts)
-  note: Undo для содержимого; структурные операции (права, перенос страницы) — отдельными механизмами, не через Ctrl+Z
+  evidence: apps/web/src/editor/clientExtensions.ts (Tiptap Collaboration → y-tiptap yUndoPlugin, own origin only; undoRedo disabled in packages/shared/src/editor/extensions.ts); tests/e2e/undo.spec.ts
+  note: 'Ctrl+Z / Ctrl+Shift+Z / Ctrl+Y работают для ввода и форматирования; БАГ (найден tests/e2e/undo.spec.ts): apps/web/src/editor/extensions/blockIds.ts дописывает транзакцию с addToHistory=false, и
+    y-prosemirror исключает из истории отмены всё локальное изменение, создающее новые блоки (Enter, вставка, вставка таблицы) — Ctrl+Z их не отменяет'
 - id: R-HISTORY-018
   status: done
-  evidence: apps/web/src/editor/clientExtensions.ts (Tiptap Collaboration → y-tiptap yUndoPlugin, own origin only; undoRedo disabled in packages/shared/src/editor/extensions.ts) (captureTimeout)
+  evidence: apps/web/src/editor/clientExtensions.ts (Tiptap Collaboration → y-tiptap yUndoPlugin, own origin only; undoRedo disabled in packages/shared/src/editor/extensions.ts); tests/e2e/undo.spec.ts
+    (10 шагов)
 - id: R-HISTORY-019
   status: missing
   evidence: ''
@@ -768,8 +771,7 @@
   evidence: apps/web/src/components/page/HistoryPanel.tsx, apps/web/src/help/HelpCenter.tsx
 - id: R-HISTORY-021
   status: done
-  evidence: apps/web/src/editor/clientExtensions.ts (Tiptap Collaboration → y-tiptap yUndoPlugin, own origin only; undoRedo disabled in packages/shared/src/editor/extensions.ts)
-  note: нет автотеста
+  evidence: apps/web/src/editor/clientExtensions.ts (Tiptap Collaboration → y-tiptap yUndoPlugin, own origin only; undoRedo disabled in packages/shared/src/editor/extensions.ts); tests/e2e/undo.spec.ts
 - id: R-HISTORY-022
   status: missing
   evidence: ''
@@ -785,24 +787,22 @@
   evidence: tests/integration/core.test.ts (prevents moving into descendant)
 - id: UX21-196
   status: done
-  evidence: apps/web/src/editor/clientExtensions.ts (Tiptap Collaboration → y-tiptap yUndoPlugin, own origin only; undoRedo disabled in packages/shared/src/editor/extensions.ts)
-  note: нет автотеста
+  evidence: apps/web/src/editor/clientExtensions.ts (Tiptap Collaboration → y-tiptap yUndoPlugin, own origin only; undoRedo disabled in packages/shared/src/editor/extensions.ts); tests/e2e/undo.spec.ts
 - id: UX21-197
   status: done
   evidence: apps/web/src/editor/clientExtensions.ts (Tiptap Collaboration → y-tiptap yUndoPlugin, own origin only; undoRedo disabled in packages/shared/src/editor/extensions.ts)
   note: нет автотеста
 - id: UX21-198
   status: done
-  evidence: apps/web/src/editor/clientExtensions.ts (Tiptap Collaboration → y-tiptap yUndoPlugin, own origin only; undoRedo disabled in packages/shared/src/editor/extensions.ts) (Mod-y, Shift-Mod-z)
-  note: нет автотеста
+  evidence: apps/web/src/editor/clientExtensions.ts (Tiptap Collaboration → y-tiptap yUndoPlugin, own origin only; undoRedo disabled in packages/shared/src/editor/extensions.ts); tests/e2e/undo.spec.ts
+  note: После повтора курсор возвращается к началу повторённого изменения
 - id: UX21-199
   status: missing
   evidence: ''
   note: Меню истории действий у кнопок отмены нет
 - id: UX21-200
   status: done
-  evidence: apps/web/src/editor/clientExtensions.ts (Tiptap Collaboration → y-tiptap yUndoPlugin, own origin only; undoRedo disabled in packages/shared/src/editor/extensions.ts)
-  note: нет автотеста
+  evidence: apps/web/src/editor/clientExtensions.ts (Tiptap Collaboration → y-tiptap yUndoPlugin, own origin only; undoRedo disabled in packages/shared/src/editor/extensions.ts); tests/e2e/undo.spec.ts
 - id: UX21-201
   status: done
   evidence: tests/integration/collab.test.ts
@@ -818,17 +818,16 @@
   evidence: apps/server/src/collab/hub.ts#persist (op_id, seq), snapshots
   note: Append-only на уровне кода, без запрета UPDATE/DELETE в БД
 - id: R-HISTORY-026
-  status: partial
-  evidence: apps/server/src/routes/revisions.ts, apps/web/src/components/page/HistoryPanel.tsx
-  note: Выбор точки — только среди ревизий, не произвольной операции журнала
+  status: done
+  evidence: apps/server/src/services/revisions.ts#stateAtSeq, apps/server/src/routes/revisions.ts GET/POST /pages/:id/journal/:seq[/restore], apps/web/src/components/page/HistoryPanel.tsx «Восстановить
+    состояние на этот момент»; tests/integration/history-tree.test.ts
+  note: Восстановление на шаг журнала создаёт новую обратимую версию; если начало журнала сжато — опора на ревизию, иначе понятный отказ
 - id: R-HISTORY-027
   status: done
-  evidence: apps/web/src/editor/clientExtensions.ts (Tiptap Collaboration → y-tiptap yUndoPlugin, own origin only; undoRedo disabled in packages/shared/src/editor/extensions.ts)
-  note: нет автотеста
+  evidence: apps/web/src/editor/clientExtensions.ts (Tiptap Collaboration → y-tiptap yUndoPlugin, own origin only; undoRedo disabled in packages/shared/src/editor/extensions.ts); tests/e2e/undo.spec.ts
 - id: R-HISTORY-028
-  status: partial
-  evidence: apps/server/src/jobs/worker.ts#maintenance, apps/server/src/config.ts (90/365)
-  note: Сроки соблюдаются; юридическое удержание нельзя установить через API/UI
+  status: done
+  evidence: apps/server/src/jobs/worker.ts#maintenance (90/365), apps/server/src/routes/retention.ts; tests/integration/history-tree.test.ts
 - id: R-HISTORY-029
   status: partial
   evidence: apps/server/src/collab/hub.ts
@@ -870,17 +869,14 @@
   note: Диалога сравнения при неслиемой операции нет
 - id: R-COLLAB-037
   status: partial
-  evidence: apps/server/src/collab/hub.ts, packages/shared/src/collab-client.ts
-  note: ACK/retry/идемпотентность/seq есть; периодической проверки согласованности нет (метрика kb_integrity_errors нигде не выставляется), миграции схемы содержимого не реализованы (content_schema_version
-    не используется)
+  evidence: apps/server/src/services/consistency.ts (циклы/сироты/closure/разрывы журнала/снимки), apps/server/src/jobs/worker.ts#consistencyCheck → kb_integrity_errors, GET /api/v1/admin/consistency; tests/integration/history-tree.test.ts
+  note: Проверка согласованности сделана и тестируется; безопасная миграция схемы содержимого (content_schema_version) по-прежнему не реализована
 - id: HIST-187
-  status: partial
-  evidence: tests/integration/collab.test.ts (HIST-187)
-  note: Журнал есть; реконструкция состояния на произвольный шаг журнала не реализована
+  status: done
+  evidence: apps/server/src/collab/hub.ts (page_events edit с seq), apps/server/src/services/revisions.ts#stateAtSeq; tests/integration/collab.test.ts, tests/integration/history-tree.test.ts
 - id: HIST-188
   status: done
-  evidence: apps/web/src/editor/clientExtensions.ts (Tiptap Collaboration → y-tiptap yUndoPlugin, own origin only; undoRedo disabled in packages/shared/src/editor/extensions.ts)
-  note: нет автотеста
+  evidence: apps/web/src/editor/clientExtensions.ts (Tiptap Collaboration → y-tiptap yUndoPlugin, own origin only; undoRedo disabled in packages/shared/src/editor/extensions.ts); tests/e2e/undo.spec.ts
 - id: HIST-189
   status: done
   evidence: tests/integration/collab.test.ts (HIST-189)
@@ -906,9 +902,9 @@
   status: done
   evidence: tests/integration/collab.test.ts, tests/e2e/editor.spec.ts
 - id: COLLAB-197
-  status: partial
-  evidence: tests/integration/collab.test.ts (COLLAB-197), apps/server/src/routes/revisions.ts
-  note: Восстановление заменяет текущее содержимое у всех без уведомления; работа коллег сохраняется только в pre-restore ревизии
+  status: done
+  evidence: apps/server/src/routes/revisions.ts#restoreContent, apps/web/src/hooks/useEvents.ts; tests/integration/collab.test.ts, tests/integration/history-tree.test.ts
+  note: Коллеги получают уведомление со ссылкой на версию до восстановления, где сохранена их работа
 - id: COLLAB-198
   status: done
   evidence: tests/integration/collab.test.ts (randomised convergence), tests/resilience/crash-restart.test.ts
@@ -1084,9 +1080,10 @@
   evidence: tests/e2e/content.spec.ts
   note: Из плана проверок автоматизировано только «+»; раскрытие, breadcrumbs, back/forward, избранное, виртуализация не проверяются
 - id: QA26-14
-  status: missing
-  evidence: ''
-  note: Тестов обратимости операций с последовательностями 1/10/100/1000 нет
+  status: partial
+  evidence: tests/e2e/undo.spec.ts
+  note: 'Есть E2E обратимости ввода (1 и 10 шагов), форматирования, вставки 100 блоков, структуры, совместной работы; нет последовательностей 100/1000. БАГ (найден tests/e2e/undo.spec.ts): apps/web/src/editor/extensions/blockIds.ts
+    дописывает транзакцию с addToHistory=false, и y-prosemirror исключает из истории отмены всё локальное изменение, создающее новые блоки (Enter, вставка, вставка таблицы) — Ctrl+Z их не отменяет'
 - id: QA26-15
   status: partial
   evidence: tests/integration/collab.test.ts, tests/integration/gaps.test.ts (pre-restore)

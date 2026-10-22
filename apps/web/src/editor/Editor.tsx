@@ -19,6 +19,7 @@ import { toast } from '../components/ui/Toast';
 import { post } from '../api/client';
 import { PagePicker } from './PagePicker';
 import type { CommandContext } from './commands';
+import type { ConflictInfo } from './extensions/conflictGuard';
 import { copyWithFeedback, useCopyPageCommands } from './clipboard/copy';
 import { useSelectionMemory } from './selectionMemory';
 
@@ -204,6 +205,30 @@ function EditorInner(p: Props & { session: CollabSession }) {
     return () => clearTimeout(t);
   }, []);
 
+  // Concurrent edit vs delete: keep the user's version on the server and offer to put it back.
+  const onConflictRef = useRef<(c: ConflictInfo) => void>(() => undefined);
+  onConflictRef.current = (c) => {
+    void (async () => {
+      let saved: { id: string } | null = null;
+      try {
+        saved = await post<{ id: string }>(`/api/v1/pages/${p.pageId}/conflicts`, c);
+      } catch {
+        /* offline: the toast still lets the user restore locally */
+      }
+      toast.sticky('Другой участник удалил блок, который вы редактировали. Ваша версия сохранена' + (saved ? ' в истории страницы.' : ' на этом устройстве.'), {
+        label: 'Вернуть мою версию',
+        run: () => {
+          const ed = editorRef.current;
+          if (!ed || ed.isDestroyed) return;
+          let at = 0;
+          if (c.afterBlockId) ed.state.doc.forEach((n, off) => n.attrs.id === c.afterBlockId && (at = off + n.nodeSize));
+          ed.chain().insertContentAt(at, c.block).run();
+          if (saved) void post(`/api/v1/pages/${p.pageId}/conflicts/${saved.id}/resolve`, { resolution: 'restored' }).catch(() => undefined);
+        },
+      });
+    })();
+  };
+
   const ctxRef = useRef<CommandContext>(null as any);
   const editor = useEditor(
     {
@@ -215,6 +240,7 @@ function EditorInner(p: Props & { session: CollabSession }) {
         commandContext: () => ctxRef.current,
         createChildPage,
         onMathClick: (kind, pos, latex) => setMath({ kind, pos, latex }),
+        onConflict: (c) => onConflictRef.current(c),
       }),
       editable: p.canEdit,
       immediatelyRender: true,
@@ -230,6 +256,9 @@ function EditorInner(p: Props & { session: CollabSession }) {
     },
     [session],
   );
+
+  const editorRef = useRef<TEditor | null>(null);
+  editorRef.current = editor;
 
   ctxRef.current = {
     pickFiles: (accept) => {

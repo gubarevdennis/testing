@@ -8,6 +8,7 @@ import { isOrgAdmin } from '../acl/engine.js';
 import { verifyPassword } from '../auth/passwords.js';
 import { auditStandalone } from '../services/audit.js';
 import { buildOrgArchive, analyzeArchive, restoreArchive, verifyRestore } from '../services/archive.js';
+import { assertClean } from '../services/importer.js';
 import { streamToTemp, blobKey } from '../storage/blob-store.js';
 import { registerJob } from '../jobs/worker.js';
 import { AppError, badRequest, conflict, forbidden, notFound } from '../lib/errors.js';
@@ -80,6 +81,14 @@ export async function archiveRoutes(app: FastifyInstance, s: Services) {
     if (!file) throw badRequest('Файл не выбран');
     const tmp = await streamToTemp(s.store, file.file as Readable, s.cfg.maxImportBytes);
     try {
+      // Quarantine: the whole archive is scanned before anything is read from it; attachments are scanned again
+      // individually during the analysis (archive.malware).
+      try {
+        await assertClean(s, tmp.path, file.filename || 'archive.zip');
+      } catch (e: any) {
+        await auditStandalone(s.db, actorOf(req), { action: 'archive.restore_rejected', outcome: 'denied', details: { reason: e.code, message: String(e.message).slice(0, 300) } });
+        throw e;
+      }
       const buf = await readFile(tmp.path);
       const { analysis } = await analyzeArchive(s, user.orgId, buf);
       const put = await s.store.putBuffer(buf);

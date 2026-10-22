@@ -32,6 +32,8 @@ export const toast = {
   info: (message: string, action?: ToastDef['action']) => useToasts.getState().push({ message, action, kind: 'info' }),
   success: (message: string, action?: ToastDef['action']) => useToasts.getState().push({ message, action, kind: 'success' }),
   error: (message: string, action?: ToastDef['action']) => useToasts.getState().push({ message, action, kind: 'error' }),
+  /** Important notices that must not disappear before the user can act (e.g. conflict copies). */
+  sticky: (message: string, action?: ToastDef['action']) => useToasts.getState().push({ message, action, kind: 'error', duration: 120_000 }),
 };
 
 /** Toast region: polite live region, actions (e.g. "Отменить") are keyboard reachable. */

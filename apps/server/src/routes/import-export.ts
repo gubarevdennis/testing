@@ -27,6 +27,7 @@ const tabularSchema = z.object({
   title: z.string().max(300).optional(),
   encoding: z.enum(['auto', 'utf-8', 'windows-1251']).optional(),
   delimiter: z.enum(['auto', ',', ';', '\t']).optional(),
+  range: z.string().regex(/^[A-Za-z]{1,3}\d{0,7}:[A-Za-z]{1,3}\d{0,7}$/, 'Диапазон вида A1:D50').nullable().optional(),
 });
 
 /** Summary of a staged plan for the preview screen (content itself is not sent). */
@@ -43,8 +44,16 @@ function planSummary(plan: ImportPlan) {
 registerJob('import-analyze', async ({ s, job, progress }) => {
   const files = [];
   for (const f of job.params.files as Array<{ filename: string; sha: string }>) files.push({ filename: f.filename, data: await s.store.readBuffer(blobKey(f.sha)) });
-  await progress({ stage: 'analyze', files: files.length });
-  const plan = await analyzeImport(s, files, { csv: job.params.csv });
+  // Every pipeline stage is recorded on the job (visible in GET /imports/:id) and logged (R-IMPORT-032).
+  const prev = (await s.db.query('select progress from jobs where id = $1', [job.id])).rows[0]?.progress;
+  const stages: Array<Record<string, unknown>> = [...(prev?.stages ?? [])];
+  const onStage = async (stage: string, detail: Record<string, unknown> = {}) => {
+    stages.push({ stage, at: new Date().toISOString(), ...detail });
+    s.log.info({ jobId: job.id, stage, ...detail }, 'import stage');
+    await progress({ stage, files: files.length, stages });
+  };
+  await onStage('analyze', { files: files.length });
+  const plan = await analyzeImport(s, files, { csv: job.params.csv, onStage });
   const ok = plan.files.some((f) => f.status !== 'error');
   return { status: ok ? 'awaiting_confirmation' : 'succeeded', result: { plan }, report: { files: plan.files } };
 });
@@ -72,10 +81,13 @@ export async function importExportRoutes(app: FastifyInstance, s: Services) {
       }
       const tmp = await streamToTemp(s.store, part.file as Readable, s.cfg.maxImportBytes);
       try {
+        // storeBuffer runs the antivirus check (quarantine: nothing is registered for an infected file).
         const st = await storeBuffer(s, await readFile(tmp.path), part.filename || 'file');
         files.push({ filename: part.filename || 'file', sha: st.sha, size: st.size });
       } catch (e: any) {
-        files.push({ filename: part.filename || 'file', sha: '', size: tmp.size, ...({ error: e.message } as any) });
+        files.push({ filename: part.filename || 'file', sha: '', size: tmp.size, ...({ error: e.message, code: e.code ?? null } as any) });
+        if (e?.code === 'malware' || e?.code === 'av_unavailable')
+          await auditStandalone(s.db, actorOf(req), { action: 'import.rejected', outcome: 'denied', details: { filename: part.filename || 'file', reason: e.code, message: String(e.message).slice(0, 300) } });
       } finally {
         await rm(tmp.path, { force: true });
       }
@@ -87,7 +99,12 @@ export async function importExportRoutes(app: FastifyInstance, s: Services) {
     const csv = fields.csv ? JSON.parse(fields.csv) : undefined;
     const existing = key ? (await s.db.query(`select id from jobs where org_id = $1 and type = 'import-analyze' and created_by = $2 and idempotency_key = $3`, [user.orgId, user.id, key])).rows[0] : null;
     if (existing) return { jobId: existing.id, duplicate: true };
-    const r = await s.db.query(`insert into jobs (org_id, type, idempotency_key, created_by, params) values ($1, 'import-analyze', $2, $3, $4) returning id`, [user.orgId, key, user.id, { files: files.filter((f) => f.sha), csv, rejected: bad }]);
+    const now = new Date().toISOString();
+    const stages = [
+      { stage: 'upload', at: now, files: files.length, bytes: files.reduce((n, f) => n + f.size, 0) },
+      { stage: 'scan', at: now, scanner: s.cfg.clamavHost ? 'clamav' : 'disabled', rejected: bad.map((f) => ({ file: f.filename, code: (f as any).code ?? null })) },
+    ];
+    const r = await s.db.query(`insert into jobs (org_id, type, idempotency_key, created_by, params, progress) values ($1, 'import-analyze', $2, $3, $4, $5) returning id`, [user.orgId, key, user.id, { files: files.filter((f) => f.sha), csv, rejected: bad }, { stage: 'queued', stages }]);
     return { jobId: r.rows[0].id, duplicate: false, rejected: bad };
   });
 
@@ -148,17 +165,31 @@ export async function importExportRoutes(app: FastifyInstance, s: Services) {
       });
       const final = { pages: [{ id: result.appendTo }], rootPageId: result.appendTo };
       await s.db.query(`update jobs set result = result || $2::jsonb where id = $1`, [id, JSON.stringify({ commit: final })]);
+      await logCommitStages(id, final);
       return final;
     }
     if (result.intoPage) {
       const j = await job(user.id, id);
       const final = await commitIntoPage(s, user, actor, j.result.plan, target, id);
       await s.db.query(`update jobs set result = result || $2::jsonb where id = $1`, [id, JSON.stringify({ commit: final })]);
+      await logCommitStages(id, final);
       return final;
     }
     s.bus.emit({ type: 'tree-changed', orgId: user.orgId, spaceId: target.spaceId });
+    if (!result.repeated) await logCommitStages(id, result);
     return result;
   });
+
+  /** Appends the final pipeline stages (atomic commit, search indexing queued) to the job's stage log. */
+  async function logCommitStages(id: string, result: any) {
+    const at = new Date().toISOString();
+    const extra = [
+      { stage: 'commit', at, pages: result?.pages?.length ?? 0 },
+      { stage: 'index', at, status: 'queued' },
+    ];
+    s.log.info({ jobId: id, stage: 'commit', pages: result?.pages?.length ?? 0 }, 'import stage');
+    await s.db.query(`update jobs set progress = jsonb_set(coalesce(progress, '{}'::jsonb), '{stages}', coalesce(progress->'stages', '[]'::jsonb) || $2::jsonb) || jsonb_build_object('stage', 'done') where id = $1`, [id, JSON.stringify(extra)]);
+  }
 
   app.post('/api/v1/imports/:id/cancel', async (req) => {
     const user = requireUser(req);

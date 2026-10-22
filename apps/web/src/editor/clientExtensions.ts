@@ -14,6 +14,7 @@ import { Uploads } from './extensions/uploads';
 import { SmartPaste } from './extensions/paste';
 import { slashExtension, mentionExtension, pageLinkExtension, emojiExtension } from './extensions/suggest';
 import { FindInPage } from './extensions/find';
+import { ConflictGuard, type ConflictInfo } from './extensions/conflictGuard';
 import type { CommandContext } from './commands';
 
 const VIEWS: Record<string, any> = {
@@ -38,6 +39,7 @@ export interface ClientExtensionOptions {
   commandContext: () => CommandContext;
   createChildPage: (title: string) => Promise<{ id: string; title: string } | null>;
   onMathClick: (kind: 'inline' | 'block', pos: number, latex: string) => void;
+  onConflict: (c: ConflictInfo) => void;
 }
 
 /** Schema (shared with the server) + editing UI: node views, collaboration, menus, paste/upload handling. */
@@ -73,6 +75,7 @@ export function clientExtensions(o: ClientExtensionOptions): AnyExtension[] {
     Uploads.configure({ pageId: () => o.pageId }),
     SmartPaste,
     FindInPage,
+    ConflictGuard.configure({ onConflict: (c) => o.onConflict(c) }),
     slashExtension(o.commandContext),
     mentionExtension(),
     pageLinkExtension(o.createChildPage),

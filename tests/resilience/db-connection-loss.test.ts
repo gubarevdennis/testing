@@ -93,7 +93,7 @@ describe('database connection loss during editing (SC-30, E-13, D-10)', () => {
     a.close();
   });
 
-  it('readiness reports the database outage and recovers (R-OPS-006)', async () => {
+  it('readiness reports the database outage and recovers (R-OPS-006, R-OPS-003)', async () => {
     await outage(true);
     try {
       const r = await fetch(ts.url + '/readyz');
@@ -131,7 +131,7 @@ describe('database connection loss during editing (SC-30, E-13, D-10)', () => {
     expect((await ts.db.query('select 1 as x')).rows[0].x).toBe(1);
   });
 
-  it('cross-instance live updates resume after the database returns (event bus reconnects) (SC-30, R-OPS-006)', async () => {
+  it('cross-instance live updates resume after the database returns (event bus reconnects) (SC-30, R-OPS-006, R-OPS-016)', async () => {
     const pageId = (await org.owner.post('/api/v1/pages', { spaceId: org.generalSpaceId, title: 'Два узла' })).page.id as string;
     const dir = await mkdtemp(join(tmpdir(), 'kb-bus-'));
     const other = await spawnServer({ dbUrl: ts.dbUrl, storageRoot: join(dir, 'objects'), dataDir: dir });

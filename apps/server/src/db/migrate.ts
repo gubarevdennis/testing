@@ -38,15 +38,30 @@ async function ensureTable(client: pg.PoolClient) {
     version text primary key, name text not null, checksum text not null, applied_at timestamptz not null default now())`);
 }
 
-/** Applies pending migrations, each in its own transaction, under an advisory lock (safe for parallel app instances). */
-export async function migrateUp(pool: pg.Pool, log: (m: string) => void = () => undefined, target?: string): Promise<string[]> {
+export class SchemaTooNewError extends Error {
+  constructor(public unknown: string[]) {
+    super(`Database schema is newer than this application: applied migration(s) ${unknown.join(', ')} are unknown to this version. ` +
+      'Roll the schema back with the newer release (cli migrate down) or deploy the newer release.');
+  }
+}
+
+/**
+ * Applies pending migrations, each in its own transaction, under an advisory lock (safe for parallel app instances).
+ * Refuses to run (SchemaTooNewError) when the database has migrations this code does not know: an older release must
+ * not run against a newer schema it was never tested with (roll the schema back first, see docs/OPERATIONS.md §3).
+ */
+export async function migrateUp(pool: pg.Pool, log: (m: string) => void = () => undefined, target?: string, dir = MIGRATIONS_DIR): Promise<string[]> {
   const client = await pool.connect();
   const applied: string[] = [];
   try {
     await client.query('select pg_advisory_lock(727274)');
     await ensureTable(client);
     const done = new Map((await client.query('select version, checksum from schema_migrations')).rows.map((r) => [r.version, r.checksum]));
-    for (const m of await loadMigrations()) {
+    const known = await loadMigrations(dir);
+    const knownVersions = new Set(known.map((m) => m.version));
+    const unknown = [...done.keys()].filter((v) => !knownVersions.has(v)).sort();
+    if (unknown.length) throw new SchemaTooNewError(unknown);
+    for (const m of known) {
       if (target && m.version > target) break;
       if (done.has(m.version)) {
         if (done.get(m.version) !== m.checksum) throw new Error(`Migration ${m.name} was modified after being applied (checksum mismatch)`);
@@ -72,13 +87,13 @@ export async function migrateUp(pool: pg.Pool, log: (m: string) => void = () => 
 }
 
 /** Rolls back the latest `steps` migrations. */
-export async function migrateDown(pool: pg.Pool, steps = 1, log: (m: string) => void = () => undefined): Promise<string[]> {
+export async function migrateDown(pool: pg.Pool, steps = 1, log: (m: string) => void = () => undefined, dir = MIGRATIONS_DIR): Promise<string[]> {
   const client = await pool.connect();
   const rolled: string[] = [];
   try {
     await client.query('select pg_advisory_lock(727274)');
     await ensureTable(client);
-    const all = new Map((await loadMigrations()).map((m) => [m.version, m]));
+    const all = new Map((await loadMigrations(dir)).map((m) => [m.version, m]));
     const done = (await client.query('select version from schema_migrations order by version desc limit $1', [steps])).rows;
     for (const { version } of done) {
       const m = all.get(version);

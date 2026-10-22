@@ -39,7 +39,7 @@ test('Word paste keeps headings, nested and numbered lists, links and tables wit
   const ed = editor(page);
   await expect(ed.locator('h1')).toHaveText('Регламент приёмки');
   await expect(ed.locator('h2')).toHaveText('Порядок');
-  await expect(ed.locator('ul > li')).toHaveCount(2);
+  await expect(ed.locator(':scope > ul > li')).toHaveCount(2); // top level; the nested item is inside the first one
   await expect(ed.locator('ul > li ul > li')).toHaveText('Накладная');
   await expect(ed.locator('ol > li')).toHaveCount(2);
   await expect(ed.locator('table tr')).toHaveCount(2);
@@ -79,8 +79,12 @@ test('page menu copies the page with formatting, as text and as Markdown (R-CLIP
   await expectSaved(page);
   const copyVia = async (label: string) => {
     await page.locator('.page-header-bar').getByRole('button', { name: 'Действия со страницей' }).click();
-    await page.getByRole('menuitem', { name: 'Копировать страницу' }).click();
-    await page.getByRole('menuitem', { name: label }).click();
+    const sub = page.getByRole('menuitem', { name: 'Копировать страницу' });
+    const item = page.getByRole('menuitem', { name: label });
+    await sub.hover();
+    // the submenu opens on hover or on click (a click on an already open submenu trigger toggles it)
+    if (!(await item.isVisible().catch(() => false))) await sub.click();
+    await item.click();
   };
   await copyVia('С форматированием');
   await expect(page.getByText('Страница скопирована с форматированием')).toBeVisible();
@@ -140,7 +144,7 @@ test('converting formatted text to a code block asks first and keeps the text (R
   const id = await newPage(page, 'В код');
   await page.keyboard.type('вызов **важный** api');
   await page.keyboard.press('Shift+Home');
-  await page.getByRole('toolbar', { name: 'Форматирование' }).getByRole('button', { name: /Текст/ }).click();
+  await page.getByRole('toolbar', { name: 'Форматирование' }).getByRole('button', { name: 'Тип блока' }).click();
   await page.getByRole('menuitem', { name: 'Блок кода' }).click();
   const dlg = page.getByRole('dialog', { name: 'Преобразовать в блок кода?' });
   await expect(dlg).toBeVisible();
@@ -165,8 +169,10 @@ test('caret position of a page is restored when it is opened again (R-EDITOR-037
   await page.keyboard.press('ArrowLeft');
   await page.keyboard.press('ArrowLeft'); // after "Первый "
   await page.waitForTimeout(500);
-  // reopen the page in the same tab (a reload would also replay the "just created" navigation state)
-  await page.goto(page.url());
+  // leave and open the page again in the same tab (a reload would replay the "just created" navigation state)
+  const url = page.url();
+  await page.goto('/');
+  await page.goto(url);
   await expect(editor(page)).toContainText('Второй абзац');
   await expect(editor(page)).toBeFocused();
   await page.keyboard.type('X');
@@ -195,9 +201,10 @@ test('image viewer: click on a selected image opens it; zoom is limited to 10–
   await (await chooser).setFiles(path.resolve('tests/e2e/fixtures/scheme.png'));
   const img = editor(page).locator('.kb-image-block img');
   await expect(img).toBeVisible({ timeout: 20_000 });
-  await img.click(); // selects
+  await img.click(); // the first click selects (toolbar, resize handles)
   await expect(page.getByRole('toolbar', { name: 'Изображение' })).toBeVisible();
-  await img.click(); // opens
+  await expect(page.getByRole('dialog', { name: /Просмотр изображения/ })).toHaveCount(0);
+  await img.click(); // the next click on the selected image opens the viewer
   const viewer = page.getByRole('dialog', { name: /Просмотр изображения/ });
   await expect(viewer).toBeVisible();
   const pct = viewer.locator('.viewer-pct');

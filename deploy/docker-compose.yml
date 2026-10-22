@@ -107,7 +107,8 @@ services:
     entrypoint: ["/usr/bin/tini", "--"]
     command: ["/app/scripts/backup/backup-loop.sh"]
     environment:
-      DATABASE_URL: ${BACKUP_DATABASE_URL:-${DATABASE_URL}}
+      # Separate backup-operator credentials are mandatory (R-BACKUP-016): no fallback to the application role.
+      DATABASE_URL: ${BACKUP_DATABASE_URL:?set BACKUP_DATABASE_URL — a separate backup-operator role, see docs/BACKUP_RESTORE.md §3}
       VERIFY_ADMIN_URL: ${VERIFY_ADMIN_URL:-}
       BACKUP_DIR: /backups
       STORAGE_DRIVER: ${STORAGE_DRIVER:-fs}
@@ -126,6 +127,38 @@ services:
     volumes:
       - kb-data:/var/lib/kb:ro       # objects are read-only for the backup job
       - backups:/backups
+
+  # Offsite copy to an S3 bucket with Object Lock (WORM): backups and the WAL archive cannot be deleted or
+  # overwritten before the retention period ends, even with these credentials (R-BACKUP-012).
+  # Bucket setup (once, by the storage administrator — not with these credentials):
+  #   aws s3api create-bucket --bucket kb-offsite --object-lock-enabled-for-bucket
+  #   aws s3api put-object-lock-configuration --bucket kb-offsite \
+  #     --object-lock-configuration '{"ObjectLockEnabled":"Enabled","Rule":{"DefaultRetention":{"Mode":"COMPLIANCE","Days":35}}}'
+  # The access key only needs s3:PutObject + s3:ListBucket (no DeleteObject). Enable with --profile offsite.
+  offsite:
+    profiles: ["offsite"]
+    image: amazon/aws-cli:2.27.50
+    restart: unless-stopped
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - >-
+        : "$${OFFSITE_S3_BUCKET:?set OFFSITE_S3_BUCKET}";
+        while true; do
+        aws $${OFFSITE_S3_ENDPOINT:+--endpoint-url $$OFFSITE_S3_ENDPOINT} s3 sync /backups s3://$$OFFSITE_S3_BUCKET/backups --exclude '.lock' --exclude '*.partial/*' --exclude '*.part.*' --only-show-errors &&
+        aws $${OFFSITE_S3_ENDPOINT:+--endpoint-url $$OFFSITE_S3_ENDPOINT} s3 sync /wal-archive s3://$$OFFSITE_S3_BUCKET/wal --exclude '*.part' --only-show-errors &&
+        date -u +%FT%TZ > /tmp/last-offsite-sync || echo 'offsite sync FAILED';
+        sleep $${OFFSITE_SYNC_SECONDS:-300};
+        done
+    environment:
+      OFFSITE_S3_BUCKET: ${OFFSITE_S3_BUCKET:-}
+      OFFSITE_S3_ENDPOINT: ${OFFSITE_S3_ENDPOINT:-}
+      OFFSITE_SYNC_SECONDS: ${OFFSITE_SYNC_SECONDS:-300}
+      AWS_ACCESS_KEY_ID: ${OFFSITE_AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${OFFSITE_AWS_SECRET_ACCESS_KEY:-}
+      AWS_DEFAULT_REGION: ${OFFSITE_AWS_REGION:-us-east-1}
+    volumes:
+      - backups:/backups:ro
+      - wal-archive:/wal-archive:ro
 
   minio:
     profiles: ["minio"]

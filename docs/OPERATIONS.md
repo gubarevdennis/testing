@@ -74,6 +74,10 @@ sudo systemctl daemon-reload && sudo systemctl enable --now kb kb-backup.timer
 * `MAX_UPLOAD_MB` / `MAX_IMPORT_MB` не должны превышать `client_max_body_size` в nginx.
 * `WORKER_ENABLED=false` выключает фоновые задачи на экземплярах, которые должны обслуживать только HTTP/WebSocket.
 * `METRICS_TOKEN` защищает `/metrics` (Bearer). nginx также закрывает `/metrics` снаружи.
+* `CLAMAV_HOST=clamd:3310` включает антивирусную проверку загрузок, импорта (каждый файл и каждое вложение
+  внутри ZIP/DOCX) и восстановления архива. Проверка работает в режиме fail-closed: если clamd недоступен, файл
+  не принимается. Этапы импорта (upload, scan, detect, parse, normalize, media, validate, preview, commit, index)
+  записываются в задание (`GET /api/v1/imports/:id` → `progress.stages`) и в журнал (`msg: import stage`).
 
 ## 3. Обновление, миграции и откат
 
@@ -99,8 +103,9 @@ sudo systemctl daemon-reload && sudo systemctl enable --now kb kb-backup.timer
   ```bash
   node apps/server/dist/cli.js migrate down 1     # по одной миграции; проверяйте migrate status
   ```
-  Порядок важен: старый код **не проверяет** применённые миграции, которых не знает, и запустится на более
-  новой схеме. Это может работать с ошибками, поэтому откатывайте схему до замены образа.
+  Порядок важен: старая версия **отказывается запускаться** на более новой схеме — `SchemaTooNewError`
+  («Database schema is newer than this application…»), поэтому откатывайте схему до замены образа. Откат каждой
+  миграции с данными в БД и отказ старой версии проверяются тестом `tests/resilience/migrations.test.ts`.
 * **Если down-миграция теряет данные или не удалась:** восстановите копию, сделанную на шаге 1, в новую БД
   (`restore.sh`) и переключите `DATABASE_URL`. Изменения после копии восстанавливаются через PITR (WAL).
 

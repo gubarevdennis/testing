@@ -32,7 +32,7 @@ async function script(name: string, args: string[], env: Record<string, string>)
 
 beforeAll(async () => {
   work = await mkdtemp(join(tmpdir(), 'kb-drill-'));
-  ts = await startServer();
+  ts = await startServer({}, { worker: true }); // worker: search indexing runs before the backup
   org = await setupOrg(ts);
 });
 
@@ -42,8 +42,8 @@ afterAll(async () => {
   await rm(work, { recursive: true, force: true });
 });
 
-describe('backup → restore drill (SC-30, AT-60, AT-87, S20, OPS-011)', () => {
-  it('restores content, attachment bytes, history, permissions and the audit chain into a new installation (E-08, D-08, R-BACKUP-001)', async () => {
+describe('backup → restore drill (SC-30, AT-60, AT-87, V16-S20, OPS-011, QA26-18)', () => {
+  it('restores content, attachment bytes, history, permissions and the audit chain into a new installation; search works and respects ACL (E-08, D-08, R-BACKUP-001, R-BACKUP-002, R-BACKUP-015, R-BACKUP-019, V18-A25, V16-S20)', async () => {
     const o = org.owner;
     // ---------------------------------------------------------------- build representative content
     const dept = (await o.post('/api/v1/admin/groups', { name: 'Эксплуатация', kind: 'department' })).group.id;
@@ -81,6 +81,11 @@ describe('backup → restore drill (SC-30, AT-60, AT-87, S20, OPS-011)', () => {
       audit: await o.get('/api/v1/audit/verify'),
     };
     expect(before.child).toBe(expectedChild);
+    // Search index is up to date before the backup (indexing is asynchronous through the outbox).
+    await ts.srv.services.hub.flushPage(child.id);
+    const searchFor = async (api: Api, q: string) => (await api.get('/api/v1/search?q=' + encodeURIComponent(q))).results.map((x: any) => x.pageId);
+    for (let i = 0; i < 100 && !(await searchFor(o, 'ежемесячно')).includes(child.id); i++) await new Promise((r) => setTimeout(r, 100));
+    expect(await searchFor(o, 'ежемесячно')).toContain(child.id);
     expect(before.audit.ok).toBe(true);
     await expectStatus(outsider.get(`/api/v1/pages/${child.id}`), 404);
 
@@ -140,6 +145,10 @@ describe('backup → restore drill (SC-30, AT-60, AT-87, S20, OPS-011)', () => {
     await rout.login(outsider.email, outsider.password);
     await expectStatus(rout.get(`/api/v1/pages/${child.id}`), 404);
     await expectStatus(rout.get(`/api/v1/attachments/${att.id}/download`), 404);
+    // search: the restored index finds the content, and still respects permissions (V16-S20)
+    expect(await searchFor(ro, 'ежемесячно')).toContain(child.id);
+    expect(await searchFor(re, 'ежемесячно')).toContain(child.id);
+    expect(await searchFor(rout, 'ежемесячно')).not.toContain(child.id);
     // audit chain intact and complete
     const audit = await ro.get('/api/v1/audit/verify');
     expect(audit.ok).toBe(true);

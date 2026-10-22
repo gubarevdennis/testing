@@ -43,8 +43,8 @@ async function waitJob(api: Api, path: string) {
   throw new Error('job timeout');
 }
 
-describe('organisation archive round trip (F06, V18-A01..A05, A24, SC-38, S20)', () => {
-  it('export → readable without the app → restore into a clean installation → verified (V18-A05, R-ACL-049, R-SECURITY-010)', async () => {
+describe('organisation archive round trip (F06, V18-A01, V18-A02, V18-A03, V18-A04, V18-A24, SC-38, S20)', () => {
+  it('export → readable without the app → restore into a clean installation → verified (V18-A05, R-ACL-049, R-SECURITY-010, E-10, V17-F06, QA26-16, R-ARCHIVE-004, R-ARCHIVE-006, R-ARCHIVE-007, R-ARCHIVE-008, R-ARCHIVE-011, R-ARCHIVE-013, R-ARCHIVE-016, R-BACKUP-005, R-EXPORT-002, R-EXPORT-024, R-EXPORT-026)', async () => {
     const o = orgA.owner;
     // --- build representative content
     const dept = (await o.post('/api/v1/admin/groups', { name: 'Инженеры', kind: 'department' })).group.id;

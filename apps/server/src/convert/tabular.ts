@@ -158,3 +158,27 @@ export function sheetPreview(sheet: Sheet, header = true) {
   const types = inferTypes(data);
   return { name: sheet.name, columns: head.map((h, i) => ({ name: h || `Столбец ${i + 1}`, ...(types[i] ?? { type: 'text', invalid: 0 }) })), rows: data.slice(0, 100), totalRows: data.length };
 }
+
+/** A1-style range ("B2:D40", whole columns "B:D", open end "B2:D"). */
+export const RANGE_RE = /^([A-Z]{1,3})(\d{1,7})?:([A-Z]{1,3})(\d{1,7})?$/i;
+
+function colIndex(letters: string): number {
+  let n = 0;
+  for (const ch of letters.toUpperCase()) n = n * 26 + (ch.charCodeAt(0) - 64);
+  return n - 1;
+}
+
+/** Cuts a rectangular range out of a sheet (rows/columns outside it are dropped). */
+export function applyRange(sheet: Sheet, range: string | null | undefined): Sheet {
+  if (!range) return sheet;
+  const m = RANGE_RE.exec(range.trim());
+  if (!m) throw Object.assign(new Error(`Некорректный диапазон «${range}» — укажите вида A1:D50`), { code: 'bad_range' });
+  const c1 = colIndex(m[1]);
+  const c2 = colIndex(m[3]);
+  const r1 = m[2] ? Number(m[2]) - 1 : 0;
+  const r2 = m[4] ? Number(m[4]) - 1 : Number.MAX_SAFE_INTEGER;
+  const [cFrom, cTo] = c1 <= c2 ? [c1, c2] : [c2, c1];
+  const [rFrom, rTo] = r1 <= r2 ? [r1, r2] : [r2, r1];
+  const rows = sheet.rows.slice(rFrom, rTo + 1).map((r) => Array.from({ length: cTo - cFrom + 1 }, (_, i) => r[cFrom + i] ?? ''));
+  return { ...sheet, rows };
+}

@@ -32,7 +32,8 @@ export const ClientBlockIds = Extension.create({
             } else seen.add(id);
           });
           if (!changed) return null;
-          tr.setMeta('addToHistory', false);
+          // Part of the same undo step as the change that created the blocks: excluding it from history made the
+          // Yjs undo manager skip the whole change (Ctrl+Z could not undo paste, Enter or table insert).
           return tr;
         },
       }),

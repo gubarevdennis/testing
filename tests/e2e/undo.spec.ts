@@ -71,7 +71,6 @@ test('one undo reverts a paste of 100 blocks and keeps the cursor position (AT-4
   // KNOWN BUG (found by this test): apps/web/src/editor/extensions/blockIds.ts appends an id-assigning transaction with
   // addToHistory=false; y-prosemirror then records the whole local change (paste / new blocks) as non-undoable.
   // Remove this line once block ids are assigned without excluding the user's change from undo history.
-  test.fail(true, 'new blocks are excluded from undo history (blockIds addToHistory=false)');
   const id = await fresh(page, 'Отмена вставки');
   await page.keyboard.type('До вставки');
   await page.waitForTimeout(STEP_PAUSE);
@@ -94,7 +93,7 @@ test('one undo reverts a paste of 100 blocks and keeps the cursor position (AT-4
   expect(saved).not.toContain('Строка вставки');
 });
 
-test('undo of a block move, a table insert and a block deletion (UX-138, UX13-10, SC-11, E2E-118, QA26-14)', async ({ page }) => {
+test('undo of a block move and of a block deletion is precise (UX-138, E2E-118, QA26-14)', async ({ page }) => {
   await fresh(page, 'Отмена структуры');
   await page.keyboard.type('Первый');
   await page.keyboard.press('Enter');
@@ -109,9 +108,21 @@ test('undo of a block move, a table insert and a block deletion (UX-138, UX13-10
   await page.keyboard.press(REDO);
   await expect.poll(() => blockTexts(page)).toEqual(['Второй', 'Первый']);
   await page.waitForTimeout(STEP_PAUSE);
-  // table insert via the slash menu
-  await editor(page).locator('p').last().click();
-  await page.keyboard.press('End');
+  // block deletion (Esc selects the block, Delete removes it); undo brings back only that block
+  await editor(page).locator('p', { hasText: 'Первый' }).click();
+  await page.keyboard.press('Escape');
+  await page.keyboard.press('Delete');
+  await expect(editor(page).locator('p', { hasText: 'Первый' })).toHaveCount(0);
+  await page.waitForTimeout(STEP_PAUSE);
+  await page.keyboard.press(UNDO);
+  await expect.poll(() => blockTexts(page)).toEqual(['Второй', 'Первый']);
+});
+
+test('undo of a table insert (SC-11, R-HISTORY-017, QA26-14)', async ({ page }) => {
+  // KNOWN BUG: the same blockIds/addToHistory problem as the paste test — a newly inserted table is not undoable.
+  await fresh(page, 'Отмена таблицы');
+  await page.keyboard.type('Текст');
+  await page.waitForTimeout(STEP_PAUSE);
   await page.keyboard.press('Enter');
   await page.keyboard.type('/табл');
   await page.keyboard.press('Enter');
@@ -119,16 +130,7 @@ test('undo of a block move, a table insert and a block deletion (UX-138, UX13-10
   await page.waitForTimeout(STEP_PAUSE);
   await page.keyboard.press(UNDO);
   await expect(editor(page).locator('table')).toHaveCount(0);
-  // only the table insert was undone, not the earlier move (precise undo)
-  await expect(editor(page).locator('p').first()).toHaveText('Второй');
-  // block deletion via the block menu (Esc selects the block, Delete removes it)
-  await editor(page).locator('p', { hasText: 'Первый' }).click();
-  await page.keyboard.press('Escape');
-  await page.keyboard.press('Delete');
-  await expect(editor(page).locator('p', { hasText: 'Первый' })).toHaveCount(0);
-  await page.waitForTimeout(STEP_PAUSE);
-  await page.keyboard.press(UNDO);
-  await expect(editor(page).locator('p', { hasText: 'Первый' })).toHaveCount(1);
+  await expect(editor(page)).toContainText('Текст');
 });
 
 test("undo reverts only the user's own changes, never a colleague's (SC-27, UX21-200, R-HISTORY-021, R-HISTORY-027, HIST-188)", async ({ page, browser }) => {

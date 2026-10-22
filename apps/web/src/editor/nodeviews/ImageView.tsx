@@ -25,7 +25,10 @@ export function ImageView({ node, updateAttributes, selected, editor, getPos, de
   const [altOpen, setAltOpen] = useState(false);
   const [ocrOpen, setOcrOpen] = useState(false);
   const figRef = useRef<HTMLElement>(null);
-  const wasSelected = useRef(false);
+  const armed = useRef(false);
+  useEffect(() => {
+    if (!selected) armed.current = false;
+  }, [selected]);
   const editable = editor.isEditable;
   const width = dragW ?? a.width;
   const ratio = a.naturalWidth && a.naturalHeight ? a.naturalHeight / a.naturalWidth : null;
@@ -191,9 +194,11 @@ export function ImageView({ node, updateAttributes, selected, editor, getPos, de
               }}
               onError={() => setState('error')}
               onDoubleClick={open}
-              // R-MEDIA-015/019: readers open the viewer with one click; editors with a click on the already selected image
-              onPointerDown={() => (wasSelected.current = selected)}
-              onClick={() => (!editable || wasSelected.current) && open()}
+              // R-MEDIA-015/019: readers open the viewer with one click; editors with a second click on the selected image
+              onClick={() => {
+                if (!editable || armed.current) open();
+                else armed.current = true; // first click selects (toolbar, resize), the next one opens the viewer
+              }}
             />
           )}
           {editable && a.align !== 'full' && (

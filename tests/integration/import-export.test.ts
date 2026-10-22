@@ -61,7 +61,7 @@ const pageText = async (api: Api, id: string) => {
 };
 
 describe('DOCX import (SC-13, SC-14, AT-41, AT-42)', () => {
-  it('imports headings, nested lists, merged tables and images with a report; original kept', async () => {
+  it('imports headings, nested lists, merged tables and images with a report; original kept (R-IMPORT-007, R-IMPORT-008, R-IMPORT-020, R-IMPORT-028, R-IMPORT-033, UX13-05, R-EXPORT-012, R-EXPORT-014)', async () => {
     const img = await sharp({ create: { width: 300, height: 120, channels: 3, background: '#5A85C6' } }).png().toBuffer();
     const doc: any = {
       type: 'doc',
@@ -103,7 +103,7 @@ describe('DOCX import (SC-13, SC-14, AT-41, AT-42)', () => {
     expect((await ts.db.query('select count(*)::int c from pages')).rows[0].c).toBe(after);
   });
 
-  it('rejects a corrupted DOCX with a clear error and changes nothing (SC-19)', async () => {
+  it('rejects a corrupted DOCX with a clear error and changes nothing (SC-19, D-09)', async () => {
     const j = await startImport(org.owner, [['broken.docx', Buffer.concat([Buffer.from('PK\x03\x04'), Buffer.alloc(100, 1)])]]).catch((e) => e);
     if (j.status) expect(j.preview?.files?.[0]?.status ?? 'error').toBe('error');
     else expect(j.status ?? j.body?.error?.code).toBeDefined();
@@ -111,7 +111,7 @@ describe('DOCX import (SC-13, SC-14, AT-41, AT-42)', () => {
 });
 
 describe('Markdown ZIP (SC-15, AT-43, AT-69)', () => {
-  it('imports a folder tree with relative images and cross-links; links become internal', async () => {
+  it('imports a folder tree with relative images and cross-links; links become internal (R-IMPORT-010, R-IMPORT-011, R-IMPORT-013, R-IMPORT-035)', async () => {
     const png = await sharp({ create: { width: 64, height: 64, channels: 3, background: '#ff0000' } }).png().toBuffer();
     const zip = await zipOf({
       'docs/README.md': '# Руководство\n\nСм. [установку](setup/install.md) и ![логотип](img/logo.png)\n',
@@ -136,7 +136,7 @@ describe('Markdown ZIP (SC-15, AT-43, AT-69)', () => {
     expect(j.preview.files[0].warnings.some((w: any) => w.code === 'unused-files')).toBe(true);
   });
 
-  it('rejects zip-slip paths and zip bombs before extracting (SC-19, AT-69, R-IMPORT)', async () => {
+  it('rejects zip-slip paths and zip bombs before extracting (SC-19, AT-69, R-IMPORT-006, R-IMPORT-035)', async () => {
     let evil = await zipOf({ 'aa/evil.md': '# x' });
     evil = Buffer.from(evil.toString('latin1').split('aa/evil.md').join('../evil.md'), 'latin1');
     const j1 = await startImport(org.owner, [['evil.zip', evil]]);
@@ -147,7 +147,7 @@ describe('Markdown ZIP (SC-15, AT-43, AT-69)', () => {
     expect(j2.preview.files[0].error).toMatch(/ZIP-бомб/);
   });
 
-  it('cancelling before commit creates nothing (AT-72)', async () => {
+  it('cancelling before commit creates nothing (AT-72, R-IMPORT-043, E-09)', async () => {
     const j = await startImport(org.owner, [['note.md', Buffer.from('# Заметка\n\nтекст')]]);
     const before = (await ts.db.query('select count(*)::int c from pages')).rows[0].c;
     await org.owner.post(`/api/v1/imports/${j.jobId}/cancel`);
@@ -155,7 +155,7 @@ describe('Markdown ZIP (SC-15, AT-43, AT-69)', () => {
     expect((await ts.db.query('select count(*)::int c from pages')).rows[0].c).toBe(before);
   });
 
-  it('same idempotency key does not create a second job (AT-73)', async () => {
+  it('same idempotency key does not create a second job (AT-73, R-IMPORT-024, E-09)', async () => {
     const a = await startImport(org.owner, [['n.md', Buffer.from('# N')]], { idempotencyKey: 'key-123' });
     const b = await startImport(org.owner, [['n.md', Buffer.from('# N')]], { idempotencyKey: 'key-123' });
     expect(b.jobId).toBe(a.jobId);
@@ -164,7 +164,7 @@ describe('Markdown ZIP (SC-15, AT-43, AT-69)', () => {
 });
 
 describe('tabular import (AT-48, AT-49, AT-50, UX13-17)', () => {
-  it('CSV in Windows-1251 with ";" and decimal comma, quotes and leading zeros; repeated upsert import without duplicates (AT-48, UX13-17, AT-50, R-COLLECTION-003)', async () => {
+  it('CSV in Windows-1251 with ";" and decimal comma, quotes and leading zeros; repeated upsert import without duplicates (AT-48, UX13-17, AT-50, R-COLLECTION-003, R-IMPORT-030, R-IMPORT-036)', async () => {
     const csv = 'Артикул;Наименование;Цена;Дата;Есть\n0012;"Кабель ""КНХ""; 2x2";1 234,50;01.10.2026;да\n0013;Дроссель;99,9;15.10.2026;нет\n';
     const j = await startImport(org.owner, [['price.csv', iconv.encode(csv, 'win1251')]]);
     const t = j.preview.tabular;
@@ -190,7 +190,7 @@ describe('tabular import (AT-48, AT-49, AT-50, UX13-17)', () => {
     expect(after.total).toBe(2);
   });
 
-  it('XLSX with three sheets: pick a sheet, numbers and dates kept, formulas as values (AT-49, R-SECURITY-009)', async () => {
+  it('XLSX with three sheets: pick a sheet, numbers and dates kept, formulas as values (AT-49, AT-70, R-IMPORT-031, R-IMPORT-041, R-SECURITY-009)', async () => {
     const wb = new ExcelJS.Workbook();
     wb.addWorksheet('Пусто').addRow(['x']);
     const ws = wb.addWorksheet('Оборудование');
@@ -213,7 +213,7 @@ describe('tabular import (AT-48, AT-49, AT-50, UX13-17)', () => {
 });
 
 describe('export (SC-13, S09, UX13-16)', () => {
-  it('exports a page to MD/DOCX/HTML/PDF; DOCX opens in LibreOffice; MD round-trips', async () => {
+  it('exports a page to MD/DOCX/HTML/PDF; DOCX opens in LibreOffice; MD round-trips (R-EXPORT-001, R-EXPORT-006, R-EXPORT-013, R-EXPORT-016, R-EXPORT-022, V16-S09, V18-A21, E225, UX13-16)', async () => {
     const j = await startImport(org.owner, [['source.md', Buffer.from('# Экспортируемая\n\n## Раздел\n\nТекст с **жирным** и [ссылкой](https://example.com).\n\n| A | B |\n|---|---|\n| 1 | 2 |\n\n```js\nconst x = 1;\n```\n\n> [!WARNING]\n> Важно\n')]]);
     const res = await org.owner.post(`/api/v1/imports/${j.jobId}/commit`, { target: { spaceId: org.generalSpaceId, parentId: null } });
     const id = res.rootPageId;
@@ -239,7 +239,7 @@ describe('export (SC-13, S09, UX13-16)', () => {
     expect((await pageText(org.owner, res2.rootPageId)).text).toBe((await pageText(org.owner, id)).text);
   }, 180_000);
 
-  it('branch export to Markdown ZIP: readable tree, relative links, assets, checksums, report (A01, A02, V18)', async () => {
+  it('branch export to Markdown ZIP: readable tree, relative links, assets, checksums, report (R-EXPORT-008, R-EXPORT-009, R-EXPORT-015, SC-15)', async () => {
     const root = (await org.owner.post('/api/v1/pages', { spaceId: org.generalSpaceId, title: 'Корень экспорта' })).page;
     const child = (await org.owner.post('/api/v1/pages', { spaceId: org.generalSpaceId, parentId: root.id, title: 'Дочерняя: страница' })).page;
     const fd = new FormData();
@@ -261,7 +261,7 @@ describe('export (SC-13, S09, UX13-16)', () => {
     expect(childMd).toContain('](assets/pic.png');
   });
 
-  it('export respects rights: no export permission => 403; private pages never leak into branch export (SC-20, V17-F07, R-ACL-017)', async () => {
+  it('export respects rights: no export permission => 403; private pages never leak into branch export (SC-20, V17-F07, R-ACL-017, R-EXPORT-011, E2E-108)', async () => {
     const sp = (await org.owner.post('/api/v1/spaces', { name: 'Без экспорта (тест)', kind: 'project', visibility: 'open', orgLevel: 'view', policy: { allowExport: false }, confirmWiden: true })).space;
     const p = (await org.owner.post('/api/v1/pages', { spaceId: sp.id, title: 'Нельзя выгружать' })).page;
     const reader = await org.user('Выгружающий');

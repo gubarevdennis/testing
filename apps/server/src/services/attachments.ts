@@ -108,7 +108,11 @@ export async function scanForViruses(path: string, host: string | null): Promise
     const sock = createConnection({ host: h, port: Number(p ?? 3310) });
     let reply = '';
     sock.on('data', (d) => (reply += d.toString()));
-    sock.on('end', () => resolve(/FOUND/.test(reply) ? reply.replace(/^stream: /, '').trim() : null));
+    // clamd terminates z-commands with NUL; strip it (PostgreSQL jsonb/text cannot store \u0000).
+    sock.on('end', () => {
+      const r = reply.replace(/\0/g, '').trim();
+      resolve(/FOUND$/.test(r) ? r.replace(/^stream: /, '').replace(/ FOUND$/, '').trim() || 'FOUND' : null);
+    });
     sock.on('error', reject);
     sock.write('zINSTREAM\0');
     const rs = createReadStream(path, { highWaterMark: 64 * 1024 });

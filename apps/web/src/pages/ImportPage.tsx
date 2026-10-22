@@ -61,6 +61,8 @@ interface DryRun {
   invalidCount: number;
   types: ColType[];
   header: string[];
+  /** Preview of the selected sheet/range (first 100 rows). */
+  preview?: SheetPreview;
 }
 
 type ColType = 'text' | 'number' | 'date' | 'checkbox' | 'select' | 'url' | 'email';
@@ -154,6 +156,8 @@ export default function ImportPage() {
   const [delimiter, setDelimiter] = useState<Delimiter>('auto');
   const [parsedWith, setParsedWith] = useState<{ encoding: Encoding; delimiter: Delimiter }>({ encoding: 'auto', delimiter: 'auto' });
   const [sheet, setSheet] = useState(0);
+  // Optional A1-style range of the sheet (R-IMPORT-031): applied by "Применить диапазон" (dry run) before import.
+  const [range, setRange] = useState('');
   const [header, setHeader] = useState(true);
   const [as, setAs] = useState<'table' | 'collection'>('table');
   // Repeated import into an existing collection (R-COLLECTION-003, AT-50): append rows or update them by a key column.
@@ -198,7 +202,7 @@ export default function ImportPage() {
   const j = job.data;
   const preview = j?.preview ?? null;
   const tab = preview?.tabular ?? null;
-  const sheetPrev = tab?.sheets[sheet] ?? null;
+  const sheetPrev = (range.trim() && dryRun?.preview) || (tab?.sheets[sheet] ?? null);
 
   // Initialise per-plan state when a new analysis arrives.
   useEffect(() => {
@@ -298,6 +302,7 @@ export default function ImportPage() {
     as,
     ...(as === 'collection' ? { keyColumn, ...(collTarget ? { collectionId: collTarget, collectionMode: collMode } : {}) } : {}),
     title: title.trim() || undefined,
+    range: range.trim() || undefined,
     columnTypes: colTypes ?? undefined,
     encoding: parsedWith.encoding !== encoding ? encoding : undefined,
     delimiter: parsedWith.delimiter !== delimiter ? delimiter : undefined,
@@ -357,7 +362,7 @@ export default function ImportPage() {
   const csvParamsChanged = parsedWith.encoding !== encoding || parsedWith.delimiter !== delimiter;
   const types = colTypes ?? sheetPrev?.columns.map((c) => c.type) ?? [];
   const previewHeader = sheetPrev ? (header ? sheetPrev.columns.map((c) => c.name) : sheetPrev.columns.map((_, i) => `Столбец ${i + 1}`)) : [];
-  const previewRows = sheetPrev ? (header ? sheetPrev.rows : [sheetPrev.columns.map((c) => c.name), ...sheetPrev.rows]).slice(0, 20) : [];
+  const previewRows = sheetPrev ? (header ? sheetPrev.rows : [sheetPrev.columns.map((c) => c.name), ...sheetPrev.rows]).slice(0, 100) : [];
   const reportCounts = useMemo(() => {
     const fs = preview?.files ?? [];
     return { ok: fs.filter((f) => f.status === 'ok').length, warn: fs.filter((f) => f.status === 'warning').length, err: fs.filter((f) => f.status === 'error').length + (j?.rejected.length ?? 0) };
@@ -659,6 +664,24 @@ export default function ImportPage() {
                           </select>
                         </div>
                       )}
+                      <div className="field">
+                        <label htmlFor="imp-range">Диапазон</label>
+                        <input
+                          id="imp-range"
+                          className="input"
+                          placeholder="весь лист, или например B2:E40"
+                          value={range}
+                          aria-describedby="imp-range-hint"
+                          onChange={(e) => {
+                            setRange(e.target.value.toUpperCase());
+                            setColTypes(null);
+                            setDryRun(null);
+                          }}
+                        />
+                        <span className="small muted" id="imp-range-hint">
+                          {range.trim() && !dryRun ? 'Нажмите «Пробный прогон», чтобы применить диапазон' : 'Необязательно'}
+                        </span>
+                      </div>
                       {!tab.file.toLowerCase().endsWith('.xlsx') && (
                         <>
                           <div className="field">
@@ -850,7 +873,7 @@ export default function ImportPage() {
                       Отменить импорт
                     </button>
                     <span className="grow" />
-                    <button className="btn primary" onClick={commit} disabled={commitBusy || !spaceId || (preview.kind === 'documents' && selectedCount === 0) || (preview.kind === 'tabular' && csvParamsChanged) || (preview.kind === 'tabular' && as === 'collection' && !!collTarget && !dryRun)} aria-busy={commitBusy}>
+                    <button className="btn primary" onClick={commit} disabled={commitBusy || !spaceId || (preview.kind === 'documents' && selectedCount === 0) || (preview.kind === 'tabular' && csvParamsChanged) || (preview.kind === 'tabular' && !!range.trim() && !dryRun) || (preview.kind === 'tabular' && as === 'collection' && !!collTarget && !dryRun)} aria-busy={commitBusy}>
                       {commitBusy && <span className="spinner" />} {commitError ? 'Повторить импорт' : 'Импортировать'}
                     </button>
                   </div>

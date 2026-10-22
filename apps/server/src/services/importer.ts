@@ -6,10 +6,10 @@ import { markdownToDoc, rowsToTable, walk, ensureBlockIds, docToPlainText, type 
 import type { Services } from '../app.js';
 import type { Tx } from '../db/pool.js';
 import { blobKey } from '../storage/blob-store.js';
-import { inspectFile, registerBlob, makeImageDerivatives, sanitizeSvgFile, safeFilename, type InspectResult } from './attachments.js';
+import { inspectFile, registerBlob, makeImageDerivatives, sanitizeSvgFile, safeFilename, scanForViruses, type InspectResult } from './attachments.js';
 import { docxToDoc } from '../convert/docx-import.js';
 import { htmlToDoc, htmlToNodes } from '../convert/html.js';
-import { parseCsv, parseXlsx, sheetPreview, normalizeDate, normalizeNumber, inferTypes, type Sheet } from '../convert/tabular.js';
+import { parseCsv, parseXlsx, sheetPreview, normalizeDate, normalizeNumber, inferTypes, applyRange, type Sheet } from '../convert/tabular.js';
 import { createPage, assertDepth } from './pages.js';
 import { requirePage, requireSpace, type AuthUser } from '../acl/engine.js';
 import { audit, type AuditActor } from './audit.js';
@@ -79,10 +79,41 @@ export async function readZipSafe(buf: Buffer, limits = ZIP_LIMITS): Promise<Map
 }
 
 /** Stores a buffer as a content-addressed blob (+ derivatives for images). Returns its descriptor. */
+/**
+ * Antivirus check of a file about to enter the system (import uploads, assets inside ZIP/DOCX, archive restore).
+ * Fails closed: if a scanner is configured (CLAMAV_HOST) but unreachable, the file is not accepted.
+ */
+export async function assertClean(s: Services, path: string, filename: string): Promise<void> {
+  let found: string | null;
+  try {
+    found = await scanForViruses(path, s.cfg.clamavHost);
+  } catch (e) {
+    s.log.error({ err: e, filename }, 'antivirus scan failed');
+    throw unprocessable('av_unavailable', `Антивирусная проверка недоступна — файл «${filename}» не принят. Повторите позже.`);
+  }
+  if (found) {
+    s.log.warn({ filename, found }, 'file rejected by antivirus');
+    throw unprocessable('malware', `Файл «${filename}» отклонён антивирусной проверкой (${found})`);
+  }
+}
+
+/** Same as assertClean for an in-memory buffer. */
+export async function assertBufferClean(s: Services, buf: Buffer, filename: string): Promise<void> {
+  if (!s.cfg.clamavHost) return;
+  const tmp = join(s.store.tmpDir(), 'av-' + randomUUID());
+  await writeFile(tmp, buf);
+  try {
+    await assertClean(s, tmp, filename);
+  } finally {
+    await rm(tmp, { force: true });
+  }
+}
+
 export async function storeBuffer(s: Services, buf: Buffer, filename: string): Promise<{ sha: string; info: InspectResult; size: number; filename: string }> {
   const tmp = join(s.store.tmpDir(), 'imp-' + randomUUID());
   await writeFile(tmp, buf);
   try {
+    await assertClean(s, tmp, filename);
     const info = await inspectFile(tmp, filename);
     if (info.mime === 'image/svg+xml') await sanitizeSvgFile(tmp);
     const blob = await registerBlob(s.db, s.store, tmp, info);
@@ -130,7 +161,8 @@ export interface ImportPlan {
   kind: 'documents' | 'tabular';
   pages: PlannedPage[];
   assets: Record<string, PlannedAsset>;
-  sources: Array<{ filename: string; sha: string; mime: string; size: number }>;
+  /** Original uploaded files (every format), attached to the imported page as 'import-source' (R-IMPORT-014, R-IMPORT-042). */
+  sources: Array<{ filename: string; sha: string; mime: string; size: number; file?: string }>;
   files: FileReport[];
   tabular?: { file: string; sheets: Array<ReturnType<typeof sheetPreview> & { sha?: string }>; encoding?: string; delimiter?: string; sourceSha: string };
 }
@@ -156,7 +188,10 @@ function stats(doc: PMNode) {
 }
 
 /** Converts uploaded files into a staged plan. Nothing visible is created; blobs are content-addressed and harmless. */
-export async function analyzeImport(s: Services, files: Array<{ filename: string; data: Buffer }>, opts: { csv?: { encoding?: 'auto' | 'utf-8' | 'windows-1251'; delimiter?: 'auto' | ',' | ';' | '\t' } } = {}): Promise<ImportPlan> {
+export type StageLogger = (stage: string, detail?: Record<string, unknown>) => void | Promise<void>;
+
+export async function analyzeImport(s: Services, files: Array<{ filename: string; data: Buffer }>, opts: { csv?: { encoding?: 'auto' | 'utf-8' | 'windows-1251'; delimiter?: 'auto' | ',' | ';' | '\t' }; onStage?: StageLogger } = {}): Promise<ImportPlan> {
+  const stage: StageLogger = async (name, detail) => void (await opts.onStage?.(name, detail));
   const plan: ImportPlan = { kind: 'documents', pages: [], assets: {}, sources: [], files: [] };
   let assetNo = 0;
   const addAsset = async (buf: Buffer, filename: string): Promise<PlannedAsset> => {
@@ -170,16 +205,20 @@ export async function analyzeImport(s: Services, files: Array<{ filename: string
   };
   const addSource = async (filename: string, data: Buffer) => {
     const st = await storeBuffer(s, data, filename);
-    plan.sources.push({ filename: st.filename, sha: st.sha, mime: st.info.mime, size: st.size });
+    plan.sources.push({ filename: st.filename, sha: st.sha, mime: st.info.mime, size: st.size, file: filename });
   };
 
   for (const f of files) {
     const lower = f.filename.toLowerCase();
     const report: FileReport = { file: f.filename, status: 'ok', pages: 0, warnings: [] };
+    const pagesBefore = plan.pages.length;
+    const assetsBefore = Object.keys(plan.assets).length;
     try {
+      await stage('detect', { file: f.filename, format: lower.split('.').pop(), size: f.data.length });
       if (lower.endsWith('.csv') || lower.endsWith('.tsv') || lower.endsWith('.xlsx')) {
         if (files.length > 1) throw unprocessable('mixed', 'Табличные файлы импортируются по одному');
         const src = await storeBuffer(s, f.data, f.filename);
+        plan.sources.push({ filename: src.filename, sha: src.sha, mime: src.info.mime, size: src.size, file: f.filename });
         plan.kind = 'tabular';
         if (lower.endsWith('.xlsx')) {
           const x = await parseXlsx(f.data);
@@ -203,6 +242,7 @@ export async function analyzeImport(s: Services, files: Array<{ filename: string
         const res = lower.endsWith('.txt')
           ? { doc: textToDoc(text), title: null, frontMatter: null, warnings: [] as ConversionWarning[] }
           : markdownToDoc(text, { htmlToNodes, resolveAsset: () => null });
+        await addSource(f.filename, f.data);
         report.warnings.push(...res.warnings);
         const p = planPage(res.doc, (res.frontMatter?.title as string) ?? res.title ?? stripExt(f.filename), null, f.filename);
         if (res.frontMatter) p.properties = frontMatterProps(res.frontMatter);
@@ -211,6 +251,7 @@ export async function analyzeImport(s: Services, files: Array<{ filename: string
       } else if (lower.endsWith('.html') || lower.endsWith('.htm')) {
         const html = f.data.toString('utf8');
         const res = htmlToDoc(html);
+        await addSource(f.filename, f.data);
         report.warnings.push(...res.warnings, { code: 'html-sanitized', message: 'HTML очищен: скрипты, стили и внешние ресурсы удалены' });
         const title = /<title>([^<]*)<\/title>/i.exec(html)?.[1]?.trim();
         plan.pages.push(planPage(res.doc, title || stripExt(f.filename), null, f.filename));
@@ -222,18 +263,28 @@ export async function analyzeImport(s: Services, files: Array<{ filename: string
         }
         const before = plan.pages.length;
         await planMarkdownZip(entries, plan, addAsset, report, f.filename);
+        await addSource(f.filename, f.data);
         report.pages = plan.pages.length - before;
       } else {
         throw unprocessable('unsupported', `Формат файла не поддерживается для импорта документов: ${f.filename}. Поддерживаются DOCX, MD, ZIP (Markdown), HTML, CSV, XLSX.`);
       }
       if (!report.pages) report.pages = plan.pages.filter((p) => p.sourceFile === f.filename).length;
       if (report.warnings.length) report.status = 'warning';
+      await stage('parse', { file: f.filename, pages: plan.pages.length - pagesBefore, rows: plan.tabular?.sheets.reduce((n, sh) => n + sh.totalRows, 0) });
+      await stage('normalize', { file: f.filename, blocks: plan.pages.slice(pagesBefore).reduce((n, p) => n + p.stats.blocks, 0), warnings: report.warnings.length });
+      await stage('media', { file: f.filename, assets: Object.keys(plan.assets).length - assetsBefore });
     } catch (e: any) {
       report.status = 'error';
       report.error = e?.message ?? String(e);
+      // A failed file contributes nothing: drop pages it had already planned (no half-imported trees).
+      plan.pages.length = pagesBefore;
+      plan.sources = plan.sources.filter((x) => x.file !== f.filename);
+      await stage('error', { file: f.filename, code: e?.code ?? null, error: report.error });
     }
     plan.files.push(report);
   }
+  await stage('validate', { pages: plan.pages.length, depth: planHeight(plan.pages), errors: plan.files.filter((x) => x.status === 'error').length });
+  await stage('preview', { files: plan.files.length, pages: plan.pages.length, assets: Object.keys(plan.assets).length, sources: plan.sources.length });
   return plan;
 }
 
@@ -416,14 +467,21 @@ export async function commitDocuments(s: Services, q: Tx, user: AuthUser, actor:
     if (assetIds.size) await q.query('update attachments set page_id = $2 where id = any($1::uuid[])', [[...assetIds.values()], pageId]);
     created.push(pageId);
   }
-  // Original files are kept with the first created page for re-conversion and audit.
+  // Original files are kept with the page created from them (else the first page) for re-conversion and audit.
   const rootId = created[0];
-  for (const src of plan.sources) {
-    const att = (await q.query(`insert into attachments (org_id, page_id, kind, filename, created_by) values ($1, $2, 'import-source', $3, $4) returning id`, [user.orgId, rootId ?? null, src.filename, user.id])).rows[0];
-    await q.query(`insert into attachment_versions (attachment_id, version, blob_sha256, size, mime, filename, created_by) values ($1, 1, $2, $3, $4, $5, $6)`, [att.id, src.sha, src.size, src.mime, src.filename, user.id]);
-  }
+  const pageOfFile = new Map<string, string>();
+  for (const p of ordered) if (!pageOfFile.has(p.sourceFile)) pageOfFile.set(p.sourceFile, pageIds.get(p.tempId)!);
+  await attachSources(q, user, plan, (src) => (src.file && pageOfFile.get(src.file)) || rootId || null);
   await audit(q, actor, { action: 'import.commit', targetType: 'job', targetId: jobId, details: { pages: created.length, files: plan.files.map((f) => ({ file: f.file, status: f.status })) } });
   return { pages: created.map((id) => ({ id, title: plan.pages.find((p) => pageIds.get(p.tempId) === id)!.title })), rootPageId: rootId ?? null };
+}
+
+/** Stores the original uploaded files as 'import-source' attachments (visible to the author in the page's files). */
+async function attachSources(q: Tx, user: AuthUser, plan: ImportPlan, pageFor: (src: ImportPlan['sources'][number]) => string | null) {
+  for (const src of plan.sources) {
+    const att = (await q.query(`insert into attachments (org_id, page_id, kind, filename, created_by) values ($1, $2, 'import-source', $3, $4) returning id`, [user.orgId, pageFor(src), src.filename, user.id])).rows[0];
+    await q.query(`insert into attachment_versions (attachment_id, version, blob_sha256, size, mime, filename, created_by) values ($1, 1, $2, $3, $4, $5, $6)`, [att.id, src.sha, src.size, src.mime, src.filename, user.id]);
+  }
 }
 
 function topo(pages: PlannedPage[]): PlannedPage[] {
@@ -454,6 +512,7 @@ export async function commitIntoPage(s: Services, user: AuthUser, actor: AuditAc
       await q.query(`insert into attachment_versions (attachment_id, version, blob_sha256, size, mime, filename, width, height, created_by) values ($1, 1, $2, $3, $4, $5, $6, $7, $8)`, [att.id, a.sha, a.size, a.mime, a.filename, a.width, a.height, user.id]);
       assetIds.set(ref, att.id);
     }
+    await attachSources(q, user, plan, () => pageId);
   });
   const content = replaceRefs(p.content, new Map(), assetIds);
   if (target.mode === 'update') await s.hub.createRevisionNow(pageId, 'manual', user.id, 'Перед импортом');
@@ -485,9 +544,23 @@ export interface TabularOptions {
   title?: string;
   encoding?: 'auto' | 'utf-8' | 'windows-1251';
   delimiter?: 'auto' | ',' | ';' | '\t';
+  /** A1-style range of the sheet to import, e.g. "B2:E40" (R-IMPORT-031, R-IMPORT-041). */
+  range?: string | null;
 }
 
 export async function loadSheet(s: Services, plan: ImportPlan, opts: TabularOptions): Promise<Sheet> {
+  let sh: Sheet;
+  try {
+    sh = applyRange(await loadWholeSheet(s, plan, opts), opts.range);
+  } catch (e: any) {
+    if (e?.code === 'bad_range') throw unprocessable('bad_range', e.message);
+    throw e;
+  }
+  if (!sh.rows.length) throw unprocessable('empty_range', 'В выбранном диапазоне нет данных');
+  return sh;
+}
+
+async function loadWholeSheet(s: Services, plan: ImportPlan, opts: TabularOptions): Promise<Sheet> {
   const buf = await s.store.readBuffer(blobKey(plan.tabular!.sourceSha));
   if (plan.tabular!.file.toLowerCase().endsWith('.xlsx')) {
     const x = await parseXlsx(buf);
@@ -535,7 +608,8 @@ export async function tabularDryRun(s: Services, plan: ImportPlan, opts: Tabular
     updates = keys.filter((k) => existing.has(k)).length;
     inserts = data.length - updates;
   }
-  return { rows: data.length, inserts, updates, duplicatesInFile, invalid: invalid.slice(0, 200), invalidCount: invalid.length, types, header };
+  // Preview of the selected sheet/range (first 100 rows) so the user sees exactly what will be imported.
+  return { rows: data.length, inserts, updates, duplicatesInFile, invalid: invalid.slice(0, 200), invalidCount: invalid.length, types, header, preview: sheetPreview(sh) };
 }
 
 export async function commitTabular(s: Services, q: Tx, user: AuthUser, actor: AuditActor, plan: ImportPlan, target: ImportTarget, opts: TabularOptions, jobId: string) {
@@ -548,6 +622,7 @@ export async function commitTabular(s: Services, q: Tx, user: AuthUser, actor: A
     if (target.mode === 'append' && target.pageId) return { table, appendTo: target.pageId };
     if (target.parentId) await requirePage(q, user, target.parentId, 'create');
     const { page } = await createPage(q, user, actor, { spaceId: target.spaceId, parentId: target.parentId, title, content: { type: 'doc', content: [table] }, revisionKind: 'import' });
+    await attachSources(q, user, plan, () => page.id);
     await audit(q, actor, { action: 'import.commit', targetType: 'job', targetId: jobId, details: { kind: 'table', rows: data.length } });
     return { pages: [{ id: page.id, title }], rootPageId: page.id };
   }
@@ -598,6 +673,7 @@ export async function commitTabular(s: Services, q: Tx, user: AuthUser, actor: A
       inserted++;
     }
   }
+  await attachSources(q, user, plan, () => containerId);
   await audit(q, actor, { action: 'import.commit', targetType: 'collection', targetId: collectionId, details: { jobId, inserted, updated } });
   return { pages: [{ id: containerId, title }], rootPageId: containerId, collectionId, inserted, updated };
 }
