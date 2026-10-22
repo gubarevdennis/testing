@@ -132,7 +132,8 @@ test('table data: copy a cell range as TSV, paste a range from Excel, move rows 
   expect((await grid(page))[3]).toEqual(['Склад', 'Вера', '']);
   await tableMenu(page, 'Переместить столбец влево');
   expect((await grid(page))[0]).toEqual(['#Имя', '#Отдел', '#Стаж']);
-  // one undo reverts exactly one operation
+  // one undo reverts exactly one operation (the menu gives the focus back to the table)
+  await expect(editor(page)).toBeFocused();
   await page.keyboard.press('Control+z');
   expect((await grid(page))[0]).toEqual(['#Отдел', '#Имя', '#Стаж']);
   await page.keyboard.press('Control+Shift+z');
