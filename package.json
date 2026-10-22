@@ -1,0 +1,42 @@
+{
+  "name": "corporate-knowledge-base",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "npm run build -w @kb/shared && npm run build -w @kb/server && npm run build -w @kb/web",
+    "dev": "node scripts/dev.mjs",
+    "typecheck": "tsc -b packages/shared && tsc -p apps/server --noEmit && tsc -p apps/web --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "test:unit": "vitest run --project unit",
+    "test:integration": "vitest run --project integration",
+    "test:resilience": "vitest run --project resilience",
+    "test:e2e": "playwright test",
+    "db:migrate": "node --import tsx apps/server/src/cli.ts migrate up",
+    "db:rollback": "node --import tsx apps/server/src/cli.ts migrate down",
+    "db:seed": "node --import tsx apps/server/src/cli.ts seed",
+    "backup": "bash scripts/backup.sh",
+    "restore:verify": "bash scripts/verify-restore.sh"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.5",
+    "@playwright/test": "^1.56.1",
+    "@types/node": "^22.20.5",
+    "@vitest/coverage-v8": "^3.2.7",
+    "eslint": "^9.39.5",
+    "fast-check": "^4.10.2",
+    "globals": "^17.13.0",
+    "tsx": "^4.23.15",
+    "typescript": "5.9",
+    "typescript-eslint": "^8.72.0",
+    "vitest": "^3.2.7"
+  }
+}
