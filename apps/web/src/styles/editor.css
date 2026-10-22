@@ -342,7 +342,7 @@ a.crumb:hover { background: var(--surface-hover); color: var(--text); text-decor
   :root:not([data-theme='light']) .hljs-keyword { color: #f08a7f; } :root:not([data-theme='light']) .hljs-string, :root:not([data-theme='light']) .hljs-attr { color: #6cc493; }
   :root:not([data-theme='light']) .hljs-number, :root:not([data-theme='light']) .hljs-built_in { color: #f0a067; } :root:not([data-theme='light']) .hljs-title { color: #b99bea; } :root:not([data-theme='light']) .hljs-variable, :root:not([data-theme='light']) .hljs-name { color: #86aef0; }
 }
-.touch-insert { position: fixed; right: 16px; bottom: calc(16px + env(safe-area-inset-bottom)); z-index: var(--z-sticky); width: 48px; height: 48px; border-radius: 50%; border: none; background: var(--accent-strong); color: var(--accent-contrast); font-size: 26px; line-height: 1; box-shadow: var(--shadow-2); }
+.touch-insert { position: fixed; right: 16px; bottom: calc(16px + env(safe-area-inset-bottom)); z-index: calc(var(--z-sticky) + 3); width: 48px; height: 48px; border-radius: 50%; border: none; background: var(--accent-strong); color: var(--accent-contrast); font-size: 26px; line-height: 1; box-shadow: var(--shadow-2); }
 
 /* multi-block selection (Esc, Shift+↑/↓) */
 .kb-editor .kb-block-in-range { background: var(--accent-soft); border-radius: var(--r-sm); box-shadow: 0 0 0 2px var(--accent-soft); }

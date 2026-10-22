@@ -265,8 +265,9 @@ test('ROUTE-01: employee route — login → own spaces → regulation → searc
   const nav = p.getByRole('navigation', { name: 'Навигация' });
   await expect(nav.getByRole('treeitem', { name: /Склад/ })).toBeVisible();
   // The regulation through the space overview.
-  await nav.getByRole('button', { name: 'Склад', exact: true }).click();
-  await p.getByRole('main').getByRole('link', { name: new RegExp(`Регламент приёмки ${stamp}`) }).click();
+  await p.goto('/s/' + space.id);
+  await expect(p.getByRole('heading', { name: 'Склад' })).toBeVisible();
+  await p.locator('.space-pages').getByRole('link', { name: new RegExp(`Регламент приёмки ${stamp}`) }).click();
   await expect(p.getByLabel('Название страницы')).toHaveValue(`Регламент приёмки ${stamp}`);
   // Search finds it.
   await expect
@@ -290,13 +291,16 @@ test('ROUTE-01: employee route — login → own spaces → regulation → searc
   await p.keyboard.type('проверять пломбы');
   await p.keyboard.press('Control+b');
   await p.keyboard.press('Enter');
-  // Excel paste (HTML table + TSV) and an image.
-  await paste(p, { 'text/html': '<table><tr><td>Артикул</td><td>Кол-во</td></tr><tr><td>A-1</td><td>12</td></tr></table>', 'text/plain': 'Артикул\tКол-во\nA-1\t12' });
-  await expect(editor(p).locator('table')).toContainText('A-1');
-  await paste(p, { 'text/html': `<figure><img src="${PNG}" alt="Схема"></figure>` });
-  await expect(editor(p).locator('.kb-image-block img')).toBeVisible({ timeout: 20_000 });
   // Link within rights: the link points to the regulation the employee can see.
   await paste(p, { 'text/html': `<p><a href="/p/${reg.id}">Регламент приёмки</a></p>`, 'text/plain': 'Регламент приёмки' });
+  await p.keyboard.press('Enter');
+  // An image and an Excel range (HTML table + TSV).
+  await paste(p, { 'text/html': `<figure><img src="${PNG}" alt="Схема"></figure>` });
+  await expect(editor(p).locator('.kb-image-block img')).toBeVisible({ timeout: 20_000 });
+  await expectSaved(p);
+  await editor(p).press('Control+End');
+  await paste(p, { 'text/html': '<table><tr><td>Артикул</td><td>Кол-во</td></tr><tr><td>A-1</td><td>12</td></tr></table>', 'text/plain': 'Артикул\tКол-во\nA-1\t12' });
+  await expect(editor(p).locator('table')).toContainText('A-1');
   await expectSaved(p);
   const content = JSON.stringify((await apiContent(p.request, artId)).content);
   expect(content).toContain('"bold"');

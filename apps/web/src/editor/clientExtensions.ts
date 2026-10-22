@@ -11,6 +11,7 @@ import { CalloutView, FileView, EmbedView, PageLinkView, PageMentionView, Mermai
 import { ClientBlockIds } from './extensions/blockIds';
 import { BlockOps } from './extensions/blockOps';
 import { StableSelection } from './extensions/stableSelection';
+import { TableRepair } from './extensions/tableRepair';
 import { Uploads } from './extensions/uploads';
 import { SmartPaste } from './extensions/paste';
 import { PasteOptions } from './extensions/pasteOptions';
@@ -57,6 +58,7 @@ export function clientExtensions(o: ClientExtensionOptions): AnyExtension[] {
     ...schema,
     Collaboration.configure({ document: o.doc, field: FRAGMENT_NAME }),
     StableSelection,
+    TableRepair.configure({ provider: o.provider }),
     Placeholder.configure({
       includeChildren: true,
       placeholder: ({ node, editor, pos }) => {

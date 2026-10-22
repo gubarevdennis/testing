@@ -110,6 +110,8 @@ button.pick-item:hover, .pick-item:hover { background: var(--surface-hover); }
 .help-group { font-size: var(--fs-sm); color: var(--text-2); font-weight: 600; margin: 8px 0 4px; }
 .onboarding-hint { position: fixed; right: 16px; bottom: 16px; z-index: calc(var(--z-sticky) + 2); /* below the mobile drawer and dialogs: a hint never covers navigation */ width: min(320px, calc(100vw - 32px)); background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); box-shadow: var(--shadow-2); padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; animation: kb-slide-up var(--t-med) var(--ease); }
 .onboarding-hint p { color: var(--text-2); }
+/* touch: the floating "+" insert button lives in the bottom-right corner — the hint sits above it, never over it */
+@media (pointer: coarse) { .onboarding-hint { bottom: calc(80px + env(safe-area-inset-bottom)); } }
 
 /* ---------- auth */
 .auth-screen { min-height: 100dvh; display: grid; place-items: center; padding: 24px 16px; background: var(--bg); }

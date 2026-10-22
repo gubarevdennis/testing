@@ -8,27 +8,27 @@
 
 | Приоритет | Всего | реализовано | частично | не реализовано | требует ручной проверки | ограничение окружения | процесс/документ | заменено | не оценено | покрыто тестами |
 |---|---|---|---|---|---|---|---|---|---|---|
-| P0 | 637 | 450 | 145 | 18 | 1 | 8 | 14 | 1 | 0 | 422 |
-| P1 | 588 | 218 | 283 | 32 | 32 | 7 | 15 | 1 | 0 | 91 |
+| P0 | 637 | 450 | 145 | 18 | 1 | 8 | 14 | 1 | 0 | 427 |
+| P1 | 588 | 218 | 283 | 32 | 32 | 7 | 15 | 1 | 0 | 95 |
 | P2 | 73 | 26 | 24 | 6 | 7 | 0 | 9 | 1 | 0 | 1 |
-| **Итого** | 1298 | 694 | 452 | 56 | 40 | 15 | 38 | 3 | 0 | 514 |
+| **Итого** | 1298 | 694 | 452 | 56 | 40 | 15 | 38 | 3 | 0 | 523 |
 
 ## По модулям
 
 | Модуль | Всего | реализовано | частично | не реализовано | ручная проверка | окружение | процесс | покрыто тестами |
 |---|---|---|---|---|---|---|---|---|
-| A11Y | 24 | 9 | 15 | 0 | 0 | 0 | 0 | 9 |
+| A11Y | 24 | 9 | 15 | 0 | 0 | 0 | 0 | 10 |
 | ACL | 139 | 113 | 26 | 0 | 0 | 0 | 0 | 87 |
 | ADMIN | 28 | 9 | 19 | 0 | 0 | 0 | 0 | 9 |
 | ARCHIVE | 30 | 26 | 3 | 0 | 0 | 0 | 1 | 18 |
 | AUDIT | 11 | 7 | 4 | 0 | 0 | 0 | 0 | 9 |
-| AUTH | 5 | 4 | 1 | 0 | 0 | 0 | 0 | 2 |
+| AUTH | 5 | 4 | 1 | 0 | 0 | 0 | 0 | 3 |
 | BACKUP | 29 | 15 | 11 | 0 | 0 | 0 | 2 | 19 |
 | CLIPBOARD | 45 | 21 | 19 | 1 | 0 | 4 | 0 | 20 |
 | COLLAB | 80 | 70 | 8 | 0 | 2 | 0 | 0 | 60 |
 | COLLECTION | 10 | 3 | 7 | 0 | 0 | 0 | 0 | 3 |
 | COMMENTS | 3 | 0 | 2 | 1 | 0 | 0 | 0 | 1 |
-| EDITOR | 105 | 45 | 53 | 2 | 4 | 1 | 0 | 21 |
+| EDITOR | 105 | 45 | 53 | 2 | 4 | 1 | 0 | 22 |
 | EXPORT | 37 | 23 | 10 | 0 | 2 | 1 | 0 | 21 |
 | FILES | 17 | 12 | 5 | 0 | 0 | 0 | 0 | 7 |
 | HELP | 11 | 5 | 2 | 0 | 3 | 0 | 1 | 0 |
@@ -44,14 +44,14 @@
 | PERF | 44 | 0 | 28 | 16 | 0 | 0 | 0 | 6 |
 | PROCESS | 57 | 9 | 11 | 7 | 2 | 0 | 28 | 0 |
 | PUBLISH | 15 | 8 | 5 | 2 | 0 | 0 | 0 | 4 |
-| QA | 56 | 3 | 27 | 10 | 10 | 3 | 3 | 2 |
+| QA | 56 | 3 | 27 | 10 | 10 | 3 | 3 | 4 |
 | SEARCH | 30 | 22 | 8 | 0 | 0 | 0 | 0 | 14 |
 | SECURITY | 15 | 9 | 4 | 1 | 0 | 0 | 1 | 9 |
 | SPACE | 15 | 9 | 5 | 1 | 0 | 0 | 0 | 8 |
-| TABLE | 9 | 3 | 6 | 0 | 0 | 0 | 0 | 1 |
+| TABLE | 9 | 3 | 6 | 0 | 0 | 0 | 0 | 2 |
 | TEMPLATES | 14 | 10 | 4 | 0 | 0 | 0 | 0 | 0 |
 | TREE | 63 | 50 | 11 | 1 | 1 | 0 | 0 | 24 |
-| UI | 89 | 7 | 64 | 3 | 14 | 1 | 0 | 13 |
+| UI | 89 | 7 | 64 | 3 | 14 | 1 | 0 | 16 |
 
 ## Открытые P0/P1 (частично / не реализовано / не оценено)
 
@@ -678,7 +678,7 @@
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| ROUTE-01 | P0 | Сотрудник: вход → свои пространства → регламент → поиск → статья в отделе одной кнопкой → форматирование → вставка Excel/изображения … | частично | tests/e2e/editor.spec.ts, collab.spec.ts cover login/create/format/paste/search pieces; No single E2E for the full employee route (own spaces -> regulation -> search -> one-click page in department -> Excel/image paste -> link within rights -> logout/return). |  |
+| ROUTE-01 | P0 | Сотрудник: вход → свои пространства → регламент → поиск → статья в отделе одной кнопкой → форматирование → вставка Excel/изображения … | частично | tests/e2e/editor.spec.ts, collab.spec.ts cover login/create/format/paste/search pieces; No single E2E for the full employee route (own spaces -> regulation -> search -> one-click page in department -> Excel/image paste -> link within rights -> logout/return). | tests/e2e/acl-p0-routes.spec.ts: ROUTE-01: employee route — login → own spaces → regulation → search → one-click article in |
 
 ### OFFLINE
 
@@ -1738,7 +1738,7 @@
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| SC-05 | P0 | Все inline-форматы, заголовки, вложенные списки, чек-листы, callout, toggle, формулы, ссылки, код, цитаты … | частично | packages/shared/src/editor/markdown.ts docToMarkdown; markdownToDoc; collab/ydoc.ts validateDoc; tests/unit/markdown.test.ts:'round-trips through import…' и property-тест покрывают заголовки/marks/списки/таблицы/callout/toggle; формулы, чек-листы, вложенные списки, код и цитаты в round-trip не проверяются |  |
+| SC-05 | P0 | Все inline-форматы, заголовки, вложенные списки, чек-листы, callout, toggle, формулы, ссылки, код, цитаты … | частично | packages/shared/src/editor/markdown.ts docToMarkdown; markdownToDoc; collab/ydoc.ts validateDoc; tests/unit/markdown.test.ts:'round-trips through import…' и property-тест покрывают заголовки/marks/списки/таблицы/callout/toggle; формулы, чек-листы, вложенные списки, код и цитаты в round-trip не проверяются | tests/integration/editor-p0.test.ts: save and open keep the structure identical (SC-05)<br>tests/integration/editor-p0.test.ts: SC-05: a document with all inline formats, headings, nested lists, checklists, callout, to<br>tests/integration/editor-p0.test.ts: SC-05: Markdown export with markers and re-import keep the same structure (formulas, check |
 
 ### CLIPBOARD
 
@@ -4284,7 +4284,7 @@
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| R-UI-058 | P1 | Без hover на touch: доступные кнопки и меню, безопасные размеры касания; клавиатура не перекрывает редактор | частично | @media (pointer: coarse) reveals tree/page actions, 44px buttons and menu items, floating "+" insert button; no visualViewport handling for on-screen keyboard; touch untested |  |
+| R-UI-058 | P1 | Без hover на touch: доступные кнопки и меню, безопасные размеры касания; клавиатура не перекрывает редактор | частично | @media (pointer: coarse) reveals tree/page actions, 44px buttons and menu items, floating "+" insert button; no visualViewport handling for on-screen keyboard; touch untested | tests/e2e/ui-p0-touch.spec.ts: UX-146, R-UI-058: on a touch phone the floating "+" inserts a block without hover |
 | R-UI-059 | P0 | Popover/tooltip/menu/drawer/dialog: anchor, границы viewport, fallback-сторона, max-height, скролл, z-index, focus trap, возврат фокуса … | частично | Menu/Tooltip floating-ui (flip/shift/size/portal), Dialog focus trap + return; no positioning tests | tests/e2e/ui-p0-interaction.spec.ts: R-UI-059, R-UI-008, E224: menus at viewport edges flip/shift inside the window, keep keybo<br>tests/e2e/ui-p0-interaction.spec.ts: R-UI-059, R-UI-053: dialogs trap focus, always have a visible exit and Esc, and return foc |
 | R-UI-060 | P0 | Hover не выполняет действий; click/Enter/Space выполняют; hover-меню не мерцают; у hover-действий есть видимый/клавиатурный эквивалент | частично | hover only reveals controls/tooltips; actions on click; no test | tests/e2e/ui-p0-interaction.spec.ts: R-UI-060, UX-141: hovering controls performs no action; hover-only tree actions have a key |
 
@@ -4348,7 +4348,7 @@
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| UX-131 | P1 | Переход назад сохраняет scroll | не реализовано | apps/web/src/hooks/useScrollRestore.ts used by PageView (sessionStorage per history entry, restore on POP); untested |  |
+| UX-131 | P1 | Переход назад сохраняет scroll | не реализовано | apps/web/src/hooks/useScrollRestore.ts used by PageView (sessionStorage per history entry, restore on POP); untested | tests/e2e/ui-p0-touch.spec.ts: UX-131: Back restores the reading position of a long page |
 
 ### SEARCH
 
@@ -4418,7 +4418,7 @@
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| UX-146 | P1 | Мобильное добавление блока без hover | частично | apps/web/src/editor/Editor.tsx TouchInsertButton ("+" on pointer:coarse opens the block menu); untested |  |
+| UX-146 | P1 | Мобильное добавление блока без hover | частично | apps/web/src/editor/Editor.tsx TouchInsertButton ("+" on pointer:coarse opens the block menu); untested | tests/e2e/ui-p0-touch.spec.ts: UX-146, R-UI-058: on a touch phone the floating "+" inserts a block without hover |
 
 ### A11Y
 
@@ -4637,7 +4637,7 @@
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| R-A11Y-008 | P1 | Достаточные области попадания и подсказки, touch ≥44×44 CSS px; reduced-motion; контраст AA; видимый focus ring | частично | @media (pointer: coarse) icon-btn/btn 44px, menu-item 44px (ui.css), touch-insert 48px; focus ring; axe contrast audit; touch target sizes not asserted by a test |  |
+| R-A11Y-008 | P1 | Достаточные области попадания и подсказки, touch ≥44×44 CSS px; reduced-motion; контраст AA; видимый focus ring | частично | @media (pointer: coarse) icon-btn/btn 44px, menu-item 44px (ui.css), touch-insert 48px; focus ring; axe contrast audit; touch target sizes not asserted by a test | tests/e2e/ui-p0-touch.spec.ts: R-A11Y-008: touch targets on a phone are at least 44×44 CSS px |
 
 ### QA
 
@@ -5292,7 +5292,7 @@
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| OPS-007 | P0 | Конкурирующие операции над таблицей | частично | Yjs-слияние + prosemirror-tables fixTables; Теста конкурирующих операций над таблицей нет |  |
+| OPS-007 | P0 | Конкурирующие операции над таблицей | частично | Yjs-слияние + prosemirror-tables fixTables; Теста конкурирующих операций над таблицей нет | tests/e2e/editor-p0-table.spec.ts: concurrent table operations of two people (row added offline vs column added offline) conv |
 
 ### ACL
 
@@ -5658,8 +5658,8 @@
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| QA26-30 | P0 | Pairwise по осям роль × устройство/ввод × контент × сеть × параллельность × история × размер … | не реализовано | n/a; no pairwise suite |  |
-| QA26-31 | P0 | Инварианты: данные не исчезают; порядок/иерархия корректны; права не расширяются без подтверждения; round-trip сохраняет семантику … | частично | collab convergence, core.test concurrent moves no cycle, markdown text-never-lost property, ACL widening confirmation; no systematic invariant suite in CI |  |
+| QA26-30 | P0 | Pairwise по осям роль × устройство/ввод × контент × сеть × параллельность × история × размер … | не реализовано | n/a; no pairwise suite | tests/integration/qa-invariants.test.ts: pairwise matrix with product invariants (QA26-30, QA26-31)<br>tests/integration/qa-invariants.test.ts: QA26-30: the generated matrix covers every pair of server-side axes<br>tests/unit/qa-pairwise.test.ts: pairwise test-case generator (QA26-30)<br>… ещё 2 |
+| QA26-31 | P0 | Инварианты: данные не исчезают; порядок/иерархия корректны; права не расширяются без подтверждения; round-trip сохраняет семантику … | частично | collab convergence, core.test concurrent moves no cycle, markdown text-never-lost property, ACL widening confirmation; no systematic invariant suite in CI | tests/integration/qa-invariants.test.ts: pairwise matrix with product invariants (QA26-30, QA26-31)<br>tests/integration/qa-invariants.test.ts: QA26-31 case ${idx + 1}/${CASES.length}: ${caseName(c)}<br>tests/unit/qa-pairwise.test.ts: invariant helpers (QA26-31)<br>… ещё 1 |
 
 ### ACL
 
