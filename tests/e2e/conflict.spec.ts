@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { ensureOwner, newPage, editor, expectSaved, createUser, login_, apiContent } from './helpers';
+import { ensureOwner, newPage, editor, expectSaved, createUser, login_, apiContent, caretIn } from './helpers';
 
 test('edit vs concurrent delete: the editor keeps a conflict copy and can put the block back (E-04, AT-77, COLLAB-193, R-COLLAB-045, UX13-10)', async ({ page, browser }) => {
   await ensureOwner(page);
@@ -19,12 +19,12 @@ test('edit vs concurrent delete: the editor keeps a conflict copy and can put th
 
   // Anna keeps typing in the paragraph while Boris deletes it (Boris goes offline to make the edits truly concurrent)
   await ctx2.setOffline(true);
-  await editor(p2).locator('p', { hasText: 'Абзац, который правят' }).click();
+  await caretIn(p2, 'Абзац, который правят');
   await p2.keyboard.press('Escape'); // select the whole block
   await p2.keyboard.press('Delete');
   await expect(editor(p2)).not.toContainText('Абзац, который правят');
 
-  await editor(page).locator('p', { hasText: 'Абзац, который правят' }).click();
+  await caretIn(page, 'Абзац, который правят');
   await page.keyboard.press('End');
   await page.keyboard.type(' — важное дополнение Анны');
   await expectSaved(page);

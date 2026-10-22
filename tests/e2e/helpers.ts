@@ -82,3 +82,13 @@ export async function paste(page: Page, data: Record<string, string>) {
     target!.dispatchEvent(new ClipboardEvent('paste', { clipboardData: dt, bubbles: true, cancelable: true }));
   }, data);
 }
+
+/** Places the caret inside the paragraph containing `text`, retrying if late layout shifts moved the click target. */
+export async function caretIn(page: Page, text: string) {
+  const p = editor(page).locator('p', { hasText: text }).first();
+  await expect(async () => {
+    await p.click();
+    const ok = await page.evaluate((t) => (window.getSelection()?.anchorNode?.textContent ?? '').includes(t), text);
+    expect(ok).toBe(true);
+  }).toPass({ timeout: 10_000 });
+}

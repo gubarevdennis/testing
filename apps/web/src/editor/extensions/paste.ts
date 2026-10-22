@@ -1,6 +1,7 @@
 import { Extension } from '@tiptap/core';
 import { Plugin, PluginKey } from '@tiptap/pm/state';
 import { Slice, Fragment, DOMSerializer } from '@tiptap/pm/model';
+import { yUndoPluginKey } from '@tiptap/y-tiptap';
 import { looksLikeTsv, parseTsv, rowsToTable, sanitizeHref, tableToRows, rowsToTsv, type PMNode } from '@kb/shared';
 import { markdownNow } from '../../lib/markdown';
 import { cleanPastedHtml, cleanCopiedDom, dataUriToFile } from '../clipboard/html';
@@ -50,6 +51,8 @@ export const SmartPaste = Extension.create({
             return false;
           },
           handlePaste(view, event) {
+            // a paste is always its own undo step (not merged with the typing just before it)
+            yUndoPluginKey.getState(view.state)?.undoManager?.stopCapturing();
             const cd = event.clipboardData;
             if (!cd || !view.editable) return false;
             const text = cd.getData('text/plain');
