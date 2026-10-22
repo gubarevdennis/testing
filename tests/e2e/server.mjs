@@ -1,6 +1,6 @@
 // Starts a fresh, isolated instance for browser tests: new database, empty object store, built web client.
 import pg from 'pg';
-import { rmSync, mkdirSync, cpSync } from 'node:fs';
+import { rmSync, mkdirSync, cpSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 const admin = process.env.TEST_ADMIN_DATABASE_URL ?? 'postgres://kb:kb@localhost:5432/postgres';
@@ -15,7 +15,9 @@ const data = resolve(process.env.E2E_DATA ?? '.e2e-data');
 rmSync(data, { recursive: true, force: true });
 mkdirSync(data, { recursive: true });
 // a private copy of the built client: a concurrent `vite build` empties apps/web/dist while it runs
-cpSync(resolve('apps/web/dist'), resolve(data, 'web'), { recursive: true });
+
+const webSrc = resolve(process.env.E2E_WEB ?? (existsSync('.e2e-web/index.html') ? '.e2e-web' : 'apps/web/dist'));
+cpSync(webSrc, resolve(data, 'web'), { recursive: true });
 
 Object.assign(process.env, {
   NODE_ENV: 'test',

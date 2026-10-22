@@ -19,7 +19,7 @@
     "test:unit": "vitest run --project unit",
     "test:integration": "vitest run --project integration",
     "test:resilience": "vitest run --project resilience",
-    "test:e2e": "playwright test",
+    "test:e2e": "npm run build -w @kb/web -- --outDir ../../.e2e-web --emptyOutDir && playwright test",
     "db:migrate": "node --import tsx --conditions=development apps/server/src/cli.ts migrate up",
     "db:rollback": "node --import tsx --conditions=development apps/server/src/cli.ts migrate down",
     "db:seed": "node --import tsx --conditions=development apps/server/src/cli.ts seed",

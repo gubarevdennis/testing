@@ -10,3 +10,4 @@ playwright-report/
 tests/e2e/.artifacts/
 scratch/
 .e2e-data/
+.e2e-web/

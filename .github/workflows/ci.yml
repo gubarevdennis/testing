@@ -1,0 +1,71 @@
+name: CI
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ['**']
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: kb
+          POSTGRES_PASSWORD: kb
+          POSTGRES_DB: kb
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U kb" --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      TEST_ADMIN_DATABASE_URL: postgres://kb:kb@localhost:5432/postgres
+      DATABASE_URL: postgres://kb:kb@localhost:5432/kb
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: sudo apt-get update && sudo apt-get install -y postgresql-client-16 || sudo apt-get install -y postgresql-client
+      - run: npm ci
+      - name: Type check
+        run: npm run typecheck
+      - name: Lint
+        run: npm run lint
+      - name: Unit tests
+        run: npm run test:unit
+      - name: Integration tests (real PostgreSQL)
+        run: npm run test:integration
+      - name: Resilience tests (crash, DB loss, storage failure, backup/restore drill)
+        run: npm run test:resilience
+      - name: Build
+        run: npm run build
+      - name: Install Chromium for browser tests
+        run: npx playwright install --with-deps chromium
+      - name: Browser E2E (Chromium)
+        run: npm run test:e2e
+      - name: Requirements traceability
+        run: python3 -m pip install pyyaml && npm run requirements:trace
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results
+          path: |
+            test-results/
+            docs/REQUIREMENTS_TRACEABILITY.md
+          retention-days: 14
+
+  release-gate:
+    # Manual: a release is allowed only when no P0 requirement is open (see docs/RELEASE_READINESS.md).
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 -m pip install pyyaml && python3 scripts/release-gate.py
