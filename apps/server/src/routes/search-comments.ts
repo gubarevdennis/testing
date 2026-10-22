@@ -6,6 +6,7 @@ import { requirePage, pageAccess } from '../acl/engine.js';
 import { search, suggest } from '../services/search.js';
 import { audit } from '../services/audit.js';
 import { forbidden, notFound } from '../lib/errors.js';
+import { enqueue } from '../services/pages.js';
 
 const uuid = z.string().uuid();
 
@@ -44,17 +45,18 @@ export async function searchCommentRoutes(app: FastifyInstance, s: Services) {
     const acc = await requirePage(s.db, user, id, 'view');
     const rows = (
       await s.db.query(
-        `select c.id, c.thread_id, c.parent_id, c.block_id, c.quote, c.body, c.body_text, c.created_at, c.updated_at, c.resolved_at, c.deleted_at, c.author_id, u.name as author_name, r.name as resolved_by_name
+        `select c.id, c.thread_id, c.parent_id, c.block_id, c.quote, c.body, c.body_text, c.created_at, c.updated_at, c.resolved_at, c.deleted_at, c.author_id, c.revision_number, u.name as author_name, r.name as resolved_by_name
            from comments c join users u on u.id = c.author_id left join users r on r.id = c.resolved_by where c.page_id = $1 order by c.created_at`,
         [id],
       )
     ).rows;
     const threads = new Map<string, any>();
     for (const c of rows) {
-      const t = threads.get(c.thread_id) ?? { id: c.thread_id, blockId: c.block_id, quote: c.quote, resolvedAt: null, resolvedBy: null, comments: [] };
+      const t = threads.get(c.thread_id) ?? { id: c.thread_id, blockId: c.block_id, quote: c.quote, revisionNumber: c.revision_number, resolvedAt: null, resolvedBy: null, comments: [] };
       if (!c.parent_id) {
         t.blockId = c.block_id;
         t.quote = c.quote;
+        t.revisionNumber = c.revision_number;
         t.resolvedAt = c.resolved_at;
         t.resolvedBy = c.resolved_by_name;
       }
@@ -68,6 +70,7 @@ export async function searchCommentRoutes(app: FastifyInstance, s: Services) {
         deleted: !!c.deleted_at,
         createdAt: c.created_at,
         updatedAt: c.updated_at,
+        revisionNumber: c.revision_number,
         mine,
         // Mirrors DELETE /comments/:id: the author or someone with full access to the page.
         canDelete: !c.deleted_at && acc.actions.comment && (mine || acc.level === 'full'),
@@ -92,7 +95,8 @@ export async function searchCommentRoutes(app: FastifyInstance, s: Services) {
         await q.query('update comments set resolved_at = null, resolved_by = null where id = $1', [root.id]); // replying reopens
       } else threadId = (await q.query('select gen_random_uuid() id')).rows[0].id;
       const row = (
-        await q.query(`insert into comments (org_id, page_id, thread_id, parent_id, block_id, quote, body, body_text, author_id) values ($1, $2, $3, $4, $5, $6, $7, $8, $9) returning *`, [
+        await q.query(`insert into comments (org_id, page_id, thread_id, parent_id, block_id, quote, body, body_text, author_id, revision_number)
+                       values ($1, $2, $3, $4, $5, $6, $7, $8, $9, (select max(number) from page_revisions where page_id = $2)) returning *`, [
           user.orgId,
           id,
           threadId,
@@ -115,6 +119,7 @@ export async function searchCommentRoutes(app: FastifyInstance, s: Services) {
         await q.query(`insert into notifications (user_id, type, page_id, data) values ($1, $2, $3, $4)`, [uid, (body.mentions ?? []).includes(uid) ? 'mention' : 'comment_reply', id, { from: user.name, threadId, commentId: row.id, excerpt: body.text.slice(0, 200) }]);
         s.bus.emit({ type: 'notification', userId: uid });
       }
+      await enqueue(q, 'index-page', { pageId: id }); // comments are searchable (R-SEARCH-003)
       return row;
     });
     s.bus.emit({ type: 'comments-changed', pageId: id });
@@ -131,6 +136,7 @@ export async function searchCommentRoutes(app: FastifyInstance, s: Services) {
     if (c.author_id !== user.id) throw forbidden('Редактировать можно только свои комментарии');
     // Merge so stored mentions survive an edit.
     await s.db.query('update comments set body = body || $2::jsonb, body_text = $3, updated_at = now() where id = $1', [id, { text, edited: true }, text]);
+    await enqueue(s.db, 'index-page', { pageId: c.page_id });
     s.bus.emit({ type: 'comments-changed', pageId: c.page_id });
     return { ok: true };
   });
@@ -144,6 +150,7 @@ export async function searchCommentRoutes(app: FastifyInstance, s: Services) {
     if (c.author_id !== user.id && acc.level !== 'full') throw forbidden();
     await tx(s.db, async (q) => {
       await q.query('update comments set deleted_at = now() where id = $1', [id]);
+      await enqueue(q, 'index-page', { pageId: c.page_id });
       await audit(q, actorOf(req), { action: 'comment.delete', targetType: 'page', targetId: c.page_id, details: { commentId: id } });
     });
     s.bus.emit({ type: 'comments-changed', pageId: c.page_id });

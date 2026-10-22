@@ -15,7 +15,7 @@ async function privateSpace(name: string, extra: Record<string, unknown> = {}) {
 }
 
 describe('revisions: pre-restore snapshot', () => {
-  it('restore saves the current state as a "pre-restore" revision', async () => {
+  it('restore saves the current state as a "pre-restore" revision (QA26-15)', async () => {
     const page = (await org.owner.post('/api/v1/pages', { spaceId: org.generalSpaceId, title: 'Версионируемая' })).page;
     const v1 = (await org.owner.post(`/api/v1/pages/${page.id}/revisions`, { label: 'v1' })).revision;
     await org.owner.patch(`/api/v1/pages/${page.id}`, { title: 'Переименована' });
@@ -31,7 +31,7 @@ describe('revisions: pre-restore snapshot', () => {
 });
 
 describe('access requests notify everyone who can share', () => {
-  it('space managers (direct and via group) are notified about a page request; the requester is not', async () => {
+  it('space managers (direct and via group) are notified about a page request; the requester is not (R-ACL-043)', async () => {
     const dept = (await org.owner.post('/api/v1/admin/groups', { name: 'Руководители проекта', kind: 'department' })).group.id;
     const sp = await privateSpace('Проект запросов', { groups: [{ groupId: dept, level: 'full' }] });
     const manager = await org.user('Менеджер пространства');
@@ -60,7 +60,7 @@ describe('access requests notify everyone who can share', () => {
 });
 
 describe('audience preview when widening access', () => {
-  it('audience_change conflict lists who would newly gain access; preview endpoint computes added/removed', async () => {
+  it('audience_change conflict lists who would newly gain access; preview endpoint computes added/removed (R-ACL-014)', async () => {
     const sp = await privateSpace('Секретный проект');
     const page = (await org.owner.post('/api/v1/pages', { spaceId: sp.id, title: 'План' })).page;
     const a = await org.user('Аркадий Новый');
@@ -255,7 +255,7 @@ describe('templates from content', () => {
 });
 
 describe('search: did you mean', () => {
-  it('suggests a corrected query when nothing is found', async () => {
+  it('suggests a corrected query when nothing is found (R-SEARCH-004)', async () => {
     const page = (await org.owner.post('/api/v1/pages', { spaceId: org.generalSpaceId, title: 'Регламент командировок' })).page;
     const hidden = (await org.owner.post('/api/v1/pages', { spaceId: org.personalSpaceId, title: 'Квартальный бюджет' })).page;
     const reader = await org.user('Ищущий подсказки');

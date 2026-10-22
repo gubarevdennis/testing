@@ -1,0 +1,47 @@
+# Knowledge base application (bare-metal / VM install without containers).
+#   install -d -o kb -g kb -m 0750 /var/lib/kb /var/lib/kb/objects
+#   install -m 0600 -o root -g kb deploy/env.example /etc/kb/kb.env   # then edit; no inline comments
+#   cp deploy/systemd/kb*.service deploy/systemd/kb*.timer /etc/systemd/system/
+#   systemctl daemon-reload && systemctl enable --now kb.service kb-backup.timer
+# Code lives in /opt/kb (built: npm ci && npx tsc -b packages/shared && npm run build -w @kb/server -w @kb/web
+# && npm prune --omit=dev). Logs: journalctl -u kb -o cat | pino-pretty
+[Unit]
+Description=Corporate knowledge base
+Documentation=file:///opt/kb/docs/OPERATIONS.md
+After=network-online.target postgresql.service
+Wants=network-online.target
+StartLimitIntervalSec=300
+StartLimitBurst=20
+
+[Service]
+Type=simple
+User=kb
+Group=kb
+WorkingDirectory=/opt/kb
+EnvironmentFile=/etc/kb/kb.env
+Environment=NODE_ENV=production WEB_DIST=/opt/kb/apps/web/dist KB_DATA_DIR=/var/lib/kb
+ExecStart=/usr/bin/node apps/server/dist/main.js
+# SIGTERM → graceful shutdown: stop accepting, flush live documents, close sockets (≤ 30 s).
+KillSignal=SIGTERM
+TimeoutStopSec=45
+Restart=always
+RestartSec=2
+LimitNOFILE=65536
+
+# Hardening
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
+RestrictNamespaces=true
+ReadWritePaths=/var/lib/kb
+UMask=0027
+
+[Install]
+WantedBy=multi-user.target

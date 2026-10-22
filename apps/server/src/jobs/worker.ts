@@ -5,7 +5,11 @@ import { extractPageRefs, docToPlainText } from '@kb/shared';
 import { tx } from '../db/pool.js';
 import type { Services } from '../app.js';
 import { purgePages } from '../services/pages.js';
+import { verifyBlobs } from '../services/integrity.js';
 import { orgSettings } from '../services/org.js';
+import { checkConsistency, type ConsistencyReport } from '../services/consistency.js';
+import { attachedFilesText } from '../services/file-text.js';
+import type { BlobStore } from '../storage/blob-store.js';
 
 export interface JobContext {
   s: Services;
@@ -31,7 +35,7 @@ export function registerJob(type: string, h: JobHandler) {
 }
 
 /** Search index document for a page: live content + published revision, OCR text, file names, properties. */
-export async function indexPage(db: pg.Pool | pg.PoolClient, pageId: string) {
+export async function indexPage(db: pg.Pool | pg.PoolClient, pageId: string, store?: BlobStore) {
   const p = (await db.query(`select p.*, s.deleted_at as space_deleted from pages p join spaces s on s.id = p.space_id where p.id = $1`, [pageId])).rows[0];
   if (!p || p.deleted_at || p.space_deleted) {
     await db.query('delete from search_index where page_id = $1', [pageId]);
@@ -48,6 +52,9 @@ export async function indexPage(db: pg.Pool | pg.PoolClient, pageId: string) {
       [pageId],
     )
   ).rows[0].t ?? '';
+  // Comment text (visible to everyone who can see the page) and text of attached documents (R-SEARCH-003, R-SEARCH-013).
+  const comments = (await db.query(`select string_agg(coalesce(quote, '') || ' ' || body_text, E'\\n' order by created_at) t from comments where page_id = $1 and deleted_at is null`, [pageId])).rows[0].t ?? '';
+  const fileText = await attachedFilesText(db, pageId, store);
   const props = Object.entries(p.properties ?? {})
     .map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(', ') : typeof v === 'object' ? JSON.stringify(v) : v}`)
     .join('\n');
@@ -61,17 +68,18 @@ export async function indexPage(db: pg.Pool | pg.PoolClient, pageId: string) {
     }
   }
   await db.query(
-    `insert into search_index (page_id, org_id, space_id, title, body, ocr, files, properties, tsv, pub_title, pub_body, pub_tsv, updated_at)
+    `insert into search_index (page_id, org_id, space_id, title, body, ocr, files, properties, tsv, pub_title, pub_body, pub_tsv, updated_at, comments, file_text)
      values ($1, $2, $3, $4, $5, $6, $7, $8,
        setweight(to_tsvector('russian', $4), 'A') || setweight(to_tsvector('english', $4), 'A') ||
        setweight(to_tsvector('russian', $5), 'B') || setweight(to_tsvector('english', $5), 'B') ||
-       setweight(to_tsvector('russian', $8 || ' ' || $7), 'C') || setweight(to_tsvector('russian', $6), 'D') || setweight(to_tsvector('english', $6), 'D'),
+       setweight(to_tsvector('russian', $8 || ' ' || $7), 'C') || setweight(to_tsvector('russian', $6), 'D') || setweight(to_tsvector('english', $6), 'D') ||
+       setweight(to_tsvector('russian', $11), 'C') || setweight(to_tsvector('english', $11), 'C') || setweight(to_tsvector('russian', $12), 'D') || setweight(to_tsvector('english', $12), 'D'),
        $9, $10,
        case when $9::text is null then null else setweight(to_tsvector('russian', $9), 'A') || setweight(to_tsvector('english', $9), 'A') || setweight(to_tsvector('russian', $10), 'B') || setweight(to_tsvector('english', $10), 'B') || setweight(to_tsvector('russian', $6), 'D') end,
-       now())
+       now(), $11, $12)
      on conflict (page_id) do update set space_id = excluded.space_id, title = excluded.title, body = excluded.body, ocr = excluded.ocr, files = excluded.files, properties = excluded.properties,
-       tsv = excluded.tsv, pub_title = excluded.pub_title, pub_body = excluded.pub_body, pub_tsv = excluded.pub_tsv, updated_at = now()`,
-    [pageId, p.org_id, p.space_id, p.title, body, ocr, files, props, pubTitle, pubBody],
+       tsv = excluded.tsv, pub_title = excluded.pub_title, pub_body = excluded.pub_body, pub_tsv = excluded.pub_tsv, updated_at = now(), comments = excluded.comments, file_text = excluded.file_text`,
+    [pageId, p.org_id, p.space_id, p.title, body, ocr, files, props, pubTitle, pubBody, comments, fileText],
   );
   // Link graph for backlinks and broken-link detection.
   if (st?.content) {
@@ -79,6 +87,12 @@ export async function indexPage(db: pg.Pool | pg.PoolClient, pageId: string) {
     await db.query('delete from page_links where source_page_id = $1', [pageId]);
     if (refs.length) await db.query(`insert into page_links (source_page_id, target_page_id) select $1, unnest($2::uuid[]) on conflict do nothing`, [pageId, refs]);
   }
+}
+
+let lastConsistencyReport: ConsistencyReport | null = null;
+/** Result of the most recent integrity check in this process (null before the first run). */
+export function latestConsistencyReport() {
+  return lastConsistencyReport;
 }
 
 export class Worker {
@@ -146,7 +160,7 @@ export class Worker {
       case 'index-page':
         await q.query('savepoint ix');
         try {
-          await indexPage(q, payload.pageId);
+          await indexPage(q, payload.pageId, this.s.store);
           await q.query('release savepoint ix');
         } catch (e) {
           await q.query('rollback to savepoint ix');
@@ -155,7 +169,7 @@ export class Worker {
         return;
       case 'reindex-subtree': {
         const ids = (await q.query('select page_id from page_ancestors where ancestor_id = $1', [payload.pageId])).rows.map((r) => r.page_id);
-        for (const id of ids) await indexPage(q, id);
+        for (const id of ids) await indexPage(q, id, this.s.store);
         return;
       }
       default:
@@ -237,9 +251,26 @@ export class Worker {
         [o.id, revisionDays],
       );
     }
+    // Integrity of stored files: a slice of the store is re-hashed every run (whole store roughly weekly).
+    try {
+      const r = await verifyBlobs(db, this.s.store, { limit: this.s.cfg.integrityBatch });
+      if (r.failed.length) this.log.error({ failed: r.failed }, 'stored files failed integrity verification');
+    } catch (err) {
+      this.log.error({ err }, 'integrity verification failed');
+    }
     await db.query(`delete from outbox where processed_at < now() - interval '7 days'`);
     await db.query(`delete from upload_sessions where expires_at < now() - interval '1 day'`);
     await db.query(`delete from sessions where expires_at < now() - interval '30 days' or revoked_at < now() - interval '30 days'`);
     await db.query(`delete from idempotency_keys where created_at < now() - interval '2 days'`);
+    await this.consistencyCheck();
+  }
+
+  /** Consistency check of the tree and the document journal; the result feeds kb_integrity_errors (R-COLLAB-037). */
+  async consistencyCheck(): Promise<ConsistencyReport> {
+    const report = await checkConsistency(this.s.db);
+    this.s.metrics.integrityErrors.set(report.total);
+    lastConsistencyReport = report;
+    if (!report.ok) this.log.error({ problems: report.problems }, 'data integrity check found problems');
+    return report;
   }
 }

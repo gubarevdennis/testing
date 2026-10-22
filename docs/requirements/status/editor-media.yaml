@@ -1,0 +1,1048 @@
+# Статус требований модулей EDITOR, CLIPBOARD, TABLE, MEDIA, FILES, OCR, COLLECTION, TEMPLATES.
+# Оценка по коду и тестам на 2026-10-22. Сгенерировано scratch-скриптом; правьте вручную при изменениях.
+- id: R-TABLE-001
+  status: done
+  evidence: styles/editor.css .kb-editor overflow-wrap:anywhere, td vertical-align
+  note: Без теста
+- id: R-EDITOR-001
+  status: partial
+  evidence: y-prosemirror (Collaboration) сохраняет курсор при удалённых изменениях; apps/web/src/sync/collab.ts (IDB-очередь)
+  note: Нет восстановления прокрутки/курсора при навигации и перезагрузке; нет E2E на стабильность курсора после sync/ререндера
+- id: R-EDITOR-002
+  status: partial
+  evidence: packages/shared/src/editor/extensions.ts createSchemaExtensions; apps/web/src/editor/extensions/paste.ts SmartPaste; Collaboration undo
+  note: 'Основное есть (Tiptap). IME не тестируется; вставка HTML идёт штатным парсером ProseMirror без санитайзера: inline-стили Word (шрифт/размер/цвет) превращаются в marks; списки Word (MsoListParagraph)
+    не становятся списками; картинки Word (file://, data:) не загружаются как вложения; RTF не обрабатывается; фикстур Word/GDocs нет'
+- id: R-TABLE-002
+  status: partial
+  evidence: '@tiptap/extension-table (resizable, CellSelection); apps/web/src/editor/menus/TableToolbar.tsx'
+  note: Большие таблицы не проверялись (нет виртуализации/теста); есть только E2E вставки
+- id: R-MEDIA-001
+  status: done
+  evidence: apps/web/src/editor/extensions/uploads.ts; apps/web/src/components/ImageViewer.tsx (wheel/pinch/pan/double-tap/rotate); apps/web/src/editor/nodeviews/ImageView.tsx
+  note: 'tests/e2e/content.spec.ts:''image: upload via file chooser, resize presets, caption, full-screen viewer with zoom'''
+- id: R-EDITOR-003
+  status: partial
+  evidence: apps/web/src/editor/menus/BubbleToolbar.tsx turnIntoItems; apps/web/src/editor/menus/BlockHandle.tsx «Превратить в»
+  note: Тестов конвертации всех типов нет; преобразование в блок кода молча теряет marks (ссылки, стили); id блока пересоздаётся при setNode
+- id: R-EDITOR-004
+  status: manual
+  evidence: Tiptap-редактор, меню, DnD, viewer
+  note: UX-сравнение с эталонами — ручная оценка
+- id: R-EDITOR-005
+  status: done
+  evidence: packages/shared/src/editor/extensions.ts; apps/web/src/editor/commands.tsx SLASH_COMMANDS; nodeviews/blocks.tsx, ImageView.tsx
+  note: 'Таблица/выноска/изображение покрыты E2E (tests/e2e/editor.spec.ts:''slash menu inserts a table and a callout; "> " creates a toggle''; tests/e2e/content.spec.ts:''image: upload via file chooser,
+    resize presets, caption, full-screen viewer with zoom''); остальные типы без тестов'
+- id: R-MEDIA-002
+  status: done
+  evidence: 'importer.ts: изображения → вложения; PNG/JPG не принимаются как документы (unsupported)'
+  note: ''
+- id: R-CLIPBOARD-001
+  status: partial
+  evidence: ProseMirror copy (text/html + text/plain); Editor.tsx kb:copy-markdown; BlockHandle/TableToolbar копирование
+  note: Нет копирования раздела; блок копируется только как MD/ссылка
+- id: R-OCR-001
+  status: done
+  evidence: apps/server/src/ocr/ocr.ts recognize (tesseract rus+eng); jobs/handlers.ts ocr
+  note: tests/integration/content.test.ts:'recognises Russian and English text on a screenshot…'
+- id: R-TEMPLATES-001
+  status: partial
+  evidence: apps/server/src/routes/templates.ts; template_versions
+  note: Параметров-заполнителей нет; API просмотра/восстановления версий шаблона нет
+- id: R-EDITOR-006
+  status: done
+  evidence: apps/web/src/pages/PageView.tsx (PublishedView/DocPreview); нет raw-режима
+  note: ''
+- id: R-EDITOR-007
+  status: partial
+  evidence: packages/shared/src/editor/extensions.ts StarterKit heading 1–6, BlockIdAttribute variant=lead; apps/web/src/editor/commands.tsx SLASH_COMMANDS lead/quote/divider
+  note: Типографские переносы (CSS hyphens) не включены; H4–H6 только через Markdown-шорткаты (в / меню H1–H3)
+- id: R-EDITOR-008
+  status: done
+  evidence: packages/shared/src/editor/extensions.ts (Underline/Sub/Sup/Code/Color/Highlight); apps/web/src/editor/menus/BubbleToolbar.tsx
+  note: Жирный проверен E2E; остальные стили без тестов
+- id: R-EDITOR-009
+  status: done
+  evidence: packages/shared/src/editor/extensions.ts TaskItem nested, BulletList/OrderedList
+  note: tests/e2e/editor.spec.ts:'create page, type with Markdown shortcuts, …survives reload' (список переживает reload); состояние чек-листа без теста
+- id: R-EDITOR-010
+  status: partial
+  evidence: links.ts PageMention/UserMention; apps/web/src/editor/menus/BlockHandle.tsx «Копировать ссылку на блок»; suggest.tsx @ и [[
+  note: Тегов в редакторе нет
+- id: R-EDITOR-011
+  status: partial
+  evidence: apps/web/src/editor/extensions/blockOps.ts BlockOps keyboard; Menu (role=menu)
+  note: Нет множественного выделения блоков; тестов клавиатурного управления нет
+- id: R-TABLE-003
+  status: partial
+  evidence: apps/web/src/editor/menus/TableToolbar.tsx строки/столбцы/merge/split/заголовки/выравнивание/заливка/TSV
+  note: Нет перемещения строк/столбцов; «каждая операция покрыта тестом» — не выполнено (только вставка таблицы)
+- id: R-EDITOR-012
+  status: done
+  evidence: nodes/callout.ts CALLOUT_VARIANTS; blocks.tsx CalloutView; Details
+  note: tests/e2e/editor.spec.ts:'slash menu inserts a table and a callout; "> " creates a toggle'
+- id: R-EDITOR-013
+  status: done
+  evidence: CodeBlockLowlight; blocks.tsx CodeBlockView (язык, «Копировать»)
+  note: Код не исполняется (только подсветка); без теста
+- id: R-MEDIA-003
+  status: partial
+  evidence: apps/web/src/editor/nodeviews/ImageView.tsx caption/alt/width/align/replace
+  note: Отдельного блока «галерея» нет (только колонки/листание во viewer)
+- id: R-FILES-001
+  status: partial
+  evidence: media.ts FileBlock; blocks.tsx FileView; EmbedView (link card)
+  note: Ссылка-превью без метаданных (OG); встраивания документа по постоянной ссылке нет
+- id: R-EDITOR-014
+  status: partial
+  evidence: nodes/special.ts Mermaid; blocks.tsx MermaidView securityLevel strict; markdown.ts fenced mermaid
+  note: DOCX-экспорт кладёт только исходник, без изображения (docx-export.ts case mermaid)
+- id: R-EDITOR-015
+  status: done
+  evidence: special.ts TableOfContentsBlock + TocView (обновление по update); PageView Backlinks
+  note: Без тестов
+- id: R-EDITOR-016
+  status: done
+  evidence: '@tiptap/extension-mathematics InlineMath/BlockMath; Editor.tsx MathDialog (KaTeX)'
+  note: Без тестов
+- id: R-EDITOR-017
+  status: done
+  evidence: StarterKit/ListKeymap/Table keymaps (Enter, Shift+Enter, Tab)
+  note: Только Enter в E2E; матрицы клавиш нет
+- id: R-EDITOR-018
+  status: done
+  evidence: apps/web/src/editor/extensions/suggest.tsx slash/mention/pageLink; commands.tsx filterCommands (синонимы, раскладка)
+  note: tests/e2e/editor.spec.ts:'slash menu inserts a table and a callout; "> " creates a toggle'
+- id: R-EDITOR-019
+  status: done
+  evidence: apps/web/src/editor/menus/BubbleToolbar.tsx; apps/web/src/editor/menus/BlockHandle.tsx (DragHandle, «+»); apps/web/src/editor/extensions/blockOps.ts Alt+Shift+↑/↓
+  note: Без тестов
+- id: R-EDITOR-020
+  status: partial
+  evidence: apps/web/src/editor/extensions/blockOps.ts moveBlock/duplicateBlock; apps/web/src/editor/menus/BlockHandle.tsx
+  note: Нет сворачивания секций по заголовкам; «копирование блока» только как Markdown/ссылка
+- id: R-MEDIA-004
+  status: done
+  evidence: apps/web/src/editor/extensions/uploads.ts handleDrop/handlePaste, widget с прогрессом; Editor.tsx file input
+  note: 'tests/e2e/content.spec.ts:''image: upload via file chooser, resize presets, caption, full-screen viewer with zoom'''
+- id: R-EDITOR-021
+  status: partial
+  evidence: ProseMirror/Tiptap; CharacterCount
+  note: Тест на 100 000+ символов отсутствует (tests/e2e/collab.spec.ts:'typing latency…' — ~36 тыс.); IME не тестируется
+- id: R-EDITOR-022
+  status: partial
+  evidence: y-prosemirror relative positions; autosave через CRDT без перезаписи документа
+  note: Нет E2E «курсор стабилен при sync» (требуется приёмкой)
+- id: R-CLIPBOARD-002
+  status: partial
+  evidence: apps/web/src/editor/menus/BlockHandle.tsx (ссылка на блок, MD); apps/web/src/editor/menus/TableToolbar.tsx (таблица TSV/MD); CodeBlockView; PageView «Копировать ссылку»
+  note: В меню нет «страницу с форматированием», «как текст», «Markdown страницы» (только Mod+Shift+C)
+- id: R-CLIPBOARD-003
+  status: done
+  evidence: AppShell.tsx перехватывает только Mod+K/Mod+Shift+P/Mod+\ вне полей; SmartPaste только в редакторе
+  note: ''
+- id: R-CLIPBOARD-004
+  status: partial
+  evidence: Штатная PM-сериализация renderHTML
+  note: 'Нет clipboard-сериализатора: в HTML уходят служебные data-*/id, относительные /api URL картинок; вставка в Word не проверена (нужен MS Word)'
+- id: R-CLIPBOARD-005
+  status: done
+  evidence: packages/shared/src/editor/markdown.ts docToMarkdown
+  note: tests/unit/markdown.test.ts:'writes readable markdown…', 'round-trips…', property 'text is never lost'
+- id: R-CLIPBOARD-006
+  status: done
+  evidence: apps/web/src/editor/menus/TableToolbar.tsx copy('tsv') rowsToTsv; CodeBlockView копирует textContent
+  note: TSV только командой меню, не при Ctrl+C
+- id: R-CLIPBOARD-007
+  status: missing
+  evidence: —
+  note: Команды «копировать изображение» нет
+- id: R-CLIPBOARD-008
+  status: partial
+  evidence: .then(toast) во всех командах; treeActions.copyLink — fallback с выделяемым полем
+  note: Markdown/ссылка на блок/таблица при отказе API молчат (нет ошибки и fallback)
+- id: R-CLIPBOARD-009
+  status: partial
+  evidence: apps/web/src/editor/extensions/paste.ts SmartPaste Ctrl+Shift+V (только текст); PM parser отбрасывает script
+  note: Нет санитайзера на клиенте и выбора «Сохранить/Объединить/Только текст»
+- id: R-CLIPBOARD-010
+  status: partial
+  evidence: PM DOMParser + Tiptap parse rules (в т.ч. GDocs <b style=normal>)
+  note: 'Фикстур вставки нет; вставка HTML идёт штатным парсером ProseMirror без санитайзера: inline-стили Word (шрифт/размер/цвет) превращаются в marks; списки Word (MsoListParagraph) не становятся списками;
+    картинки Word (file://, data:) не загружаются как вложения; RTF не обрабатывается; фикстур Word/GDocs нет'
+- id: R-CLIPBOARD-011
+  status: partial
+  evidence: treeActions.copyLink fallback-диалог
+  note: Для остальных команд мобильного fallback нет
+- id: R-CLIPBOARD-012
+  status: done
+  evidence: Editor.tsx onCopyMd (Mod+Shift+C), BlockHandle «Копировать как Markdown»
+  note: Без теста
+- id: R-OCR-002
+  status: partial
+  evidence: components/OcrDialog.tsx (распознать заново, копировать, исправить); поиск по OCR (jobs/worker.ts indexPage)
+  note: Нет «вставить в документ»
+- id: R-OCR-003
+  status: partial
+  evidence: apps/server/src/routes/attachments.ts ingestFile ставит OCR для любых растровых загрузок (буфер, DnD)
+  note: Изображения из DOCX-импорта OCR не проходят (importer.ts не создаёт ocr job)
+- id: R-OCR-004
+  status: partial
+  evidence: ocr.ts fixHomoglyphs (артикулы), rus+eng
+  note: Тест — 3 строки RU/EN; таблицы/код/инженерные обозначения не проверяются
+- id: R-OCR-005
+  status: partial
+  evidence: ocr_results.text/confidence/words(bbox); PATCH /ocr corrected_text
+  note: Подсветки на изображении нет; confidence показывается только при низком качестве
+- id: R-OCR-006
+  status: partial
+  evidence: apps/server/src/routes/attachments.ts POST /ocr {region, rotation}; ocr.ts
+  note: В UI нет crop/поворота/выбора языка
+- id: R-OCR-007
+  status: done
+  evidence: attachment blob + ocr_results.text + ocr_results.corrected_text
+  note: tests/integration/content.test.ts:'recognises Russian and English text on a screenshot…'
+- id: R-OCR-008
+  status: done
+  evidence: apps/server/src/routes/attachments.ts POST /ocr только для растровых изображений
+  note: ''
+- id: R-OCR-009
+  status: done
+  evidence: ocr_results.status (pending/processing/done/partial/error), jobs/worker.ts (retry ≤3), timeout 120 c; OcrDialog
+  note: Без теста ошибок/таймаутов
+- id: R-OCR-010
+  status: missing
+  evidence: —
+  note: Структуризации распознанной таблицы нет
+- id: R-TEMPLATES-002
+  status: done
+  evidence: templates/library-core.ts, library.ts (35 шаблонов, все 10 видов)
+  note: ''
+- id: R-OCR-011
+  status: done
+  evidence: tesseract.js (локальные rus/eng), очередь jobs, loadAttachment
+  note: tests/integration/content.test.ts:'recognises Russian and English text on a screenshot…'
+- id: R-EDITOR-023
+  status: partial
+  evidence: packages/shared/src/editor/extensions.ts CONTENT_SCHEMA_VERSION=1; migrations/0001_core.sql pages.content_schema_version
+  note: Механизма миграций схемы нет (упомянутый collab/schema-migrations.ts отсутствует)
+- id: R-MEDIA-005
+  status: partial
+  evidence: apps/server/src/routes/attachments.ts POST /api/v1/attachments, POST /api/v1/attachments/:id/ocr
+  note: Пути /ocr/jobs нет; OpenAPI-описания нет
+- id: SC-02
+  status: done
+  evidence: templateId при создании страницы; publishing workflow
+  note: tests/integration/content.test.ts:'readers see the published revision…'; создание из каждого шаблона не тестируется
+- id: SC-05
+  status: partial
+  evidence: packages/shared/src/editor/markdown.ts docToMarkdown; markdownToDoc; collab/ydoc.ts validateDoc
+  note: tests/unit/markdown.test.ts:'round-trips through import…' и property-тест покрывают заголовки/marks/списки/таблицы/callout/toggle; формулы, чек-листы, вложенные списки, код и цитаты в round-trip
+    не проверяются
+- id: SC-06
+  status: partial
+  evidence: PM parser
+  note: 'Нет предпросмотра вставки; вставка HTML идёт штатным парсером ProseMirror без санитайзера: inline-стили Word (шрифт/размер/цвет) превращаются в marks; списки Word (MsoListParagraph) не становятся
+    списками; картинки Word (file://, data:) не загружаются как вложения; RTF не обрабатывается; фикстур Word/GDocs нет'
+- id: SC-07
+  status: env-blocked
+  evidence: PM copy html/plain; парсинг HTML
+  note: Нужны реальные Word/почта/Google Docs; кроме того см. пробелы R-CLIPBOARD-004/020
+- id: SC-08
+  status: done
+  evidence: packages/shared/src/editor/markdown.ts docToMarkdown (markers:false)
+  note: tests/unit/markdown.test.ts (GFM, fences, таблицы)
+- id: SC-09
+  status: env-blocked
+  evidence: apps/web/src/editor/menus/TableToolbar.tsx TSV; CodeBlockView
+  note: Проверка ячеек в реальном Excel/Sheets невозможна здесь; unit-теста rowsToTsv нет
+- id: SC-10
+  status: partial
+  evidence: treeActions.copyLink fallback
+  note: Для MD/блока/таблицы — ни объяснения, ни альтернативы
+- id: SC-21
+  status: partial
+  evidence: tests/integration/content.test.ts:'recognises Russian and English text on a screenshot…'; OcrDialog textarea + «Копировать»
+  note: Скриншот с таблицей и выбор фрагмента не проверяются (название теста упоминает SC-21..24, но покрывает только распознавание)
+- id: SC-22
+  status: partial
+  evidence: OcrDialog; search matchedIn image; ошибка OCR не трогает вложение
+  note: Confidence скрыт при нормальном качестве, автор исправления не показывается
+- id: SC-24
+  status: partial
+  evidence: apps/server/src/routes/attachments.ts region/rotation; OcrDialog «Распознать заново»
+  note: Поворот/область только через API; тестов плохих изображений нет
+- id: R-OCR-012
+  status: partial
+  evidence: tests/integration/content.test.ts:'recognises Russian and English text on a screenshot…'
+  note: CER не измеряется (только regex), матрицы плохих изображений нет
+- id: R-CLIPBOARD-013
+  status: env-blocked
+  evidence: Только Chromium (D-18)
+  note: Матрица браузер×приложение требует реальных Word/Excel/GDocs/почты и браузеров
+- id: R-EDITOR-024
+  status: done
+  evidence: Структурированная ProseMirror-схема + Yjs; apps/server/src/collab/ydoc.ts validateDoc
+  note: tests/integration/collab.test.ts:'rejects schema-invalid updates…'
+- id: R-EDITOR-025
+  status: partial
+  evidence: Tiptap/ProseMirror (docs/ARCHITECTURE.md §3)
+  note: В docs/DECISIONS.md нет решения о выборе редактора и проверке его ограничений
+- id: R-CLIPBOARD-014
+  status: partial
+  evidence: PM копирует text/html со структурой
+  note: Тестов rich-копирования нет
+- id: R-EDITOR-026
+  status: missing
+  evidence: —
+  note: Нет документа с таблицей представлений сложных блоков (модель/DOCX/MD/clipboard/индекс)
+- id: R-EDITOR-027
+  status: manual
+  evidence: uploads.ts, blockOps.ts работают в doc/таблице/колонке/выноске
+  note: Единообразие в трёх контекстах — ручная проверка; тестов нет
+- id: R-CLIPBOARD-015
+  status: partial
+  evidence: apps/web/src/editor/extensions/paste.ts SmartPaste (TSV/MD/HTML ветки)
+  note: 'tests/e2e/collab.spec.ts:''paste: spreadsheet range becomes a table; Markdown becomes formatted blocks'' (TSV, MD); вставка HTML идёт штатным парсером ProseMirror без санитайзера: inline-стили
+    Word (шрифт/размер/цвет) превращаются в marks; списки Word (MsoListParagraph) не становятся списками; картинки Word (file://, data:) не загружаются как вложения; RTF не обрабатывается; фикстур Word/GDocs
+    нет'
+- id: R-CLIPBOARD-016
+  status: partial
+  evidence: apps/web/src/editor/extensions/paste.ts SmartPaste looksLikeMarkdown; Ctrl+Shift+V — исходный текст
+  note: Выбора режима нет (только эвристика/горячая клавиша); картинки из HTML не загружаются
+- id: R-MEDIA-006
+  status: partial
+  evidence: apps/web/src/editor/extensions/uploads.ts (objectURL-превью, повтор, ожидание сети)
+  note: 'Заглушка — декорация, а не блок: не синхронизируется и пропадает при перезагрузке/закрытии'
+- id: R-COLLECTION-001
+  status: partial
+  evidence: special.ts CollectionView vs table; collections + pages.collection_id
+  note: 'UI сломан: Editor.tsx insertCollection шлёт {pageId,name}, а POST /collections требует spaceId (400); CollectionBlockView читает collection.fields/pageId, API отдаёт schema/page_id'
+- id: R-COLLECTION-002
+  status: partial
+  evidence: apps/web/src/pages/ImportPage.tsx типы столбцов + «не распознано»; importer.ts tabularDryRun
+  note: Типы «пользователь» и «файл» в мастере отсутствуют
+- id: R-COLLECTION-003
+  status: partial
+  evidence: importer.ts commitTabular (new/append/upsert), tabularDryRun
+  note: tests/integration/import-export.test.ts:'CSV in Windows-1251…' (повторный upsert без дублей). Нет «заменить диапазон»; в UI импорта нельзя выбрать существующую коллекцию/upsert
+- id: R-CLIPBOARD-017
+  status: partial
+  evidence: apps/web/src/editor/extensions/paste.ts SmartPaste parseTsv/rowsToTable; HTML-таблицы Excel парсятся схемой; apps/web/src/editor/menus/TableToolbar.tsx TSV
+  note: При копировании нет TSV+HTML вместе; экспорта выделения в CSV нет; HTML Excel без теста
+- id: R-TABLE-004
+  status: partial
+  evidence: apps/web/src/editor/menus/TableToolbar.tsx; Tab-навигация
+  note: Нет перемещения строк/столбцов и закрепления заголовка
+- id: R-COLLECTION-004
+  status: partial
+  evidence: apps/server/src/routes/collections.ts query (AND/OR, мультисортировка, группировка, итоги, поиск), rows/bulk
+  note: Веб-интерфейса коллекции нет (нет страницы/таблицы реестра с фильтрами, сортировкой, массовой правкой, экспортом)
+- id: R-COLLECTION-005
+  status: partial
+  evidence: apps/server/src/routes/collections.ts PATCH rows (cell_conflict 409)
+  note: Виртуализации, клавиатуры, сохранения вида в UI нет; 10 000 строк не проверялись
+- id: R-COLLECTION-006
+  status: done
+  evidence: Коллекции без CRM-функций
+  note: ''
+- id: R-FILES-002
+  status: partial
+  evidence: apps/web/src/editor/extensions/uploads.ts (DnD, Ctrl+V, выбор, пакетно, прогресс, отмена, повтор); FileView (предпросмотр, скачать)
+  note: Нет паузы, переименования и удаления вложения в UI (API PATCH/DELETE есть), копирования ссылки на файл
+- id: R-MEDIA-007
+  status: partial
+  evidence: apps/web/src/editor/nodeviews/ImageView.tsx; apps/server/src/services/attachments.ts makeImageDerivatives (оригинал не меняется)
+  note: tests/integration/content.test.ts:'uploads an image, stores the original byte-exact with checksum…'. Нет inline-изображений в строке; копия блока на другую страницу ссылается на вложение исходной
+    страницы (права)
+- id: R-FILES-003
+  status: done
+  evidence: apps/server/src/routes/attachments.ts attachmentDto (sha256, version, size), loadAttachment
+  note: tests/integration/content.test.ts:'files of a private page are not accessible…', 'respects download policy…'
+- id: AT-44
+  status: partial
+  evidence: 'PM parser: заголовки h1–h6 сохраняются'
+  note: Списки Word (MsoListParagraph) превращаются в абзацы; теста нет
+- id: AT-46
+  status: done
+  evidence: apps/web/src/editor/extensions/uploads.ts (мгновенное превью, ожидание сети, повтор)
+  note: Без теста
+- id: AT-50
+  status: partial
+  evidence: importer.ts upsert + dry-run
+  note: tests/integration/import-export.test.ts:'CSV in Windows-1251…'; UI не позволяет повторный импорт в существующую коллекцию
+- id: AT-51
+  status: partial
+  evidence: HTML-таблица Excel → table; TSV fallback
+  note: 'tests/e2e/collab.spec.ts:''paste: spreadsheet range becomes a table; Markdown becomes formatted blocks'' — только TSV 3×3; 20×10 из Excel не проверялся'
+- id: AT-52
+  status: partial
+  evidence: apps/server/src/routes/collections.ts query
+  note: Закрепления колонок и UI нет; производительность на 10 000 строк не измерена
+- id: AT-54
+  status: done
+  evidence: apps/web/src/editor/extensions/uploads.ts — каждый файл отдельным запросом, своя ошибка/повтор
+  note: Без теста на 20 файлов
+- id: R-TEMPLATES-003
+  status: partial
+  evidence: apps/server/src/routes/templates.ts spaceId, requiredProperties
+  note: Обязательные метаданные не применяются при создании страницы и не настраиваются в UI
+- id: R-EDITOR-028
+  status: done
+  evidence: apps/web/src/editor/commands.tsx SLASH_COMMANDS (все перечисленные типы)
+  note: 'tests/e2e/editor.spec.ts:''slash menu inserts a table and a callout; "> " creates a toggle''; tests/e2e/content.spec.ts:''image: upload via file chooser, resize presets, caption, full-screen viewer
+    with zoom'''
+- id: R-EDITOR-029
+  status: partial
+  evidence: suggest.tsx slashExtension allow(); commands.tsx filterCommands
+  note: «/usr/bin» в начале строки открывает меню; нет «популярные/недавние первыми»
+- id: R-EDITOR-030
+  status: partial
+  evidence: apps/web/src/editor/menus/BlockHandle.tsx DragHandle; Dropcursor; Yjs undo
+  note: Нет теста DnD+Undo; вложение «внутрь» и подсветка контейнера отсутствуют
+- id: R-EDITOR-031
+  status: done
+  evidence: apps/web/src/editor/menus/BubbleToolbar.tsx (flip/shift в viewport)
+  note: tests/e2e/content.spec.ts:'comment on a selection…' использует кнопку панели
+- id: R-EDITOR-032
+  status: done
+  evidence: ProseMirror selection/clipboard; turnIntoItems
+  note: Без автотестов конверсии/копирования между страницами
+- id: R-CLIPBOARD-018
+  status: partial
+  evidence: PM data-pm-slice (внутренний формат), html → plain
+  note: 'Внутренний формат несёт attachmentId чужой страницы: вложение проверяется по правам исходной страницы (читатели новой страницы получат 404); утечка data-* в HTML'
+- id: R-EDITOR-033
+  status: partial
+  evidence: ProseMirror + Yjs UndoManager
+  note: Вставка 50+ страниц, автозамены, IME не тестировались
+- id: R-CLIPBOARD-019
+  status: partial
+  evidence: apps/web/src/editor/extensions/paste.ts SmartPaste; apps/web/src/editor/extensions/uploads.ts handlePaste (изображения)
+  note: Нет выбора «с форматированием/только текст/как Markdown» при неоднозначности
+- id: R-FILES-004
+  status: partial
+  evidence: apps/web/src/editor/extensions/uploads.ts; apps/web/src/lib/uploads.ts
+  note: Клиент не передаёт sha256 в /uploads (проверка хэша не срабатывает); хэш после restore — tests/integration/archive.test.ts
+- id: R-TABLE-005
+  status: done
+  evidence: apps/web/src/editor/menus/TableToolbar.tsx; apps/web/src/editor/extensions/paste.ts SmartPaste
+  note: 'Тесты: tests/e2e/editor.spec.ts:''slash menu inserts a table and a callout; "> " creates a toggle'', tests/e2e/collab.spec.ts:''paste: spreadsheet range becomes a table; Markdown becomes formatted
+    blocks''; остальное без тестов'
+- id: R-COLLECTION-007
+  status: partial
+  evidence: services/collections.ts FIELD_TYPES (relation, file, person, status…); строка = страница
+  note: Веб-интерфейса коллекции нет (нет страницы/таблицы реестра с фильтрами, сортировкой, массовой правкой, экспортом)
+- id: R-COLLECTION-008
+  status: partial
+  evidence: apps/server/src/routes/collections.ts bulk, export csv/xlsx
+  note: Нет UI (виртуализация, sticky, клавиатура, undo); кнопки экспорта нет
+- id: R-TABLE-006
+  status: done
+  evidence: Автопреобразования таблицы в коллекцию нет
+  note: ''
+- id: AT-63
+  status: done
+  evidence: suggest.tsx slashExtension (мышь, стрелки, Enter, Esc закрывает без смещения курсора); filterCommands RU/EN + раскладка
+  note: tests/e2e/editor.spec.ts:'slash menu inserts a table and a callout; "> " creates a toggle' — только клавиатура/RU; Esc и мышь не проверяются
+- id: AT-64
+  status: done
+  evidence: setHeading/setParagraph сохраняют текст
+  note: Без теста; id блока при этом пересоздаётся (см. R-EDITOR-067)
+- id: AT-65
+  status: partial
+  evidence: DragHandle + Yjs UndoManager
+  note: Теста нет; перетаскивание внутрь контейнеров не поддерживается
+- id: AT-66
+  status: done
+  evidence: PM copy/paste slice
+  note: Без теста
+- id: AT-67
+  status: partial
+  evidence: PM parser таблиц/списков
+  note: Картинки из Word не переносятся
+- id: AT-68
+  status: partial
+  evidence: apps/web/src/editor/extensions/uploads.ts handlePaste
+  note: alt при вставке не заполняется
+- id: AT-71
+  status: partial
+  evidence: apps/web/src/editor/extensions/paste.ts SmartPaste → простая таблица
+  note: Выбора «в коллекцию» нет
+- id: R-TEMPLATES-004
+  status: partial
+  evidence: components/IconPicker.tsx; TemplatesPage
+  note: UI обложки нет (pages.cover только в API)
+- id: R-CLIPBOARD-020
+  status: partial
+  evidence: PM parser (h1–h6, p, ul/ol, table, a, img, figure)
+  note: 'вставка HTML идёт штатным парсером ProseMirror без санитайзера: inline-стили Word (шрифт/размер/цвет) превращаются в marks; списки Word (MsoListParagraph) не становятся списками; картинки Word
+    (file://, data:) не загружаются как вложения; RTF не обрабатывается; фикстур Word/GDocs нет'
+- id: R-CLIPBOARD-021
+  status: partial
+  evidence: apps/web/src/editor/extensions/paste.ts SmartPaste (без диалогов)
+  note: Ненавязчивого «как текст / как таблицу / отменить» нет
+- id: R-MEDIA-008
+  status: partial
+  evidence: apps/web/src/editor/extensions/uploads.ts insertAttachment (attachmentId, contentUrl)
+  note: alt пустой; при ошибке остаётся только несохраняемая декорация
+- id: R-EDITOR-034
+  status: partial
+  evidence: Tiptap keymaps (Enter/Backspace/Tab)
+  note: Поведение штатное; матрицы клавиш (приёмка) нет
+- id: R-EDITOR-035
+  status: done
+  evidence: StarterKit input rules; apps/web/src/editor/extensions/blockOps.ts addInputRules; suggest.tsx
+  note: Без теста на конфликты триггеров
+- id: R-EDITOR-036
+  status: done
+  evidence: apps/web/src/editor/menus/BubbleToolbar.tsx onMouseDown preventDefault; команды на текущем выделении
+  note: 'Косвенно: tests/e2e/content.spec.ts:''comment on a selection…'''
+- id: R-EDITOR-037
+  status: partial
+  evidence: Yjs + IndexedDB; Editor.tsx монтирование после sync
+  note: tests/e2e/editor.spec.ts:'create page, type with Markdown shortcuts, …survives reload' проверяет содержимое после reload; прокрутка/фокус/курсор не восстанавливаются
+- id: R-FILES-005
+  status: done
+  evidence: apps/server/src/routes/attachments.ts DELETE — soft delete; физического удаления blob нет (GC не реализован)
+  note: Без теста
+- id: UX13-02
+  status: partial
+  evidence: PM parser
+  note: 'вставка HTML идёт штатным парсером ProseMirror без санитайзера: inline-стили Word (шрифт/размер/цвет) превращаются в marks; списки Word (MsoListParagraph) не становятся списками; картинки Word
+    (file://, data:) не загружаются как вложения; RTF не обрабатывается; фикстур Word/GDocs нет'
+- id: UX13-03
+  status: missing
+  evidence: apps/web/src/editor/extensions/uploads.ts хранит загрузки только в памяти
+  note: Закрытие вкладки теряет незавершённую загрузку; восстановления нет
+- id: UX13-04
+  status: partial
+  evidence: apps/web/src/editor/extensions/paste.ts SmartPaste
+  note: Нет выбора типа таблицы; 1000 строк не проверялось
+- id: UX13-06
+  status: partial
+  evidence: Mod+Shift+C по выделению → Markdown
+  note: Направление в Word не проверено (env)
+- id: R-EDITOR-038
+  status: partial
+  evidence: packages/shared/src/editor/extensions.ts; apps/web/src/editor/commands.tsx SLASH_COMMANDS
+  note: Сносок (footnotes) в схеме нет — Markdown-импорт сносок разворачивает их в текст
+- id: R-EDITOR-039
+  status: manual
+  evidence: apps/web/src/editor/palette.ts TEXT_COLORS/HIGHLIGHTS; styles/editor.css dark remap; «По умолчанию» в apps/web/src/editor/menus/BubbleToolbar.tsx
+  note: Контраст AA не измерен
+- id: R-EDITOR-040
+  status: done
+  evidence: callout.ts (info/tip/important/warning/error/example/neutral), content block+; CalloutView
+  note: ''
+- id: R-EDITOR-041
+  status: done
+  evidence: KbDetails (content произвольный); markdown.ts <details>; docx-export.ts details
+  note: tests/unit/markdown.test.ts:'round-trips through import…' (toggle)
+- id: R-EDITOR-042
+  status: partial
+  evidence: apps/web/src/editor/menus/BubbleToolbar.tsx; suggest.tsx (стрелки/Enter/Esc)
+  note: 'Touch-варианта панели/ручки нет: ручка блока только по hover'
+- id: R-CLIPBOARD-022
+  status: partial
+  evidence: 'Сервер: apps/server/src/convert/html.ts sanitizeHtml (импорт)'
+  note: 'Клиентская вставка не санитизируется: Color/FontFamily/FontSize/Highlight читают style= и сохраняют произвольные стили Word'
+- id: R-EDITOR-043
+  status: partial
+  evidence: collab/ydoc.ts validateDoc; hub.ts reject; ensureBlockIds
+  note: tests/integration/collab.test.ts:'rejects schema-invalid updates…'. Нет миграций схемы; санитизация атрибутов узлов (src/href) на сервере не выполняется
+- id: E2E-111
+  status: done
+  evidence: TextStyle/Color в схеме, хранится в Yjs
+  note: Автотеста нет
+- id: E2E-113
+  status: done
+  evidence: callout content block+ сериализуется с таблицей
+  note: Без теста
+- id: E2E-116
+  status: done
+  evidence: apps/web/src/editor/menus/BubbleToolbar.tsx preventDefault на кнопках
+  note: Отдельного E2E нет
+- id: R-FILES-006
+  status: done
+  evidence: apps/server/src/routes/attachments.ts POST /attachments/:id/link (5 мин), GET /files/:token перепроверяет права
+  note: tests/integration/content.test.ts:'files of a private page are not accessible…'
+- id: R-EDITOR-044
+  status: done
+  evidence: callout.ts variant enum; editor.css .kb-callout.v-* на токенах
+  note: Предпросмотр варианта — в меню вида
+- id: R-EDITOR-045
+  status: partial
+  evidence: IconPicker, Color/Highlight, callout, Details, Columns
+  note: Нет UI обложки (API pages.cover есть), подсказок (tooltip-блоков), цвета блока кроме выносок
+- id: V15-A14
+  status: done
+  evidence: apps/server/src/routes/attachments.ts /files/:token → loadAttachment
+  note: Тест ожидает 404 (D-11), не 403
+- id: R-CLIPBOARD-023
+  status: partial
+  evidence: apps/web/src/editor/extensions/paste.ts SmartPaste; Ctrl+Z отменяет вставку
+  note: Нет уведомления с кнопкой «Отменить» после вставки
+- id: R-EDITOR-046
+  status: done
+  evidence: Единые меню (components/ui/Menu.tsx), Tooltip; uploads.ts вставка по сопоставленной позиции
+  note: Без тестов
+- id: R-EDITOR-047
+  status: partial
+  evidence: Правки сразу в Yjs + IndexedDB-очередь (sync/collab.ts) — не теряются
+  note: Прокрутка не сохраняется при навигации
+- id: R-TEMPLATES-005
+  status: done
+  evidence: library.ts incident; POST /templates (свои)
+  note: tests/integration/gaps.test.ts:'creates a template directly from ProseMirror JSON…'
+- id: R-EDITOR-048
+  status: done
+  evidence: special.ts SyncedBlock; blocks.tsx SyncedBlockView (404 → «Нет доступа» без текста)
+  note: Без тестов
+- id: R-FILES-007
+  status: partial
+  evidence: storage/blob-store.ts (SHA-256, fsync+rename), attachment_versions, s3-store.ts
+  note: Периодической сверки целостности нет (только при архиве/restore); защита от удаления — рекомендация включить object lock
+- id: V17-F01
+  status: partial
+  evidence: PM paste + Yjs undo
+  note: Изображения из многостраничного документа не загружаются; теста нет
+- id: R-MEDIA-009
+  status: partial
+  evidence: apps/web/src/editor/extensions/uploads.ts; Editor.tsx
+  note: Вставки изображения по URL с проверкой нет (EmbedDialog — только ссылка/видео)
+- id: R-MEDIA-010
+  status: done
+  evidence: apps/server/src/services/attachments.ts registerBlob/derivedKey
+  note: tests/integration/content.test.ts:'uploads an image, stores the original byte-exact with checksum…'
+- id: R-MEDIA-011
+  status: partial
+  evidence: apps/server/src/services/attachments.ts inspectFile (EXIF), sanitizeSvgFile, webp с альфой, corrupt_image
+  note: HEIC принимается, но не конвертируется (в Chromium не отобразится); фикстур форматов нет, кроме SVG (content.test.ts:'sanitises SVG…')
+- id: R-MEDIA-012
+  status: partial
+  evidence: apps/web/src/editor/nodeviews/ImageView.tsx startResize (ширина, высота по пропорции), Yjs undo
+  note: Нет изменения размера с клавиатуры; без теста
+- id: R-MEDIA-013
+  status: done
+  evidence: apps/web/src/editor/nodeviews/ImageView.tsx (align, presets, caption, alt, replace сохраняет caption, fullscreen, download)
+  note: 'tests/e2e/content.spec.ts:''image: upload via file chooser, resize presets, caption, full-screen viewer with zoom'''
+- id: R-MEDIA-014
+  status: done
+  evidence: Атрибуты узла image переносятся с блоком
+  note: Без теста
+- id: R-FILES-008
+  status: partial
+  evidence: blocks.tsx FileView (иконка, имя, размер, предпросмотр, открыть, скачать)
+  note: Нет заменить/переименовать/удалить в карточке; имя обрезается ellipsis
+- id: R-FILES-009
+  status: done
+  evidence: apps/server/src/routes/attachments.ts sendObject CSP (PDF без sandbox, без скриптов); FileView iframe
+  note: Office — только скачивание (сервиса предпросмотра нет)
+- id: R-FILES-010
+  status: partial
+  evidence: FileBlock draggable; Columns; Alt+Shift+↑/↓
+  note: Выравнивания вложений нет; без тестов
+- id: R-EDITOR-049
+  status: partial
+  evidence: apps/web/src/editor/menus/BlockHandle.tsx; apps/web/src/editor/commands.tsx SLASH_COMMANDS; apps/web/src/editor/extensions/blockOps.ts
+  note: Нет множественного выделения блоков (только текстовое), нет переноса в другую страницу
+- id: V18-A07
+  status: done
+  evidence: apps/web/src/editor/extensions/uploads.ts objectURL-превью + загрузка
+  note: Без теста
+- id: V18-A08
+  status: done
+  evidence: apps/web/src/editor/nodeviews/ImageView.tsx resize по ширине (пропорции через aspect-ratio), Yjs undo
+  note: Без теста
+- id: V18-A10
+  status: done
+  evidence: apps/server/src/services/attachments.ts; caption в узле
+  note: 'tests/integration/content.test.ts:''uploads an image, stores the original byte-exact with checksum…''; tests/e2e/content.spec.ts:''image: upload via file chooser, resize presets, caption, full-screen
+    viewer with zoom'''
+- id: V18-A11
+  status: done
+  evidence: FileBlock draggable; PM copy
+  note: Без теста
+- id: V18-A13
+  status: partial
+  evidence: PM parser сохраняет текст
+  note: Фикстуры сложного Word нет — «0 потерь» не подтверждено
+- id: V18-A14
+  status: done
+  evidence: apps/web/src/editor/extensions/paste.ts SmartPaste TSV → table
+  note: 'tests/e2e/collab.spec.ts:''paste: spreadsheet range becomes a table; Markdown becomes formatted blocks'''
+- id: V18-A16
+  status: done
+  evidence: apps/web/src/editor/extensions/uploads.ts кнопка «Повторить»
+  note: Без теста
+- id: R-EDITOR-050
+  status: partial
+  evidence: apps/web/src/editor/menus/BlockHandle.tsx; apps/web/src/editor/extensions/blockOps.ts; apps/web/src/editor/extensions/paste.ts SmartPaste (MD)
+  note: Нет «перенести на другую страницу»
+- id: R-EDITOR-051
+  status: partial
+  evidence: Details level (toggle heading CSS); TocView
+  note: Нет UI раскрывающегося заголовка, нет оглавления справа, нет scroll-margin под шапку
+- id: R-TEMPLATES-006
+  status: done
+  evidence: treeActions.createPage без шаблона; SpacePage «Из шаблона» опционально
+  note: ''
+- id: UX-135
+  status: partial
+  evidence: Details + CSS data-level
+  note: Toggle раскрывается; создать раскрывающийся заголовок из UI нельзя
+- id: UX-137
+  status: done
+  evidence: Dropcursor color accent
+  note: Без теста
+- id: UX-142
+  status: done
+  evidence: Menu/BubbleToolbar onMouseDown preventDefault
+  note: Без теста
+- id: UX-143
+  status: done
+  evidence: TemplatesPage → createPage(templateId)
+  note: tests/integration/gaps.test.ts:'creates a template directly from ProseMirror JSON and uses it for new pages'
+- id: R-EDITOR-052
+  status: partial
+  evidence: 'Клавиатура: BlockOps, меню; мышь: всё'
+  note: 'Touch: нет DnD/ручки блока; resize изображения без клавиатуры'
+- id: R-EDITOR-053
+  status: partial
+  evidence: Tiptap+Yjs; durability tests (collab.test.ts)
+  note: Согласованность курсора/IME/undo при автосохранении не покрыта тестами
+- id: R-EDITOR-054
+  status: done
+  evidence: apps/web/src/editor/menus/BubbleToolbar.tsx; apps/web/src/editor/commands.tsx SLASH_COMMANDS; apps/web/src/editor/menus/BlockHandle.tsx
+  note: ''
+- id: R-EDITOR-055
+  status: done
+  evidence: apps/web/src/editor/menus/BubbleToolbar.tsx BUBBLE_OPTIONS flip/shift; hover-ручка без опасных действий
+  note: ''
+- id: R-EDITOR-056
+  status: done
+  evidence: apps/web/src/editor/menus/BubbleToolbar.tsx (linkMode, Esc возвращает фокус); Menu
+  note: Без тестов
+- id: R-EDITOR-057
+  status: partial
+  evidence: SyncStatus, readonly, error-баннер FatalBanner
+  note: Нет mixed-format состояния в панели (isActive=false при смешанном)
+- id: R-EDITOR-058
+  status: done
+  evidence: 'apps/web/src/editor/menus/BubbleToolbar.tsx (тип блока, B/I/U/S, code, ссылка, цвет/фон, «Ещё»: размер/шрифт)'
+  note: ''
+- id: R-EDITOR-059
+  status: partial
+  evidence: apps/web/src/editor/palette.ts (10+10), «По умолчанию»/«Без фона»
+  note: Нет «последних» цветов и предпросмотра при hover
+- id: R-EDITOR-060
+  status: partial
+  evidence: packages/shared/src/editor/extensions.ts FONT_FAMILIES; apps/web/src/editor/menus/BubbleToolbar.tsx «Шрифт»
+  note: Нет управляемого списка корпоративных шрифтов, предпросмотра и поиска
+- id: R-EDITOR-061
+  status: done
+  evidence: packages/shared/src/editor/extensions.ts FONT_SIZES 12–32; «По умолчанию»
+  note: ''
+- id: R-EDITOR-062
+  status: done
+  evidence: TextAlign; ImageView align
+  note: Выравнивание по ширине доступно без условий
+- id: R-EDITOR-063
+  status: partial
+  evidence: apps/web/src/editor/extensions/blockOps.ts Mod-k; apps/web/src/editor/menus/BubbleToolbar.tsx applyLink/sanitizeHref; apps/web/src/editor/extensions/paste.ts SmartPaste URL поверх выделения
+  note: Нет предпросмотра ссылки (hover card); без тестов
+- id: R-EDITOR-064
+  status: done
+  evidence: apps/web/src/editor/commands.tsx SLASH_COMMANDS
+  note: tests/e2e/editor.spec.ts:'slash menu inserts a table and a callout; "> " creates a toggle'
+- id: R-EDITOR-065
+  status: partial
+  evidence: Tiptap ListItem keymap
+  note: Правила не задокументированы и не протестированы (требует приёмка)
+- id: R-EDITOR-066
+  status: partial
+  evidence: OrderedList (нумерация пересчитывается), TaskItem
+  note: Нет UI «начать с N»/«продолжить»
+- id: R-EDITOR-067
+  status: partial
+  evidence: turnIntoItems; comment — mark
+  note: id блока меняется при setNode; в код — теряются marks/ссылки; несовместимые преобразования не объясняются
+- id: R-EDITOR-068
+  status: partial
+  evidence: apps/web/src/editor/extensions/blockOps.ts Escape → selectBlock
+  note: Нет двухступенчатого Ctrl+A (блок → статья), нет выделения нескольких блоков
+- id: R-CLIPBOARD-024
+  status: partial
+  evidence: PM copy/cut/paste между редакторами; ClientBlockIds разводит дубли id
+  note: 'Изображения по правам: см. R-CLIPBOARD-018; трекеры/служебные атрибуты не удаляются при копировании наружу'
+- id: R-CLIPBOARD-025
+  status: partial
+  evidence: json.ts parseTsv (кавычки, многострочные ячейки), looksLikeTsv
+  note: Больших вставок с прогрессом/отменой нет (синхронно)
+- id: R-EDITOR-069
+  status: partial
+  evidence: '@tiptap/extension-drag-handle-react 3.32; Dropcursor'
+  note: Нет копирования Ctrl/Alt-перетаскиванием, нет «внутрь», нет запрета недопустимых целей; без тестов
+- id: R-EDITOR-070
+  status: done
+  evidence: StarterKit marks; apps/web/src/editor/extensions/blockOps.ts Mod-k/Mod-Shift-m; find.ts Mod-f; apps/web/src/editor/extensions/paste.ts SmartPaste Mod-Shift-v; Collaboration undo
+  note: Mod+P — системная печать; без тестов
+- id: R-EDITOR-071
+  status: done
+  evidence: StarterKit input rules; TaskItem; apps/web/src/editor/extensions/blockOps.ts "> "
+  note: tests/e2e/editor.spec.ts:'create page, type with Markdown shortcuts, …survives reload'; tests/e2e/editor.spec.ts:'slash menu inserts a table and a callout; "> " creates a toggle'
+- id: R-EDITOR-072
+  status: partial
+  evidence: 'suggest.tsx allow(): не в коде, не после непробела'
+  note: Нет недавних; IME/экранирование не проверены
+- id: E201
+  status: partial
+  evidence: ProseMirror TextSelection
+  note: Поведение штатное; E2E-сценарий не автоматизирован
+- id: E202
+  status: partial
+  evidence: apps/web/src/editor/menus/BubbleToolbar.tsx
+  note: E2E на форматирование с сохранением selection нет (ближайший — 'comment on a selection…')
+- id: E203
+  status: partial
+  evidence: apps/web/src/editor/menus/BubbleToolbar.tsx «Ещё» → Размер/Шрифт
+  note: E2E нет
+- id: E204
+  status: partial
+  evidence: apps/web/src/editor/menus/BubbleToolbar.tsx
+  note: Mixed-состояния нет; E2E нет
+- id: E205
+  status: partial
+  evidence: apps/web/src/editor/menus/BubbleToolbar.tsx цвет/«По умолчанию»
+  note: E2E нет
+- id: E206
+  status: partial
+  evidence: apps/web/src/editor/extensions/paste.ts SmartPaste
+  note: E2E нет
+- id: E207
+  status: partial
+  evidence: apps/web/src/editor/menus/BubbleToolbar.tsx linkMode
+  note: E2E нет
+- id: E208
+  status: partial
+  evidence: Tiptap lists
+  note: tests/e2e/editor.spec.ts:'create page, type with Markdown shortcuts, …survives reload' проверяет плоский список; вложенность не проверяется
+- id: E209
+  status: partial
+  evidence: PM parser
+  note: 'E2E нет; вставка HTML идёт штатным парсером ProseMirror без санитайзера: inline-стили Word (шрифт/размер/цвет) превращаются в marks; списки Word (MsoListParagraph) не становятся списками; картинки
+    Word (file://, data:) не загружаются как вложения; RTF не обрабатывается; фикстур Word/GDocs нет'
+- id: E210
+  status: partial
+  evidence: PM parser + sanitizeHref для ссылок
+  note: E2E нет; inline-стили не чистятся
+- id: E211
+  status: done
+  evidence: apps/web/src/editor/extensions/paste.ts SmartPaste
+  note: 'tests/e2e/collab.spec.ts:''paste: spreadsheet range becomes a table; Markdown becomes formatted blocks'''
+- id: E212
+  status: partial
+  evidence: apps/web/src/editor/extensions/paste.ts SmartPaste Ctrl+Shift+V
+  note: E2E нет
+- id: E213
+  status: partial
+  evidence: apps/web/src/editor/menus/BlockHandle.tsx; apps/web/src/editor/extensions/blockOps.ts moveBlock
+  note: E2E нет
+- id: E215
+  status: partial
+  evidence: Только cut/paste между страницами
+  note: Команды переноса блока на другую страницу и E2E нет
+- id: E217
+  status: done
+  evidence: apps/web/src/editor/extensions/uploads.ts; apps/web/src/editor/nodeviews/ImageView.tsx
+  note: 'tests/e2e/content.spec.ts:''image: upload via file chooser, resize presets, caption, full-screen viewer with zoom'''
+- id: E221
+  status: partial
+  evidence: ProseMirror composition
+  note: E2E (CDP Input.imeSetComposition) нет
+- id: E222
+  status: env-blocked
+  evidence: docs/DECISIONS.md D-18 (только Chromium)
+  note: Нужны Firefox/Safari раннеры
+- id: R-EDITOR-073
+  status: manual
+  evidence: Набор E2E/интеграционных тестов
+  note: Требует QA-прогона по списку блокирующих дефектов
+- id: R-MEDIA-015
+  status: partial
+  evidence: apps/web/src/editor/nodeviews/ImageView.tsx onDoubleClick/кнопка; onClick только в режиме чтения
+  note: В режиме редактирования одиночный клик не открывает lightbox
+- id: R-MEDIA-016
+  status: superseded
+  evidence: overridden_by R-MEDIA-021
+  note: ''
+- id: R-MEDIA-017
+  status: done
+  evidence: apps/web/src/components/ImageViewer.tsx (Esc, ←/→, download по ACL)
+  note: 'tests/e2e/content.spec.ts:''image: upload via file chooser, resize presets, caption, full-screen viewer with zoom'' (Esc)'
+- id: R-MEDIA-018
+  status: partial
+  evidence: apps/web/src/components/ImageViewer.tsx body overflow hidden, wheel preventDefault, тайлы/hiRes по требованию
+  note: Нет ограничения панорамирования границами
+- id: R-EDITOR-074
+  status: partial
+  evidence: apps/web/src/editor/menus/BlockHandle.tsx (absolute, без сдвига)
+  note: На touch нет долгого нажатия/меню «Переместить» (ручка только hover)
+- id: R-EDITOR-075
+  status: partial
+  evidence: DragHandle (preview), Dropcursor (линия), одна PM-транзакция
+  note: Нет подсветки колонки/контейнера и недопустимых целей
+- id: R-EDITOR-076
+  status: partial
+  evidence: DragHandle multi-range (NodeRangeSelection); id сохраняются при перемещении
+  note: Нет переноса между страницами; без тестов
+- id: R-TEMPLATES-007
+  status: partial
+  evidence: library.ts 35 шаблонов; TemplatesPage PreviewDialog, «Использовать»
+  note: Миниатюр нет — только эмодзи-иконка
+- id: R-TEMPLATES-008
+  status: done
+  evidence: templates/dsl.ts (списки, таблицы, колонки, изображения, callout, toggle, toc)
+  note: ''
+- id: R-TEMPLATES-009
+  status: done
+  evidence: services/pages.ts createPage копирует content шаблона
+  note: Нет явной проверки неизменности оригинала в tests/integration/gaps.test.ts
+- id: R-TEMPLATES-010
+  status: done
+  evidence: apps/server/src/routes/templates.ts favorite, template_versions, права (space manage / org admin)
+  note: tests/integration/gaps.test.ts:'validates content…' (403 участнику)
+- id: UX21-176
+  status: done
+  evidence: apps/web/src/components/ImageViewer.tsx
+  note: 'tests/e2e/content.spec.ts:''image: upload via file chooser, resize presets, caption, full-screen viewer with zoom'''
+- id: UX21-177
+  status: done
+  evidence: apps/web/src/components/ImageViewer.tsx zoomAt
+  note: Без теста
+- id: UX21-178
+  status: env-blocked
+  evidence: apps/web/src/components/ImageViewer.tsx pinch по pointer events
+  note: Нужен реальный телефон
+- id: UX21-179
+  status: done
+  evidence: apps/web/src/components/ImageViewer.tsx drag-pan
+  note: Без теста
+- id: UX21-180
+  status: done
+  evidence: apps/web/src/components/ImageViewer.tsx восстанавливает фокус; прокрутка страницы не меняется
+  note: Без теста
+- id: UX21-181
+  status: done
+  evidence: apps/server/src/services/attachments.ts makeTiles; apps/web/src/components/ImageViewer.tsx tileEls
+  note: tests/integration/content.test.ts:'large images get a deep-zoom tile pyramid (UX21-181, UX22-186)'
+- id: UX21-183
+  status: done
+  evidence: apps/web/src/editor/menus/BlockHandle.tsx (floating, absolute)
+  note: CLS не измерялся
+- id: UX21-184
+  status: done
+  evidence: DragHandle; Alt+Shift+↑/↓
+  note: Без теста
+- id: UX21-186
+  status: partial
+  evidence: DragHandle getSelectionRanges
+  note: Работает только при текстовом выделении через блоки; без теста
+- id: UX21-190
+  status: done
+  evidence: DnD — локальная CRDT-операция, очередь в IndexedDB
+  note: Без теста на медленной сети
+- id: UX21-191
+  status: missing
+  evidence: HTML5 DnD DragHandle
+  note: Перетаскивание на touch не поддерживается
+- id: UX21-202
+  status: done
+  evidence: TemplatesPage PreviewDialog (DocPreview)
+  note: Без теста
+- id: UX21-203
+  status: done
+  evidence: Контент шаблона копируется
+  note: Без теста
+- id: R-MEDIA-019
+  status: partial
+  evidence: apps/web/src/components/ImageViewer.tsx fit, тёмный фон; масштаб не меняет блок
+  note: Одно нажатие открывает только в режиме чтения
+- id: R-MEDIA-020
+  status: done
+  evidence: apps/web/src/components/ImageViewer.tsx zoomAt по указателю, drag-pan, ctrl-wheel pinch, dblclick, + - 0 1 Esc
+  note: 'tests/e2e/content.spec.ts:''image: upload via file chooser, resize presets, caption, full-screen viewer with zoom'' (+, 0, Esc)'
+- id: R-MEDIA-021
+  status: partial
+  evidence: apps/web/src/components/ImageViewer.tsx MIN_SCALE/MAX_SCALE
+  note: Диапазон 2–1600% вместо ~10–800%
+- id: R-MEDIA-022
+  status: partial
+  evidence: apps/web/src/components/ImageViewer.tsx pointer-events pinch/pan/double-tap
+  note: Нет инерции, свайпа между изображениями, safe-area
+- id: R-MEDIA-023
+  status: partial
+  evidence: apps/server/src/services/attachments.ts makeTiles; apps/web/src/components/ImageViewer.tsx tiles/hiRes; sanitizeSvgFile
+  note: tests/integration/content.test.ts:'large images get a deep-zoom tile pyramid…'. Нет предупреждения о размытии
+- id: UX22-181
+  status: done
+  evidence: apps/web/src/components/ImageViewer.tsx
+  note: Без теста
+- id: UX22-182
+  status: done
+  evidence: apps/web/src/components/ImageViewer.tsx non-passive wheel, body overflow hidden
+  note: Без теста
+- id: UX22-183
+  status: partial
+  evidence: apps/web/src/components/ImageViewer.tsx
+  note: Нет инерции, safe-area; проверка на iOS/Android невозможна здесь (env)
+- id: UX22-184
+  status: done
+  evidence: apps/web/src/components/ImageViewer.tsx
+  note: Свайп-переключения нет вообще, поэтому при масштабе > fit он не срабатывает
+- id: UX22-185
+  status: done
+  evidence: apps/web/src/components/ImageViewer.tsx prev.focus(), оригинал не меняется
+  note: Без теста
+- id: UX22-186
+  status: done
+  evidence: apps/server/src/services/attachments.ts makeTiles; limitInputPixels
+  note: tests/integration/content.test.ts:'large images get a deep-zoom tile pyramid…'
+- id: R-FILES-011
+  status: partial
+  evidence: apps/server/src/routes/attachments.ts /api/v1/uploads (offset, complete только при полном размере); lib/uploads.ts
+  note: 'Клиент не шлёт sha256; возобновление не переживает перезагрузку страницы. Тест: tests/integration/content.test.ts resumable upload'
+- id: UX23-220
+  status: done
+  evidence: apps/server/src/routes/attachments.ts /uploads/:id/complete (409 incomplete); блок вставляется только после complete
+  note: tests/integration/content.test.ts:'resumable upload…', 'incomplete upload cannot be completed'
+- id: OPS-007
+  status: partial
+  evidence: Yjs-слияние + prosemirror-tables fixTables
+  note: Теста конкурирующих операций над таблицей нет
+- id: QA26-06
+  status: partial
+  evidence: tests/e2e/*.spec.ts, tests/unit/markdown.test.ts
+  note: 'Покрыт малый поднабор: ввод, MD-шорткаты, slash, вставка TSV/MD, изображение; нет Word/HTML-вставки, DnD, IME, выделения пальцем'
+- id: QA26-07
+  status: partial
+  evidence: collab/resilience тесты (перезагрузка, конкуренция, офлайн)
+  note: Пять контекстов на каждое действие не реализованы
+- id: QA26-08
+  status: partial
+  evidence: apps/web/src/editor/menus/TableToolbar.tsx (верт./гор. выравнивание), CSS переносы
+  note: Чек-лист таблиц не автоматизирован
+- id: QA26-09
+  status: partial
+  evidence: —
+  note: Автотестов DnD нет
+- id: QA26-12
+  status: partial
+  evidence: 'tests/e2e/content.spec.ts:''image: upload via file chooser, resize presets, caption, full-screen viewer with zoom'''
+  note: Покрыты только открытие/кнопка +/0/Esc; жесты/ориентация не автоматизированы
+- id: QA26-13
+  status: partial
+  evidence: tests/integration/content.test.ts (attachments)
+  note: UI-аспекты (иконки, длинные имена, мобильное сохранение) не проверяются

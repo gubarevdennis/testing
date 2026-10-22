@@ -4,7 +4,7 @@ import { tx, type Queryable } from '../db/pool.js';
 import { actorOf, parse, requireUser, type Services } from '../app.js';
 import { accessForPages, requirePage, pageAccess, usersWithAction, type AuthUser, type PageAccess } from '../acl/engine.js';
 import { createPage, movePage, previewMove, trashPage, restorePage, duplicatePage, purgePages, getPage, type PageRow } from '../services/pages.js';
-import { breadcrumbs, filterVisible, visibleChildren } from '../services/tree.js';
+import { breadcrumbs, filterVisible, visibleChildren, pagesWithExplicitGrants } from '../services/tree.js';
 import { audit } from '../services/audit.js';
 import { orgSettings } from '../services/org.js';
 import { badRequest, conflict, forbidden, notFound } from '../lib/errors.js';
@@ -20,6 +20,13 @@ export async function pageDto(q: Queryable, user: AuthUser, p: PageRow, acc: Pag
   const fav = await q.query('select 1 from favorites where user_id = $1 and page_id = $2', [user.id, p.id]);
   const space = (await q.query('select id, name, icon, kind from spaces where id = $1', [p.space_id])).rows[0];
   const gen = (await q.query('select generation from doc_state where page_id = $1', [p.id])).rows[0]?.generation ?? null;
+  // Properties the template of the page declares mandatory (R-PAGE-022).
+  const required = (
+    await q.query(
+      `select t.required_properties from page_events e join templates t on t.id::text = e.data->>'templateId' where e.page_id = $1 and e.type = 'created' limit 1`,
+      [p.id],
+    )
+  ).rows[0]?.required_properties ?? [];
   // Current approval request (review state): who asked and who may decide.
   let approval = null;
   if (p.status === 'review') {
@@ -51,6 +58,7 @@ export async function pageDto(q: Queryable, user: AuthUser, p: PageRow, acc: Pag
     cover: p.cover,
     status: p.status,
     inheritPermissions: p.inherit_permissions,
+    hasExplicitGrants: (await pagesWithExplicitGrants(q, [p.id])).has(p.id),
     locked: p.locked,
     wide: p.wide,
     properties: p.properties,
@@ -69,6 +77,8 @@ export async function pageDto(q: Queryable, user: AuthUser, p: PageRow, acc: Pag
     verifiedAt: p.verified_at,
     needsReview: !!p.review_due_at && new Date(p.review_due_at) < new Date(),
     deletedAt: p.deleted_at,
+    legalHold: !!p.legal_hold,
+    requiredProperties: required as string[],
     favorite: !!fav.rowCount,
     access: { level: acc.level, actions: acc.actions, policy: acc.policy },
     readMode: acc.policy.publishingMode === 'publish' && !acc.actions.edit ? 'published' : 'live',
@@ -178,7 +188,8 @@ export async function pageRoutes(app: FastifyInstance, s: Services) {
       if (body.cover !== undefined) set('cover', body.cover);
       if (body.wide !== undefined) set('wide', body.wide);
       if (body.locked !== undefined) set('locked', body.locked);
-      if (body.properties !== undefined) set('properties', { ...p.properties, ...body.properties });
+      // null removes a property
+      if (body.properties !== undefined) set('properties', Object.fromEntries(Object.entries({ ...p.properties, ...body.properties }).filter(([, v]) => v !== null)));
       if (body.reviewDueAt !== undefined) set('review_due_at', body.reviewDueAt);
       if (body.verified !== undefined) {
         set('verified_at', body.verified ? new Date() : null);
@@ -251,7 +262,7 @@ export async function pageRoutes(app: FastifyInstance, s: Services) {
   app.post('/api/v1/pages/:id/duplicate', async (req) => {
     const user = requireUser(req);
     const { id } = parse(idParam, req.params);
-    const body = parse(z.object({ includeChildren: z.boolean().default(true), targetParentId: uuid.nullable().optional(), targetSpaceId: uuid.nullable().optional(), requestId: z.string().min(8).max(100).optional() }), req.body ?? {});
+    const body = parse(z.object({ includeChildren: z.boolean().default(true), targetParentId: uuid.nullable().optional(), targetSpaceId: uuid.nullable().optional(), requestId: z.string().min(8).max(100).optional(), confirmAudienceChange: z.boolean().optional() }), req.body ?? {});
     const p = await tx(s.db, (q) => duplicatePage(q, user, actorOf(req), id, body));
     s.bus.emit({ type: 'tree-changed', orgId: user.orgId, spaceId: p.space_id });
     return { page: await pageDto(s.db, user, p, (await pageAccess(s.db, user, p.id))!) };

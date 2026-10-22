@@ -136,7 +136,7 @@ describe('Markdown ZIP (SC-15, AT-43, AT-69)', () => {
     expect(j.preview.files[0].warnings.some((w: any) => w.code === 'unused-files')).toBe(true);
   });
 
-  it('rejects zip-slip paths and zip bombs before extracting (SC-19, R-IMPORT)', async () => {
+  it('rejects zip-slip paths and zip bombs before extracting (SC-19, AT-69, R-IMPORT)', async () => {
     let evil = await zipOf({ 'aa/evil.md': '# x' });
     evil = Buffer.from(evil.toString('latin1').split('aa/evil.md').join('../evil.md'), 'latin1');
     const j1 = await startImport(org.owner, [['evil.zip', evil]]);
@@ -190,7 +190,7 @@ describe('tabular import (AT-48..AT-51, UX13-17)', () => {
     expect(after.total).toBe(2);
   });
 
-  it('XLSX with three sheets: pick a sheet, numbers and dates kept, formulas as values (AT-49)', async () => {
+  it('XLSX with three sheets: pick a sheet, numbers and dates kept, formulas as values (AT-49, R-SECURITY-009)', async () => {
     const wb = new ExcelJS.Workbook();
     wb.addWorksheet('Пусто').addRow(['x']);
     const ws = wb.addWorksheet('Оборудование');
@@ -261,7 +261,7 @@ describe('export (SC-08, SC-09, SC-13, S09, UX13-16)', () => {
     expect(childMd).toContain('](assets/pic.png');
   });
 
-  it('export respects rights: no export permission => 403; private pages never leak into branch export (SC-20, V17-F07)', async () => {
+  it('export respects rights: no export permission => 403; private pages never leak into branch export (SC-20, V17-F07, R-ACL-017)', async () => {
     const sp = (await org.owner.post('/api/v1/spaces', { name: 'Без экспорта (тест)', kind: 'project', visibility: 'open', orgLevel: 'view', policy: { allowExport: false }, confirmWiden: true })).space;
     const p = (await org.owner.post('/api/v1/pages', { spaceId: sp.id, title: 'Нельзя выгружать' })).page;
     const reader = await org.user('Выгружающий');

@@ -3,7 +3,7 @@ import type { Readable } from 'node:stream';
 import { z } from 'zod';
 import { tx } from '../db/pool.js';
 import { actorOf, parse, requireUser, type Services } from '../app.js';
-import { requirePage, requireSpace, pageAccess } from '../acl/engine.js';
+import { requirePage, requireSpace, pageAccess, accessForPages } from '../acl/engine.js';
 import { streamToTemp, blobKey } from '../storage/blob-store.js';
 import { analyzeImport, commitDocuments, commitIntoPage, commitTabular, tabularDryRun, storeBuffer, type ImportPlan, type ImportTarget, type TabularOptions } from '../services/importer.js';
 import { exportPages, type ExportFormat } from '../services/exporter.js';
@@ -56,7 +56,7 @@ registerJob('export', async ({ s, job, progress }) => {
   const out = await exportPages(s, toAuthUser(user), job.params.pageIds, job.params.format, { includeChildren: job.params.includeChildren });
   const blob = await s.store.putBuffer(out.buffer);
   await s.db.query(`insert into blobs (sha256, size, mime, storage_key) values ($1, $2, $3, $4) on conflict do nothing`, [blob.sha256, blob.size, out.mime, blob.key]);
-  return { result: { sha: blob.sha256, size: blob.size, filename: out.filename, mime: out.mime }, report: { warnings: out.warnings, ...out.report } };
+  return { result: { sha: blob.sha256, size: blob.size, filename: out.filename, mime: out.mime, pageIds: out.pageIds ?? job.params.pageIds }, report: { warnings: out.warnings, ...out.report } };
 });
 
 export async function importExportRoutes(app: FastifyInstance, s: Services) {
@@ -227,6 +227,14 @@ export async function importExportRoutes(app: FastifyInstance, s: Services) {
     const j = await job(user.id, id, 'export');
     if (j.status !== 'succeeded') throw conflict('not_ready', 'Экспорт ещё не готов');
     if (Date.now() - new Date(j.finished_at).getTime() > 24 * 3600_000) throw conflict('expired', 'Срок хранения файла экспорта истёк — запустите экспорт снова');
+    // Rights may have changed since the file was produced: every exported page must still be viewable and exportable.
+    const ids: string[] = j.result.pageIds ?? j.params.pageIds ?? [];
+    const acc = await accessForPages(s.db, user, ids);
+    const denied = ids.filter((pid) => { const a = acc.get(pid); return !a || !a.actions.view || !a.actions.export || a.deleted; });
+    if (denied.length) {
+      await auditStandalone(s.db, actorOf(req), { action: 'export.download', outcome: 'denied', targetType: 'job', targetId: id, details: { reason: 'access_changed', deniedPages: denied.length } });
+      throw forbidden('Права на часть страниц экспорта изменились — запустите экспорт заново');
+    }
     await auditStandalone(s.db, actorOf(req), { action: 'export.download', targetType: 'job', targetId: id });
     reply.header('content-disposition', `attachment; filename="export"; filename*=UTF-8''${encodeURIComponent(j.result.filename)}`);
     return reply.type(j.result.mime).send(await s.store.read(blobKey(j.result.sha)));

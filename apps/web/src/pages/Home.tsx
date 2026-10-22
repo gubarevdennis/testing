@@ -7,6 +7,7 @@ import type { Space } from '../api/types';
 import { useSpaces, useRecent, useFavorites } from '../hooks/data';
 import { useMe } from '../state/session';
 import { createPage } from '../layout/treeActions';
+import { lastPage } from '../layout/treeState';
 import { toast } from '../components/ui/Toast';
 import { relTime, fullTime } from '../lib/format';
 
@@ -109,12 +110,19 @@ export default function Home() {
   const visibleSpaces = allSpaces.filter((s) => !s.archived);
   const fresh = !recent.isLoading && !spaces.isLoading && (recent.data?.pages.length ?? 0) === 0 && (favorites.data?.pages.length ?? 0) === 0 && visibleSpaces.filter((s) => !s.isPersonal).length === 0;
 
+  // The page opened last (R-TREE-008): offered, not forced — Home stays the start screen.
+  const last = lastPage();
   return (
     <div className="page-container home">
       <h1 className="page-heading">
         {greeting()}, {firstName}
       </h1>
       <p className="page-sub">{me.org.name}</p>
+      {last && (
+        <Link to={'/p/' + last.id} className="home-continue btn" aria-label={`Продолжить: ${last.title || 'Без названия'}`}>
+          <History size={15} /> Продолжить: <span className="ellipsis">{last.icon ? last.icon + ' ' : ''}{last.title || 'Без названия'}</span>
+        </Link>
+      )}
 
       <div className="home-actions" role="group" aria-label="Быстрые действия">
         <button className="home-action" onClick={newPage} disabled={creating} aria-busy={creating}>

@@ -14,6 +14,8 @@ import { Avatar } from '../components/Avatar';
 import { useHelp } from '../help/HelpCenter';
 import { useQuickSwitcher } from './QuickSwitcher';
 import { NotificationsPopover } from '../components/Notifications';
+import { pagesWithPending } from '../sync/idb';
+import { confirm } from '../components/ui/Confirm';
 
 export function Sidebar({ mobile, onNavigate }: { mobile?: boolean; onNavigate?: () => void }) {
   const me = useMe();
@@ -79,6 +81,8 @@ export function Sidebar({ mobile, onNavigate }: { mobile?: boolean; onNavigate?:
               label: 'Выйти',
               icon: <LogOut size={15} />,
               onSelect: async () => {
+                const pending = [...(await pagesWithPending().catch(() => new Map())).keys()].filter((k) => k.startsWith(me.user.id + ':'));
+                if (pending.length && !(await confirm({ title: 'Есть неотправленные изменения', body: `Изменения на ${pending.length} стр. ещё не дошли до сервера. После выхода они останутся на этом устройстве и будут отправлены при следующем входе под вашей учётной записью. Выйти сейчас?`, confirmLabel: 'Выйти', danger: true }))) return;
                 await post('/api/v1/auth/logout').catch(() => undefined);
                 localStorage.removeItem('kb:me');
                 window.location.href = '/';
@@ -86,7 +90,7 @@ export function Sidebar({ mobile, onNavigate }: { mobile?: boolean; onNavigate?:
             },
           ]}
           trigger={({ ref, props }) => (
-            <button ref={ref} className="workspace-btn" {...props}>
+            <button ref={ref} className="workspace-btn" {...props} aria-label={undefined} title="Профиль и настройки">
               <Avatar name={me.user.name} id={me.user.id} />
               <span className="col" style={{ gap: 0, minWidth: 0, alignItems: 'flex-start' }}>
                 <span className="ellipsis workspace-name">{me.org.name}</span>

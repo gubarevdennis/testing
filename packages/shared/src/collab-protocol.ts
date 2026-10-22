@@ -159,7 +159,8 @@ export function decodeServer(buf: Uint8Array): ServerMessage {
   throw new Error('unknown server message ' + type);
 }
 
-const COLORS = ['#5A85C6', '#C65A85', '#3E9B6E', '#C68A3A', '#8A5AC6', '#3A9BB5', '#B5563A', '#6E7F2E'];
+// White initials on these colours meet WCAG AA (≥ 5.2:1).
+const COLORS = ['#3F6AAB', '#A8436C', '#2A7A50', '#93601C', '#6E44A8', '#1F7186', '#9B4228', '#56651F'];
 export function colorForUser(userId: string): string {
   let h = 0;
   for (let i = 0; i < userId.length; i++) h = (h * 31 + userId.charCodeAt(i)) >>> 0;

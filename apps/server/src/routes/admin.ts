@@ -2,7 +2,7 @@ import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { tx } from '../db/pool.js';
 import { actorOf, parse, requireUser, type Services } from '../app.js';
-import { accessForSpaces, canManagePeople, canReadAudit, isOrgAdmin, userSubjects, bumpAclEpoch, type AuthUser } from '../acl/engine.js';
+import { accessForPages, accessForSpaces, canManagePeople, canReadAudit, isOrgAdmin, userSubjects, bumpAclEpoch, type AuthUser } from '../acl/engine.js';
 import { addGroupMember, createGroup, createUser, deleteGroup, removeGroupMember, setUserStatus, transferOwnership, orgSettings, isGroupManager } from '../services/org.js';
 import { audit, verifyAuditChain } from '../services/audit.js';
 import { toAuthUser } from '../auth/sessions.js';
@@ -305,7 +305,8 @@ export async function adminRoutes(app: FastifyInstance, s: Services) {
   app.delete('/api/v1/admin/groups/:id', async (req) => {
     const admin = requireUser(req);
     const { id } = parse(z.object({ id: uuid }), req.params);
-    await tx(s.db, (q) => deleteGroup(q, admin, actorOf(req), id));
+    const body = parse(z.object({ confirm: z.boolean().optional(), reassignTo: uuid.nullable().optional() }), req.body ?? {});
+    await tx(s.db, (q) => deleteGroup(q, admin, actorOf(req), id, body));
     s.bus.emit({ type: 'acl-changed', orgId: admin.orgId });
     return { ok: true };
   });
@@ -393,7 +394,7 @@ export async function adminRoutes(app: FastifyInstance, s: Services) {
         [user.orgId, qs.actorId ?? null, qs.action ?? null, qs.targetType ?? null, qs.targetId ?? null, qs.from ?? null, qs.to ?? null, qs.before ?? null, qs.limit],
       )
     ).rows;
-    return { scope, events: rows, nextCursor: rows.length === qs.limit ? rows[rows.length - 1].id : null };
+    return { scope, events: await maskPrivateTitles(s, user, rows), nextCursor: rows.length === qs.limit ? rows[rows.length - 1].id : null };
   });
 
   app.get('/api/v1/audit/verify', async (req) => {
@@ -442,4 +443,36 @@ export async function adminRoutes(app: FastifyInstance, s: Services) {
       return { ok: true };
     });
   }
+}
+
+const TITLE_KEYS = new Set(['title', 'name', 'titles', 'pageTitle', 'spaceName', 'oldTitle', 'newTitle']);
+
+/**
+ * Audit readers (auditors, admins) must not learn the content of material they cannot open: titles and names
+ * of pages / spaces the viewer has no access to are masked in event details. The event itself stays visible.
+ */
+export async function maskPrivateTitles(s: Services, user: AuthUser, rows: any[]) {
+  const pageIds = [...new Set(rows.filter((r) => r.target_type === 'page' && /^[0-9a-f-]{36}$/i.test(r.target_id ?? '')).map((r) => r.target_id as string))];
+  const spaceIds = [...new Set(rows.filter((r) => r.target_type === 'space' && /^[0-9a-f-]{36}$/i.test(r.target_id ?? '')).map((r) => r.target_id as string))];
+  const pages = pageIds.length ? await accessForPages(s.db, user, pageIds) : new Map();
+  const spaces = spaceIds.length ? await accessForSpaces(s.db, user, spaceIds) : new Map();
+  const spaceRows = spaceIds.length ? (await s.db.query(`select id, visibility, kind, deleted_at from spaces where id = any($1::uuid[])`, [spaceIds])).rows : [];
+  const spaceMeta = new Map(spaceRows.map((r) => [r.id as string, r]));
+  // Purged pages / spaces no longer exist: their names are history, not content, and stay readable in the log.
+  const existingPages = new Set(pageIds.length ? (await s.db.query('select id from pages where id = any($1::uuid[])', [pageIds])).rows.map((r) => r.id as string) : []);
+  return rows.map((r) => {
+    let hidden = false;
+    if (r.target_type === 'page') hidden = existingPages.has(r.target_id) && !pages.get(r.target_id)?.actions.view;
+    else if (r.target_type === 'space') {
+      const m = spaceMeta.get(r.target_id);
+      const nameVisible = !!m && m.kind !== 'personal' && (m.visibility === 'open' || m.visibility === 'closed') && user.kind === 'employee';
+      // Trashed spaces are not evaluated by the ACL engine: only organisation administrators see their names.
+      const canView = m?.deleted_at ? isOrgAdmin(user) : !!spaces.get(r.target_id)?.actions.view;
+      hidden = !!m && !canView && !nameVisible;
+    }
+    if (!hidden || !r.details || typeof r.details !== 'object') return r;
+    const details: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(r.details)) details[k] = TITLE_KEYS.has(k) && v != null ? '(скрыто)' : v;
+    return { ...r, details, masked: true };
+  });
 }

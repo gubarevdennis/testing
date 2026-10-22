@@ -23,13 +23,14 @@
     "db:migrate": "node --import tsx --conditions=development apps/server/src/cli.ts migrate up",
     "db:rollback": "node --import tsx --conditions=development apps/server/src/cli.ts migrate down",
     "db:seed": "node --import tsx --conditions=development apps/server/src/cli.ts seed",
-    "backup": "bash scripts/backup.sh",
-    "restore:verify": "bash scripts/verify-restore.sh",
+    "backup": "bash scripts/backup/backup.sh",
+    "restore:verify": "bash scripts/backup/verify-backup.sh",
     "audit-verify": "node --import tsx --conditions=development apps/server/src/cli.ts audit-verify",
     "start": "node apps/server/dist/main.js",
     "requirements:trace": "python3 scripts/requirements/trace.py"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.14.0",
     "@eslint/js": "^9.39.5",
     "@playwright/test": "^1.56.1",
     "@types/node": "^22.20.5",

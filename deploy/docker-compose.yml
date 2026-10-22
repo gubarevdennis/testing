@@ -1,0 +1,151 @@
+# Knowledge base — single-host deployment (also usable for local production-like testing).
+#
+#   cp deploy/env.example deploy/.env && $EDITOR deploy/.env      # set every CHANGE_ME
+#   docker compose -f deploy/docker-compose.yml --env-file deploy/.env up -d --build
+#   docker compose -f deploy/docker-compose.yml --env-file deploy/.env --profile minio up -d   # with MinIO (STORAGE_DRIVER=s3)
+#
+# TLS is terminated by a reverse proxy in front of "app" (deploy/nginx.conf). Only nginx should be exposed.
+# Backups land in the "backups" volume — mount it from a separate disk / host (and copy offsite).
+
+name: kb
+
+x-app-env: &app-env
+  NODE_ENV: production
+  PORT: "8080"
+  PUBLIC_URL: ${PUBLIC_URL:?set PUBLIC_URL}
+  DATABASE_URL: ${DATABASE_URL:?set DATABASE_URL}
+  DB_POOL_SIZE: ${DB_POOL_SIZE:-20}
+  SECRET_KEY: ${SECRET_KEY:?set SECRET_KEY}
+  KB_DATA_DIR: /var/lib/kb
+  STORAGE_DRIVER: ${STORAGE_DRIVER:-fs}
+  STORAGE_ROOT: /var/lib/kb/objects
+  S3_ENDPOINT: ${S3_ENDPOINT:-}
+  S3_REGION: ${S3_REGION:-us-east-1}
+  S3_BUCKET: ${S3_BUCKET:-}
+  S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID:-}
+  S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY:-}
+  S3_FORCE_PATH_STYLE: ${S3_FORCE_PATH_STYLE:-true}
+  LOG_LEVEL: ${LOG_LEVEL:-info}
+  METRICS_TOKEN: ${METRICS_TOKEN:-}
+  MAX_UPLOAD_MB: ${MAX_UPLOAD_MB:-512}
+  MAX_IMPORT_MB: ${MAX_IMPORT_MB:-1024}
+  OCR_ENABLED: ${OCR_ENABLED:-true}
+  WORKER_ENABLED: ${WORKER_ENABLED:-true}
+  WORKER_CONCURRENCY: ${WORKER_CONCURRENCY:-2}
+  CHROMIUM_PATH: ${CHROMIUM_PATH:-}
+  CLAMAV_HOST: ${CLAMAV_HOST:-}
+  OIDC_ISSUER: ${OIDC_ISSUER:-}
+  OIDC_CLIENT_ID: ${OIDC_CLIENT_ID:-}
+  OIDC_CLIENT_SECRET: ${OIDC_CLIENT_SECRET:-}
+  OIDC_REDIRECT_URI: ${OIDC_REDIRECT_URI:-}
+
+services:
+  postgres:
+    image: postgres:16-bookworm
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: kb
+      POSTGRES_DB: kb
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+    # Continuous WAL archiving for PITR (RPO ≤ 5 min): segments are archived at least every 60 s.
+    # See scripts/backup/wal-archive.md. The archive volume should live on different storage than pgdata
+    # and be shipped offsite (e.g. rclone/aws s3 sync from the host). The mount point is created owned by postgres.
+    entrypoint: ["sh", "-c", "install -d -o postgres -g postgres -m 0700 /wal-archive && exec docker-entrypoint.sh \"$$@\"", "--"]
+    command:
+      - postgres
+      - -c
+      - wal_level=replica
+      - -c
+      - archive_mode=on
+      - -c
+      - archive_timeout=60s
+      - -c
+      - archive_command=test ! -f /wal-archive/%f && cp %p /wal-archive/%f.part && mv /wal-archive/%f.part /wal-archive/%f
+      - -c
+      - max_connections=200
+      - -c
+      - shared_buffers=512MB
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - wal-archive:/wal-archive
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U kb -d kb"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    # Not published: only reachable on the compose network.
+
+  app:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    image: kb:latest
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment: *app-env
+    volumes:
+      - kb-data:/var/lib/kb
+    ports:
+      - "127.0.0.1:8080:8080"   # nginx on the host proxies to this; do not expose publicly
+    stop_grace_period: 40s      # graceful shutdown flushes live documents (30 s budget)
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8080/readyz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      start_period: 60s
+      retries: 4
+
+  # Logical backups (pg_dump + object store, checksums, retention) + periodic restore verification.
+  backup:
+    image: kb:latest
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    entrypoint: ["/usr/bin/tini", "--"]
+    command: ["/app/scripts/backup/backup-loop.sh"]
+    environment:
+      DATABASE_URL: ${BACKUP_DATABASE_URL:-${DATABASE_URL}}
+      VERIFY_ADMIN_URL: ${VERIFY_ADMIN_URL:-}
+      BACKUP_DIR: /backups
+      STORAGE_DRIVER: ${STORAGE_DRIVER:-fs}
+      STORAGE_ROOT: /var/lib/kb/objects
+      S3_ENDPOINT: ${S3_ENDPOINT:-}
+      S3_BUCKET: ${S3_BUCKET:-}
+      AWS_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY:-}
+      BACKUP_SCHEDULE_SECONDS: ${BACKUP_SCHEDULE_SECONDS:-86400}
+      BACKUP_VERIFY_EVERY: ${BACKUP_VERIFY_EVERY:-7}
+      BACKUP_KEEP_DAILY: ${BACKUP_KEEP_DAILY:-30}
+      BACKUP_KEEP_WEEKLY: ${BACKUP_KEEP_WEEKLY:-12}
+      BACKUP_KEEP_MONTHLY: ${BACKUP_KEEP_MONTHLY:-12}
+      BACKUP_ENCRYPT_CMD: ${BACKUP_ENCRYPT_CMD:-}
+      BACKUP_DECRYPT_CMD: ${BACKUP_DECRYPT_CMD:-}
+    volumes:
+      - kb-data:/var/lib/kb:ro       # objects are read-only for the backup job
+      - backups:/backups
+
+  minio:
+    profiles: ["minio"]
+    image: minio/minio:RELEASE.2025-09-07T16-13-09Z
+    restart: unless-stopped
+    command: server /data --console-address :9001
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-}
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  pgdata:
+  kb-data:
+  backups:
+  wal-archive:
+  minio-data:

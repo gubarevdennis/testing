@@ -12,6 +12,8 @@ export interface TreeNode {
   hasChildren: boolean;
   version: number;
   inheritPermissions: boolean;
+  /** The page has its own (explicit) grants — an exception to the inherited rights, shown with a marker. */
+  hasExplicitGrants: boolean;
   collectionId: string | null;
   level: string;
   canEdit: boolean;
@@ -40,13 +42,24 @@ export async function visibleChildren(q: Queryable, user: AuthUser, spaceId: str
     : [];
   const kidAccess = await accessForPages(q, user, kids.map((k) => k.id), subjects);
   const withKids = new Set(kids.filter((k) => kidAccess.get(k.id)?.actions.view).map((k) => k.parent_id));
+  const explicit = await pagesWithExplicitGrants(q, visible.map((r) => r.id));
   return {
-    nodes: visible.map((r) => toNode(r, access.get(r.id)!, withKids.has(r.id))),
+    nodes: visible.map((r) => toNode(r, access.get(r.id)!, withKids.has(r.id), explicit)),
     nextCursor: more ? page[page.length - 1].sort_key : null,
   };
 }
 
-function toNode(r: any, acc: PageAccess, hasChildren: boolean): TreeNode {
+/** Pages (of the given ids) that carry active page-level grants of their own. */
+export async function pagesWithExplicitGrants(q: Queryable, ids: string[]): Promise<Set<string>> {
+  if (!ids.length) return new Set();
+  const r = await q.query(
+    `select distinct resource_id from grants where resource_type = 'page' and resource_id = any($1::uuid[]) and revoked_at is null and (expires_at is null or expires_at > now())`,
+    [ids],
+  );
+  return new Set(r.rows.map((x) => x.resource_id as string));
+}
+
+function toNode(r: any, acc: PageAccess, hasChildren: boolean, explicit: Set<string>): TreeNode {
   return {
     id: r.id,
     spaceId: r.space_id,
@@ -58,6 +71,7 @@ function toNode(r: any, acc: PageAccess, hasChildren: boolean): TreeNode {
     hasChildren,
     version: r.version,
     inheritPermissions: r.inherit_permissions,
+    hasExplicitGrants: explicit.has(r.id),
     collectionId: r.collection_id,
     level: acc.level,
     canEdit: acc.actions.edit,
@@ -93,7 +107,8 @@ export async function sharedWithMe(q: Queryable, user: AuthUser) {
   const kids = out.length ? (await q.query(`select id, parent_id from pages where parent_id = any($1::uuid[]) and deleted_at is null`, [out.map((r) => r.id)])).rows : [];
   const kidAccess = await accessForPages(q, user, kids.map((k) => k.id), s);
   const withKids = new Set(kids.filter((k) => kidAccess.get(k.id)?.actions.view).map((k) => k.parent_id));
-  return out.map((r) => toNode(r, access.get(r.id)!, withKids.has(r.id))).sort((a, b) => a.title.localeCompare(b.title, 'ru'));
+  const explicit = await pagesWithExplicitGrants(q, out.map((r) => r.id));
+  return out.map((r) => toNode(r, access.get(r.id)!, withKids.has(r.id), explicit)).sort((a, b) => a.title.localeCompare(b.title, 'ru'));
 }
 
 /** Filters a list of page ids to those the user can view (favorites, recents, backlinks...). */

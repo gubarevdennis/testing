@@ -1,5 +1,5 @@
 import '../../styles/panels.css';
-import { useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query';
 import { X, ArrowLeft, Save, RotateCcw, GitCompare, Eye, Undo2 } from 'lucide-react';
 import { get, post } from '../../api/client';
@@ -96,6 +96,25 @@ export function HistoryPanel({ pageId, canEdit, onClose }: { pageId: string; can
     enabled: tab === 'versions',
   });
   const list = useMemo(() => revs.data?.pages.flatMap((p) => p.revisions) ?? [], [revs.data]);
+  // A revision requested from elsewhere (e.g. the "page restored" notification) is opened once it is listed.
+  useEffect(() => {
+    let wanted: string | null = null;
+    try {
+      wanted = sessionStorage.getItem('kb:history-select');
+    } catch {
+      /* storage unavailable */
+    }
+    const r = wanted ? list.find((x) => x.id === wanted) : undefined;
+    if (r) {
+      setTab('versions');
+      setSelected(r);
+      try {
+        sessionStorage.removeItem('kb:history-select');
+      } catch {
+        /* storage unavailable */
+      }
+    }
+  }, [list]);
   const refresh = () => {
     qc.invalidateQueries({ queryKey: ['revisions', pageId] });
     qc.invalidateQueries({ queryKey: ['page-events', pageId] });
@@ -156,7 +175,7 @@ export function HistoryPanel({ pageId, canEdit, onClose }: { pageId: string; can
       </div>
 
       {tab === 'events' ? (
-        <EventsList pageId={pageId} />
+        <EventsList pageId={pageId} canEdit={canEdit} onRestored={refresh} />
       ) : (
         <div className={'kb-panel-split' + (selected ? ' has-detail' : '')}>
           <div className="kb-panel-list" style={selected ? undefined : { width: '100%', borderRight: 'none' }}>
@@ -502,6 +521,7 @@ function SaveVersionDialog({ open, pageId, onClose, onSaved }: { open: boolean; 
 const EVENT_LABEL: Record<string, string> = {
   created: 'создал(а) страницу',
   edit: 'редактировал(а) текст',
+  'restored-journal': 'восстановил(а) состояние из журнала',
   renamed: 'переименовал(а) страницу',
   updated: 'изменил(а) параметры страницы',
   moved: 'переместил(а) страницу',
@@ -536,6 +556,8 @@ function eventDetail(e: PageEvent): string | null {
       return Array.isArray(d.fields) ? 'Изменено: ' + d.fields.map((f: string) => FIELD_LABEL[f] ?? f).join(', ') : null;
     case 'restored-revision':
       return d.revisionNumber ? `Версия ${d.revisionNumber} → новая версия ${d.newRevision}; прежнее состояние — версия ${d.preRestoreRevision}` : null;
+    case 'restored-journal':
+      return d.seq ? `Состояние на операцию №${d.seq} → новая версия ${d.newRevision}; прежнее состояние — версия ${d.preRestoreRevision}` : null;
     case 'restored-block':
       return d.revisionNumber ? `Из версии ${d.revisionNumber} (${d.mode === 'inserted' ? 'вставлен' : 'заменён'})` : null;
     case 'published':
@@ -550,7 +572,47 @@ function eventDetail(e: PageEvent): string | null {
   }
 }
 
-function EventsList({ pageId }: { pageId: string }) {
+/**
+ * Restores the document to the state right after a journal operation (R-HISTORY-026). The server rebuilds it from
+ * the durable journal; the current state is kept as a "pre-restore" version, so this is reversible.
+ */
+async function restoreJournalStep(pageId: string, e: PageEvent, onDone: () => void) {
+  const seq = Number(e.data?.seq);
+  let stats: { added: number; removed: number; changed: number } | null = null;
+  try {
+    stats = (await get<{ stats: { added: number; removed: number; changed: number } }>(`/api/v1/pages/${pageId}/journal/${seq}`)).stats;
+  } catch (err) {
+    toast.error(errMsg(err, 'Не удалось восстановить состояние из журнала'));
+    return;
+  }
+  const ok = await confirm({
+    title: 'Восстановить состояние на этот момент?',
+    body: (
+      <div className="col" style={{ gap: 8 }}>
+        <p>
+          Документ станет таким, каким был сразу после правки {e.actor_name ? `пользователя ${e.actor_name}` : ''} от {fullTime(e.created_at)} (операция №{seq}).
+        </p>
+        {stats && (
+          <p className="muted">
+            Отличия от текущего состояния: добавлено блоков {stats.added}, удалено {stats.removed}, изменено {stats.changed}.
+          </p>
+        )}
+        <p className="muted">Текущее состояние сначала сохранится отдельной версией — восстановление можно отменить. Права доступа не меняются.</p>
+      </div>
+    ),
+    confirmLabel: 'Восстановить',
+  });
+  if (!ok) return;
+  try {
+    const res = await post<{ revision: { number: number }; preRestore: { number: number } }>(`/api/v1/pages/${pageId}/journal/${seq}/restore`, { restoreTitle: true });
+    toast.success(`Состояние восстановлено как версия ${res.revision.number}. Прежнее состояние сохранено как версия ${res.preRestore.number}.`);
+    onDone();
+  } catch (err) {
+    toast.error(errMsg(err, 'Не удалось восстановить состояние из журнала'));
+  }
+}
+
+function EventsList({ pageId, canEdit, onRestored }: { pageId: string; canEdit: boolean; onRestored(): void }) {
   const q = useInfiniteQuery({
     queryKey: ['page-events', pageId],
     initialPageParam: null as string | number | null,
@@ -572,6 +634,11 @@ function EventsList({ pageId }: { pageId: string }) {
                 <b>{e.actor_name ?? 'Система'}</b> {EVENT_LABEL[e.type] ?? e.type}
               </div>
               {det && <div className="kb-meta">{det}</div>}
+              {canEdit && e.type === 'edit' && Number(e.data?.seq) > 0 && (
+                <button className="btn ghost sm event-restore" onClick={() => void restoreJournalStep(pageId, e, onRestored)}>
+                  <RotateCcw size={13} /> Восстановить состояние на этот момент
+                </button>
+              )}
             </div>
             <span className="kb-meta" title={fullTime(e.created_at)} style={{ whiteSpace: 'nowrap' }}>
               {relTime(e.created_at)}

@@ -6,7 +6,7 @@ import { ChevronDown, ChevronUp, X, Download } from 'lucide-react';
 import { TITLE_NAME, colorForUser, type PresenceUser } from '@kb/shared';
 import { loadMarkdown } from '../lib/markdown';
 import { yXmlFragmentToProsemirrorJSON } from '@tiptap/y-tiptap';
-import { openCollab, type CollabSession } from '../sync/collab';
+import { openCollab, useSyncState, type CollabSession } from '../sync/collab';
 import { clientExtensions } from './clientExtensions';
 import { BubbleToolbar } from './menus/BubbleToolbar';
 import { BlockHandle } from './menus/BlockHandle';
@@ -19,6 +19,8 @@ import { toast } from '../components/ui/Toast';
 import { post } from '../api/client';
 import { PagePicker } from './PagePicker';
 import type { CommandContext } from './commands';
+import { copyWithFeedback, useCopyPageCommands } from './clipboard/copy';
+import { useSelectionMemory } from './selectionMemory';
 
 export interface EditorHandle {
   editor: TEditor | null;
@@ -70,7 +72,7 @@ export function PageEditor(p: Props) {
   useEffect(() => {
     let synced: () => void = () => undefined;
     const firstSync = new Promise<void>((r) => (synced = r));
-    const s = openCollab(p.pageId, p.generation, {
+    const s = openCollab(p.pageId, p.generation, p.user.id, {
       onSynced: () => synced(),
       onAccess: (canEdit, _level, reason) => {
         setServerCanEdit(canEdit);
@@ -78,6 +80,7 @@ export function PageEditor(p: Props) {
       },
       onPresence: (u) => cbs.current.onPresence?.(u),
       onFatal: (code, message) => setFatal({ code, message }),
+      onStorageError: (message) => toast.error(message),
     });
     setSession(s);
     setReady(false);
@@ -96,7 +99,7 @@ export function PageEditor(p: Props) {
   if (!session || !ready) return <EditorSkeleton />;
   return (
     <>
-      {fatal && <FatalBanner fatal={fatal} session={session} />}
+      <LocalCopyGuard pageId={p.pageId} session={session} fatal={fatal} lostEdit={serverCanEdit === false} />
       <EditorInner key={session.pageId + (p.generation ?? '')} {...p} session={session} canEdit={p.canEdit && serverCanEdit !== false && !fatal} />
     </>
   );
@@ -111,6 +114,19 @@ export function EditorSkeleton() {
       <div className="skeleton" style={{ height: 14, width: '74%' }} />
     </div>
   );
+}
+
+/**
+ * Whenever local work cannot reach the server (rejected change, page removed, edit right lost, local storage failure)
+ * the user gets an explicit way to keep it. Never claims "nothing unsaved" while operations are queued.
+ */
+function LocalCopyGuard({ pageId, session, fatal, lostEdit }: { pageId: string; session: CollabSession; fatal: { code: string; message: string } | null; lostEdit: boolean }) {
+  const sync = useSyncState((s) => s.pages[pageId]);
+  const pending = sync?.pending ?? 0;
+  if (fatal) return <FatalBanner fatal={fatal} session={session} />;
+  if ((lostEdit || sync?.status === 'error') && pending > 0)
+    return <FatalBanner fatal={{ code: lostEdit ? 'forbidden' : 'error', message: sync?.message ?? (lostEdit ? 'Права на редактирование отозваны: часть изменений не отправлена на сервер.' : 'Изменения не удалось сохранить на сервере.') }} session={session} />;
+  return null;
 }
 
 /** Shown when the server rejected changes or the page became unavailable: local work can always be saved. */
@@ -229,7 +245,8 @@ function EditorInner(p: Props & { session: CollabSession }) {
     embedUrl: () => setEmbed(true),
     insertCollection: async () => {
       try {
-        const r = await post<{ collection: { id: string } }>('/api/v1/collections', { pageId: p.pageId, name: 'Новый реестр' });
+        // the collection container page is created as a child of this page
+        const r = await post<{ collection: { id: string } }>('/api/v1/collections', { spaceId: p.spaceId, parentId: p.pageId, name: 'Новый реестр', requestId: crypto.randomUUID() });
         editor?.chain().focus().insertContent({ type: 'collectionView', attrs: { collectionId: r.collection.id } }).run();
       } catch (e) {
         toast.error((e as Error).message);
@@ -251,6 +268,11 @@ function EditorInner(p: Props & { session: CollabSession }) {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editor, session]);
+
+  // Caret of this page is restored on Back/Forward/reload; page-level copy commands from the page menu.
+  useSelectionMemory(editor, p.pageId, !p.scrollToBlock && !p.autoFocusTitle);
+  const currentTitle = useCallback(() => ytitle.toString(), [ytitle]);
+  useCopyPageCommands(editor, currentTitle);
 
   // Focus: a just-created page focuses its title; otherwise keep the scroll position.
   useEffect(() => {
@@ -287,7 +309,7 @@ function EditorInner(p: Props & { session: CollabSession }) {
       const { from, to, empty } = editor.state.selection;
       const json = empty ? editor.getJSON() : { type: 'doc', content: editor.state.doc.slice(from, to).content.toJSON() ?? [] };
       const { markdown } = docToMarkdown(json as any, { markers: false });
-      navigator.clipboard.writeText(markdown).then(() => toast.success('Скопировано в формате Markdown'));
+      await copyWithFeedback({ text: markdown }, 'Скопировано в формате Markdown');
     };
     const onComment = () => requestComment();
     window.addEventListener('kb:find-open', onFind);
@@ -368,6 +390,7 @@ function EditorInner(p: Props & { session: CollabSession }) {
           {p.canEdit && <TableToolbar editor={editor} />}
           {p.canEdit && <BlockHandle editor={editor} pageId={p.pageId} onComment={(id) => requestComment(id)} />}
           {!p.canEdit && <ReadOnlyCommentButton editor={editor} onComment={() => requestComment()} />}
+          {p.canEdit && <TouchInsertButton editor={editor} />}
         </>
       )}
       <input
@@ -549,5 +572,27 @@ function MathDialog({ latex, onClose, onSave }: { latex: string; onClose(): void
         <div className="math-preview" dangerouslySetInnerHTML={{ __html: html }} />
       </div>
     </Dialog>
+  );
+}
+
+/** Touch devices have no hover handles: a floating "+" opens the block menu at the cursor. */
+function TouchInsertButton({ editor }: { editor: TEditor }) {
+  const coarse = typeof matchMedia !== 'undefined' && matchMedia('(pointer: coarse)').matches;
+  if (!coarse) return null;
+  return (
+    <button
+      className="touch-insert"
+      aria-label="Вставить блок"
+      onMouseDown={(e) => e.preventDefault()}
+      onClick={() => {
+        const { $from } = editor.state.selection;
+        const empty = $from.parent.isTextblock && $from.parent.content.size === 0;
+        const chain = editor.chain().focus();
+        if (!empty) chain.insertContentAt($from.after(), { type: 'paragraph' }).setTextSelection($from.after() + 1);
+        chain.insertContent('/').run();
+      }}
+    >
+      +
+    </button>
   );
 }

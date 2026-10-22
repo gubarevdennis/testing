@@ -1,0 +1,25 @@
+# Keep the build context small and free of local data / secrets.
+.git
+.github
+**/node_modules
+**/dist
+**/*.tsbuildinfo
+.data
+.e2e-data
+backups
+scratch
+test-results
+playwright-report
+coverage
+tests
+docs/source
+**/*.log
+.env
+.env.*
+deploy/.env
+deploy/secrets
+*.pem
+*.key
+.DS_Store
+.vscode
+.idea

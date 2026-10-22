@@ -13,6 +13,8 @@ import { applyTheme, useUi } from './state/ui';
 import { reportError } from './lib/telemetry';
 
 applyTheme(useUi.getState().theme);
+// Ask the browser not to evict local document copies and queued changes under storage pressure.
+void navigator.storage?.persist?.().catch(() => undefined);
 window.addEventListener('error', (e) => reportError('window', e.message));
 window.addEventListener('unhandledrejection', (e) => reportError('promise', String((e.reason as Error)?.message ?? e.reason)));
 

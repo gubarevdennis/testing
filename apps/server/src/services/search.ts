@@ -97,12 +97,14 @@ export async function search(q: Queryable, user: AuthUser, p: SearchParams) {
   };
   if (p.spaceId) add('s.space_id = ?', p.spaceId);
   if (p.pageId) add('s.page_id = ?', p.pageId);
+  // Guests have no global search: only pages explicitly shared with them (and their sub-pages) are searchable.
+  if (user.kind === 'guest') add('s.page_id = any(?::uuid[])', await guestSearchScope(q, user));
   if (p.status) add('pg.status = ?', p.status);
   if (p.authorId) add('pg.created_by = ?', p.authorId);
   if (p.from) add('pg.content_updated_at >= ?', p.from);
   if (p.to) add('pg.content_updated_at <= ?', p.to);
   if (p.in === 'images') filters.push(`(to_tsvector('russian', s.ocr) || to_tsvector('english', s.ocr)) @@ query.tq`);
-  if (p.in === 'files') filters.push(`to_tsvector('russian', s.files) @@ query.tq`);
+  if (p.in === 'files') filters.push(`(to_tsvector('russian', s.files || ' ' || s.file_text) || to_tsvector('english', s.file_text)) @@ query.tq`);
   if (p.in === 'text') filters.push(`(s.tsv @@ query.tq or coalesce(s.pub_tsv @@ query.tq, false))`);
   params.push(p.q);
   const rawIdx = params.length;
@@ -153,7 +155,8 @@ export async function search(q: Queryable, user: AuthUser, p: SearchParams) {
               case when s.pub_body is null then null else ts_headline('russian', s.pub_body, query.tq, 'MaxFragments=2, MinWords=6, MaxWords=24, StartSel=<<, StopSel=>>, FragmentDelimiter= … ') end as snip_pub,
               (to_tsvector('russian', s.title) || to_tsvector('english', s.title)) @@ query.tq as in_title,
               (to_tsvector('russian', s.ocr) || to_tsvector('english', s.ocr)) @@ query.tq as in_ocr,
-              to_tsvector('russian', s.files) @@ query.tq as in_files,
+              (to_tsvector('russian', s.files || ' ' || s.file_text) || to_tsvector('english', s.file_text)) @@ query.tq as in_files,
+              (to_tsvector('russian', s.comments) || to_tsvector('english', s.comments)) @@ query.tq as in_comments,
               to_tsvector('russian', s.properties) @@ query.tq as in_props,
               case when (to_tsvector('russian', s.ocr) || to_tsvector('english', s.ocr)) @@ query.tq then ts_headline('russian', s.ocr, query.tq, 'MaxFragments=1, MaxWords=16, StartSel=<<, StopSel=>>') end as snip_ocr
          from search_index s, query where s.org_id = $1 and s.page_id = any($${ts.params.length + 2}::uuid[])`,
@@ -176,7 +179,7 @@ export async function search(q: Queryable, user: AuthUser, p: SearchParams) {
       space: spaceNames.get(r.space_id) ?? null,
       path: crumbs.filter((c) => c.page_id === r.page_id).map((c) => (crumbAccess.get(c.id)?.actions.view ? c.title : '…')),
       snippet: (r.publishedOnly ? d.snip_pub : d.snip_live) || null,
-      matchedIn: [d.in_title && 'title', (r.m_live || r.m_pub) && 'text', d.in_ocr && 'image', d.in_files && 'file', d.in_props && 'properties', !r.m_live && !r.m_pub && r.sim > 0.45 && 'fuzzy'].filter(Boolean),
+      matchedIn: [d.in_title && 'title', (r.m_live || r.m_pub) && 'text', d.in_ocr && 'image', d.in_files && 'file', d.in_comments && 'comment', d.in_props && 'properties', !r.m_live && !r.m_pub && r.sim > 0.45 && 'fuzzy'].filter(Boolean),
       ocrSnippet: d.snip_ocr ?? null,
       blockId,
       publishedVersion: r.publishedOnly,
@@ -259,6 +262,20 @@ export async function suggest(q: Queryable, user: AuthUser, text: string, limit 
       [user.orgId, variants],
     )
   ).rows;
+  const scope = user.kind === 'guest' ? new Set(await guestSearchScope(q, user)) : null;
   const access = await accessForPages(q, user, rows.map((r) => r.id));
-  return rows.filter((r) => access.get(r.id)?.actions.view && !access.get(r.id)?.deleted).slice(0, limit).map((r) => ({ pageId: r.id, title: r.title, icon: r.icon, spaceId: r.space_id }));
+  return rows.filter((r) => (!scope || scope.has(r.id)) && access.get(r.id)?.actions.view && !access.get(r.id)?.deleted).slice(0, limit).map((r) => ({ pageId: r.id, title: r.title, icon: r.icon, spaceId: r.space_id }));
+}
+
+/** Pages explicitly shared with a guest (page-level grants to the guest or their groups) and their sub-pages. */
+export async function guestSearchScope(q: Queryable, user: AuthUser): Promise<string[]> {
+  const s = await userSubjects(q, user);
+  const r = await q.query(
+    `select distinct a.page_id from grants g join page_ancestors a on a.ancestor_id = g.resource_id join pages p on p.id = a.page_id
+      where g.resource_type = 'page' and g.revoked_at is null and g.level <> 'none' and p.deleted_at is null and p.org_id = $1
+        and ((g.subject_type = 'user' and g.subject_id = $2) or (g.subject_type = 'group' and g.subject_id = any($3::uuid[])))
+        and (g.expires_at is null or g.expires_at > now()) and (g.starts_at is null or g.starts_at <= now())`,
+    [user.orgId, user.id, s.groupIds],
+  );
+  return r.rows.map((x) => x.page_id as string);
 }

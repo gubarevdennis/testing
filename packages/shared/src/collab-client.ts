@@ -40,7 +40,19 @@ export interface CollabProviderOptions {
   /** Fatal problems: page deleted, change rejected, access revoked. Local data must be offered for export. */
   onFatal?: (code: string, message: string) => void;
   onSynced?: () => void;
+  /** Local pending store failed (quota exceeded or unavailable). */
+  onStorageError?: (message: string, quota: boolean) => void;
   newOpId?: () => string;
+}
+
+interface PendingOp {
+  update: Uint8Array;
+  ts: number;
+  sent: boolean;
+  covers?: string[];
+  /** true once written to the local pending store (or when there is no store) */
+  persisted?: boolean;
+  write?: Promise<void>;
 }
 
 export class CollabProvider {
@@ -52,7 +64,9 @@ export class CollabProvider {
   serverSeq = 0;
   private ws: any = null;
   private opts: CollabProviderOptions;
-  private pending = new Map<string, { update: Uint8Array; ts: number; sent: boolean; covers?: string[] }>();
+  private pending = new Map<string, PendingOp>();
+  /** Last local-storage failure (quota, private mode): status must not claim "saved on this device". */
+  private persistError: string | null = null;
   private batch: Uint8Array[] = [];
   private batchTimer: any = null;
   private retry = 0;
@@ -83,7 +97,7 @@ export class CollabProvider {
     try {
       const items = await this.opts.pendingStore.load();
       for (const it of items) {
-        this.pending.set(it.opId, { update: it.update, ts: it.ts, sent: false });
+        this.pending.set(it.opId, { update: it.update, ts: it.ts, sent: false, persisted: true });
         Y.applyUpdate(this.doc, it.update, this);
       }
       if (items.length) this.setStatus();
@@ -102,11 +116,57 @@ export class CollabProvider {
     return oldest === null ? null : Date.now() - oldest;
   }
 
+  private allPersisted() {
+    if (this.batch.length) return false;
+    for (const p of this.pending.values()) if (!p.persisted && !p.covers) return false;
+    return true;
+  }
+
+  /** Writes an operation to the local pending store; the status reflects whether that succeeded. */
+  private persist(opId: string, op: PendingOp) {
+    const store = this.opts.pendingStore;
+    if (!store) {
+      op.persisted = true;
+      return;
+    }
+    op.write = store
+      .put(opId, op.update, op.ts)
+      .then(() => {
+        op.persisted = true;
+        this.persistError = null;
+      })
+      .catch((e: any) => {
+        const quota = e?.name === 'QuotaExceededError' || /quota/i.test(String(e?.message));
+        this.persistError = quota
+          ? 'На устройстве закончилось место: несохранённые изменения могут быть потеряны при закрытии. Восстановите связь или освободите место.'
+          : 'Не удалось сохранить изменения на устройстве (хранилище браузера недоступно). Не закрывайте страницу до восстановления связи.';
+        this.opts.onStorageError?.(this.persistError, quota);
+      })
+      .finally(() => this.setStatus());
+  }
+
+  /** Removes acknowledged operations from the local store only after their own write has finished. */
+  private forget(ids: string[], writes: Array<Promise<void> | undefined>) {
+    const store = this.opts.pendingStore;
+    if (!store || !ids.length) return;
+    void Promise.allSettled(writes.filter(Boolean) as Promise<void>[])
+      .then(() => store.remove(ids))
+      .catch(() => undefined);
+  }
+
   private setStatus(message?: string) {
     if (message !== undefined) this.message = message;
     let s: SyncStatus;
     if (this.fatal) s = 'error';
-    else if (!this.ws || this.ws.readyState !== 1 || !this.synced) s = this.pendingCount() ? 'local' : 'connecting';
+    else if (!this.ws || this.ws.readyState !== 1 || !this.synced) {
+      if (!this.pendingCount()) s = 'connecting';
+      else if (this.persistError && !this.allPersisted()) {
+        // Offline and the local copy could not be written: never claim it is saved on this device.
+        s = 'error';
+        message = message ?? this.persistError;
+        this.message = message;
+      } else s = this.allPersisted() ? 'local' : 'syncing';
+    }
     else if (!this.canEdit) s = this.pendingCount() ? 'error' : 'readonly';
     else s = this.pendingCount() ? 'syncing' : 'saved';
     if (s !== 'error' && !this.fatal && message === undefined) this.message = undefined;
@@ -129,8 +189,9 @@ export class CollabProvider {
     this.batch = [];
     const opId = this.newOpId();
     const ts = Date.now();
-    this.pending.set(opId, { update, ts, sent: false });
-    void this.opts.pendingStore?.put(opId, update, ts).catch(() => undefined);
+    const op: PendingOp = { update, ts, sent: false };
+    this.pending.set(opId, op);
+    this.persist(opId, op);
     this.sendPending();
     this.setStatus();
   }
@@ -241,12 +302,14 @@ export class CollabProvider {
           if (hasContent(diff)) {
             const opId = this.newOpId();
             const ts = Math.min(Date.now(), ...[...this.pending.values()].map((p) => p.ts));
-            this.pending.set(opId, { update: diff, ts, sent: false, covers: covered });
-            void this.opts.pendingStore?.put(opId, diff, ts).catch(() => undefined);
+            const op: PendingOp = { update: diff, ts, sent: false, covers: covered };
+            this.pending.set(opId, op);
+            this.persist(opId, op);
           } else if (covered.length) {
             // Server already has everything (e.g. ack lost before a crash).
+            const writes = covered.map((id) => this.pending.get(id)?.write);
             for (const id of covered) this.pending.delete(id);
-            void this.opts.pendingStore?.remove(covered).catch(() => undefined);
+            this.forget(covered, writes);
           }
           // Covered operations are not re-sent individually: the diff carries them.
           for (const id of covered) {
@@ -263,8 +326,9 @@ export class CollabProvider {
       case MSG.ACK: {
         const p = this.pending.get(m.opId);
         const done = [m.opId, ...(p?.covers ?? [])];
+        const writes = done.map((id) => this.pending.get(id)?.write);
         for (const id of done) this.pending.delete(id);
-        void this.opts.pendingStore?.remove(done).catch(() => undefined);
+        this.forget(done, writes);
         this.serverSeq = Math.max(this.serverSeq, m.seq);
         this.armAckTimer();
         this.setStatus();

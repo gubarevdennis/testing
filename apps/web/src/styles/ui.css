@@ -9,8 +9,8 @@
 .btn:hover:not(:disabled) { background: var(--surface-hover); }
 .btn:active:not(:disabled) { background: var(--surface-active); }
 .btn:disabled { opacity: 0.55; cursor: not-allowed; }
-.btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
-.btn.primary:hover:not(:disabled) { background: var(--accent-strong); border-color: var(--accent-strong); }
+.btn.primary { background: var(--accent-strong); border-color: var(--accent-strong); color: var(--accent-contrast); } /* white on --accent is 3.75:1; --accent-strong passes AA */
+.btn.primary:hover:not(:disabled) { background: color-mix(in srgb, var(--accent-strong) 88%, #000); border-color: color-mix(in srgb, var(--accent-strong) 88%, #000); }
 .btn.danger { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 40%, var(--border)); }
 .btn.danger.solid { background: var(--danger); color: #fff; border-color: var(--danger); }
 .btn.ghost { border-color: transparent; background: transparent; }
@@ -32,14 +32,14 @@
 .icon-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 .icon-btn.sm { width: 24px; height: 24px; }
 .icon-btn.lg { width: 36px; height: 36px; }
-@media (pointer: coarse) { .icon-btn { width: 40px; height: 40px; } .icon-btn.sm { width: 36px; height: 36px; } .btn { height: 40px; } }
+@media (pointer: coarse) { .icon-btn, .icon-btn.sm { width: 44px; height: 44px; } .btn { min-height: 44px; } }
 
 .spinner { width: 16px; height: 16px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: kb-spin 0.7s linear infinite; display: inline-block; opacity: 0.8; }
 
 /* ---------- inputs */
 .input, .select, .textarea {
   width: 100%; height: 34px; padding: 0 10px; border-radius: var(--r-md);
-  border: 1px solid var(--border-strong); background: var(--surface); color: var(--text);
+  border: 1px solid var(--border-input); background: var(--surface); color: var(--text);
   transition: border-color var(--t-fast) var(--ease), box-shadow var(--t-fast) var(--ease);
 }
 .textarea { height: auto; min-height: 80px; padding: 8px 10px; resize: vertical; line-height: 1.5; }

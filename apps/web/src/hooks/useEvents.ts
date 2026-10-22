@@ -1,5 +1,6 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import { useNetwork } from './useNetwork';
 import { toast } from '../components/ui/Toast';
 
@@ -9,6 +10,10 @@ import { toast } from '../components/ui/Toast';
  */
 export function useServerEvents(enabled: boolean) {
   const qc = useQueryClient();
+  const navigate = useNavigate();
+  // navigate changes identity on every navigation: keep it in a ref so the event socket is not reconnected
+  const nav = useRef(navigate);
+  nav.current = navigate;
   useEffect(() => {
     if (!enabled) return;
     let ws: WebSocket | null = null;
@@ -47,6 +52,32 @@ export function useServerEvents(enabled: boolean) {
             qc.invalidateQueries({ queryKey: ['page', e.pageId] });
             if (e.fields?.includes('rows') || e.fields?.includes('collection')) qc.invalidateQueries({ queryKey: ['collection'] });
             break;
+          case 'page-restored': {
+            // Someone restored a version/journal state of a page this user can see (R-HISTORY-014): say so, and link
+            // to the automatically saved state from before the restore where their own work is kept.
+            qc.invalidateQueries({ queryKey: ['revisions', e.pageId] });
+            qc.invalidateQueries({ queryKey: ['page-events', e.pageId] });
+            const onPage = location.pathname === '/p/' + e.pageId;
+            const msg = `${e.actorName} восстановил(а) ${onPage ? 'эту страницу' : 'страницу'}: ${e.label}. Состояние до восстановления сохранено как версия ${e.preRestoreNumber}.`;
+            toast.info(
+              msg,
+              e.preRestoreRevisionId
+                ? {
+                    label: `Открыть версию ${e.preRestoreNumber}`,
+                    run: () => {
+                      try {
+                        sessionStorage.setItem('kb:history-select', e.preRestoreRevisionId);
+                      } catch {
+                        /* storage unavailable */
+                      }
+                      if (!onPage) nav.current('/p/' + e.pageId);
+                      setTimeout(() => window.dispatchEvent(new CustomEvent('kb:open-history', { detail: { revisionId: e.preRestoreRevisionId } })), onPage ? 0 : 400);
+                    },
+                  }
+                : undefined,
+            );
+            break;
+          }
           case 'comments-changed':
             qc.invalidateQueries({ queryKey: ['comments', e.pageId] });
             window.dispatchEvent(new CustomEvent('kb:comments-changed', { detail: { pageId: e.pageId } }));

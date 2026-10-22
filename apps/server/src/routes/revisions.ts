@@ -1,11 +1,11 @@
-import type { FastifyInstance } from 'fastify';
+import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import { findBlock, type PMNode } from '@kb/shared';
 import { tx } from '../db/pool.js';
 import { actorOf, parse, requireUser, type Services } from '../app.js';
-import { requirePage } from '../acl/engine.js';
+import { requirePage, type AuthUser } from '../acl/engine.js';
 import { audit } from '../services/audit.js';
-import { createRevision, diffDocs } from '../services/revisions.js';
+import { createRevision, diffDocs, stateAtSeq } from '../services/revisions.js';
 import { replaceContent, setTitle, titleOf, ydocToJson } from '../collab/ydoc.js';
 import { badRequest, conflict, forbidden, notFound } from '../lib/errors.js';
 import { getPage } from '../services/pages.js';
@@ -82,28 +82,90 @@ export async function revisionRoutes(app: FastifyInstance, s: Services) {
     const user = requireUser(req);
     const { id, rid } = parse(z.object({ id: uuid, rid: uuid }), req.params);
     const { restoreTitle } = parse(z.object({ restoreTitle: z.boolean().default(true) }), req.body ?? {});
-    await requirePage(s.db, user, id, 'restore');
-    const page = (await getPage(s.db, id))!;
-    if (page.locked) {
-      const acc = await requirePage(s.db, user, id, 'restore');
-      if (acc.level !== 'full') throw forbidden('Страница защищена от изменений');
-    }
+    await requireRestore(user, id);
     const rev = (await s.db.query('select id, number, content, title from page_revisions where id = $1 and page_id = $2', [rid, id])).rows[0];
     if (!rev) throw notFound('Версия не найдена');
-    const pre = await s.hub.createRevisionNow(id, 'pre-restore', user.id, `Перед восстановлением версии ${rev.number}`);
+    return restoreContent(req, user, id, {
+      content: rev.content,
+      title: restoreTitle ? rev.title : null,
+      preLabel: `Перед восстановлением версии ${rev.number}`,
+      label: `Восстановлена версия ${rev.number}`,
+      restoredFrom: rev.id,
+      eventType: 'restored-revision',
+      eventData: { revisionNumber: rev.number },
+      auditAction: 'page.revision_restore',
+      auditDetails: { revision: rev.number },
+    });
+  });
+
+  /**
+   * State of the document right after journal operation `seq` (R-HISTORY-026, HIST-187): reconstructed from the
+   * durable journal (doc_updates), compared with the current state. Read-only.
+   */
+  app.get('/api/v1/pages/:id/journal/:seq', async (req) => {
+    const user = requireUser(req);
+    const { id, seq } = parse(z.object({ id: uuid, seq: z.coerce.number().int().min(1) }), req.params);
+    await requirePage(s.db, user, id, 'view_history', { allowDeleted: true });
+    const st = await stateAtSeq(s.db, id, seq);
+    const snap = await s.hub.snapshot(id);
+    const diff = diffDocs(st.content, snap.json);
+    return { seq, title: st.title, content: st.content, at: st.at, authorName: st.authorName, base: st.base, stats: diff.stats };
+  });
+
+  /** Restores the document to the state right after journal operation `seq`, as a NEW (reversible) revision. */
+  app.post('/api/v1/pages/:id/journal/:seq/restore', async (req) => {
+    const user = requireUser(req);
+    const { id, seq } = parse(z.object({ id: uuid, seq: z.coerce.number().int().min(1) }), req.params);
+    const { restoreTitle } = parse(z.object({ restoreTitle: z.boolean().default(true) }), req.body ?? {});
+    await requireRestore(user, id);
+    const st = await stateAtSeq(s.db, id, seq);
+    const when = st.at ? new Date(st.at).toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' }) : '';
+    return restoreContent(req, user, id, {
+      content: st.content,
+      title: restoreTitle ? st.title : null,
+      preLabel: `Перед восстановлением состояния на операцию №${seq}`,
+      label: `Восстановлено состояние на операцию №${seq}${when ? ` (${when})` : ''}`,
+      restoredFrom: null,
+      eventType: 'restored-journal',
+      eventData: { seq, base: st.base },
+      auditAction: 'page.journal_restore',
+      auditDetails: { seq, base: st.base },
+    });
+  });
+
+  async function requireRestore(user: AuthUser, id: string) {
+    const acc = await requirePage(s.db, user, id, 'restore');
+    const page = (await getPage(s.db, id))!;
+    if (page.locked && acc.level !== 'full') throw forbidden('Страница защищена от изменений');
+  }
+
+  /**
+   * Shared restore path: the current state is saved first ("pre-restore"), the content is replaced through the
+   * durable CRDT path, a new revision is recorded, and everyone else on the page is told (R-HISTORY-014).
+   * ACLs are never rolled back (ACL-173).
+   */
+  async function restoreContent(
+    req: FastifyRequest,
+    user: AuthUser,
+    id: string,
+    o: { content: PMNode; title: string | null; preLabel: string; label: string; restoredFrom: string | null; eventType: string; eventData: Record<string, unknown>; auditAction: string; auditDetails: Record<string, unknown> },
+  ) {
+    const pre = await s.hub.createRevisionNow(id, 'pre-restore', user.id, o.preLabel);
     const res = await s.hub.applyServerChange(id, user.id, (doc) => {
-      replaceContent(doc, rev.content, 'restore');
-      if (restoreTitle && rev.title !== titleOf(doc)) setTitle(doc, rev.title);
+      replaceContent(doc, o.content, 'restore');
+      if (o.title !== null && o.title !== titleOf(doc)) setTitle(doc, o.title);
     });
     const snap = await s.hub.snapshot(id);
+    const title = o.title ?? (await getPage(s.db, id))!.title;
     const created = await tx(s.db, async (q) => {
-      const r = await createRevision(q, { pageId: id, kind: 'restore', title: rev.title, state: snap.state, content: res.json, seqUpto: res.seq, authors: [user.id], createdBy: user.id, label: `Восстановлена версия ${rev.number}`, restoredFrom: rev.id });
-      await q.query(`insert into page_events (org_id, page_id, actor_id, type, data) values ($1, $2, $3, 'restored-revision', $4)`, [user.orgId, id, user.id, { revisionNumber: rev.number, newRevision: r.number, preRestoreRevision: pre.number }]);
-      await audit(q, actorOf(req), { action: 'page.revision_restore', targetType: 'page', targetId: id, details: { revision: rev.number, newRevision: r.number } });
+      const r = await createRevision(q, { pageId: id, kind: 'restore', title, state: snap.state, content: res.json, seqUpto: res.seq, authors: [user.id], createdBy: user.id, label: o.label, restoredFrom: o.restoredFrom });
+      await q.query(`insert into page_events (org_id, page_id, actor_id, type, data) values ($1, $2, $3, $4, $5)`, [user.orgId, id, user.id, o.eventType, { ...o.eventData, newRevision: r.number, preRestoreRevision: pre.number }]);
+      await audit(q, actorOf(req), { action: o.auditAction, targetType: 'page', targetId: id, details: { ...o.auditDetails, newRevision: r.number, preRestoreRevision: pre.number } });
       return r;
     });
+    s.bus.emit({ type: 'page-restored', orgId: user.orgId, pageId: id, actorId: user.id, actorName: user.name, label: o.label, preRestoreRevisionId: pre.id, preRestoreNumber: pre.number });
     return { revision: created, preRestore: pre };
-  });
+  }
 
   /** Restores a single block from a revision into the current document (replacing the block with the same id, or re-inserting it). */
   app.post('/api/v1/pages/:id/revisions/:rid/restore-block', async (req) => {

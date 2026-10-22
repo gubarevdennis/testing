@@ -14,12 +14,15 @@ import { templateRoutes } from './templates.js';
 import { collectionRoutes } from './collections.js';
 import { importExportRoutes } from './import-export.js';
 import { archiveRoutes } from './archives.js';
+import { retentionRoutes } from './retention.js';
+import { draftRoutes } from './drafts.js';
 
 export async function registerRoutes(app: FastifyInstance, s: Services) {
   await healthRoutes(app, s);
   await authRoutes(app, s);
   await spaceRoutes(app, s);
   await pageRoutes(app, s);
+  await draftRoutes(app, s);
   await revisionRoutes(app, s);
   await accessRoutes(app, s);
   await collabRoutes(app, s);
@@ -30,4 +33,5 @@ export async function registerRoutes(app: FastifyInstance, s: Services) {
   await collectionRoutes(app, s);
   await importExportRoutes(app, s);
   await archiveRoutes(app, s);
+  await retentionRoutes(app, s);
 }

@@ -1,8 +1,12 @@
 import '../../styles/panels.css';
-import { useQuery } from '@tanstack/react-query';
+import { useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
-import { X, Download, FileText, Paperclip, ShieldCheck, AlertTriangle } from 'lucide-react';
-import { get } from '../../api/client';
+import { X, Download, FileText, Paperclip, ShieldCheck, AlertTriangle, Plus, Trash2, Scale } from 'lucide-react';
+import { get, patch, put, ApiError } from '../../api/client';
+import { useMe } from '../../state/session';
+import { toast } from '../ui/Toast';
+import { Dialog } from '../ui/Dialog';
 import type { PageDto } from '../../api/types';
 import { Avatar } from '../Avatar';
 import { relTime, fullTime, fileSize, STATUS_LABEL } from '../../lib/format';
@@ -91,6 +95,9 @@ export function PageInfoPanel({ page, wordCount, onClose }: { page: PageDto; wor
           <dd>{page.version}</dd>
         </dl>
 
+        <PropertiesEditor page={page} />
+        <LegalHold page={page} />
+
         {(page.reviewDueAt || page.verifiedAt || page.needsReview) && (
           <>
             <div className="kb-section-title">Актуальность</div>
@@ -169,5 +176,203 @@ export function PageInfoPanel({ page, wordCount, onClose }: { page: PageDto; wor
         </div>
       </div>
     </aside>
+  );
+}
+
+function propText(v: unknown): string {
+  if (v === null || v === undefined) return '';
+  if (Array.isArray(v)) return v.join(', ');
+  if (typeof v === 'object') return JSON.stringify(v);
+  return String(v);
+}
+
+/**
+ * Inline editor of page properties (R-PAGE-022, R-PAGE-023). Each change is saved at once with the page version
+ * the user saw; if someone else changed the page meanwhile, nothing is overwritten and fresh values are shown.
+ */
+function PropertiesEditor({ page }: { page: PageDto }) {
+  const qc = useQueryClient();
+  const canEdit = !!page.access.actions.edit && !page.deletedAt && (!page.locked || page.access.level === 'full');
+  const required = page.requiredProperties ?? [];
+  const props = page.properties ?? {};
+  const keys = [...new Set([...required, ...Object.keys(props)])];
+  const [drafts, setDrafts] = useState<Record<string, string>>({});
+  const [newKey, setNewKey] = useState('');
+  const [newValue, setNewValue] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  const save = async (changes: Record<string, unknown>) => {
+    setBusy(true);
+    try {
+      await patch(`/api/v1/pages/${page.id}`, { properties: changes, expectedVersion: page.version });
+      setDrafts((d) => {
+        const n = { ...d };
+        for (const k of Object.keys(changes)) delete n[k];
+        return n;
+      });
+    } catch (e) {
+      if (e instanceof ApiError && e.code === 'version_conflict') toast.error('Свойства только что изменил другой пользователь — показаны актуальные значения. Повторите правку.');
+      else toast.error(e instanceof ApiError ? e.message : 'Не удалось сохранить свойство');
+    } finally {
+      setBusy(false);
+      qc.invalidateQueries({ queryKey: ['page', page.id] });
+    }
+  };
+  const dropDraft = (k: string) =>
+    setDrafts((d) => {
+      const n = { ...d };
+      delete n[k];
+      return n;
+    });
+  const commit = (k: string) => {
+    if (drafts[k] === undefined) return;
+    const text = drafts[k].trim();
+    if (text === propText(props[k])) return dropDraft(k);
+    const value = Array.isArray(props[k]) ? text.split(',').map((x) => x.trim()).filter(Boolean) : text;
+    void save({ [k]: text ? value : null });
+  };
+  const add = () => {
+    const k = newKey.trim();
+    if (!k) return;
+    void save({ [k]: newValue.trim() });
+    setNewKey('');
+    setNewValue('');
+  };
+
+  if (!keys.length && !canEdit) return null;
+  const missing = required.filter((k) => !propText(props[k]).trim());
+  return (
+    <>
+      <div className="kb-section-title">Свойства</div>
+      {missing.length > 0 && (
+        <div className="alert warning" role="status" style={{ marginBottom: 8 }}>
+          Шаблон требует заполнить: {missing.join(', ')}
+        </div>
+      )}
+      <dl className="kb-kv kb-props" aria-label="Свойства страницы">
+        {keys.map((k) => {
+          const isReq = required.includes(k);
+          const value = drafts[k] ?? propText(props[k]);
+          return (
+            <div key={k} style={{ display: 'contents' }}>
+              <dt>
+                {k}
+                {isReq && <span aria-label="обязательно" title="Обязательное свойство шаблона"> *</span>}
+              </dt>
+              <dd className="row" style={{ gap: 4 }}>
+                {canEdit ? (
+                  <>
+                    <input
+                      className="input sm grow"
+                      aria-label={`Свойство «${k}»`}
+                      value={value}
+                      placeholder={isReq ? 'Заполните' : '—'}
+                      disabled={busy}
+                      onChange={(e) => setDrafts((d) => ({ ...d, [k]: e.target.value }))}
+                      onBlur={() => commit(k)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') (e.currentTarget as HTMLInputElement).blur();
+                        if (e.key === 'Escape') dropDraft(k);
+                      }}
+                    />
+                    {!isReq && k in props && (
+                      <button className="icon-btn sm" aria-label={`Удалить свойство «${k}»`} disabled={busy} onClick={() => void save({ [k]: null })}>
+                        <Trash2 size={13} />
+                      </button>
+                    )}
+                  </>
+                ) : (
+                  <span className="ellipsis">{value || <span className="muted">—</span>}</span>
+                )}
+              </dd>
+            </div>
+          );
+        })}
+      </dl>
+      {canEdit && (
+        <form
+          className="row"
+          style={{ gap: 4, marginTop: 6 }}
+          onSubmit={(e) => {
+            e.preventDefault();
+            add();
+          }}
+        >
+          <input className="input sm" style={{ width: '40%' }} aria-label="Название нового свойства" placeholder="Свойство" value={newKey} onChange={(e) => setNewKey(e.target.value)} maxLength={100} />
+          <input className="input sm grow" aria-label="Значение нового свойства" placeholder="Значение" value={newValue} onChange={(e) => setNewValue(e.target.value)} maxLength={1000} />
+          <button className="icon-btn sm" type="submit" aria-label="Добавить свойство" disabled={busy || !newKey.trim()}>
+            <Plus size={14} />
+          </button>
+        </form>
+      )}
+    </>
+  );
+}
+
+/** Legal hold (R-HISTORY-015): visible to everyone, set or released by org admins with a recorded reason. */
+function LegalHold({ page }: { page: PageDto }) {
+  const me = useMe();
+  const qc = useQueryClient();
+  const isAdmin = ['owner', 'admin'].includes(me.user.orgRole);
+  const [open, setOpen] = useState(false);
+  const [reason, setReason] = useState('');
+  const [busy, setBusy] = useState(false);
+  if (!page.legalHold && !isAdmin) return null;
+  const next = !page.legalHold;
+  const submit = async () => {
+    setBusy(true);
+    try {
+      await put('/api/v1/admin/legal-hold', { resourceType: 'page', resourceId: page.id, hold: next, reason: reason.trim() });
+      toast.success(next ? 'Юридическое удержание установлено' : 'Юридическое удержание снято');
+      setOpen(false);
+      setReason('');
+      qc.invalidateQueries({ queryKey: ['page', page.id] });
+    } catch (e) {
+      toast.error(e instanceof ApiError ? e.message : 'Не удалось изменить удержание');
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <>
+      <div className="kb-section-title">Хранение</div>
+      <div className="row" style={{ gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+        <Scale size={14} className="muted" />
+        <span className="grow">{page.legalHold ? 'Юридическое удержание: страницу и её историю нельзя удалить окончательно' : 'Юридического удержания нет'}</span>
+        {isAdmin && (
+          <button className="btn sm" onClick={() => setOpen(true)}>
+            {page.legalHold ? 'Снять удержание' : 'Установить удержание'}
+          </button>
+        )}
+      </div>
+      <Dialog
+        open={open}
+        title={next ? 'Установить юридическое удержание' : 'Снять юридическое удержание'}
+        onClose={() => setOpen(false)}
+        footer={
+          <>
+            <button className="btn" onClick={() => setOpen(false)}>
+              Отмена
+            </button>
+            <button className="btn primary" disabled={busy || reason.trim().length < 3} onClick={() => void submit()}>
+              {next ? 'Установить' : 'Снять'}
+            </button>
+          </>
+        }
+      >
+        <div className="col" style={{ gap: 8 }}>
+          <p className="muted">
+            {next
+              ? 'Пока действует удержание, страницу нельзя удалить окончательно, а её журнал и версии не очищаются по сроку хранения.'
+              : 'После снятия удержания на страницу снова действуют обычные сроки хранения.'}{' '}
+            Действие записывается в журнал аудита.
+          </p>
+          <label className="col" style={{ gap: 4 }}>
+            <span>Основание</span>
+            <input className="input" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Например: судебный запрос №…" autoFocus maxLength={500} />
+          </label>
+        </div>
+      </Dialog>
+    </>
   );
 }

@@ -5,6 +5,7 @@ import multipart from '@fastify/multipart';
 import rateLimit from '@fastify/rate-limit';
 import helmet from '@fastify/helmet';
 import fstatic from '@fastify/static';
+import swagger from '@fastify/swagger';
 import { randomUUID } from 'node:crypto';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
@@ -16,6 +17,8 @@ import { AppError, unauthorized, forbidden } from './lib/errors.js';
 import { lookupSession, lookupApiToken, type SessionInfo } from './auth/sessions.js';
 import type { AuthUser } from './acl/engine.js';
 import { EventBus } from './lib/events.js';
+import { isConnectionError } from './db/pool.js';
+import { createDenialLogger } from './services/denials.js';
 import { CollabHub } from './collab/hub.js';
 import { createMetrics, type Metrics } from './observability/metrics.js';
 import type { BlobStore } from './storage/blob-store.js';
@@ -90,7 +93,8 @@ export async function buildApp(base: Omit<Services, 'hub' | 'bus' | 'metrics'> &
         mediaSrc: ["'self'", 'blob:'],
         connectSrc: ["'self'", 'ws:', 'wss:'],
         fontSrc: ["'self'", 'data:'],
-        frameSrc: ["'none'"],
+        // same-origin previews (PDF/video) and the allow-listed video providers rendered by the embed block
+        frameSrc: ["'self'", 'https://www.youtube-nocookie.com', 'https://rutube.ru', 'https://vk.com'],
         objectSrc: ["'none'"],
         baseUri: ["'self'"],
         formAction: ["'self'"],
@@ -142,9 +146,11 @@ export async function buildApp(base: Omit<Services, 'hub' | 'bus' | 'metrics'> &
     metrics.httpDuration.labels(req.method, route, String(reply.statusCode)).observe(reply.elapsedTime / 1000);
   });
 
+  const logDenial = createDenialLogger(base.db, base.log);
   app.setErrorHandler((err: any, req, reply) => {
     if (err instanceof AppError) {
       if (err.status >= 500) req.log.error({ err }, err.message);
+      if (err.status === 403) logDenial(req, err.message);
       return reply.status(err.status).send({ error: { code: err.code, message: err.message, details: err.details }, correlationId: req.correlationId });
     }
     if (err instanceof ZodError) return reply.status(400).send({ error: { code: 'validation_error', message: 'Некорректные данные запроса', details: err.issues }, correlationId: req.correlationId });
@@ -154,6 +160,13 @@ export async function buildApp(base: Omit<Services, 'hub' | 'bus' | 'metrics'> &
     if (err.validation || err.code === 'FST_ERR_CTP_INVALID_MEDIA_TYPE' || err.code === 'FST_ERR_CTP_EMPTY_JSON_BODY' || err.statusCode === 400)
       return reply.status(400).send({ error: { code: 'bad_request', message: err.message }, correlationId: req.correlationId });
     if (err.code === '22P02') return reply.status(400).send({ error: { code: 'bad_request', message: 'Некорректный идентификатор' }, correlationId: req.correlationId });
+    if (isConnectionError(err)) {
+      req.log.error({ err }, 'database unavailable');
+      return reply
+        .status(503)
+        .header('retry-after', '5')
+        .send({ error: { code: 'db_unavailable', message: 'База данных временно недоступна. Изменение не сохранено — повторите попытку через несколько секунд.' }, correlationId: req.correlationId });
+    }
     req.log.error({ err }, 'unhandled error');
     return reply.status(500).send({ error: { code: 'internal', message: 'Внутренняя ошибка сервера. Данные не изменены, если операция не была подтверждена.' }, correlationId: req.correlationId });
   });
@@ -163,6 +176,17 @@ export async function buildApp(base: Omit<Services, 'hub' | 'bus' | 'metrics'> &
     if (services.cfg.webDist && existsSync(join(services.cfg.webDist, 'index.html'))) return reply.type('text/html').sendFile('index.html', services.cfg.webDist);
     return reply.status(404).send('Not found');
   });
+
+  // OpenAPI description generated from the registered routes (schemas are validated with zod inside handlers,
+  // so operations are listed with paths, methods and parameters only).
+  await app.register(swagger, {
+    openapi: {
+      info: { title: 'Корпоративная база знаний — API', version: '1' },
+      components: { securitySchemes: { session: { type: 'apiKey', in: 'cookie', name: SESSION_COOKIE }, token: { type: 'http', scheme: 'bearer' } } },
+      security: [{ session: [] }, { token: [] }],
+    },
+  });
+  app.get('/api/v1/openapi.json', { schema: { hide: true } as any, config: { rateLimit: false } as any }, async () => app.swagger());
 
   const routes = await import('./routes/index.js');
   await routes.registerRoutes(app, services);

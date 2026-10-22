@@ -32,6 +32,8 @@ export interface TreeNode {
   hasChildren: boolean;
   version: number;
   inheritPermissions: boolean;
+  /** Page has its own explicit grants (an exception to inherited rights). */
+  hasExplicitGrants?: boolean;
   collectionId: string | null;
   level: string;
   canEdit: boolean;
@@ -48,6 +50,8 @@ export interface PageDto {
   cover: { attachmentId?: string | null; url?: string | null; position?: number } | null;
   status: 'draft' | 'review' | 'published' | 'archived';
   inheritPermissions: boolean;
+  /** Page has its own explicit grants (an exception to inherited rights). */
+  hasExplicitGrants?: boolean;
   locked: boolean;
   wide: boolean;
   properties: Record<string, any>;
@@ -64,6 +68,10 @@ export interface PageDto {
   verifiedAt: string | null;
   needsReview: boolean;
   deletedAt: string | null;
+  /** Legal hold: excluded from purge and retention cleanup (set by org admins). */
+  legalHold?: boolean;
+  /** Properties the page template declares mandatory. */
+  requiredProperties?: string[];
   favorite: boolean;
   access: { level: string; actions: Record<string, boolean>; policy: Space['policy'] };
   readMode: 'live' | 'published';

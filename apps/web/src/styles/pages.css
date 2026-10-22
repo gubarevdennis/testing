@@ -275,3 +275,7 @@ summary.imp-report-row:hover { background: var(--surface-hover); }
 .doc-preview .dp-synced { border-left: 2px solid var(--accent); padding-left: 10px; }
 .doc-preview .dp-math { display: inline-block; }
 @media (max-width: 600px) { .doc-preview .dp-columns { grid-auto-flow: row; } }
+
+/* Home: continue where the user left off (R-TREE-008) */
+.home-continue { display: inline-flex; align-items: center; gap: 6px; max-width: 100%; margin: -12px 0 20px; }
+.home-continue .ellipsis { min-width: 0; }

@@ -1,0 +1,1128 @@
+# Статус требований модулей COLLAB, OFFLINE, HISTORY, TREE, PAGE, SEARCH (оценка по коду и тестам).
+- id: R-TREE-001
+  status: done
+  evidence: apps/server/src/services/pages.ts (closure table page_ancestors, лимита глубины нет)
+  note: нет автотеста на глубину >15
+- id: R-COLLAB-001
+  status: done
+  evidence: apps/server/src/collab/hub.ts, packages/shared/src/collab-client.ts; tests/integration/collab.test.ts (randomised convergence, offline), tests/resilience/crash-restart.test.ts
+  note: Yjs CRDT + собственный протокол с ACK после commit (docs/DECISIONS.md D-02)
+- id: R-HISTORY-001
+  status: done
+  evidence: apps/server/src/routes/admin.ts (retention min 90/365), docs/DECISIONS.md D-10
+- id: R-TREE-002
+  status: done
+  evidence: apps/web/src/layout/SidebarTree.tsx#newChild, apps/web/src/editor/Editor.tsx autoFocusTitle; tests/e2e/content.spec.ts (sidebar tree)
+- id: R-HISTORY-002
+  status: partial
+  evidence: apps/web/src/layout/treeActions.tsx (undo перемещения, восстановление из корзины), apps/server/src/routes/revisions.ts pre-restore
+  note: 'Не все операции обратимы: смена иконки/свойств/заголовка через API без отмены (только запись before в page_events)'
+- id: ROUTE-02
+  status: partial
+  evidence: tests/e2e/editor.spec.ts, tests/e2e/collab.spec.ts, tests/integration/content.test.ts (publishing workflow), tests/integration/acl.test.ts (moving changes audience)
+  note: Отдельные шаги покрыты, но сквозного E2E «черновик → офлайн → перенос в отдел с предпросмотром → согласование → публикация → откат» нет
+- id: ROUTE-05
+  status: partial
+  evidence: tests/integration/collab.test.ts (concurrent editing, offline and reconnection), tests/e2e/collab.spec.ts
+  note: Абзац + обрыв проверены интеграционно; одновременная правка таблицы и структуры с обрывом связи у одного из редакторов в E2E не проверена
+- id: E-01
+  status: done
+  evidence: apps/server/src/collab/hub.ts#persist (ACK после tx); tests/resilience/crash-restart.test.ts, tests/resilience/db-connection-loss.test.ts
+- id: E-02
+  status: partial
+  evidence: packages/shared/src/collab-client.ts#restorePending, apps/web/src/sync/idb.ts, apps/web/src/components/page/SyncStatus.tsx; tests/integration/collab.test.ts (pending store)
+  note: 'Очередь переживает перезапуск; после перезагрузки вкладки без сети страница не открывается: GET /api/v1/pages/:id не кешируется (usePage в apps/web/src/hooks/data.ts, PageError в PageView) — очередь
+    в IndexedDB цела, но статус и локальный текст не видны до появления сети'
+- id: E-03
+  status: done
+  evidence: apps/server/src/collab/hub.ts#acceptUpdate (dedupe по op_id); tests/integration/collab.test.ts, tests/resilience/crash-restart.test.ts
+- id: E-04
+  status: partial
+  evidence: apps/server/src/collab/hub.ts, tests/integration/collab.test.ts (delete block while editing)
+  note: CRDT не перезаписывает молча обычные правки, но правка внутри одновременно удалённого/перемещённого блока исчезает без объяснения (остаётся только в doc_updates/ревизиях); конфликтного UI нет
+- id: E-05
+  status: done
+  evidence: apps/server/src/services/pages.ts (move/trash/restore в одной транзакции + lockTree)
+- id: E-06
+  status: done
+  evidence: packages/shared/src/editor/nodes/links.ts (pageLink/pageMention по pageId), /p/:id
+- id: E-13
+  status: done
+  evidence: packages/shared/src/collab-client.ts#setStatus, apps/web/src/components/page/SyncStatus.tsx; tests/integration/collab.test.ts durability, tests/e2e/editor.spec.ts, tests/resilience/db-connection-loss.test.ts
+- id: R-TREE-003
+  status: done
+  evidence: apps/web/src/layout/SidebarTree.tsx (lazy per-parent queries, virtualizer, DnD autoscroll), apps/web/src/state/ui.ts
+- id: R-HISTORY-003
+  status: done
+  evidence: apps/server/src/routes/revisions.ts (restore, restore-block), apps/server/src/services/pages.ts#restorePage; tests/integration/collab.test.ts, tests/integration/core.test.ts
+- id: R-COLLAB-002
+  status: done
+  evidence: apps/server/src/collab/hub.ts#persist; tests/resilience/crash-restart.test.ts, tests/resilience/db-connection-loss.test.ts
+- id: R-OFFLINE-001
+  status: done
+  evidence: apps/server/src/collab/hub.ts (PostgreSQL doc_updates/doc_state), apps/web/src/sync/collab.ts (IndexedDB только реплика/очередь)
+- id: R-COLLAB-003
+  status: done
+  evidence: packages/shared/src/collab-client.ts (saved только при пустой очереди после ACK)
+- id: R-COLLAB-004
+  status: done
+  evidence: apps/server/src/collab/hub.ts, apps/server/src/collab/ydoc.ts (CRDT, LWW не используется для содержимого)
+  note: Свойства страницы (PATCH properties) без expectedVersion — фактически LWW по ключам; клиент expectedVersion не передаёт
+- id: R-TREE-004
+  status: done
+  evidence: apps/server/src/services/pages.ts#movePage; tests/integration/core.test.ts (moves keep ids)
+- id: D-01
+  status: done
+  evidence: apps/server/src/collab/hub.ts; tests/resilience/crash-restart.test.ts, tests/resilience/db-connection-loss.test.ts
+- id: D-02
+  status: done
+  evidence: apps/server/src/collab/hub.ts#acceptUpdate; tests/integration/collab.test.ts (re-delivered operation)
+- id: D-03
+  status: done
+  evidence: 'apps/server/src/collab/hub.ts#run (цепочка на документ), #reload'
+  note: нет автотеста изоляции между документами
+- id: D-04
+  status: done
+  evidence: apps/server/src/routes/revisions.ts; tests/integration/collab.test.ts
+- id: D-06
+  status: done
+  evidence: apps/server/src/services/pages.ts#movePage; tests/integration/core.test.ts
+- id: D-10
+  status: done
+  evidence: packages/shared/src/collab-client.ts#setStatus, apps/web/src/components/page/SyncStatus.tsx; tests/integration/collab.test.ts
+- id: R-COLLAB-005
+  status: partial
+  evidence: tests/e2e/collab.spec.ts, tests/e2e/content.spec.ts (комментарии), tests/integration/content.test.ts (mentions, publishing)
+  note: Функции есть; согласование/публикация и упоминания покрыты только интеграционными тестами, не E2E
+- id: R-SEARCH-001
+  status: done
+  evidence: apps/server/src/ocr/ocr.ts
+- id: R-TREE-005
+  status: partial
+  evidence: apps/server/src/services/pages.ts, apps/server/migrations/0001_core.sql
+  note: Organization→Space→Page без отдельной сущности Workspace; API-лимит глубины 15 не реализован
+- id: R-PAGE-001
+  status: partial
+  evidence: apps/server/migrations/0001_core.sql (pages)
+  note: Нет slug и тегов; остальное есть
+- id: R-PAGE-002
+  status: partial
+  evidence: apps/server/src/jobs/worker.ts#indexPage (page_links), apps/server/src/routes/pages.ts backlinks
+  note: Нет типа «связанная страница»; page_links не различает ссылку и упоминание (kind всегда link)
+- id: R-PAGE-003
+  status: done
+  evidence: apps/web/src/pages/PageView.tsx (/p/:id)
+  note: Только ID, без slug
+- id: R-TREE-006
+  status: partial
+  evidence: apps/web/src/layout/SidebarTree.tsx, apps/web/src/layout/Sidebar.tsx
+  note: Нет поиска по дереву и «Недавних» в боковой панели (недавние только в Ctrl+K)
+- id: R-PAGE-004
+  status: partial
+  evidence: apps/web/src/pages/PageView.tsx
+  note: Нет меток (тегов) на экране страницы
+- id: R-PAGE-005
+  status: done
+  evidence: apps/web/src/editor/menus/BlockHandle.tsx («Копировать ссылку на блок»), ?block=
+- id: R-SEARCH-002
+  status: done
+  evidence: apps/server/src/services/search.ts (matchedIn image), apps/web/src/pages/SearchPage.tsx; tests/integration/content.test.ts (OCR)
+- id: R-SEARCH-003
+  status: partial
+  evidence: apps/server/src/jobs/worker.ts#indexPage
+  note: Комментарии и содержимое файлов (DOCX/PDF) не индексируются, только имена файлов; тегов нет
+- id: R-SEARCH-004
+  status: done
+  evidence: apps/server/src/services/search.ts; tests/integration/content.test.ts (morphology, typo, wrong layout), tests/integration/gaps.test.ts
+  note: Отдельного фильтра «тип» нет — есть «in» (текст/изображения/файлы)
+- id: R-SEARCH-005
+  status: done
+  evidence: apps/web/src/layout/QuickSwitcher.tsx, apps/web/src/layout/AppShell.tsx, apps/web/src/pages/SearchPage.tsx; tests/e2e/collab.spec.ts (jumps to the block)
+- id: R-PAGE-006
+  status: partial
+  evidence: apps/web/src/pages/PageView.tsx#Breadcrumbs/Backlinks, blocks.tsx#TocView
+  note: Нет «связанных материалов»
+- id: R-SEARCH-006
+  status: done
+  evidence: apps/server/src/services/search.ts#search/suggest/correctedQuery (ACL до подсчёта); tests/integration/content.test.ts
+- id: R-SEARCH-007
+  status: done
+  evidence: apps/server/src/services/pages.ts (reindex-subtree), apps/server/src/collab/hub.ts#flushNow (index-page)
+- id: R-COLLAB-006
+  status: done
+  evidence: apps/web/src/editor/clientExtensions.ts (CollaborationCaret), apps/web/src/components/page/Presence.tsx; tests/e2e/collab.spec.ts
+  note: E2E проверяет присутствие, курсоры — нет
+- id: R-COLLAB-007
+  status: done
+  evidence: packages/shared/src/collab-client.ts, apps/web/src/sync/collab.ts; tests/integration/collab.test.ts offline, tests/e2e/editor.spec.ts offline
+- id: R-COLLAB-008
+  status: done
+  evidence: tests/integration/collab.test.ts (randomised convergence, fast-check)
+- id: R-HISTORY-004
+  status: done
+  evidence: apps/server/src/routes/revisions.ts#restore; tests/integration/collab.test.ts, tests/e2e/collab.spec.ts
+- id: R-COLLAB-009
+  status: partial
+  evidence: tests/integration/collab.test.ts
+  note: Есть тесты конфликтов при отключённой сети и отклонении невалидной схемы; нет тестов конфликтов при смене схемы (миграции) и копировании блока
+- id: R-HISTORY-005
+  status: done
+  evidence: apps/server/src/routes/revisions.ts (authors, summary, published), apps/web/src/components/page/HistoryPanel.tsx
+- id: R-COLLAB-010
+  status: done
+  evidence: apps/web/src/components/page/SyncStatus.tsx, apps/web/src/sync/collab.ts (beforeunload/flush)
+- id: R-HISTORY-006
+  status: done
+  evidence: apps/server/src/collab/hub.ts (AUTO_REVISION_MS), apps/server/src/routes/revisions.ts publish, import revisions
+- id: R-HISTORY-007
+  status: done
+  evidence: apps/server/src/services/revisions.ts#diffDocs (added/removed/moved/changed), apps/web/src/components/page/HistoryPanel.tsx
+- id: R-SEARCH-008
+  status: done
+  evidence: docs/DECISIONS.md D-01, docs/ARCHITECTURE.md §6
+  note: Вместо Redis/OpenSearch — PostgreSQL FTS + outbox (решение задокументировано)
+- id: R-COLLAB-011
+  status: done
+  evidence: apps/server/src/collab/hub.ts (doc_updates + snapshot), apps/server/migrations/0001_core.sql
+- id: R-PAGE-007
+  status: partial
+  evidence: apps/server/migrations/0001_core.sql
+  note: Нет отдельных Workspace и DocumentBlock (блоки внутри CRDT); Import/Export/OCRJob — общая таблица jobs
+- id: R-PAGE-008
+  status: partial
+  evidence: apps/server/migrations/0001_core.sql (pages)
+  note: Нет slug; content_schema_version есть, но не используется
+- id: R-PAGE-009
+  status: partial
+  evidence: apps/server/src/routes/pages.ts
+  note: Нет GET /api/v1/pages (список); OpenAPI-спецификации нет
+- id: R-PAGE-010
+  status: partial
+  evidence: apps/server/src/routes/pages.ts (move, duplicate, restore), apps/server/src/routes/revisions.ts (publish)
+  note: Эндпоинты есть, OpenAPI нет
+- id: R-HISTORY-008
+  status: partial
+  evidence: apps/server/src/routes/revisions.ts
+  note: Восстановление — POST /pages/{id}/revisions/{rid}/restore вместо /revisions/{revisionId}/restore; OpenAPI нет
+- id: R-SEARCH-009
+  status: partial
+  evidence: apps/server/src/routes/search-comments.ts
+  note: Параметр spaceId вместо space, параметра type нет; OpenAPI нет
+- id: SC-01
+  status: done
+  evidence: apps/server/src/services/pages.ts; tests/integration/core.test.ts (moves keep ids, trash and restore)
+- id: SC-03
+  status: done
+  evidence: apps/web/src/layout/SidebarTree.tsx (клавиатура, pointer DnD, touch-хэндл), apps/web/src/layout/treeActions.tsx
+  note: DnD и клавиатура дерева автотестами не проверены (название E2E упоминает keyboard navigation, но не проверяет)
+- id: SC-11
+  status: done
+  evidence: apps/web/src/editor/clientExtensions.ts (Tiptap Collaboration → y-tiptap yUndoPlugin, own origin only; undoRedo disabled in packages/shared/src/editor/extensions.ts)
+  note: нет автотеста
+- id: SC-23
+  status: done
+  evidence: tests/integration/content.test.ts (OCR searchable with origin marker)
+- id: SC-25
+  status: partial
+  evidence: tests/integration/collab.test.ts (two editors same paragraph), tests/e2e/collab.spec.ts
+  note: Таблица одновременно двумя авторами не тестируется; серверная валидация схемы может отвергнуть слитое состояние таблицы (NACK invalid_update → фатальная ошибка у клиента)
+- id: SC-26
+  status: done
+  evidence: tests/integration/collab.test.ts (offline edits ... SC-26)
+- id: SC-27
+  status: done
+  evidence: apps/web/src/editor/clientExtensions.ts (Tiptap Collaboration → y-tiptap yUndoPlugin, own origin only; undoRedo disabled in packages/shared/src/editor/extensions.ts)
+  note: нет автотеста
+- id: SC-28
+  status: done
+  evidence: tests/integration/collab.test.ts (SC-28)
+- id: R-COLLAB-012
+  status: done
+  evidence: apps/web/src/editor/Editor.tsx, apps/web/src/components/page/SyncStatus.tsx, apps/web/src/pages/PageView.tsx
+  note: Кнопки «Сохранить» нет; статус скрыт в режиме чтения опубликованной версии (ожидаемо)
+- id: R-HISTORY-009
+  status: done
+  evidence: apps/web/src/editor/clientExtensions.ts (Tiptap Collaboration → y-tiptap yUndoPlugin, own origin only; undoRedo disabled in packages/shared/src/editor/extensions.ts)
+  note: нет автотеста
+- id: R-PAGE-011
+  status: partial
+  evidence: apps/web/src/components/IconPicker.tsx
+  note: Только emoji; своей/библиотечной (SVG/загруженной) иконки нет
+- id: R-PAGE-012
+  status: missing
+  evidence: apps/server/src/routes/pages.ts (cover принимается API)
+  note: UI обложки отсутствует
+- id: R-COLLAB-013
+  status: done
+  evidence: packages/shared/src/collab-client.ts (локальное применение, ACK асинхронно), apps/web/src/layout/treeActions.tsx
+- id: R-COLLAB-014
+  status: done
+  evidence: apps/web/src/components/page/SyncStatus.tsx (Сохранение…/Сохранено/Нет связи/Сохранено на устройстве/Ошибка сохранения)
+  note: Формулировки отличаются от ТЗ, семантика совпадает
+- id: R-COLLAB-015
+  status: done
+  evidence: packages/shared/src/collab-client.ts#scheduleReconnect (exp backoff + jitter), HELLO/SYNC по state vector
+- id: R-OFFLINE-002
+  status: done
+  evidence: apps/web/src/sync/idb.ts, packages/shared/src/collab-client.ts#restorePending; tests/integration/collab.test.ts (pending store)
+  note: Тест — на уровне провайдера в Node, не в браузере
+- id: R-COLLAB-016
+  status: done
+  evidence: apps/server/src/collab/hub.ts#persist (ACK после commit транзакции), validateDoc
+- id: R-HISTORY-010
+  status: done
+  evidence: apps/web/src/admin/OrgSettingsSection.tsx, apps/server/src/jobs/worker.ts#maintenance
+- id: R-COLLAB-017
+  status: partial
+  evidence: apps/web/src/editor/Editor.tsx#FatalBanner, packages/shared/src/collab-client.ts NACK forbidden/persist_failed
+  note: Нет обработки переполнения IndexedDB; при отзыве прав (NACK forbidden / ACCESS) экспорт черновика не предлагается, а PageView пишет «Несохранённых изменений нет» даже при непустой очереди; при отказе
+    записи на сервере показывается «Сохранение…» без видимой ошибки
+- id: AT-47
+  status: done
+  evidence: apps/web/src/editor/clientExtensions.ts (Tiptap Collaboration → y-tiptap yUndoPlugin, own origin only; undoRedo disabled in packages/shared/src/editor/extensions.ts)
+  note: нет автотеста
+- id: AT-53
+  status: done
+  evidence: apps/web/src/pages/PageView.tsx#patchPage, apps/web/src/hooks/useEvents.ts (page-changed/tree-changed)
+  note: нет автотеста
+- id: AT-55
+  status: done
+  evidence: apps/server/src/services/pages.ts#movePage (вложения привязаны к page_id), tests/integration/acl.test.ts
+- id: AT-56
+  status: partial
+  evidence: tests/integration/collab.test.ts (same paragraph)
+  note: Соседние строки таблицы не тестируются
+- id: AT-57
+  status: done
+  evidence: tests/integration/collab.test.ts, tests/e2e/editor.spec.ts offline
+- id: AT-58
+  status: done
+  evidence: tests/integration/collab.test.ts (pending store, AT-58)
+  note: Проверено на уровне провайдера (Node), не в браузере
+- id: AT-59
+  status: partial
+  evidence: tests/resilience/db-connection-loss.test.ts, apps/web/src/editor/Editor.tsx#FatalBanner
+  note: Ложного «Сохранено» нет (тест), но ошибка хранилища не видна (только «Сохранение…») и экспорт не предлагается вне фатального состояния
+- id: R-PAGE-013
+  status: partial
+  evidence: apps/web/src/layout/Sidebar.tsx, apps/web/src/layout/SidebarTree.tsx, apps/web/src/pages/SpacePage.tsx
+  note: Ctrl/Cmd+N не реализован
+- id: R-PAGE-014
+  status: partial
+  evidence: apps/web/src/editor/Editor.tsx (фокус в названии, Enter → первый блок)
+  note: Пустая статья не предлагает «Написать/Импортировать/Шаблон/Таблица» (только placeholder)
+- id: R-PAGE-015
+  status: partial
+  evidence: apps/web/src/pages/PageView.tsx
+  note: Название/иконка/статус/место без перезагрузки; обложки нет, иконки только emoji
+- id: R-COLLAB-018
+  status: done
+  evidence: packages/shared/src/collab-client.ts, apps/server/src/collab/hub.ts (awareness отдельно от Y.Doc)
+- id: R-COLLAB-019
+  status: partial
+  evidence: packages/shared/src/collab-client.ts (backoff+jitter, PING, ack timeout, opId), apps/server/src/collab/hub.ts dedupe
+  note: Нет backpressure (контроль bufferedAmount/размера очереди отправки)
+- id: R-OFFLINE-003
+  status: partial
+  evidence: packages/shared/src/collab-client.ts#flushBatch, apps/web/src/sync/idb.ts
+  note: Запись в IndexedDB не ожидается (fire-and-forget, ошибки глушатся), статус «Сохранено на устройстве» показывается до/без подтверждения записи; durable-«Сохранено» корректно
+- id: R-COLLAB-020
+  status: done
+  evidence: apps/server/src/collab/hub.ts#flushNow (snapshot каждые 300 seq), apps/server/src/jobs/worker.ts#maintenance, Y.decodeUpdate+validateDoc; tests/integration/collab.test.ts schema-invalid
+- id: R-COLLAB-021
+  status: partial
+  evidence: tests/integration/collab.test.ts, tests/integration/core.test.ts
+  note: 'Автоматизированы: один блок двумя, удаление/правка, смена прав, обрыв, повторное открытие; нет: одновременные перемещения блоков, истечение сессии, спящий ноутбук'
+- id: R-OFFLINE-004
+  status: partial
+  evidence: apps/web/src/sync/collab.ts (y-indexeddb реплика открытых страниц), apps/web/public/sw.js
+  note: Нет выбора страниц/пространств для офлайна, нет квоты устройства, нет общего индикатора несинхронизированных страниц (pagesWithPending в idb.ts не используется)
+- id: AT-61
+  status: done
+  evidence: tests/e2e/editor.spec.ts (create page), tests/e2e/helpers.ts#newPage
+- id: AT-62
+  status: partial
+  evidence: apps/web/src/pages/PageView.tsx
+  note: Обложки нет
+- id: AT-74
+  status: done
+  evidence: tests/integration/collab.test.ts (AT-74)
+- id: AT-75
+  status: partial
+  evidence: packages/shared/src/collab-client.ts, apps/web/src/sync/idb.ts
+  note: 'после перезагрузки вкладки без сети страница не открывается: GET /api/v1/pages/:id не кешируется (usePage в apps/web/src/hooks/data.ts, PageError в PageView) — очередь в IndexedDB цела, но статус
+    и локальный текст не видны до появления сети'
+- id: AT-76
+  status: done
+  evidence: tests/integration/collab.test.ts (AT-76)
+  note: Длительность 5 мин не моделируется; логика от длительности не зависит
+- id: AT-77
+  status: partial
+  evidence: tests/integration/collab.test.ts (AT-77)
+  note: Тест фиксирует, что правка в удалённом блоке исчезает из документа; ни сохранения, ни конфликтной отметки — по критерию ТЗ это молчаливая потеря
+- id: AT-86
+  status: done
+  evidence: apps/web/src/components/page/HistoryPanel.tsx, apps/server/src/routes/revisions.ts, apps/server/src/services/pages.ts#restorePage
+  note: нет автотеста
+- id: AT-90
+  status: partial
+  evidence: apps/web/src/editor/Editor.tsx#FatalBanner (скачать Markdown), apps/web/src/pages/PageView.tsx#PageError
+  note: Извлечение правок только в фатальном состоянии; экран офлайна не даёт извлечь локальные правки; экрана конфликта нет
+- id: R-TREE-007
+  status: partial
+  evidence: apps/web/src/layout/Sidebar.tsx
+  note: Нет «Недавних» в левой панели
+- id: R-PAGE-016
+  status: done
+  evidence: apps/web/src/pages/PageView.tsx#menuItems, apps/web/src/components/page/PublishBar.tsx (архив)
+- id: R-SEARCH-010
+  status: done
+  evidence: apps/web/src/layout/QuickSwitcher.tsx, apps/web/src/pages/PageView.tsx#Backlinks
+- id: R-PAGE-017
+  status: done
+  evidence: packages/shared/src/editor/nodes/links.ts
+- id: R-TREE-008
+  status: partial
+  evidence: apps/web/src/state/ui.ts (expanded/collapsedSections в localStorage)
+  note: Последняя открытая статья после перезапуска не восстанавливается
+- id: R-PAGE-018
+  status: done
+  evidence: apps/web/src/layout/Sidebar.tsx#newPage; tests/e2e/editor.spec.ts
+- id: R-PAGE-019
+  status: done
+  evidence: apps/server/src/collab/hub.ts#flushNow (title из Y.Text), apps/web/src/components/page/SyncStatus.tsx; tests/integration/collab.test.ts (title)
+- id: R-HISTORY-011
+  status: done
+  evidence: apps/web/src/editor/clientExtensions.ts (Tiptap Collaboration → y-tiptap yUndoPlugin, own origin only; undoRedo disabled in packages/shared/src/editor/extensions.ts)
+  note: нет автотеста
+- id: R-OFFLINE-005
+  status: partial
+  evidence: packages/shared/src/collab-client.ts, apps/web/src/components/page/SyncStatus.tsx
+  note: Операция отправляется, не дожидаясь записи в IndexedDB; статусы реализованы
+- id: R-COLLAB-022
+  status: manual
+  evidence: apps/web/src/components/page/Presence.tsx, CollaborationCaret
+  note: Визуальная проверка
+- id: R-COLLAB-023
+  status: done
+  evidence: packages/shared/src/collab-client.ts, apps/server/src/collab/hub.ts; tests/resilience/crash-restart.test.ts (ack lost)
+- id: R-OFFLINE-006
+  status: partial
+  evidence: apps/web/src/sync/idb.ts, packages/shared/src/collab-client.ts
+  note: Переживает закрытие вкладки; предупреждения о переполнении хранилища нет (QuotaExceeded не обрабатывается)
+- id: R-COLLAB-024
+  status: partial
+  evidence: tests/integration/collab.test.ts, tests/integration/core.test.ts (COLLAB-194), tests/integration/content.test.ts (attachment versions)
+  note: Параллельные правки таблицы и вложения не тестируются; правила конфликтов удаления не сохраняют правку
+- id: R-COLLAB-025
+  status: done
+  evidence: packages/shared/src/collab-client.ts, apps/web/src/components/page/SyncStatus.tsx
+- id: R-COLLAB-026
+  status: done
+  evidence: apps/server/src/collab/hub.ts (seq, validateDoc), scripts/backup/*
+  note: Проверка восстановления бэкапов — в модуле BACKUP
+- id: UX13-01
+  status: done
+  evidence: tests/e2e/editor.spec.ts, tests/e2e/helpers.ts
+- id: UX13-07
+  status: done
+  evidence: apps/web/src/editor/extensions/suggest.tsx#pageLinkExtension, apps/web/src/lib/pageRefs.ts
+  note: нет автотеста
+- id: UX13-08
+  status: done
+  evidence: tests/integration/collab.test.ts
+- id: UX13-10
+  status: partial
+  evidence: apps/web/src/editor/clientExtensions.ts (Tiptap Collaboration → y-tiptap yUndoPlugin, own origin only; undoRedo disabled in packages/shared/src/editor/extensions.ts)
+  note: Перенос блока = удаление+вставка; отмена удаляет перемещённую копию вместе с правками другого участника внутри неё; теста нет
+- id: UX13-14
+  status: done
+  evidence: tests/integration/collab.test.ts, tests/integration/core.test.ts, tests/e2e/collab.spec.ts
+- id: UX13-15
+  status: done
+  evidence: tests/resilience/crash-restart.test.ts, tests/resilience/db-connection-loss.test.ts
+- id: UX13-18
+  status: done
+  evidence: apps/server/src/services/search.ts, apps/web/src/pages/PageView.tsx#Backlinks
+- id: R-TREE-009
+  status: done
+  evidence: apps/web/src/layout/Sidebar.tsx, apps/web/src/layout/SidebarTree.tsx (секции сворачиваются независимо)
+- id: R-TREE-010
+  status: partial
+  evidence: 'apps/web/src/styles/tokens.css (--row-h: 32px), apps/web/src/styles/layout.css'
+  note: Зоны разделены; высота строки 32 px вместо 36, на touch 40 px вместо 44
+- id: R-TREE-011
+  status: partial
+  evidence: apps/web/src/state/ui.ts#setSidebarWidth (240–420, по умолчанию 280), apps/web/src/layout/SidebarTree.tsx
+  note: Нет «фокуса ветки» для глубокой вложенности
+- id: R-TREE-012
+  status: done
+  evidence: apps/web/src/styles/layout.css (.tree-row grid, .tree-actions opacity)
+- id: R-TREE-013
+  status: partial
+  evidence: apps/web/src/styles/layout.css (.chev transition), apps/web/src/styles/tokens.css (reduced-motion)
+  note: При переходе на страницу предки в дереве не раскрываются автоматически
+- id: R-TREE-014
+  status: done
+  evidence: apps/web/src/layout/SidebarTree.tsx (before/after/inside, Alt+Shift+↑/↓), apps/web/src/layout/treeActions.tsx (undo-тост, подтверждение аудитории), MoveDialog
+- id: R-TREE-015
+  status: done
+  evidence: apps/web/src/layout/SidebarTree.tsx (useVirtualizer, lazy), apps/server/src/services/tree.ts#visibleChildren
+  note: Поиска по дереву нет (см. R-TREE-006)
+- id: R-TREE-016
+  status: partial
+  evidence: apps/web/src/layout/SidebarTree.tsx#nodeMenu
+  note: Нет пункта «Права/Поделиться» в контекстном меню дерева
+- id: R-TREE-017
+  status: done
+  evidence: apps/server/src/services/pages.ts#lockTree/movePage, apps/server/src/services/tree.ts (cursor after), packages/shared/src/sort-key.ts; tests/integration/core.test.ts
+- id: E2E-091
+  status: done
+  evidence: apps/web/src/layout/SidebarTree.tsx (.tree-chevron onToggle)
+  note: нет автотеста
+- id: E2E-092
+  status: done
+  evidence: apps/web/src/layout/SidebarTree.tsx (title → onOpen)
+  note: нет автотеста
+- id: E2E-093
+  status: done
+  evidence: apps/web/src/styles/layout.css (действия резервируют колонку, opacity)
+  note: нет автотеста
+- id: E2E-094
+  status: done
+  evidence: apps/web/src/styles/layout.css (minmax(0,1fr), ellipsis)
+  note: нет автотеста
+- id: E2E-095
+  status: partial
+  evidence: apps/web/src/layout/SidebarTree.tsx (INDENT 14px)
+  note: Фокуса ветки нет; 12 уровней только отступами
+- id: E2E-096
+  status: done
+  evidence: apps/web/src/state/ui.ts (expanded в localStorage)
+  note: нет автотеста
+- id: E2E-097
+  status: done
+  evidence: tests/integration/core.test.ts (moves keep ids, order respected)
+- id: E2E-099
+  status: done
+  evidence: tests/integration/core.test.ts (E2E-099)
+- id: E2E-101
+  status: done
+  evidence: tests/integration/content.test.ts (applies ACL before results)
+- id: E2E-118
+  status: done
+  evidence: apps/web/src/editor/clientExtensions.ts (Tiptap Collaboration → y-tiptap yUndoPlugin, own origin only; undoRedo disabled in packages/shared/src/editor/extensions.ts)
+  note: нет автотеста
+- id: R-SEARCH-011
+  status: done
+  evidence: apps/server/src/services/search.ts
+- id: V15-A05
+  status: done
+  evidence: apps/server/src/services/search.ts (accessForPages), tests/integration/acl.test.ts (restricted child)
+  note: Поиск по исключённой дочерней странице отдельно не тестируется
+- id: R-SEARCH-012
+  status: partial
+  evidence: apps/web/src/layout/QuickSwitcher.tsx, apps/web/src/pages/SearchPage.tsx, apps/web/src/editor/extensions/find.ts
+  note: Глобальный, пространство (фильтр) и страница (Ctrl+F) есть; поиска по таблицам/свойствам как области и переключения области одним действием в Ctrl+K нет
+- id: R-SEARCH-013
+  status: partial
+  evidence: apps/server/src/jobs/worker.ts#indexPage, apps/server/src/services/search.ts
+  note: Нет индексации содержимого вложенных DOCX/PDF; остальное (заголовки, текст, свойства, OCR, морфология, опечатки, транслит, синонимы) есть
+- id: R-SEARCH-014
+  status: done
+  evidence: apps/server/src/services/search.ts; tests/integration/content.test.ts
+- id: R-SEARCH-015
+  status: done
+  evidence: apps/server/src/services/search.ts (ACL на лету), apps/server/src/jobs/worker.ts (outbox, attempts), apps/server/src/routes/health.ts (searchIndexLag)
+- id: R-SEARCH-016
+  status: partial
+  evidence: apps/web/src/layout/QuickSwitcher.tsx, apps/web/src/pages/SearchPage.tsx
+  note: Избранное в быстром поиске отсутствует; фильтры сохраняются только в URL
+- id: R-SEARCH-017
+  status: partial
+  evidence: apps/server/src/services/search.ts
+  note: Права применяются немедленно; p95 ≤300/≤800 мс на 100 тыс. страниц не измерялись (нагрузочного теста поиска нет)
+- id: R-PAGE-020
+  status: done
+  evidence: apps/web/src/pages/PageView.tsx (PageError 404 + запрос доступа), apps/server/src/routes/pages.ts#resolve
+- id: R-PAGE-021
+  status: done
+  evidence: apps/server/src/services/pages.ts#duplicatePage (вложения только при праве download, гостевые гранты не копируются); tests/integration/core.test.ts
+  note: Внутренние ссылки внутри копии ветки не перенаправляются на копии
+- id: R-HISTORY-012
+  status: done
+  evidence: apps/server/src/collab/hub.ts#flushNow (page_events edit), apps/server/src/routes/pages.ts (updated/moved), apps/server/src/routes/revisions.ts
+- id: R-HISTORY-013
+  status: partial
+  evidence: apps/server/src/routes/revisions.ts#restore-block, apps/web/src/components/page/HistoryPanel.tsx
+  note: Восстановление блока не создаёт новую версию сразу (только событие restored-block)
+- id: R-HISTORY-014
+  status: partial
+  evidence: apps/server/src/routes/revisions.ts#restore, apps/server/src/collab/hub.ts#applyServerChange
+  note: Неподтверждённые операции других сливаются CRDT, но редакторы не предупреждаются о восстановлении
+- id: R-HISTORY-015
+  status: partial
+  evidence: apps/server/src/jobs/worker.ts#maintenance, apps/server/src/services/pages.ts#purgePages
+  note: legal_hold учитывается, но установить его через API/UI нельзя
+- id: R-PAGE-022
+  status: partial
+  evidence: apps/web/src/components/page/PageInfoPanel.tsx
+  note: Панель только для чтения; обязательность свойств из шаблона не применяется
+- id: R-PAGE-023
+  status: missing
+  evidence: ''
+  note: Редактирования свойств в контексте нет (API PATCH properties есть, UI нет)
+- id: R-PAGE-024
+  status: done
+  evidence: apps/web/src/pages/PageView.tsx#menuItems (видимость/disabled по правам)
+  note: «Архивировать» в PublishBar, не в меню
+- id: V16-S01
+  status: done
+  evidence: tests/e2e/collab.spec.ts (search ... jumps to the block)
+- id: V16-S02
+  status: done
+  evidence: tests/integration/content.test.ts (space scope does not leak)
+- id: V16-S03
+  status: done
+  evidence: apps/server/src/services/search.ts; tests/integration/content.test.ts
+- id: V16-S07
+  status: done
+  evidence: apps/server/src/routes/pages.ts#resolve, blocks.tsx#RefLabel
+- id: V16-S10
+  status: done
+  evidence: apps/server/src/services/pages.ts#duplicatePage
+  note: Исключение недоступных вложений не тестируется
+- id: V16-S11
+  status: partial
+  evidence: apps/server/src/services/revisions.ts#diffDocs (текст), apps/server/src/routes/revisions.ts#restore; tests/integration/collab.test.ts
+  note: Сравнение свойств между версиями отсутствует (ревизия хранит только заголовок и содержимое) — по свойствам только журнал updated
+- id: V16-S12
+  status: done
+  evidence: tests/integration/collab.test.ts, tests/resilience/crash-restart.test.ts
+- id: R-PAGE-025
+  status: done
+  evidence: apps/web/src/layout/Sidebar.tsx, apps/web/src/layout/SidebarTree.tsx, apps/web/src/editor/commands.tsx (subpage)
+- id: R-PAGE-026
+  status: partial
+  evidence: apps/server/src/routes/pages.ts backlinks, apps/server/src/jobs/worker.ts page_links
+  note: Отчёта о битых ссылках нет
+- id: R-COLLAB-027
+  status: done
+  evidence: apps/server/src/collab/hub.ts, docs/DECISIONS.md D-01 (Redis не используется)
+- id: R-COLLAB-028
+  status: done
+  evidence: apps/server/src/services/pages.ts#createPage (requestId), outbox (apps/server/src/jobs/worker.ts), imports idempotencyKey; tests/integration/core.test.ts
+- id: R-OFFLINE-007
+  status: partial
+  evidence: packages/shared/src/collab-client.ts, apps/web/src/sync/idb.ts, apps/web/src/components/page/SyncStatus.tsx
+  note: 'Очередь ключуется только pageId:generation, не пользователем: после выхода и входа другим пользователем в том же браузере чужие неподтверждённые операции будут отправлены от имени нового пользователя;
+    logout не чистит IndexedDB'
+- id: V17-F03
+  status: done
+  evidence: packages/shared/src/collab-client.ts, apps/web/src/sync/idb.ts; tests/integration/collab.test.ts (pending store)
+  note: Восстановление при открытии с сетью; браузерного теста нет
+- id: V17-F04
+  status: done
+  evidence: tests/resilience/crash-restart.test.ts (SIGKILL), tests/resilience/db-connection-loss.test.ts
+  note: Redis не используется; многоузловой отказ под нагрузкой не проверялся
+- id: R-PAGE-027
+  status: manual
+  evidence: apps/web/src/styles/layout.css
+  note: Иконки — визуальная проверка; обложек нет
+- id: V18-A12
+  status: manual
+  evidence: apps/web/src/styles/layout.css (.tree-icon)
+  note: Обложек нет; выравнивание иконок — визуальная проверка
+- id: V18-A20
+  status: done
+  evidence: packages/shared/src/collab-client.ts#restorePending; tests/integration/collab.test.ts
+- id: R-TREE-018
+  status: partial
+  evidence: apps/web/src/state/ui.ts#toggleSection/resetSidebar
+  note: Можно сворачивать секции и сбросить; нет скрытия/перестановки секций и админ-предустановки отдела; хранится только в localStorage
+- id: R-PAGE-028
+  status: done
+  evidence: apps/web/src/layout/SidebarTree.tsx «+», commands.tsx subpage, suggest.tsx «[[»
+- id: R-PAGE-029
+  status: partial
+  evidence: apps/web/src/components/IconPicker.tsx
+  note: Обложек нет, только emoji
+- id: R-PAGE-030
+  status: missing
+  evidence: ''
+  note: Peek-предпросмотра нет
+- id: R-PAGE-031
+  status: done
+  evidence: blocks.tsx#RefLabel/PageLinkView/PageMentionView, apps/web/src/lib/pageRefs.ts
+  note: Заголовок обновляется при повторном resolve (staleTime 60 с), не мгновенно
+- id: R-TREE-019
+  status: partial
+  evidence: apps/web/src/layout/SidebarTree.tsx
+  note: Зоны клика разделены, lazy-load с индикатором и retry есть; позиция прокрутки дерева не сохраняется между сессиями
+- id: R-TREE-020
+  status: done
+  evidence: apps/web/src/layout/SidebarTree.tsx, apps/web/src/layout/treeActions.tsx
+- id: R-TREE-021
+  status: partial
+  evidence: apps/web/src/editor/nodeviews/blocks.tsx#PageLinkView (child), apps/server/src/services/tree.ts
+  note: Дочерние в теле родителя — отдельные узлы pageLink, не синхронизированы с деревом (созданная в дереве не появляется в теле)
+- id: R-COLLAB-029
+  status: done
+  evidence: apps/web/src/components/page/SyncStatus.tsx, packages/shared/src/collab-client.ts
+- id: UX-121
+  status: done
+  evidence: tests/e2e/content.spec.ts (sidebar tree)
+- id: UX-122
+  status: done
+  evidence: apps/web/src/editor/extensions/suggest.tsx#pageLinkExtension
+  note: нет автотеста
+- id: UX-123
+  status: done
+  evidence: apps/web/src/editor/PagePicker.tsx, suggest.tsx
+  note: нет автотеста
+- id: UX-124
+  status: done
+  evidence: apps/web/src/lib/pageRefs.ts
+  note: Обновление по истечении кеша 60 с; нет автотеста
+- id: UX-125
+  status: done
+  evidence: blocks.tsx#RefLabel («(удалена)»)
+  note: нет автотеста
+- id: UX-126
+  status: done
+  evidence: apps/server/src/services/pages.ts#movePage, tests/integration/acl.test.ts (moving changes audience)
+- id: UX-127
+  status: missing
+  evidence: ''
+  note: Peek-предпросмотра нет
+- id: UX-128
+  status: missing
+  evidence: ''
+  note: Peek-предпросмотра нет
+- id: UX-129
+  status: done
+  evidence: apps/web/src/state/ui.ts
+  note: нет автотеста
+- id: UX-130
+  status: done
+  evidence: apps/web/src/state/ui.ts#resetSidebar, apps/web/src/layout/Sidebar.tsx
+  note: нет автотеста
+- id: UX-132
+  status: done
+  evidence: apps/web/src/layout/QuickSwitcher.tsx, apps/web/src/layout/AppShell.tsx
+- id: UX-133
+  status: done
+  evidence: apps/web/src/editor/extensions/find.ts, apps/web/src/editor/Editor.tsx#FindBar
+  note: нет автотеста
+- id: UX-134
+  status: done
+  evidence: BlockHandle.tsx, apps/web/src/editor/Editor.tsx scrollToBlock
+  note: нет автотеста
+- id: UX-138
+  status: done
+  evidence: apps/web/src/editor/clientExtensions.ts (Tiptap Collaboration → y-tiptap yUndoPlugin, own origin only; undoRedo disabled in packages/shared/src/editor/extensions.ts) (moveBlock + Mod-z)
+  note: нет автотеста
+- id: UX-144
+  status: done
+  evidence: tests/e2e/editor.spec.ts
+- id: UX-145
+  status: done
+  evidence: apps/web/src/components/IconPicker.tsx
+  note: нет автотеста
+- id: UX-148
+  status: done
+  evidence: apps/web/src/layout/SidebarTree.tsx (error row + retry)
+  note: нет автотеста
+- id: R-OFFLINE-008
+  status: done
+  evidence: packages/shared/src/collab-client.ts, tests/integration/collab.test.ts
+- id: E216
+  status: done
+  evidence: apps/web/src/layout/treeActions.tsx (кнопка «Отменить»); tests/integration/core.test.ts
+  note: Только интеграционный тест API, браузерного E2E нет
+- id: E219
+  status: done
+  evidence: tests/e2e/collab.spec.ts (two people edit the same page)
+- id: E220
+  status: done
+  evidence: tests/e2e/editor.spec.ts (offline edits are kept locally)
+- id: R-TREE-022
+  status: done
+  evidence: apps/server/src/services/pages.ts, apps/web/src/layout/SidebarTree.tsx, apps/web/src/components/MoveDialog.tsx; tests/integration/core.test.ts
+- id: R-HISTORY-016
+  status: done
+  evidence: apps/web/src/layout/treeActions.tsx#movePage (toast «Отменить»)
+- id: R-HISTORY-017
+  status: partial
+  evidence: apps/web/src/editor/clientExtensions.ts (Tiptap Collaboration → y-tiptap yUndoPlugin, own origin only; undoRedo disabled in packages/shared/src/editor/extensions.ts)
+  note: Undo для содержимого; структурные операции (права, перенос страницы) — отдельными механизмами, не через Ctrl+Z
+- id: R-HISTORY-018
+  status: done
+  evidence: apps/web/src/editor/clientExtensions.ts (Tiptap Collaboration → y-tiptap yUndoPlugin, own origin only; undoRedo disabled in packages/shared/src/editor/extensions.ts) (captureTimeout)
+- id: R-HISTORY-019
+  status: missing
+  evidence: ''
+  note: Меню истории операций с предпросмотром нет
+- id: R-HISTORY-020
+  status: done
+  evidence: apps/web/src/components/page/HistoryPanel.tsx, apps/web/src/help/HelpCenter.tsx
+- id: R-HISTORY-021
+  status: done
+  evidence: apps/web/src/editor/clientExtensions.ts (Tiptap Collaboration → y-tiptap yUndoPlugin, own origin only; undoRedo disabled in packages/shared/src/editor/extensions.ts)
+  note: нет автотеста
+- id: R-HISTORY-022
+  status: missing
+  evidence: ''
+  note: Граница undo-истории после перезагрузки не обозначается
+- id: UX21-187
+  status: done
+  evidence: apps/web/src/layout/treeActions.tsx undo; tests/integration/core.test.ts (undo restores position)
+- id: UX21-188
+  status: done
+  evidence: apps/server/src/services/pages.ts#movePage, tests/integration/acl.test.ts
+- id: UX21-189
+  status: done
+  evidence: tests/integration/core.test.ts (prevents moving into descendant)
+- id: UX21-196
+  status: done
+  evidence: apps/web/src/editor/clientExtensions.ts (Tiptap Collaboration → y-tiptap yUndoPlugin, own origin only; undoRedo disabled in packages/shared/src/editor/extensions.ts)
+  note: нет автотеста
+- id: UX21-197
+  status: done
+  evidence: apps/web/src/editor/clientExtensions.ts (Tiptap Collaboration → y-tiptap yUndoPlugin, own origin only; undoRedo disabled in packages/shared/src/editor/extensions.ts)
+  note: нет автотеста
+- id: UX21-198
+  status: done
+  evidence: apps/web/src/editor/clientExtensions.ts (Tiptap Collaboration → y-tiptap yUndoPlugin, own origin only; undoRedo disabled in packages/shared/src/editor/extensions.ts) (Mod-y, Shift-Mod-z)
+  note: нет автотеста
+- id: UX21-199
+  status: missing
+  evidence: ''
+  note: Меню истории действий у кнопок отмены нет
+- id: UX21-200
+  status: done
+  evidence: apps/web/src/editor/clientExtensions.ts (Tiptap Collaboration → y-tiptap yUndoPlugin, own origin only; undoRedo disabled in packages/shared/src/editor/extensions.ts)
+  note: нет автотеста
+- id: UX21-201
+  status: done
+  evidence: tests/integration/collab.test.ts
+- id: R-HISTORY-023
+  status: done
+  evidence: apps/web/src/editor/clientExtensions.ts (Tiptap Collaboration → y-tiptap yUndoPlugin, own origin only; undoRedo disabled in packages/shared/src/editor/extensions.ts); page_events (apps/server/src/routes/pages.ts
+    /events); page_revisions (apps/server/src/routes/revisions.ts)
+- id: R-HISTORY-024
+  status: done
+  evidence: apps/server/src/collab/hub.ts#flushNow (группировка правок автора); tests/integration/collab.test.ts (HIST-187)
+- id: R-HISTORY-025
+  status: done
+  evidence: apps/server/src/collab/hub.ts#persist (op_id, seq), snapshots
+  note: Append-only на уровне кода, без запрета UPDATE/DELETE в БД
+- id: R-HISTORY-026
+  status: partial
+  evidence: apps/server/src/routes/revisions.ts, apps/web/src/components/page/HistoryPanel.tsx
+  note: Выбор точки — только среди ревизий, не произвольной операции журнала
+- id: R-HISTORY-027
+  status: done
+  evidence: apps/web/src/editor/clientExtensions.ts (Tiptap Collaboration → y-tiptap yUndoPlugin, own origin only; undoRedo disabled in packages/shared/src/editor/extensions.ts)
+  note: нет автотеста
+- id: R-HISTORY-028
+  status: partial
+  evidence: apps/server/src/jobs/worker.ts#maintenance, apps/server/src/config.ts (90/365)
+  note: Сроки соблюдаются; юридическое удержание нельзя установить через API/UI
+- id: R-HISTORY-029
+  status: partial
+  evidence: apps/server/src/collab/hub.ts
+  note: Граница гарантии не отображается пользователю
+- id: R-HISTORY-030
+  status: done
+  evidence: apps/server/src/routes/attachments.ts (версии), view_history в packages/shared/src/permissions.ts
+  note: Сборщика мусора blob-ов нет — связанные файлы не удаляются
+- id: R-HISTORY-031
+  status: partial
+  evidence: apps/web/src/components/page/HistoryPanel.tsx
+  note: Фильтр только по типу версии; фильтров автор/дата/блок в UI нет; списка последних операций нет
+- id: R-COLLAB-030
+  status: done
+  evidence: apps/server/src/collab/hub.ts, apps/web/src/editor/extensions/blockIds.ts; tests/integration/collab.test.ts fuzz
+- id: R-COLLAB-031
+  status: partial
+  evidence: apps/server/src/collab/hub.ts#acceptUpdate (права, схема), apps/server/src/services/pages.ts (tx дерева)
+  note: Нет транзакционной координации поверх CRDT для таблиц/колонок; только валидация схемы с откатом
+- id: R-COLLAB-032
+  status: partial
+  evidence: tests/integration/collab.test.ts, tests/integration/core.test.ts, tests/integration/content.test.ts
+  note: 'Нет автотестов: формат+удаление, перенос блока+правка, удаление таблицы+строка, два устройства, restore во время работы других с проверкой их несохранённых правок'
+- id: R-COLLAB-033
+  status: partial
+  evidence: apps/web/src/editor/Editor.tsx#FatalBanner
+  note: Уведомления о невозможности слияния нет; отвергнутые правки доступны для экспорта только при фатальной ошибке
+- id: R-COLLAB-034
+  status: manual
+  evidence: apps/web/src/components/page/Presence.tsx (4 аватара + «+N»), apps/web/src/editor/clientExtensions.ts#caret
+  note: Визуальная проверка
+- id: R-COLLAB-035
+  status: done
+  evidence: apps/web/src/components/page/SyncStatus.tsx, packages/shared/src/collab-client.ts
+  note: Сохранение курсора/прокрутки при reconnect обеспечивается тем, что редактор не перемонтируется; браузерного теста нет
+- id: R-COLLAB-036
+  status: missing
+  evidence: ''
+  note: Диалога сравнения при неслиемой операции нет
+- id: R-COLLAB-037
+  status: partial
+  evidence: apps/server/src/collab/hub.ts, packages/shared/src/collab-client.ts
+  note: ACK/retry/идемпотентность/seq есть; периодической проверки согласованности нет (метрика kb_integrity_errors нигде не выставляется), миграции схемы содержимого не реализованы (content_schema_version
+    не используется)
+- id: HIST-187
+  status: partial
+  evidence: tests/integration/collab.test.ts (HIST-187)
+  note: Журнал есть; реконструкция состояния на произвольный шаг журнала не реализована
+- id: HIST-188
+  status: done
+  evidence: apps/web/src/editor/clientExtensions.ts (Tiptap Collaboration → y-tiptap yUndoPlugin, own origin only; undoRedo disabled in packages/shared/src/editor/extensions.ts)
+  note: нет автотеста
+- id: HIST-189
+  status: done
+  evidence: tests/integration/collab.test.ts (HIST-189)
+- id: HIST-190
+  status: partial
+  evidence: apps/web/src/components/page/HistoryPanel.tsx (sheet на мобильном)
+  note: Фильтров автора/даты нет
+- id: HIST-191
+  status: done
+  evidence: apps/server/src/jobs/worker.ts#maintenance, apps/server/src/routes/revisions.ts (view_history)
+  note: нет автотеста политики хранения
+- id: COLLAB-192
+  status: done
+  evidence: tests/integration/collab.test.ts (COLLAB-192)
+- id: COLLAB-193
+  status: partial
+  evidence: tests/integration/collab.test.ts (COLLAB-193)
+  note: Проверено только удаление+правка, и правка теряется; форматирование и перемещение не проверены
+- id: COLLAB-194
+  status: done
+  evidence: tests/integration/core.test.ts (COLLAB-194)
+- id: COLLAB-195
+  status: done
+  evidence: tests/integration/collab.test.ts, tests/e2e/editor.spec.ts
+- id: COLLAB-197
+  status: partial
+  evidence: tests/integration/collab.test.ts (COLLAB-197), apps/server/src/routes/revisions.ts
+  note: Восстановление заменяет текущее содержимое у всех без уведомления; работа коллег сохраняется только в pre-restore ревизии
+- id: COLLAB-198
+  status: done
+  evidence: tests/integration/collab.test.ts (randomised convergence), tests/resilience/crash-restart.test.ts
+  note: Fuzz по дереву страниц (orphan-узлы) отсутствует
+- id: R-TREE-023
+  status: partial
+  evidence: apps/web/src/layout/SidebarTree.tsx, apps/web/src/state/ui.ts
+  note: Нет группы «Недавние» в панели, не сохраняются прокрутка и выбранная позиция между сессиями
+- id: R-TREE-024
+  status: done
+  evidence: 'apps/web/src/styles/layout.css (pointer: coarse → действия видимы)'
+- id: R-TREE-025
+  status: partial
+  evidence: apps/web/src/layout/treeActions.tsx#createPage, apps/server/src/services/pages.ts requestId
+  note: Esc на пустом черновике не отменяет создание (страница уже создана на сервере → мусорные «Без названия»); requestId генерируется заново на каждый клик, защиты от двойного нажатия в UI нет
+- id: R-TREE-026
+  status: done
+  evidence: apps/web/src/layout/SidebarTree.tsx#onKeyDown (стрелки, Enter, Space, F2, контекстное меню)
+- id: R-TREE-027
+  status: done
+  evidence: apps/web/src/layout/SidebarTree.tsx (ghost, линия, подсветка, автопрокрутка, авторазворачивание, запретные цели), apps/server/src/services/pages.ts
+- id: R-TREE-028
+  status: done
+  evidence: apps/server/src/services/pages.ts#previewMove/movePage (аудит, вложения, подтверждение), tests/integration/acl.test.ts
+- id: R-PAGE-032
+  status: done
+  evidence: apps/web/src/editor/commands.tsx, apps/web/src/layout/SidebarTree.tsx
+- id: R-COLLAB-038
+  status: partial
+  evidence: docs/DECISIONS.md D-02, apps/server/src/routes/*
+  note: Решение описано, нагрузочных испытаний транспорта нет
+- id: R-OFFLINE-009
+  status: done
+  evidence: packages/shared/src/collab-client.ts, apps/web/src/sync/idb.ts; tests/integration/collab.test.ts, tests/resilience/crash-restart.test.ts
+- id: R-COLLAB-039
+  status: partial
+  evidence: packages/shared/src/collab-client.ts
+  note: Backoff+jitter и догоняющая синхронизация по state vector есть; резервного канала (SSE/HTTP) при недоступном WebSocket нет
+- id: R-COLLAB-040
+  status: done
+  evidence: apps/server/src/services/pages.ts (tx move/trash/restore), apps/server/src/routes/revisions.ts, apps/server/src/collab/hub.ts
+- id: R-COLLAB-041
+  status: partial
+  evidence: apps/web/src/editor/Editor.tsx
+  note: Редактор не перемонтируется при reconnect; сохранения обеих версий при несливаемом конфликте нет
+- id: R-OFFLINE-010
+  status: partial
+  evidence: apps/web/src/sync/collab.ts (visibilitychange/online reconnect), apps/web/src/sync/idb.ts
+  note: 'Две вкладки и сон не тестируются; после перезагрузки вкладки без сети страница не открывается: GET /api/v1/pages/:id не кешируется (usePage в apps/web/src/hooks/data.ts, PageError в PageView) —
+    очередь в IndexedDB цела, но статус и локальный текст не видны до появления сети; ограничения офлайна не обозначены'
+- id: UX23-201
+  status: done
+  evidence: tests/e2e/content.spec.ts
+- id: UX23-202
+  status: missing
+  evidence: ''
+  note: Escape на пустом новом черновике ничего не отменяет
+- id: UX23-203
+  status: partial
+  evidence: apps/server/src/services/pages.ts#createPage; tests/integration/core.test.ts (UX23-203)
+  note: Серверная идемпотентность по requestId проверена; UI генерирует новый requestId на каждый клик и не блокирует повторное нажатие
+- id: UX23-204
+  status: done
+  evidence: apps/web/src/layout/SidebarTree.tsx
+  note: нет автотеста
+- id: UX23-205
+  status: done
+  evidence: apps/web/src/styles/layout.css
+  note: нет автотеста
+- id: UX23-206
+  status: done
+  evidence: apps/web/src/layout/SidebarTree.tsx (tree-drop-line, drop-inside)
+  note: нет автотеста
+- id: UX23-207
+  status: done
+  evidence: apps/web/src/layout/SidebarTree.tsx (autoScroll, hoverTimer)
+  note: нет автотеста
+- id: UX23-208
+  status: done
+  evidence: tests/integration/core.test.ts (UX23-208)
+- id: UX23-211
+  status: done
+  evidence: apps/server/src/services/pages.ts#movePage (ID, вложения, история не трогаются)
+  note: нет автотеста
+- id: UX23-213
+  status: done
+  evidence: apps/web/src/components/page/SyncStatus.tsx, tests/e2e/editor.spec.ts offline
+- id: UX23-214
+  status: done
+  evidence: tests/integration/collab.test.ts (UX23-214)
+- id: UX23-215
+  status: done
+  evidence: tests/integration/collab.test.ts (UX23-215)
+- id: UX23-216
+  status: partial
+  evidence: apps/web/src/sync/idb.ts (общая очередь), apps/server/src/collab/hub.ts dedupe
+  note: Две вкладки делят IndexedDB-очередь; дубли гасятся op_id на сервере, но теста нет
+- id: UX23-217
+  status: done
+  evidence: tests/integration/collab.test.ts (UX23-217)
+- id: UX23-218
+  status: done
+  evidence: apps/server/src/services/pages.ts#lockTree; tests/integration/core.test.ts (concurrent opposite moves)
+- id: UX23-219
+  status: done
+  evidence: tests/integration/collab.test.ts (UX23-219)
+- id: UX23-221
+  status: partial
+  evidence: apps/web/src/pages/SearchPage.tsx (useInfiniteQuery)
+  note: Кандидатов не более 3000, offset ≤5000 — десятки тысяч результатов недоступны
+- id: UX23-222
+  status: done
+  evidence: apps/web/src/state/ui.ts, AppShell держит Sidebar смонтированным
+  note: нет автотеста
+- id: R-COLLAB-042
+  status: done
+  evidence: docs/DECISIONS.md D-02, docs/ARCHITECTURE.md §3
+- id: R-COLLAB-043
+  status: done
+  evidence: apps/web/src/components/page/SyncStatus.tsx, packages/shared/src/collab-client.ts
+- id: R-COLLAB-044
+  status: done
+  evidence: packages/shared/src/collab-client.ts, apps/server/src/collab/hub.ts (seq gap handling); tests/integration/collab.test.ts fuzz, tests/resilience/crash-restart.test.ts
+- id: R-COLLAB-045
+  status: partial
+  evidence: apps/server/src/collab/hub.ts
+  note: Правки разных/одного абзаца сливаются; перемещение/удаление блока теряют параллельную правку, «обе версии» не сохраняются
+- id: R-COLLAB-046
+  status: done
+  evidence: apps/server/src/collab/hub.ts (awareness вне Y.Doc)
+- id: R-COLLAB-047
+  status: done
+  evidence: tests/resilience/crash-restart.test.ts, tests/resilience/db-connection-loss.test.ts, tests/integration/collab.test.ts (server restart)
+- id: R-HISTORY-032
+  status: done
+  evidence: apps/server/src/jobs/worker.ts#maintenance, docs/ARCHITECTURE.md
+- id: OPS-003
+  status: done
+  evidence: tests/resilience/db-connection-loss.test.ts, tests/resilience/crash-restart.test.ts
+- id: OPS-004
+  status: done
+  evidence: tests/resilience/crash-restart.test.ts (OPS-004)
+- id: OPS-005
+  status: done
+  evidence: tests/integration/collab.test.ts (two editors same paragraph)
+- id: OPS-006
+  status: partial
+  evidence: apps/web/src/editor/extensions/blockOps.ts#moveBlock
+  note: 'Перемещение блока = удаление+вставка: параллельная правка перемещаемого блока теряется; теста нет'
+- id: OPS-009
+  status: done
+  evidence: tests/integration/collab.test.ts, tests/resilience/crash-restart.test.ts
+- id: OPS-010
+  status: done
+  evidence: tests/integration/collab.test.ts, tests/e2e/collab.spec.ts
+- id: R-HISTORY-033
+  status: done
+  evidence: apps/server/src/routes/revisions.ts#restore (ACL не трогается)
+  note: нет автотеста
+- id: ACL-163
+  status: done
+  evidence: apps/server/src/services/search.ts#suggest/search; tests/integration/content.test.ts
+- id: ACL-173
+  status: done
+  evidence: apps/server/src/routes/revisions.ts#restore
+  note: нет автотеста
+- id: QA26-10
+  status: done
+  evidence: 'apps/web/src/layout/SidebarTree.tsx (линия, aria-live «Цель: …»), apps/server/src/services/pages.ts'
+  note: нет автотеста DnD
+- id: QA26-11
+  status: partial
+  evidence: tests/e2e/content.spec.ts
+  note: Из плана проверок автоматизировано только «+»; раскрытие, breadcrumbs, back/forward, избранное, виртуализация не проверяются
+- id: QA26-14
+  status: missing
+  evidence: ''
+  note: Тестов обратимости операций с последовательностями 1/10/100/1000 нет
+- id: QA26-15
+  status: partial
+  evidence: tests/integration/collab.test.ts, tests/integration/gaps.test.ts (pre-restore)
+  note: Нет проверок после удаления/архивации, при совместной работе, очистки по сроку
+- id: QA26-19
+  status: partial
+  evidence: tests/integration/collab.test.ts
+  note: Проверено 2–3 клиента; нет 5/20 редакторов, одной ячейки таблицы, перемещения блока
+- id: QA26-20
+  status: partial
+  evidence: tests/integration/collab.test.ts, tests/resilience/crash-restart.test.ts, tests/resilience/db-connection-loss.test.ts
+  note: 'Есть: обрыв сети, рестарт сервера, повторная доставка, потеря ACK; нет: высокий RTT/потери пакетов, истечение сессии, закрытие вкладки в браузере; смена Wi-Fi/LTE и смена ведущего узла — ограничение
+    окружения'
+- id: R-PAGE-033
+  status: done
+  evidence: apps/server/src/services/pages.ts#createPage (наследование), tests/e2e/editor.spec.ts
+- id: R-SEARCH-018
+  status: partial
+  evidence: apps/server/src/jobs/worker.ts#indexPage, apps/server/src/services/search.ts
+  note: Личные материалы лежат в общей таблице search_index и отсекаются только фильтром ACL при запросе
+- id: R-COLLAB-048
+  status: done
+  evidence: apps/server/src/collab/hub.ts
+- id: R-OFFLINE-011
+  status: done
+  evidence: packages/shared/src/collab-client.ts, apps/web/src/components/page/SyncStatus.tsx
+- id: R-HISTORY-034
+  status: done
+  evidence: apps/server/src/routes/revisions.ts, apps/server/src/services/pages.ts#restorePage; tests/integration/collab.test.ts, tests/integration/core.test.ts
+- id: R-SEARCH-019
+  status: done
+  evidence: apps/server/src/services/search.ts (ACL), apps/server/src/routes/collab.ts (events only for visible spaces)
+- id: R-COLLAB-049
+  status: partial
+  evidence: apps/server/src/services/pages.ts#movePage, blockOps.ts
+  note: Перенос страницы и правка независимы (без потерь); перенос блока + правка теряет правку; тестов нет
+- id: R-COLLAB-050
+  status: done
+  evidence: tests/resilience/crash-restart.test.ts, tests/resilience/db-connection-loss.test.ts, tests/integration/collab.test.ts

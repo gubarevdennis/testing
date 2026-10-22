@@ -20,6 +20,7 @@ import { duplicatePage, trashPage, copyLink } from '../layout/treeActions';
 import { DocPreview } from '../components/DocPreview';
 import { relTime, fullTime } from '../lib/format';
 import { useMediaQuery } from '../hooks/useMediaQuery';
+import { useScrollRestore } from '../hooks/useScrollRestore';
 import type { PageDto, Crumb } from '../api/types';
 
 const HistoryPanel = lazy(() => import('../components/page/HistoryPanel').then((m) => ({ default: m.HistoryPanel })));
@@ -101,6 +102,7 @@ function PageLoaded({ page, crumbs, block, justCreated }: { page: PageDto; crumb
   const [activeThread, setActiveThread] = useState<string | null>(null);
   const [accessLost, setAccessLost] = useState<string | null>(null);
   const handle = useRef<EditorHandle | null>(null);
+  const scrollRef = useScrollRestore<HTMLDivElement>();
   const [wordCount, setWordCount] = useState(0);
   const a = page.access.actions;
   const canEdit = !!a.edit && (!page.locked || page.access.level === 'full') && !page.deletedAt;
@@ -116,6 +118,21 @@ function PageLoaded({ page, crumbs, block, justCreated }: { page: PageDto; crumb
     const t = setTimeout(() => qc.invalidateQueries({ queryKey: ['tree', page.spaceId] }), 1500);
     return () => clearTimeout(t);
   }, [liveTitle, qc, page.spaceId]);
+
+  // A page created by "+" and left completely empty is discarded (moved to the trash) when the author leaves it.
+  const liveTitleRef = useRef(liveTitle);
+  const emptyRef = useRef(false);
+  liveTitleRef.current = liveTitle;
+  useEffect(() => {
+    if (!justCreated) return;
+    return () => {
+      if (emptyRef.current && !liveTitleRef.current.trim())
+        void post(`/api/v1/pages/${page.id}/discard-if-empty`)
+          .then((r: any) => r?.discarded && qc.invalidateQueries({ queryKey: ['tree', page.spaceId] }))
+          .catch(() => undefined);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     const open = () => setRightPanel('history');
@@ -169,6 +186,17 @@ function PageLoaded({ page, crumbs, block, justCreated }: { page: PageDto; crumb
   const menuItems = [
     { id: 'fav', label: page.favorite ? 'Убрать из избранного' : 'Добавить в избранное', icon: <Star size={15} />, onSelect: toggleFavorite },
     { id: 'link', label: 'Копировать ссылку', icon: <Link2 size={15} />, onSelect: () => copyLink(page.id) },
+    {
+      id: 'copy-page',
+      label: 'Копировать страницу',
+      icon: <Copy size={15} />,
+      // handled by the editor (editor/clipboard/copy.tsx, R-CLIPBOARD-002)
+      children: (['html', 'text', 'markdown'] as const).map((format) => ({
+        id: 'copy-' + format,
+        label: format === 'html' ? 'С форматированием' : format === 'text' ? 'Как текст' : 'Как Markdown',
+        onSelect: () => window.dispatchEvent(new CustomEvent('kb:copy-page', { detail: { format } })),
+      })),
+    },
     { separator: true as const },
     { id: 'history', label: 'История версий', icon: <History size={15} />, onSelect: () => setRightPanel('history') },
     { id: 'info', label: 'Сведения о странице', icon: <Info size={15} />, onSelect: () => setRightPanel('info') },
@@ -222,7 +250,7 @@ function PageLoaded({ page, crumbs, block, justCreated }: { page: PageDto; crumb
             />
           </div>
         </header>
-        <div className="page-scroll">
+        <div className="page-scroll" ref={scrollRef}>
           {page.deletedAt && (
             <div className="alert warning page-banner" role="alert">
               <span className="grow">Страница в корзине с {fullTime(page.deletedAt)}. Она доступна только для чтения.</span>
@@ -276,14 +304,21 @@ function PageLoaded({ page, crumbs, block, justCreated }: { page: PageDto; crumb
                 scrollToBlock={block}
                 onReady={(h) => {
                   handle.current = h;
-                  const upd = () => setWordCount(h.editor?.storage.characterCount?.words?.() ?? 0);
+                  const upd = () => {
+                    setWordCount(h.editor?.storage.characterCount?.words?.() ?? 0);
+                    emptyRef.current = !!h.editor?.isEmpty;
+                  };
                   h.editor?.on('update', upd);
                   upd();
                 }}
                 onPresence={setPresence}
                 onTitle={setLiveTitle}
                 onAccess={(ce, reason) => {
-                  if (!ce && canEdit) setAccessLost(reason === 'locked' ? 'Страница защищена от изменений — редактирование отключено.' : 'Ваши права изменились: страница открыта только для чтения. Несохранённых изменений нет — всё отправленное сохранено.');
+                  if (!ce && canEdit) {
+                    const pending = handle.current?.session?.provider.pendingCount() ?? 0;
+                    const tail = pending ? ' Часть изменений не успела отправиться — сохраните локальную копию (кнопка ниже).' : ' Все ваши изменения сохранены на сервере.';
+                    setAccessLost((reason === 'locked' ? 'Страница защищена от изменений — редактирование отключено.' : 'Ваши права изменились: страница открыта только для чтения.') + tail);
+                  }
                   if (ce) setAccessLost(null);
                   refresh();
                 }}

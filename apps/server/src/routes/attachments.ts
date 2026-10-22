@@ -249,14 +249,18 @@ export async function attachmentRoutes(app: FastifyInstance, s: Services) {
   app.post('/api/v1/uploads/:id/complete', async (req) => {
     const user = requireUser(req);
     const { id } = parse(z.object({ id: uuid }), req.params);
+    // The client may send the checksum it computed while uploading (known only at the end of a streamed upload).
+    const { sha256 } = parse(z.object({ sha256: z.string().regex(/^[0-9a-f]{64}$/).optional() }), req.body ?? {});
     const u = await session(user, id);
+    if (sha256 && u.sha256_expected && sha256 !== u.sha256_expected) throw badRequest('Контрольная сумма не совпадает с заявленной при начале загрузки');
+    const expected = sha256 ?? u.sha256_expected;
     const path = join(s.store.tmpDir(), 'up-' + u.temp_key);
     const size = (await stat(path)).size;
     if (size !== Number(u.size)) throw conflict('incomplete', `Получено ${size} из ${u.size} байт — продолжите загрузку`, { received: size });
-    if (u.sha256_expected) {
+    if (expected) {
       const h = createHash('sha256');
       for await (const c of (await import('node:fs')).createReadStream(path)) h.update(c as Buffer);
-      if (h.digest('hex') !== u.sha256_expected) {
+      if (h.digest('hex') !== expected) {
         await s.db.query(`update upload_sessions set status = 'failed', error = 'checksum mismatch' where id = $1`, [id]);
         await rm(path, { force: true });
         throw unprocessable('checksum_mismatch', 'Контрольная сумма не совпала — файл повреждён при передаче, загрузите заново');

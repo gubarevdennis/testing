@@ -156,6 +156,10 @@ export default function ImportPage() {
   const [sheet, setSheet] = useState(0);
   const [header, setHeader] = useState(true);
   const [as, setAs] = useState<'table' | 'collection'>('table');
+  // Repeated import into an existing collection (R-COLLECTION-003, AT-50): append rows or update them by a key column.
+  const [collTarget, setCollTarget] = useState<string>('');
+  const [collMode, setCollMode] = useState<'upsert' | 'append'>('upsert');
+  const [keyColumn, setKeyColumn] = useState(0);
   const [colTypes, setColTypes] = useState<ColType[] | null>(null);
   const [title, setTitle] = useState('');
   const [selected, setSelected] = useState<Set<string> | null>(null);
@@ -176,6 +180,11 @@ export default function ImportPage() {
     }
   }, [spacesData, spaceId]);
 
+  const collections = useQuery({
+    queryKey: ['collections', spaceId],
+    enabled: !!spaceId,
+    queryFn: ({ signal }) => get<{ collections: Array<{ id: string; name: string; canEdit: boolean }> }>(`/api/v1/collections?spaceId=${spaceId}`, signal),
+  });
   const job = useQuery({
     queryKey: ['import-job', jobId],
     enabled: !!jobId,
@@ -287,6 +296,7 @@ export default function ImportPage() {
     sheet,
     header,
     as,
+    ...(as === 'collection' ? { keyColumn, ...(collTarget ? { collectionId: collTarget, collectionMode: collMode } : {}) } : {}),
     title: title.trim() || undefined,
     columnTypes: colTypes ?? undefined,
     encoding: parsedWith.encoding !== encoding ? encoding : undefined,
@@ -374,7 +384,7 @@ export default function ImportPage() {
             className={'imp-drop' + (dragOver ? ' over' : '')}
             role="button"
             tabIndex={0}
-            aria-label="Выбрать файлы для импорта"
+            aria-describedby="imp-drop-hint"
             onClick={() => inputRef.current?.click()}
             onKeyDown={(e) => {
               if (e.key === 'Enter' || e.key === ' ') {
@@ -391,7 +401,7 @@ export default function ImportPage() {
           >
             <Upload size={28} aria-hidden />
             <b>Перетащите файлы сюда или нажмите, чтобы выбрать</b>
-            <span className="small muted">DOCX · MD · ZIP с Markdown · HTML · CSV · XLSX</span>
+            <span className="small muted" id="imp-drop-hint">DOCX · MD · ZIP с Markdown · HTML · CSV · XLSX</span>
             <input
               ref={inputRef}
               type="file"
@@ -677,6 +687,42 @@ export default function ImportPage() {
                           <option value="collection">Коллекцию (база данных)</option>
                         </select>
                       </div>
+                      {as === 'collection' && (
+                        <>
+                          <div className="field">
+                            <label htmlFor="imp-coll">Куда</label>
+                            <select id="imp-coll" className="select" value={collTarget} onChange={(e) => (setCollTarget(e.target.value), setDryRun(null))}>
+                              <option value="">Новая коллекция</option>
+                              {(collections.data?.collections ?? [])
+                                .filter((c) => c.canEdit)
+                                .map((c) => (
+                                  <option key={c.id} value={c.id}>
+                                    В существующую: {c.name}
+                                  </option>
+                                ))}
+                            </select>
+                          </div>
+                          {collTarget && (
+                            <div className="field">
+                              <label htmlFor="imp-coll-mode">Режим</label>
+                              <select id="imp-coll-mode" className="select" value={collMode} onChange={(e) => (setCollMode(e.target.value as 'upsert' | 'append'), setDryRun(null))}>
+                                <option value="upsert">Обновить по ключу, новые добавить</option>
+                                <option value="append">Только добавить строки</option>
+                              </select>
+                            </div>
+                          )}
+                          <div className="field">
+                            <label htmlFor="imp-key">Ключевой столбец (название записи)</label>
+                            <select id="imp-key" className="select" value={keyColumn} onChange={(e) => (setKeyColumn(Number(e.target.value)), setDryRun(null))}>
+                              {previewHeader.map((h, i) => (
+                                <option key={i} value={i}>
+                                  {h || `Столбец ${i + 1}`}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        </>
+                      )}
                       <div className="field">
                         <label htmlFor="imp-title">Название</label>
                         <input id="imp-title" className="input" value={title} onChange={(e) => setTitle(e.target.value)} maxLength={300} />
@@ -745,7 +791,7 @@ export default function ImportPage() {
                       <button className="btn" onClick={runDryRun} disabled={dryBusy} aria-busy={dryBusy}>
                         {dryBusy && <span className="spinner" />} Пробный прогон
                       </button>
-                      <span className="small muted">Проверка типов без создания данных</span>
+                      <span className="small muted">{as === 'collection' && collTarget ? 'Обязательна перед импортом в существующую коллекцию: покажет, сколько записей добавится и обновится' : 'Проверка типов без создания данных'}</span>
                     </div>
                     {dryRun && (
                       <div className={'alert ' + (dryRun.invalidCount ? 'warning' : 'success')} aria-live="polite">
@@ -804,7 +850,7 @@ export default function ImportPage() {
                       Отменить импорт
                     </button>
                     <span className="grow" />
-                    <button className="btn primary" onClick={commit} disabled={commitBusy || !spaceId || (preview.kind === 'documents' && selectedCount === 0) || (preview.kind === 'tabular' && csvParamsChanged)} aria-busy={commitBusy}>
+                    <button className="btn primary" onClick={commit} disabled={commitBusy || !spaceId || (preview.kind === 'documents' && selectedCount === 0) || (preview.kind === 'tabular' && csvParamsChanged) || (preview.kind === 'tabular' && as === 'collection' && !!collTarget && !dryRun)} aria-busy={commitBusy}>
                       {commitBusy && <span className="spinner" />} {commitError ? 'Повторить импорт' : 'Импортировать'}
                     </button>
                   </div>

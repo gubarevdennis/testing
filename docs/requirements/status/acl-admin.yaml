@@ -1,0 +1,1008 @@
+# Status of ACL, SECURITY, AUTH, ORG, ADMIN, AUDIT, SPACE, PUBLISH, COMMENTS, HELP requirements (audit 2026-10-22)
+- id: R-ACL-001
+  status: done
+  evidence: 'apps/server/src/acl/engine.ts APPLICABLE_GRANTS_SQL (space grants + page exceptions), apps/server/src/services/org.ts createSpace groups/orgLevel; tests/integration/acl.test.ts: department
+    spaces'
+  note: ''
+- id: R-ACL-002
+  status: done
+  evidence: POST /api/v1/pages (routes/pages.ts) -> createPage inherits, no rights dialog; Sidebar "+" creates directly
+  note: ''
+- id: ROUTE-01
+  status: partial
+  evidence: tests/e2e/editor.spec.ts, collab.spec.ts cover login/create/format/paste/search pieces
+  note: No single E2E for the full employee route (own spaces -> regulation -> search -> one-click page in department -> Excel/image paste -> link within rights -> logout/return).
+- id: ROUTE-03
+  status: partial
+  evidence: tree DnD (SidebarTree), templates (TemplatesPage), PublishBar, TrashPage restore
+  note: 'Route cannot be completed in UI: no web UI to create spaces or to add groups/users to a space (SpacePage AccessTab is read-only; POST /api/v1/spaces and PUT /grants resourceType=space only via
+    API). No E2E for the manager route.'
+- id: ROUTE-04
+  status: partial
+  evidence: admin UsersSection/GroupsSection/ExpiringSection/AuditSection/ArchivesSection; POST /admin/users/:id/status, revoke-sessions, /access/explain
+  note: Group->space auto-access step needs API (no web UI to create spaces or to add groups/users to a space (SpacePage AccessTab is read-only; POST /api/v1/spaces and PUT /grants resourceType=space only
+    via API)); guest page grants (pageGrants) not exposed in create-user UI; no admin "check access" screen; no E2E for admin route.
+- id: ROUTE-06
+  status: partial
+  evidence: 'audit titles/names of pages/spaces the viewer cannot open are masked (routes/admin.ts maskPrivateTitles); tests/integration/acl-gaps.test.ts: auditor sees events but not titles'
+  note: No auditor E2E route test.
+- id: E-11
+  status: done
+  evidence: requirePage/accessForPages used by pages, search (services/search.ts), attachments, revisions, export, comments notifications, events WS (routes/collab.ts); tests/integration/acl.test.ts, tests/integration/content.test.ts
+  note: No ACL cache exists (always computed from DB).
+- id: E-12
+  status: done
+  evidence: sessions/tokens revoked, signed links re-checked, WS recheck incl. expiry, stored exports re-checked at download (routes/import-export.ts, ExportResult.pageIds); tests/integration/acl-gaps.test.ts
+  note: ''
+- id: R-ACL-003
+  status: done
+  evidence: tests/integration/acl.test.ts, tests/integration/collab.test.ts, tests/integration/acl-gaps.test.ts
+  note: ''
+- id: R-ACL-004
+  status: done
+  evidence: all routes call requirePage/requireSpace/canManagePeople server-side; client uses actions only for display; tests/integration/acl.test.ts A10 tests
+  note: ''
+- id: R-ACL-005
+  status: done
+  evidence: no public-link creation endpoint exists; org setting publicLinksEnabled=false by default (services/org.ts)
+  note: Satisfied because public links are not implemented at all (see R-PUBLISH-009).
+- id: R-ACL-006
+  status: done
+  evidence: 'createPage inherits parent/space rights; tests/integration/acl.test.ts: 20 child pages without ACL setup'
+  note: ''
+- id: R-ADMIN-001
+  status: partial
+  evidence: GroupsSection (departments/groups), space grants to groups (API)
+  note: 'Departments managed in UI, spaces are not: no web UI to create spaces or to add groups/users to a space (SpacePage AccessTab is read-only; POST /api/v1/spaces and PUT /grants resourceType=space
+    only via API).'
+- id: D-07
+  status: done
+  evidence: apps/server/src/services/grants.ts setInheritance copies audience (nobody gains/loses), setGrant audience_change confirmation, movePage audience diff
+  note: ''
+- id: R-SPACE-001
+  status: partial
+  evidence: organizations (bootstrap only), spaces CRUD routes/spaces.ts, pages CRUD routes/pages.ts
+  note: No org/workspace update UI/API beyond settings; no separate folder type (pages act as folders); space creation has no UI.
+- id: R-ADMIN-002
+  status: done
+  evidence: all modules present; OpenAPI at /api/v1/openapi.json
+  note: ''
+- id: R-ACL-007
+  status: done
+  evidence: 'level view: actions view/export/download subject to flags & space policy (packages/shared/src/permissions.ts actionsFor)'
+  note: No dedicated role-matrix test.
+- id: R-ACL-008
+  status: done
+  evidence: 'level edit: edit/create/upload (ACTION_MIN_LEVEL), attachments upload requires edit'
+  note: ''
+- id: R-ACL-009
+  status: partial
+  evidence: level edit + publish/manage_structure; canPublish flag
+  note: 'No distinct "Editor" role separate from Author: both are level edit, publish distinguished only via per-grant canPublish flag.'
+- id: R-ACL-010
+  status: partial
+  evidence: level full on space -> manage_space/share; templates API; tree structure
+  note: 'Members management for space owners has no UI: no web UI to create spaces or to add groups/users to a space (SpacePage AccessTab is read-only; POST /api/v1/spaces and PUT /grants resourceType=space
+    only via API).'
+- id: R-ACL-011
+  status: done
+  evidence: 'org roles owner/admin: OrgSettingsSection (MFA, SSO-only, guests, public links, retention), UsersSection, AuditSection, ArchivesSection'
+  note: SSO configured via env (OIDC_*), not in UI.
+- id: R-ACL-012
+  status: done
+  evidence: 'orgRole auditor: canReadAudit only, no content grants implied (acl/engine.ts isOrgAdmin/canReadAudit)'
+  note: No test for auditor role.
+- id: R-PUBLISH-001
+  status: done
+  evidence: pages.status draft/review/published/archived; submit-review/decide(reject->draft)/publish/archive routes (routes/revisions.ts); space policy requireApproval; PublishBar
+  note: ''
+- id: R-SECURITY-001
+  status: done
+  evidence: DOCX via mammoth (no execution), macro warning (convert/docx-import.ts inspectDocx); sanitize-html
+  note: Macro detection only scans document.xml (vbaProject.bin part not detected); no macro fixture test.
+- id: R-COMMENTS-001
+  status: partial
+  evidence: 'threads, block_id, quote, mentions, resolve/reopen; comments.revision_number set to latest revision; tests/integration/acl-gaps.test.ts: comment survives block edits'
+  note: revision_number = latest saved revision (may lag live content by up to the auto-revision interval).
+- id: R-COMMENTS-002
+  status: missing
+  evidence: '-'
+  note: No suggestion (track changes) mode.
+- id: R-PUBLISH-002
+  status: done
+  evidence: submit-review (reviewer, message), decide approve/reject with comment, publish, unpublish; PublishBar; tests/integration/content.test.ts publishing workflow
+  note: ''
+- id: R-PUBLISH-003
+  status: partial
+  evidence: pages.owner_id, review_due_at, verified_at, free-form properties jsonb
+  note: No typed fields for type/criticality/department/product/validity; search cannot filter by them.
+- id: R-PUBLISH-004
+  status: done
+  evidence: pageDto.needsReview, PageInfoPanel warning, Home "needsReview"; nothing auto-deleted
+  note: No test.
+- id: R-PUBLISH-005
+  status: partial
+  evidence: Home needsReview widget for page owners
+  note: No reminder notifications for overdue review.
+- id: R-ACL-013
+  status: partial
+  evidence: LEVELS/ACTIONS/ACTION_MIN_LEVEL in packages/shared/src/permissions.ts; org roles
+  note: Acceptance requires role x permission matrix covered by tests; only scattered tests exist (A10, editor without share, export flags).
+- id: R-ACL-014
+  status: done
+  evidence: 'inheritance (APPLICABLE_GRANTS_SQL), exceptions, POST /pages/:id/access/preview, default deny (combine), publicLinksEnabled=false; tests/integration/gaps.test.ts: audience preview'
+  note: ''
+- id: R-AUTH-001
+  status: done
+  evidence: password login + TOTP MFA (auth/totp.ts, tests/unit/totp.test.ts), OIDC (auth/oidc.ts), sessions list/revoke, admin revoke-sessions; core test suspend
+  note: SAML not implemented; OIDC not verifiable without an external IdP.
+- id: R-ACL-015
+  status: done
+  evidence: requirePage in pages/revisions/attachments/OCR/export/search; WS connect+recheck (apps/server/src/collab/hub.ts); tests/integration/acl.test.ts, tests/integration/content.test.ts E2E-102, tests/integration/collab.test.ts
+    S03/E2E-105
+  note: ''
+- id: R-AUDIT-001
+  status: partial
+  evidence: all fields present; 403 denials audited as access.denied with rate limit (services/denials.ts); tests/integration/acl-gaps.test.ts
+  note: Page views are still not audited; 404 (hidden resource) responses not logged.
+- id: R-SECURITY-002
+  status: partial
+  evidence: CSRF double submit (app.ts), helmet CSP, rate-limit, sanitize-html, SVG sanitising, type sniffing (inspectFile), zip-slip protection, optional ClamAV
+  note: No TLS/deploy config in repo (deploy/ empty), no encryption at rest, antivirus only when CLAMAV_HOST set; no OWASP test suite.
+- id: R-SECURITY-003
+  status: done
+  evidence: OCR local tesseract.js with bundled rus/eng data (apps/server/src/ocr/ocr.ts); no AI/external calls
+  note: ''
+- id: R-SPACE-002
+  status: done
+  evidence: GET/POST /api/v1/spaces; OpenAPI at /api/v1/openapi.json (@fastify/swagger); tests/integration/acl-gaps.test.ts
+  note: OpenAPI lists paths/methods; request/response schemas not described (zod in handlers).
+- id: R-ACL-016
+  status: partial
+  evidence: GET /pages/:id/access, PUT/DELETE /grants, GET /audit (restricted); OpenAPI /api/v1/openapi.json; tests/integration/acl-gaps.test.ts
+  note: No GET/PATCH /permissions/{resourceType}/{id} endpoint shape.
+- id: R-ACL-017
+  status: done
+  evidence: 'attachments loadAttachment, signed links re-check, export routes; tests/integration/content.test.ts E2E-102; tests/integration/import-export.test.ts: export respects rights (SC-20, V17-F07)'
+  note: ''
+- id: SC-12
+  status: done
+  evidence: 'tests/integration/content.test.ts: sanitises SVG ... (SC-12); safe URL protocols (packages/shared/src/editor/url.ts); tests/unit/markdown.test.ts removes unsafe links'
+  note: ''
+- id: SC-19
+  status: done
+  evidence: tests/integration/content.test.ts rejects executables (SC-19); tests/integration/import-export.test.ts corrupted DOCX (SC-19), zip-slip/zip bombs (SC-19); 413 too_large
+  note: ''
+- id: SC-20
+  status: done
+  evidence: 'import/export job lookup bound to creator (routes/import-export.ts job(user.id,...)); tests/integration/import-export.test.ts: export respects rights (SC-20)'
+  note: ''
+- id: SC-31
+  status: done
+  evidence: search/suggest filter accessForPages (services/search.ts), backlinks/resolve/favorites filterVisible, attachments, revisions, WS; tests/integration/content.test.ts search applies ACL; tests/integration/collab.test.ts
+    live channel
+  note: No single test enumerating all channels.
+- id: SC-32
+  status: done
+  evidence: 'apps/server/src/collab/hub.ts recheckAccess sends ACCESS canEdit=false; tests/integration/collab.test.ts: revoking edit switches session to read-only (AT-78...)'
+  note: ''
+- id: SC-33
+  status: partial
+  evidence: CSRF, path traversal, zip bomb, executables tested; 403s audited (tests/integration/acl-gaps.test.ts)
+  note: SSRF not tested (no server-side fetch of user URLs); XSS covered only for SVG/markdown links.
+- id: SC-39
+  status: done
+  evidence: 'tests/integration/core.test.ts: regular user cannot read the org audit log (SC-39)'
+  note: ''
+- id: R-SECURITY-004
+  status: missing
+  evidence: eslint only
+  note: No Lighthouse/Web Vitals, accessibility audit, ASVS review, SAST/DAST or dependency scanning configured.
+- id: R-HELP-001
+  status: process
+  evidence: in-app HelpCenter articles; seed.ts creates demo org (no demo content)
+  note: No user/admin manuals, no training examples, no demo knowledge base content.
+- id: R-SECURITY-005
+  status: done
+  evidence: only OSS local components (tesseract.js, LibreOffice); decisions in docs/DECISIONS.md
+  note: ''
+- id: R-SECURITY-006
+  status: process
+  evidence: controls implemented in routes/attachments.ts + services/attachments.ts (type sniffing, size limit, safe filename, sandboxed serving, optional AV)
+  note: No written OWASP File Upload checklist document.
+- id: R-SECURITY-007
+  status: partial
+  evidence: originals kept byte-exact; MIME sniffing, size, zip bomb, URL/HTML sanitising, macros ignored; ClamAV for attachments
+  note: Virus scanning only for attachment uploads (not imports) and only when CLAMAV_HOST configured (env-blocked to verify).
+- id: R-SECURITY-008
+  status: partial
+  evidence: relative ZIP image paths resolved, traversal blocked (tests/integration/import-export.test.ts AT-69)
+  note: Remote images are not copied — kept as external hotlinks (convert/html.ts); no SSRF-checked fetcher or test.
+- id: R-ACL-018
+  status: done
+  evidence: events WS /api/v1/events (tree-changed, access-changed, comments-changed), hub.recheckAccess on acl-changed
+  note: ''
+- id: AT-45
+  status: done
+  evidence: ProseMirror schema parsing drops scripts; sanitizeUrl keeps http/https/mailto/tel links (packages/shared/src/editor/url.ts)
+  note: No dedicated paste-XSS test.
+- id: R-ACL-019
+  status: done
+  evidence: roles view/comment/edit/full + org roles; checks in API, search, attachments, WS, export; tests/integration/acl.test.ts
+  note: ''
+- id: R-PUBLISH-006
+  status: done
+  evidence: 'publishingMode publish: readers get published revision (GET /pages/:id/content); tests/integration/content.test.ts S05'
+  note: ''
+- id: R-ADMIN-003
+  status: partial
+  evidence: users, retention, quota (OrgSettingsSection), audit, backups (ArchivesSection)
+  note: Spaces and imports not administrable from admin UI.
+- id: AT-69
+  status: done
+  evidence: 'tests/integration/import-export.test.ts: rejects zip-slip paths and zip bombs; Markdown ZIP relative images (AT-69)'
+  note: ''
+- id: AT-78
+  status: done
+  evidence: apps/server/src/collab/hub.ts nack forbidden, collab-client keeps pending, Editor.tsx "Скачать локальную копию"; tests/integration/collab.test.ts AT-78
+  note: ''
+- id: AT-79
+  status: partial
+  evidence: duplicatePage copies only visible pages and attachments only with download right (services/pages.ts)
+  note: Browser clipboard copy of hidden fields/inaccessible attachments not verified by any test.
+- id: R-SECURITY-009
+  status: done
+  evidence: 'convert/tabular.ts imports formulas as values, warning with count; tests/integration/import-export.test.ts: formulas as values (AT-49)'
+  note: ''
+- id: R-ACL-020
+  status: done
+  evidence: requirePage view/edit/export/download server-side; tests/integration/acl.test.ts, tests/integration/content.test.ts, tests/integration/import-export.test.ts
+  note: ''
+- id: R-ACL-021
+  status: partial
+  evidence: 'apps/web/src/components/page/ShareDialog.tsx general access: "Только приглашённые"/"Все сотрудники"; specific users/groups; public links off by default'
+  note: No explicit "Только я" mode.
+- id: R-ACL-022
+  status: partial
+  evidence: levels view/comment/edit/full; grant flags canExport/canDownload/canShare/canPublish (grants table, setGrant)
+  note: Separate structure/export/share flags are API-only; ShareDialog exposes only levels.
+- id: R-ACL-023
+  status: done
+  evidence: ShareDialog inherited list + ExplainBox (GET /access/explain), deny wins (combine), space policy (allowGuests/export) cannot be overridden by child grants; tests/integration/acl.test.ts ACL-161
+  note: ''
+- id: R-ACL-024
+  status: done
+  evidence: previewMove audience diff (services/pages.ts), search/preview/backlinks/attachments filtered by ACL; tests/integration/acl.test.ts ACL-165
+  note: ''
+- id: R-ACL-025
+  status: partial
+  evidence: signed links re-checked; export download re-check (tests/integration/acl-gaps.test.ts)
+  note: No lifetime policy for local (IndexedDB) copies.
+- id: R-AUDIT-002
+  status: partial
+  evidence: 'audit: user.create (incl. groups), user.invite_resend/revoke, grant.create/update/revoke; tests/integration/acl.test.ts'
+  note: Combinatorial parent/child/group tests are limited to a handful of cases.
+- id: R-ACL-026
+  status: partial
+  evidence: effective access computed per request (accessForPages), acl_epoch bumped on every change (apps/server/src/acl/engine.ts bumpAclEpoch), checks in API/WS/search/export/preview/download
+  note: No permission cache exists, so "cache invalidated" is only vacuously true; acl_epoch is not read by HTTP layer.
+- id: E2E-098
+  status: done
+  evidence: treeActions.tsx movePage confirm dialog with gained/lost; tests/integration/acl.test.ts ACL-165 (409 audience_change)
+  note: Server-level test only, no browser E2E.
+- id: E2E-102
+  status: done
+  evidence: 'tests/integration/content.test.ts: files of a private page are not accessible by direct link (E2E-102)'
+  note: ''
+- id: E2E-103
+  status: done
+  evidence: apps/web/src/components/page/ShareDialog.tsx "Унаследованный доступ" with via labels + ExplainBox inheritance chain
+  note: No browser test.
+- id: E2E-104
+  status: done
+  evidence: 'tests/integration/acl.test.ts: restricted child page (ACL-160)'
+  note: ''
+- id: E2E-105
+  status: done
+  evidence: 'tests/integration/collab.test.ts: revoking view closes it (E2E-105)'
+  note: ''
+- id: E2E-106
+  status: partial
+  evidence: movePage under lockTree + acl-changed -> hub.recheckAccess
+  note: No test of concurrent move + editing permissions.
+- id: E2E-107
+  status: done
+  evidence: 'tests/integration/acl.test.ts: removing a user from a department revokes access'
+  note: ''
+- id: E2E-109
+  status: partial
+  evidence: publicLinksEnabled org setting; no share-link endpoint
+  note: Public links not implemented, so "creation rejected by policy" cannot be exercised; no test.
+- id: E2E-110
+  status: done
+  evidence: 'apps/server/src/services/grants.ts audit grant.*; tests/integration/acl.test.ts: parallel grant changes ... audit events (ACL-172)'
+  note: ''
+- id: R-ORG-001
+  status: done
+  evidence: 'groups kind department (nested parent_id) / group; GroupsSection; tests/integration/acl.test.ts: nested departments'
+  note: ''
+- id: R-ORG-002
+  status: done
+  evidence: group_members (many), users.primary_group_id, users.manager_id; EditUserDialog
+  note: ''
+- id: R-ORG-003
+  status: partial
+  evidence: UUID ids, name, description, created_by, audit group.*/space.*/user.*
+  note: Groups have no owner/status fields; spaces have no explicit owner field (only grants).
+- id: R-ORG-004
+  status: done
+  evidence: DELETE /admin/groups/:id -> 409 group_in_use with affected grants unless reassignTo/confirm; reassignment keeps stronger grant, audited; tests/integration/acl-gaps.test.ts
+  note: ''
+- id: R-ACL-027
+  status: done
+  evidence: users.kind employee/guest; org_role owner/admin/people_admin/auditor/member; group manager (groups.manager_id, group_members.role); pages.owner_id
+  note: ''
+- id: R-ACL-028
+  status: done
+  evidence: apps/server/src/services/org.ts isGroupManager allows membership changes only; no content access implied
+  note: No test; a delegated manager can add himself to the department (by design?).
+- id: R-ACL-029
+  status: done
+  evidence: 'org-subject grants never match guests (engine matches()); tests/integration/acl.test.ts: guest invited to one page sees only it'
+  note: ''
+- id: R-ACL-030
+  status: done
+  evidence: LEVELS none/view/comment/edit/full; full on page = manage page, full on space = manage space
+  note: ''
+- id: R-ACL-031
+  status: done
+  evidence: 'space policy allowExport/allowDownload/allowGuests + grant flags canExport/canDownload/canShare/canPublish; tests/integration/acl.test.ts: export/download flags'
+  note: Invitations flag = canShare.
+- id: R-SPACE-003
+  status: done
+  evidence: visibility open/closed/private + kind personal; GET /spaces discoverable closed spaces for employees
+  note: Closed (name visible) case not tested.
+- id: R-ACL-032
+  status: done
+  evidence: hasExplicitGrants on tree nodes/PageDto, SidebarTree lock marker for explicit grants or broken inheritance; tests/integration/acl-gaps.test.ts
+  note: ''
+- id: R-ACL-033
+  status: done
+  evidence: deny wins; space allowGuests and org guestsEnabled=false (engine orgGuestsDisabled) override any grant; tests/integration/acl.test.ts, tests/integration/acl-gaps.test.ts
+  note: ''
+- id: R-ACL-034
+  status: done
+  evidence: 'tests/integration/acl.test.ts: restricted child page is not accessible through parent rights'
+  note: ''
+- id: R-ACL-035
+  status: done
+  evidence: previewMove/movePage requiresConfirmation (audience_change 409); tests/integration/acl.test.ts ACL-165
+  note: ''
+- id: R-ACL-036
+  status: partial
+  evidence: 'grants: subject user/group(department)/org, expires_at, granted_by, reason'
+  note: No space-as-subject; time zone not stored; ShareDialog has no reason field (reason API-only).
+- id: R-ACL-037
+  status: partial
+  evidence: apps/web/src/components/page/ShareDialog.tsx date input (empty = бессрочно)
+  note: No quick presets 1/7/30 days.
+- id: R-ACL-038
+  status: done
+  evidence: 'hub.checkExpirations() every 5 s (KB_ACL_EXPIRY_CHECK_MS) detects grant/membership/account expiry and grant start, emits acl-changed -> recheckAccess downgrades/closes WS; events WS also checks
+    session/account expiry; tests/integration/acl-gaps.test.ts: time-based expiry in live sessions'
+  note: Detection latency up to the check interval (5 s).
+- id: R-ADMIN-004
+  status: done
+  evidence: GET /api/v1/admin/grants/expiring + ExpiringSection (early revoke via DELETE /grants/:id)
+  note: No test.
+- id: R-ACL-039
+  status: done
+  evidence: 'tests/integration/acl.test.ts: removing a user from a department revokes access; personal grants remain'
+  note: ''
+- id: R-ACL-040
+  status: done
+  evidence: apps/web/src/components/page/ShareDialog.tsx picker -> level -> optional date -> "Выдать доступ" with audience preview
+  note: ''
+- id: R-ACL-041
+  status: done
+  evidence: apps/web/src/components/page/ShareDialog.tsx explicit + inherited list with via (лично/группа/пространство/родитель), ExplainBox
+  note: ''
+- id: R-ACL-042
+  status: partial
+  evidence: apps/web/src/components/page/ShareDialog.tsx "Только приглашённые"/"Все сотрудники" with widening confirmation
+  note: No "Только я" and "Отдел" presets, no "Дополнительно" section.
+- id: R-ACL-043
+  status: done
+  evidence: 'POST /api/v1/access-requests notifies all sharers (usersWithAction); ShareDialog AccessRequest; tests/integration/gaps.test.ts: access requests notify'
+  note: No approve/reject flow for requests (notification only).
+- id: R-ADMIN-005
+  status: partial
+  evidence: 'CreateUserDialog (UsersSection.tsx): name, email, kind, departments, manager, groups; POST /admin/users returns effectiveSpaces'
+  note: Accessible spaces are shown only after creation, not as a preview before confirming.
+- id: R-ADMIN-006
+  status: done
+  evidence: POST /admin/users/:id/transfer-preview + TransferDialog; tests/integration/acl.test.ts A16
+  note: ''
+- id: R-ADMIN-007
+  status: done
+  evidence: apps/server/src/services/org.ts setUserStatus (sessions, api_tokens, invitations, temporary grants) + transferOwnership; StatusDialog
+  note: Not covered by a test for tokens/transfer.
+- id: R-AUDIT-003
+  status: done
+  evidence: users are never deleted (status deactivated); audit_events keep actor_id/actor_name
+  note: ''
+- id: R-ADMIN-008
+  status: done
+  evidence: POST /admin/users/import (dry run + apply) + ImportDialog in UsersSection
+  note: SCIM not implemented (future); no test.
+- id: R-ACL-044
+  status: done
+  evidence: requirePage/loadAttachment in API, WS, attachments, search, export, previews/tiles, OCR
+  note: ''
+- id: R-ACL-045
+  status: done
+  evidence: apps/server/src/acl/engine.ts combine(grants, subjects, policy, {now}) with sources/denies/explanation; GET /access/explain
+  note: '"time" parameter not exposed in API.'
+- id: R-ACL-046
+  status: partial
+  evidence: acl_epoch table + bumpAclEpoch; client never trusted
+  note: No versioned permission cache implemented (rights recomputed per request).
+- id: R-AUDIT-004
+  status: done
+  evidence: grant.create/update/revoke, page.inherit.*, space.update, group.member.*, group.delete audited; tests/integration/acl.test.ts ACL-172
+  note: ''
+- id: V15-A01
+  status: done
+  evidence: 'tests/integration/acl.test.ts: new employee ... (A04, S13) checks own + general spaces only'
+  note: ''
+- id: V15-A02
+  status: done
+  evidence: GET /spaces hides private spaces, closed only for employees; guest test in tests/integration/acl.test.ts
+  note: Search not explicitly tested for guest.
+- id: V15-A03
+  status: done
+  evidence: 'personal space owner-only (combine personalOwner); tests/integration/acl.test.ts: admin does not see private content (A03)'
+  note: Tested for org admin, not specifically for a line manager.
+- id: V15-A04
+  status: done
+  evidence: 'tests/integration/acl.test.ts: new employee of a department automatically gets its space (A04)'
+  note: ''
+- id: V15-A06
+  status: done
+  evidence: 'tests/integration/acl.test.ts: moving a private page to an open space requires confirmation (A06)'
+  note: ''
+- id: V15-A07
+  status: done
+  evidence: hub.checkExpirations() every 5 s (KB_ACL_EXPIRY_CHECK_MS) detects grant/membership/account expiry and grant start, emits acl-changed -> recheckAccess downgrades/closes WS; events WS also checks
+    session/account expiry; tests/integration/acl-gaps.test.ts
+  note: No browser test.
+- id: V15-A08
+  status: done
+  evidence: tests/integration/collab.test.ts revoking view closes it; tests/integration/content.test.ts revocation invalidates signed links
+  note: ''
+- id: V15-A09
+  status: done
+  evidence: apps/web/src/components/page/ShareDialog.tsx audience with via; GET /access/explain sources; tests/integration/acl.test.ts A09
+  note: ''
+- id: V15-A10
+  status: done
+  evidence: 'tests/integration/acl.test.ts: view-only cannot modify via API (A10)'
+  note: ''
+- id: V15-A13
+  status: done
+  evidence: 'tests/integration/acl.test.ts: deleting a group revokes its grants (orphan count 0)'
+  note: ''
+- id: V15-A16
+  status: done
+  evidence: 'tests/integration/acl.test.ts: transfer preview shows spaces gained and lost (A16)'
+  note: ''
+- id: V15-A17
+  status: done
+  evidence: revokeUserSessions revokes sessions and api_tokens; lookupApiToken requires status active
+  note: Tokens path not tested.
+- id: R-PUBLISH-007
+  status: done
+  evidence: publish() marks immutable revision kind publish; readers in publish mode see it
+  note: ''
+- id: R-PUBLISH-008
+  status: partial
+  evidence: publish within the space audience; PublishBar confirm
+  note: No choice of publication audience (company/departments/people), no preview of audience/attachments/children/indexing.
+- id: R-PUBLISH-009
+  status: missing
+  evidence: share_links table only (no routes)
+  note: Public links (revoke, expiry, password, noindex, download control) not implemented.
+- id: R-ADMIN-009
+  status: partial
+  evidence: 'AdminPage tabs: users, groups, settings, audit, archives, health, expiring; search & filters in UsersSection'
+  note: 'Missing sections: overview, spaces, roles, guests/invitations dashboard, publications; no bulk operations.'
+- id: R-ADMIN-010
+  status: partial
+  evidence: GET /access/explain?userId (per-space levels) and ?pageId (sources, expiry, denies)
+  note: No user x space/page effective-access matrix screen; owner/conflicts columns missing.
+- id: R-ADMIN-011
+  status: partial
+  evidence: CreateUserDialog (role, departments, groups, expiry), TransferDialog recalculates
+  note: No spaces step and no pre-confirmation preview in the wizard.
+- id: R-ACL-047
+  status: done
+  evidence: org admin gets no content grants; people_admin/auditor separate roles; tests/integration/acl.test.ts A03
+  note: ''
+- id: R-ADMIN-012
+  status: partial
+  evidence: ExpiringSection (expiring grants)
+  note: No control panel for external links, expiring invitations, open spaces, orphan pages, ownerless pages, mass exports.
+- id: V16-S04
+  status: done
+  evidence: 'per-request checks; GET /exports/:id/download re-checks every exported page; tests/integration/acl-gaps.test.ts: stored exports re-check access'
+  note: ''
+- id: V16-S05
+  status: done
+  evidence: 'tests/integration/content.test.ts: readers see the published revision while the draft evolves (S05)'
+  note: ''
+- id: V16-S06
+  status: missing
+  evidence: '-'
+  note: External publication (public links) not implemented.
+- id: V16-S13
+  status: done
+  evidence: 'tests/integration/acl.test.ts: new employee ... (A04, S13)'
+  note: ''
+- id: V16-S14
+  status: done
+  evidence: 'users.access_expires_at blocks session/API/attachments (lookupSession); tests/integration/acl.test.ts: user access expiry blocks the account'
+  note: ''
+- id: V16-S15
+  status: partial
+  evidence: GET /access/explain returns level/sources/expiry, page title hidden "(скрыто)"; tests/integration/acl.test.ts S15
+  note: Admin UI has no entry point to it (ExplainBox only inside ShareDialog for users with share right).
+- id: V16-S16
+  status: partial
+  evidence: POST /api/v1/grants/bulk (preview/apply, per-grant audit)
+  note: No UI; preview only echoes grants (no audience); no result report beyond count.
+- id: R-PUBLISH-010
+  status: partial
+  evidence: owner_id, review_due_at, verified_at/verified_by, Home needsReview
+  note: No responsible group, no reminders, no stale filter in search, not hidden for notes.
+- id: R-PUBLISH-011
+  status: partial
+  evidence: 'pages.locked: only full-level users may edit (routes/pages.ts PATCH, hub canEdit); published revision immutable'
+  note: No "update via draft + approval" for locked regulations — locked page simply blocks non-owners.
+- id: R-ADMIN-013
+  status: partial
+  evidence: 'GET /api/v1/admin/health + HealthSection: services, last backup, last restore verification, failed jobs, index lag'
+  note: No latency metrics, no free disk space, archives not summarised.
+- id: R-ADMIN-014
+  status: partial
+  evidence: AdminPage tabs (users, groups, settings, audit, archives, health, expiring)
+  note: No Spaces, Access, Publications, Import/Export tabs; no bulk operations with preview/report.
+- id: R-ADMIN-015
+  status: partial
+  evidence: CreateUserDialog + result screen with effectiveSpaces
+  note: No spaces step in the wizard.
+- id: R-ACL-048
+  status: done
+  evidence: deny by default (combine); suspend/deactivate revokes sessions, tokens, invitations; pending offline edits stay local and are rejected/exportable
+  note: ''
+- id: V17-F07
+  status: done
+  evidence: 'tests/integration/import-export.test.ts: export respects rights ... private pages never leak into branch export (V17-F07)'
+  note: See V16-S04 for export-job download gap.
+- id: R-SECURITY-010
+  status: done
+  evidence: 'archive users.json excludes password/MFA/tokens (services/archive.ts); tests/integration/archive.test.ts: no secrets'
+  note: ''
+- id: R-ACL-049
+  status: done
+  evidence: archive restore creates unresolved users suspended (services/archive.ts); tests/integration/archive.test.ts
+  note: ''
+- id: V18-A05
+  status: done
+  evidence: 'tests/integration/archive.test.ts: unresolved identities status suspended'
+  note: ''
+- id: V18-A17
+  status: done
+  evidence: 'tests/integration/content.test.ts: revocation invalidates signed links (A17)'
+  note: ''
+- id: R-COMMENTS-003
+  status: partial
+  evidence: mentions notify only people with access (tests/integration/content.test.ts); tests/e2e/content.spec.ts comment on a selection
+  note: Preservation of selection/cursor after closing the panel not verified; spam control is basic (participants only).
+- id: UX-149
+  status: done
+  evidence: 'visibleChildren/hasChildren filtered, breadcrumbs "…"; tests/integration/acl.test.ts: no leak through "has children" marker'
+  note: ''
+- id: R-ACL-050
+  status: done
+  evidence: 'move: create right + audience preview; duplicate into another location: audience diff + 409 audience_change unless confirmAudienceChange; tests/integration/acl-gaps.test.ts'
+  note: Web UI only duplicates in place (no cross-space copy dialog yet).
+- id: R-HELP-002
+  status: partial
+  evidence: HelpCenter SHORTCUTS with search, Mod -> Ctrl/⌘ per OS (Tooltip formatShortcut)
+  note: No browser-conflict, RU/EN layout or screen-reader notes.
+- id: E218
+  status: done
+  evidence: tests/integration/collab.test.ts permissions in live sessions; tests/e2e/collab.spec.ts revoking edit makes it read-only
+  note: ''
+- id: R-HELP-003
+  status: manual
+  evidence: 'components/ui/Tooltip.tsx (floating-ui: hover delay 450ms, focus, flip/shift, shortcut kbd)'
+  note: Coverage of every icon button not verified.
+- id: R-HELP-004
+  status: done
+  evidence: help/Onboarding.tsx OnboardingHints with "Понятно"/"Не показывать", seenHints persisted (localStorage)
+  note: Persisted per browser only.
+- id: R-HELP-005
+  status: partial
+  evidence: HelpCenter dialog with search, opened by "?" and F1 (AppShell.tsx)
+  note: No GIF/video/diagrams or interactive examples.
+- id: R-HELP-006
+  status: manual
+  evidence: empty states with instructions (32 empty-state usages), prefers-reduced-motion CSS (tokens.css, panels.css, admin.css)
+  note: Quality needs human review.
+- id: UX21-182
+  status: done
+  evidence: 'loadAttachment download vs inline view; tests/integration/content.test.ts: respects download policy (A15)'
+  note: ''
+- id: UX21-193
+  status: done
+  evidence: Tooltip flip/shift middleware keeps tooltip in viewport
+  note: No visual test.
+- id: UX21-194
+  status: done
+  evidence: Tooltip useFocus(visibleOnly) shows on keyboard focus
+  note: No test.
+- id: UX21-195
+  status: done
+  evidence: HelpCenter checkbox + hint "Не показывать подсказки" (hintsDisabled)
+  note: ''
+- id: COLLAB-196
+  status: done
+  evidence: 'tests/integration/collab.test.ts: (AT-78, COLLAB-196 ...)'
+  note: ''
+- id: R-PUBLISH-012
+  status: done
+  evidence: publish only via explicit POST /publish or approval; autosave never changes status
+  note: ''
+- id: R-SPACE-004
+  status: done
+  evidence: 'ensurePersonalSpace on user creation/login (apps/server/src/services/org.ts); tests/integration/core.test.ts: personal space invisible to others and admins'
+  note: ''
+- id: R-SPACE-005
+  status: done
+  evidence: personal space is an ordinary space (same pages/blocks/attachments/templates/history)
+  note: ''
+- id: R-SPACE-006
+  status: done
+  evidence: setGrant org widening confirm; move from personal requires confirmation (previewMove personalSource)
+  note: ''
+- id: R-SPACE-007
+  status: partial
+  evidence: 'MoveDialog + treeActions movePage: confirm with gained/lost, descendants, attachments; Undo toast'
+  note: No path preview in confirmation, no link to the new location; confirmation shown only when audience widens/personal source.
+- id: R-ACL-051
+  status: partial
+  evidence: sharing personal page via ShareDialog (recipients, level, expiry); org widening requires confirmWiden
+  note: No "не полностью личная" indicator on shared personal pages.
+- id: R-ADMIN-016
+  status: partial
+  evidence: transferOwnership excludes personal spaces; deactivation audited
+  note: No policy to transfer/archive personal materials; no restricted emergency-access procedure.
+- id: R-SPACE-008
+  status: partial
+  evidence: quotaCheck -> 507 quota_exceeded on upload (routes/attachments.ts); content never deleted
+  note: No quota usage indicator in UI.
+- id: R-HELP-007
+  status: done
+  evidence: Home/SidebarTree empty state "Создать первую страницу", no tour
+  note: ''
+- id: R-HELP-008
+  status: manual
+  evidence: Tooltips with shortcuts on "+", block handle, sync status; help search
+  note: Coverage of all listed controls needs manual check.
+- id: UX23-199
+  status: done
+  evidence: 'tests/integration/core.test.ts: (UX23-199, ACL-151)'
+  note: ''
+- id: UX23-200
+  status: done
+  evidence: autosave/collab flush never publishes; personal page status stays draft
+  note: No dedicated test.
+- id: UX23-209
+  status: done
+  evidence: 'resolveMoveTarget requires create on target (403); treeActions.movePage waits for server before invalidating tree; tests/integration/acl.test.ts: cannot move into a location where the user
+    cannot create (UX23-209)'
+  note: ''
+- id: UX23-210
+  status: done
+  evidence: previewMove audience diff shown in confirm dialog (treeActions.tsx); tests/integration/acl.test.ts (UX23-210)
+  note: ''
+- id: R-ACL-052
+  status: done
+  evidence: hub write check (nack forbidden), restore requires restore action, download re-check; tests/integration/collab.test.ts AT-78
+  note: ''
+- id: OPS-008
+  status: done
+  evidence: 'tests/integration/collab.test.ts: revoking edit switches session to read-only'
+  note: ''
+- id: OPS-014
+  status: partial
+  evidence: audit_events (incl. denials) + page_events journal; tests/integration/acl-gaps.test.ts
+  note: Content edits only in page_events, not in the tamper-evident audit; views not logged.
+- id: R-ACL-053
+  status: done
+  evidence: model separates org_role, group_members, space visibility, grants (migrations/0001_core.sql)
+  note: ''
+- id: R-ACL-054
+  status: done
+  evidence: combine deny-by-default + explanation; checks in API/search/attachments/export/preview/history/WS
+  note: ''
+- id: R-ACL-055
+  status: done
+  evidence: 'subjects: user (owner/admin/people_admin/employee/guest), group (department/group with manager), org'
+  note: ''
+- id: R-ACL-056
+  status: partial
+  evidence: admin gets no access to personal spaces (personalOwner only); tests/integration/acl.test.ts A03
+  note: No emergency access procedure with reason/approval/audit.
+- id: R-ACL-057
+  status: partial
+  evidence: grants on space/page; attachments/versions inherit page; templates org/space scoped
+  note: Scopes "Группа", "Подразделение", "Гости по приглашению", "Только я" not offered as presets; no grants on templates/attachments.
+- id: R-SPACE-009
+  status: done
+  evidence: previewMove requiresConfirmation for personal source; personal space private (kind personal)
+  note: ''
+- id: R-ACL-058
+  status: done
+  evidence: actions incl. manage_structure/share/manage_space; PageView export disabled with "Запрещено политикой" hint; SpacePage policy toggles
+  note: ''
+- id: R-ACL-059
+  status: done
+  evidence: 'share requires full (ACTION_MIN_LEVEL); tests/integration/acl.test.ts: editor without share right cannot grant access'
+  note: ''
+- id: R-ACL-060
+  status: partial
+  evidence: 'apps/web/src/components/page/ShareDialog.tsx: scope, people/groups, level, expiry, source (via)'
+  note: No status (active/pending/suspended/expired) display; starts_at not exposed in UI.
+- id: R-ACL-061
+  status: partial
+  evidence: ShareDialog (add user/group/org, level, end date, revoke); GroupsSection; grants/bulk API
+  note: No start date, suspend/resume of a grant, grouping/filters or bulk assignment with preview in UI.
+- id: R-ACL-062
+  status: partial
+  evidence: confirm() on revoke/inheritance/widening; Undo toast for moves
+  note: No undo for grant revocation/changes.
+- id: R-ACL-063
+  status: partial
+  evidence: hub.checkExpirations() every 5 s (KB_ACL_EXPIRY_CHECK_MS) detects grant/membership/account expiry and grant start, emits acl-changed -> recheckAccess downgrades/closes WS; events WS also checks
+    session/account expiry; starts_at/expires_at server-side; tests/integration/acl-gaps.test.ts
+  note: No owner reminder before expiry; time zone not stored (timestamptz only).
+- id: R-AUTH-002
+  status: done
+  evidence: 'apps/server/src/services/org.ts setUserStatus: revoke sessions/tokens/invitations, profile kept; tests/integration/core.test.ts ACL-157'
+  note: ''
+- id: R-ACL-064
+  status: done
+  evidence: 'guests: explicit grants only, parent shells "…", /directory 403, search/suggest limited to explicitly shared pages (services/search.ts guestSearchScope); tests/integration/acl-gaps.test.ts'
+  note: ''
+- id: R-ACL-065
+  status: done
+  evidence: apps/web/src/components/page/ShareDialog.tsx inheritance toggle with warning; POST /pages/:id/inheritance
+  note: ''
+- id: R-ACL-066
+  status: done
+  evidence: 'combine: deny > allow, then max of direct/group/org; tests/integration/acl.test.ts: explicit deny wins over group allow'
+  note: Formal model documented only in code comments.
+- id: R-ACL-067
+  status: done
+  evidence: breadcrumbs hide inaccessible ancestors, explain chain titles "…", tree hasChildren filtered
+  note: ''
+- id: R-ACL-068
+  status: partial
+  evidence: 'previewMove: from/to, gained/lost subjects, descendants, attachments count'
+  note: Affected links and guests not listed separately.
+- id: R-ACL-069
+  status: done
+  evidence: setGrant org widening -> 409 audience_change + preview, space visibility open requires confirmWiden; tests/integration/acl.test.ts
+  note: ''
+- id: R-ACL-070
+  status: done
+  evidence: duplicatePage skips guest grants; move undo payload restores position (rights follow inheritance)
+  note: No test for duplicate + guest grants.
+- id: R-ADMIN-017
+  status: done
+  evidence: UsersSection (filters kind/status/role incl. invited/suspended), GroupsSection, ExpiringSection
+  note: ''
+- id: R-ACL-071
+  status: done
+  evidence: apps/web/src/components/page/ShareDialog.tsx opened from every page (PageView "Доступ")
+  note: ''
+- id: R-ADMIN-018
+  status: partial
+  evidence: GET /api/v1/access/explain (no impersonation)
+  note: No admin "Проверить доступ" screen; only ExplainBox inside ShareDialog for users with share right.
+- id: R-ADMIN-019
+  status: partial
+  evidence: UsersSection search/filters/empty states; mobile layout tests (tests/e2e/mobile.layout.spec.ts) do not cover admin
+  note: No batch operations; admin on mobile/tablet not verified.
+- id: R-ACL-072
+  status: done
+  evidence: transactions + per-request checks + WS recheck/expiry + export download re-check; tests/integration/acl-gaps.test.ts
+  note: ''
+- id: R-ACL-073
+  status: done
+  evidence: search filters by ACL post-query; signed links 5 min, re-checked on use
+  note: ''
+- id: R-ACL-074
+  status: done
+  evidence: UI does not promise revoking downloaded files
+  note: No explicit warning text either.
+- id: R-AUDIT-005
+  status: done
+  evidence: 'grant audit details (subject, level, previousLevel, expiresAt, reason, flags); audit_events hash chain + append-only trigger; tests/integration/core.test.ts: is hash-chained and append-only'
+  note: Revocation entries lack reason.
+- id: ACL-151
+  status: done
+  evidence: 'tests/integration/core.test.ts: personal space (UX23-199, ACL-151)'
+  note: ''
+- id: ACL-152
+  status: done
+  evidence: 'tests/integration/acl.test.ts: (A04, S13, ACL-152)'
+  note: ''
+- id: ACL-153
+  status: done
+  evidence: 'tests/integration/acl.test.ts: company-wide view, editing only by authors (ACL-153)'
+  note: ''
+- id: ACL-154
+  status: done
+  evidence: 'tests/integration/acl.test.ts: editor without share right cannot grant access (ACL-154)'
+  note: ''
+- id: ACL-155
+  status: done
+  evidence: 'tests/integration/acl.test.ts: guest invited to one page sees only it (ACL-155)'
+  note: ''
+- id: ACL-156
+  status: done
+  evidence: tests/integration/acl.test.ts (HTTP) + tests/integration/acl-gaps.test.ts (live session)
+  note: ''
+- id: ACL-157
+  status: done
+  evidence: 'tests/integration/core.test.ts: suspended user loses access immediately (ACL-157); tests/integration/collab.test.ts: suspending a user closes their live sessions'
+  note: ''
+- id: ACL-158
+  status: done
+  evidence: 'setUserStatus revokes pending invitations on suspend; tests/integration/core.test.ts: reactivation does not resurrect old sessions'
+  note: Invitation part not asserted by the test.
+- id: ACL-159
+  status: done
+  evidence: 'tests/integration/acl.test.ts: 20 child pages canEdit via department grant'
+  note: ''
+- id: ACL-160
+  status: done
+  evidence: 'tests/integration/acl.test.ts: restricted child page (A05, ACL-160); SidebarTree lock marker'
+  note: ''
+- id: ACL-161
+  status: done
+  evidence: 'tests/integration/acl.test.ts: explains why a user has access (ACL-161)'
+  note: ''
+- id: ACL-162
+  status: done
+  evidence: 'tests/integration/acl.test.ts: 404 for direct URL (ACL-162 comment)'
+  note: ''
+- id: ACL-164
+  status: done
+  evidence: tests/integration/content.test.ts (E2E-102, A14, A17, ACL-164); revisions/export/preview use requirePage
+  note: ''
+- id: ACL-165
+  status: done
+  evidence: 'tests/integration/acl.test.ts: moving changes audience (ACL-165)'
+  note: ''
+- id: ACL-166
+  status: done
+  evidence: 'tests/integration/acl.test.ts: undo restores (ACL-166)'
+  note: ''
+- id: ACL-167
+  status: done
+  evidence: duplicatePage excludes guest grants (services/pages.ts)
+  note: No test.
+- id: ACL-168
+  status: done
+  evidence: tests/integration/collab.test.ts (ACL-168)
+  note: ''
+- id: ACL-169
+  status: done
+  evidence: 'tests/integration/acl.test.ts: parallel grant changes do not lose updates (ACL-169)'
+  note: ''
+- id: ACL-170
+  status: partial
+  evidence: POST /api/v1/grants/bulk preview; POST /pages/:id/access/preview (single grant audience)
+  note: Bulk preview does not compute exact audience; no bulk UI.
+- id: ACL-171
+  status: done
+  evidence: 'tests/integration/acl.test.ts: guest ... no directory, no org-wide content (ACL-171)'
+  note: ''
+- id: ACL-172
+  status: done
+  evidence: 'tests/integration/acl.test.ts: audit events for grant changes (ACL-172); audit append-only'
+  note: ''
+- id: R-ACL-075
+  status: partial
+  evidence: server/API ACL tests incl. tests/integration/acl-gaps.test.ts
+  note: 'Gate not met: no UI/browser or mobile ACL tests.'
+- id: R-ACL-076
+  status: partial
+  evidence: UI uses server actions; widening confirmations; exception markers
+  note: Least-privilege decisions not consolidated in DECISIONS.md; no UI-vs-server consistency test.
+- id: QA26-24
+  status: partial
+  evidence: tests/integration/acl.test.ts, tests/integration/collab.test.ts, tests/integration/content.test.ts, tests/integration/import-export.test.ts, tests/integration/core.test.ts, tests/integration/acl-gaps.test.ts
+  note: No browser/mobile ACL tests.
+- id: R-ACL-077
+  status: done
+  evidence: space/group grants, inheritance, exceptions marked (hasExplicitGrants) and explained; tests/integration/acl-gaps.test.ts
+  note: ''
+- id: R-SPACE-010
+  status: partial
+  evidence: SPACE_KINDS org/department/project/private/personal/archive; allowGuests policy for guest projects
+  note: Spaces can be created only via API (no UI).
+- id: R-SPACE-011
+  status: done
+  evidence: visibility open/closed/private enforced in GET /spaces; SpacePage SettingsTab
+  note: ''
+- id: R-SPACE-012
+  status: missing
+  evidence: '-'
+  note: No admin-defined space template / default rights.
+- id: R-ADMIN-020
+  status: partial
+  evidence: group-based space grants + userSubjects; tests/integration/acl.test.ts A04
+  note: Assigning a department/group to a space has no UI.
+- id: R-ADMIN-021
+  status: done
+  evidence: TransferDialog with transfer-preview diff
+  note: ''
+- id: R-ADMIN-022
+  status: partial
+  evidence: guest invitations with expiry, suspend, revoke sessions (UsersSection), group membership with expiry
+  note: No bulk group management.
+- id: R-ACL-078
+  status: done
+  evidence: GET /access/explain inheritanceChain + apps/web/src/components/page/ShareDialog.tsx ExplainBox "Цепочка наследования"
+  note: ''
+- id: R-AUDIT-006
+  status: done
+  evidence: grant.* events + AuditSection filters (action/actor/target/date) + /audit/verify
+  note: ''
+- id: R-ACL-079
+  status: done
+  evidence: movePage requires confirmAudienceChange with concrete gained list; tests/integration/acl.test.ts
+  note: ''
+- id: R-ACL-080
+  status: done
+  evidence: attachments, search, tiles, API, history, events, stored exports re-checked; tests/integration/acl-gaps.test.ts
+  note: ''
+- id: R-ORG-005
+  status: done
+  evidence: 'tests/integration/acl.test.ts: new employee of a department automatically gets its space'
+  note: ''
+- id: R-ADMIN-023
+  status: done
+  evidence: 'tests/integration/acl.test.ts: transfer preview shows spaces gained and lost'
+  note: ''
+- id: R-ACL-081
+  status: done
+  evidence: 'tests/integration/acl.test.ts: create 20 child pages without any ACL configuration'
+  note: Test uses 20 pages, not 100.
+- id: R-ACL-082
+  status: done
+  evidence: 'tests/integration/acl.test.ts: guest invited to one page sees only it'
+  note: ''
+- id: R-ACL-083
+  status: done
+  evidence: 'tests/integration/collab.test.ts: revoking view closes it'
+  note: ''
+- id: R-ACL-084
+  status: done
+  evidence: 'tests/integration/acl.test.ts: moving a private page to an open space requires confirmation'
+  note: ''

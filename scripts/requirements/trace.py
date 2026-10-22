@@ -36,7 +36,8 @@ def load_status():
 def test_refs(ids):
     """id -> list of 'file: test title' where the id appears."""
     refs = collections.defaultdict(list)
-    pattern = re.compile(r'\b(' + '|'.join(sorted((re.escape(i) for i in ids), key=len, reverse=True)) + r')\b')
+    # An id must not be glued to other id characters: \b would match OPS-006 inside R-OPS-006.
+    pattern = re.compile(r'(?<![\w-])(' + '|'.join(sorted((re.escape(i) for i in ids), key=len, reverse=True)) + r')(?![\w-])')
     for p in glob.glob(os.path.join(ROOT, 'tests/**/*.ts'), recursive=True):
         rel = os.path.relpath(p, ROOT)
         with open(p, encoding='utf-8') as f:

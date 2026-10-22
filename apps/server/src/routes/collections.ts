@@ -4,7 +4,7 @@ import ExcelJS from 'exceljs';
 import Papa from 'papaparse';
 import { tx } from '../db/pool.js';
 import { actorOf, parse, requireUser, type Services } from '../app.js';
-import { requirePage } from '../acl/engine.js';
+import { requirePage, pageAccess } from '../acl/engine.js';
 import { createPage, trashPage } from '../services/pages.js';
 import { audit } from '../services/audit.js';
 import { fieldSchema, viewSchema, filterSchema, buildFilter, buildOrder, coerceValue, visibleRowIds, type Field, type View } from '../services/collections.js';
@@ -42,6 +42,24 @@ export async function collectionRoutes(app: FastifyInstance, s: Services) {
     });
     s.bus.emit({ type: 'tree-changed', orgId: user.orgId, spaceId: res.page.space_id });
     return { pageId: res.page.id, collection: res.collection };
+  });
+
+  /** Collections of a space the user can see (target choice for a repeated import into an existing collection). */
+  app.get('/api/v1/collections', async (req) => {
+    const user = requireUser(req);
+    const { spaceId } = parse(z.object({ spaceId: uuid }), req.query);
+    const rows = (
+      await s.db.query(
+        `select c.id, c.name, c.page_id, c.schema, c.version from collections c join pages p on p.id = c.page_id where c.org_id = $1 and p.space_id = $2 and p.deleted_at is null order by c.name`,
+        [user.orgId, spaceId],
+      )
+    ).rows;
+    const out = [];
+    for (const c of rows) {
+      const acc = await pageAccess(s.db, user, c.page_id);
+      if (acc?.actions.view) out.push({ id: c.id, name: c.name, pageId: c.page_id, fields: c.schema, version: c.version, canEdit: !!acc.actions.edit });
+    }
+    return { collections: out };
   });
 
   app.get('/api/v1/collections/:id', async (req) => {

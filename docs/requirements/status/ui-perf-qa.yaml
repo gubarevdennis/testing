@@ -1,0 +1,1170 @@
+# Status of UI, LAYOUT, A11Y, PERF, QA, PROCESS requirements (assessed 2026-10-22 from code, tests and a local vite build).
+- id: R-PROCESS-001
+  status: process
+  evidence: first commit 1fc0d14 is a scaffold (repo started empty)
+  note: no audit report needed/written
+- id: R-PROCESS-002
+  status: process
+  evidence: docs/DECISIONS.md (D-01..D-18)
+  note: exists
+- id: R-PROCESS-003
+  status: done
+  evidence: docs/requirements/registry.yaml (1298 entries), scripts/requirements/trace.py → docs/REQUIREMENTS_TRACEABILITY.md
+  note: completeness vs source not independently re-verified here
+- id: R-PROCESS-004
+  status: partial
+  evidence: docs/ARCHITECTURE.md, docs/DECISIONS.md exist
+  note: TEST_MATRIX.md, OPERATIONS.md, RELEASE_READINESS.md missing (D-18 refers to RELEASE_READINESS.md)
+- id: R-PROCESS-005
+  status: process
+  evidence: docs/DECISIONS.md
+  note: exists
+- id: R-PROCESS-006
+  status: process
+  evidence: git history
+  note: 'not followed: server layers first, web client in e51bb0c/4fabd33, browser E2E only in 0d4abd3'
+- id: R-PROCESS-007
+  status: missing
+  evidence: package.json scripts
+  note: no CI config, no eslint.config (npm run lint has no config), no per-slice green logs
+- id: R-QA-001
+  status: partial
+  evidence: tests/e2e/editor.spec.ts, tests/e2e/content.spec.ts, tests/e2e/collab.spec.ts, tests/e2e/visual.spec.ts, tests/e2e/mobile.layout.spec.ts (Chromium)
+  note: no DnD, hover, menu-edge or selection tests; paste is synthetic
+- id: R-PROCESS-008
+  status: process
+  evidence: this status file lists env-blocked/manual items
+  note: RELEASE_READINESS.md with unverified blockers missing
+- id: R-PROCESS-009
+  status: process
+  evidence: no deleted features/tests in git history
+  note: not formally verifiable
+- id: R-PROCESS-010
+  status: missing
+  evidence: n/a
+  note: final report (RELEASE_READINESS) not written
+- id: R-PROCESS-011
+  status: process
+  evidence: docs/DECISIONS.md D-10 (stricter of conflicting requirements)
+  note: exists
+- id: R-UI-001
+  status: manual
+  evidence: apps/web/src/styles/tokens.css (light reference theme, dark only via data-theme/system)
+  note: no agreed mockups in repo; needs visual sign-off
+- id: R-QA-002
+  status: missing
+  evidence: n/a
+  note: docs/TEST_MATRIX.md absent; no state catalogue/transition matrix/pairwise
+- id: R-UI-002
+  status: manual
+  evidence: n/a
+  note: UX comparison with Notion not performed
+- id: R-UI-003
+  status: partial
+  evidence: tests/e2e/editor.spec.ts create→type→autosave with no dialogs; slash menu; helpers.newPage
+  note: no audit of all key tasks for mandatory dialogs
+- id: R-UI-004
+  status: partial
+  evidence: apps/web/src/components/ui/Menu.tsx (floating-ui flip/shift/size padding 8)
+  note: no test of menus at viewport edges
+- id: R-UI-005
+  status: partial
+  evidence: apps/web/src/state/ui.ts persists theme, sidebar, expanded, rightPanel
+  note: last route/page/space not restored after restart
+- id: R-A11Y-001
+  status: partial
+  evidence: 'keyboard in SidebarTree/Menu/Dialog; @media (pointer: coarse) in apps/web/src/styles/layout.css, ui.css'
+  note: no mouse/keyboard/touch input matrix; touch never exercised in tests
+- id: R-UI-006
+  status: partial
+  evidence: tests/e2e/editor.spec.ts "Сохранено" only after server ack; tests/resilience/db-connection-loss.test.ts; tests/e2e/visual.spec.ts horizontal overflow
+  note: no CLS measurement, no overlap/clipping detection, screenshots are only written to test-results/visual, never compared to a baseline
+- id: R-QA-003
+  status: missing
+  evidence: n/a
+  note: no component state catalogue
+- id: R-QA-004
+  status: missing
+  evidence: n/a
+  note: no actions × conditions matrix
+- id: R-UI-007
+  status: partial
+  evidence: aria-label + Tooltip on icon buttons; apps/web/src/styles/ui.css .icon-btn 28px (40px coarse)
+  note: hit target below 44px on touch; no per-button checks
+- id: R-UI-008
+  status: partial
+  evidence: 'Menu.tsx: role=menu, useDismiss (Esc/outside), nested SubMenu, FloatingFocusManager returnFocus'
+  note: only exercised indirectly (CO history test); no Esc/outside/edge tests
+- id: R-QA-005
+  status: partial
+  evidence: tests/resilience/crash-restart.test.ts, db-connection-loss.test.ts; tests/integration/collab.test.ts offline/pending store/conflict; tests/e2e/editor.spec.ts offline
+  note: timeouts and partial storage failure not covered
+- id: R-QA-006
+  status: missing
+  evidence: n/a
+  note: docs/TEST_MATRIX.md absent
+- id: R-QA-007
+  status: partial
+  evidence: tests/e2e/visual.spec.ts 6 widths + zoom; tests/e2e/mobile.layout.spec.ts
+  note: only Chromium is installed (playwright.config.ts, DECISIONS D-18); touch input not exercised
+- id: R-QA-008
+  status: partial
+  evidence: tests/e2e/visual.spec.ts
+  note: screenshots are only written to test-results/visual, never compared to a baseline; no CI
+- id: R-QA-009
+  status: manual
+  evidence: n/a
+  note: Notion comparison not performed
+- id: R-PERF-001
+  status: missing
+  evidence: 'tests/e2e/collab.spec.ts "typing latency on a long document stays within budget": 400 paragraphs (~5k words), 40 samples, execCommand insertText -> next rAF, no CPU/network throttling; last
+    run p95≈31 ms'
+  note: no p95/p99 report with fixed load/network/devices
+- id: R-QA-010
+  status: partial
+  evidence: resilience + collab property tests, ACL/CSRF/zip-slip/security-headers tests
+  note: no load/longevity tests; no result journals
+- id: R-PROCESS-012
+  status: missing
+  evidence: n/a
+  note: no release gate (no CI/gate script)
+- id: R-PROCESS-013
+  status: partial
+  evidence: 'docs/: REQUIREMENTS_TRACEABILITY, ARCHITECTURE, DECISIONS, SECURITY'
+  note: TEST_MATRIX, UX_ACCEPTANCE, OPERATIONS, BACKUP_RESTORE etc. missing
+- id: R-QA-011
+  status: done
+  evidence: tests/unit, tests/integration, tests/e2e, tests/resilience; vitest.config.ts projects
+  note: unit level is thin (1 file)
+- id: R-PROCESS-014
+  status: missing
+  evidence: package.json scripts only
+  note: no README.md
+- id: R-PROCESS-015
+  status: process
+  evidence: git history
+  note: no per-stage reports
+- id: R-PROCESS-016
+  status: process
+  evidence: n/a
+  note: external blockers not yet recorded in a document
+- id: R-UI-009
+  status: partial
+  evidence: api/client.ts ApiError messages, Toast, ErrorBoundary + lib/telemetry.ts reportError
+  note: '8 silent .catch(()=>undefined) (mostly benign: logout, telemetry, abort); no test that errors surface'
+- id: R-QA-012
+  status: process
+  evidence: git log --diff-filter=D shows no deleted test files
+  note: no written review rule/CI enforcement
+- id: R-PROCESS-017
+  status: done
+  evidence: apps/server/src/routes/admin.ts:436 test endpoint disabled in production; demo seed only via CLI
+  note: ''
+- id: R-UI-010
+  status: manual
+  evidence: n/a
+  note: usability test without training not performed
+- id: R-UI-011
+  status: partial
+  evidence: sync-status (Editor.tsx), offline banner (AppShell), undo toasts, version restore (CO history test)
+  note: not verified for all operations
+- id: R-PROCESS-018
+  status: partial
+  evidence: see QA gaps
+  note: many critical scenarios lack passing tests
+- id: R-PROCESS-019
+  status: process
+  evidence: registry.yaml covers corpus
+  note: exists
+- id: R-PROCESS-020
+  status: process
+  evidence: own CSS/tokens, lucide icons (ISC)
+  note: no formal asset/code provenance check
+- id: R-PROCESS-021
+  status: process
+  evidence: no CRM/tasks/kanban modules in apps/server/src
+  note: respected
+- id: R-UI-012
+  status: partial
+  evidence: 'pages/Home.tsx: quick search link, Избранное, Недавние/Обновлённые, Требуют пересмотра'
+  note: no "popular" block
+- id: R-UI-013
+  status: partial
+  evidence: 'layout/Sidebar.tsx: Поиск (Ctrl+K), Новая страница, Входящие, profile menu'
+  note: no top bar; no explicit space switcher
+- id: R-UI-014
+  status: partial
+  evidence: apps/web/src/styles/editor.css .right-panel 380px flex sibling; PageView panels comments/history/info
+  note: panel shrinks the main column; no TOC/related tabs in panel
+- id: R-UI-015
+  status: partial
+  evidence: 'state/ui.ts localStorage: expanded, sidebarWidth, rightPanel'
+  note: last space not persisted; no server mirroring; untested
+- id: R-LAYOUT-001
+  status: partial
+  evidence: PageView menu "Широкая страница" (per page), theme menu in Sidebar/Settings, TOC block
+  note: no Focus mode, no "show TOC" toggle
+- id: R-UI-016
+  status: partial
+  evidence: PageView PageError (no access/offline + retry), App offline screen, empty-state (16 uses), ImportPage progress
+  note: states not tested; "no results"/"importing" CTA not verified
+- id: R-UI-017
+  status: partial
+  evidence: 'routes: search, history+diff panel, trash, templates, ShareDialog, ImportPage, settings, admin audit'
+  note: export centre is only a per-page dialog
+- id: R-UI-018
+  status: partial
+  evidence: AppShell drawer ≤860px; .tableWrapper overflow-x; tests/e2e/mobile.layout.spec.ts (Pixel 7, 412px)
+  note: mobile E2E not at 375px; only overflow checked at 375 in visual spec
+- id: R-PROCESS-022
+  status: missing
+  evidence: n/a
+  note: no licence register
+- id: R-UI-019
+  status: manual
+  evidence: apps/web/src/styles/tokens.css
+  note: design review not performed
+- id: R-UI-020
+  status: partial
+  evidence: tokens.css light+dark semantic tokens; dark screenshots in VS
+  note: brand/personal accent colour not configurable; screenshots are only written to test-results/visual, never compared to a baseline
+- id: R-UI-021
+  status: partial
+  evidence: tokens.css --sp-1..10 (4/8 px), --content-w 760px
+  note: many hard-coded 6/10/14 px paddings off the 8px grid; no token check
+- id: R-UI-022
+  status: partial
+  evidence: tokens.css --t-fast 120 / --t-med 180 / --t-slow 240 ms
+  note: values in range but not tested; save spinner rotates while saving
+- id: R-A11Y-002
+  status: partial
+  evidence: tokens.css @media (prefers-reduced-motion) zeroes transitions/animations
+  note: no test with reducedMotion emulation
+- id: R-UI-023
+  status: partial
+  evidence: ui.css hover/:focus-visible/active/disabled styles
+  note: no state catalogue; pending/success/error not uniform
+- id: R-A11Y-003
+  status: partial
+  evidence: aria-labels, skip link, :focus-visible ring, roles tree/menu/dialog
+  note: 'no axe audit; measured: white on --accent #5a85c6 (.btn.primary) 3.75:1, .sync-status.ok --success 4.28:1 at 12px — below AA 4.5:1; input border #d3d8df on white ≈1.4:1 (<3:1 non-text)'
+- id: R-PERF-002
+  status: missing
+  evidence: scratch/scale-drill.sh (1000 pages, backup drill only, not in repo tests)
+  note: no 100k pages / 500k attachments load test
+- id: R-PERF-003
+  status: partial
+  evidence: 'tests/e2e/collab.spec.ts "typing latency on a long document stays within budget": 400 paragraphs (~5k words), 40 samples, execCommand insertText -> next rAF, no CPU/network throttling; last
+    run p95≈31 ms'
+  note: 'page open, search, tree navigation not measured; vite build: entry index.js 140 KB gz + index.css 23 KB gz; opening a page also loads PageView chunk 1.32 MB / 413 KB gz (katex + all highlight.js
+    languages bundled eagerly) => ~576 KB gz before first edit'
+- id: R-PERF-004
+  status: partial
+  evidence: Tiptap without document virtualisation
+  note: no 5000-block test; no long-task measurement
+- id: R-UI-024
+  status: env-blocked
+  evidence: playwright.config.ts
+  note: only Chromium is installed (playwright.config.ts, DECISIONS D-18); Edge/Firefox/Safari/iOS/Android untested
+- id: R-PROCESS-023
+  status: partial
+  evidence: docs/ARCHITECTURE.md §1/§8 (React + Tiptap/ProseMirror + Yjs)
+  note: no explicit ADR in DECISIONS.md
+- id: R-PROCESS-024
+  status: partial
+  evidence: docs/ARCHITECTURE.md (Fastify 5, single process); DECISIONS D-01
+  note: deviation from NestJS not argued
+- id: R-PROCESS-025
+  status: done
+  evidence: PostgreSQL; apps/server/src/storage/blob-store.ts S3 driver; ARCHITECTURE.md:16; DECISIONS D-08
+  note: ''
+- id: R-PROCESS-026
+  status: partial
+  evidence: 'apps/server/src: auth, acl, collab, convert, ocr, storage, jobs, routes'
+  note: mapping to required boundaries not documented
+- id: SC-04
+  status: partial
+  evidence: 'tests/e2e/collab.spec.ts "typing latency on a long document stays within budget": 400 paragraphs (~5k words), 40 samples, execCommand insertText -> next rAF, no CPU/network throttling; last
+    run p95≈31 ms'
+  note: 5000 blocks + long table, cursor stability and lost input not tested
+- id: SC-34
+  status: partial
+  evidence: 'keyboard: SidebarTree, Menu, slash menu, Dialog focus trap, Ctrl+K; reduced-motion CSS'
+  note: no keyboard-only pass test; contrast failures (see R-A11Y-003)
+- id: SC-35
+  status: env-blocked
+  evidence: n/a
+  note: only Chromium is installed (playwright.config.ts, DECISIONS D-18); OS/browser clipboard matrix untested
+- id: SC-36
+  status: partial
+  evidence: tests/e2e/editor.spec.ts offline typing works (local-first Yjs)
+  note: slow-network throttling not tested
+- id: SC-40
+  status: partial
+  evidence: sync-status, toasts, PageError, empty-state
+  note: no verification of every action result/state
+- id: R-QA-013
+  status: process
+  evidence: n/a
+  note: no defect registry, so 0 open P0 cannot be shown
+- id: R-QA-014
+  status: partial
+  evidence: tests/e2e/server.mjs serves the built apps/web/dist
+  note: only Chromium is installed (playwright.config.ts, DECISIONS D-18); most §18 scenarios have no E2E
+- id: R-PERF-005
+  status: missing
+  evidence: n/a
+  note: SLO not confirmed by load; no protocols
+- id: R-PROCESS-027
+  status: process
+  evidence: n/a
+  note: stage-0 artifacts (design system, 12 screen prototypes, test DOCX/MD set) not in repo
+- id: R-PROCESS-028
+  status: process
+  evidence: features largely present
+  note: no stage acceptance record
+- id: R-PROCESS-029
+  status: process
+  evidence: features partly present
+  note: no stage acceptance record; perf/monitoring incomplete
+- id: R-PROCESS-030
+  status: process
+  evidence: n/a
+  note: browser regression (multi-browser) and trials incomplete
+- id: R-PROCESS-031
+  status: process
+  evidence: n/a
+  note: acceptance pending all stages
+- id: R-UI-025
+  status: missing
+  evidence: only tokens.css
+  note: no design-system sources, component spec, mockups or motion guidelines in repo
+- id: R-QA-015
+  status: partial
+  evidence: unit/integration/E2E/resilience suites; tests/e2e/fixtures/scheme.png
+  note: no contract, load or accessibility tests; no archived run reports
+- id: R-PROCESS-032
+  status: missing
+  evidence: n/a
+  note: no SBOM, no conversion/OCR limitation registry
+- id: R-PROCESS-033
+  status: missing
+  evidence: docs/REQUIREMENTS_TRACEABILITY.md (no results/evidence columns per run)
+  note: no acceptance act
+- id: R-UI-026
+  status: partial
+  evidence: 'tests/e2e: 6 spec files, ~22 tests'
+  note: most UI (admin, ShareDialog, trash, templates, import UI, export, OCR dialog) has no browser test
+- id: R-QA-016
+  status: partial
+  evidence: Playwright suite (commit 0d4abd3)
+  note: browser tests added after 4 slices; no CI to run them per increment
+- id: R-UI-027
+  status: partial
+  evidence: Menu disabledReason, import/export fidelity reports (import-export.test.ts)
+  note: not systematically verified
+- id: R-PROCESS-034
+  status: partial
+  evidence: ARCHITECTURE.md mentions mammoth/remark
+  note: library limitations/licences (Tiptap Pro, Markdown beta, OCR engine) not in DECISIONS.md
+- id: R-UI-028
+  status: manual
+  evidence: n/a
+  note: usability test of key operations not performed
+- id: R-PROCESS-035
+  status: manual
+  evidence: n/a
+  note: scenario comparison not performed
+- id: R-UI-029
+  status: partial
+  evidence: tokens.css motion 120–240 ms, chevron/menu/drawer use tokens
+  note: no measurement/test
+- id: R-PERF-006
+  status: partial
+  evidence: 'tests/e2e/collab.spec.ts "typing latency on a long document stays within budget": 400 paragraphs (~5k words), 40 samples, execCommand insertText -> next rAF, no CPU/network throttling; last
+    run p95≈31 ms'
+  note: remote p95 and reconnect <10 s not measured
+- id: R-QA-017
+  status: env-blocked
+  evidence: n/a
+  note: only Chromium is installed (playwright.config.ts, DECISIONS D-18); no Firefox/Safari demos or video recordings
+- id: R-PROCESS-036
+  status: manual
+  evidence: n/a
+  note: Help Center scenario comparison not performed
+- id: R-A11Y-004
+  status: partial
+  evidence: tests/e2e/content.spec.ts comment on a selection keeps selection when opening the comment action
+  note: undo/redo and focus visibility per state not tested
+- id: R-LAYOUT-002
+  status: partial
+  evidence: shared columns node; editor.css:173 grid stacks ≤640px; page wide toggle
+  note: page-level font/size settings absent; untested
+- id: R-PERF-007
+  status: missing
+  evidence: n/a
+  note: no measurement conditions/report (8GB laptop, RTT 80ms, low-end mobile, 10/100 editors)
+- id: R-PERF-008
+  status: partial
+  evidence: 'tests/e2e/collab.spec.ts "typing latency on a long document stays within budget": 400 paragraphs (~5k words), 40 samples, execCommand insertText -> next rAF, no CPU/network throttling; last
+    run p95≈31 ms'
+  note: 10k words not reached (≈5k); p99 not computed; with 40 samples the "p95" index is the 38th value
+- id: R-PERF-009
+  status: missing
+  evidence: 'vite build: entry index.js 140 KB gz + index.css 23 KB gz; opening a page also loads PageView chunk 1.32 MB / 413 KB gz (katex + all highlight.js languages bundled eagerly) => ~576 KB gz before
+    first edit'
+  note: cached navigation and first-load p95 not measured
+- id: R-PERF-010
+  status: partial
+  evidence: server histogram kb_collab_persist_seconds (observability/metrics.ts)
+  note: client-to-client sync p95 at RTT 80ms not measured
+- id: R-PERF-011
+  status: missing
+  evidence: n/a
+  note: no FPS/INP/long-task measurement
+- id: R-PERF-012
+  status: partial
+  evidence: import/OCR/previews/indexing run in server jobs (apps/server/src/jobs/worker.ts); import progress+cancel
+  note: client Markdown conversion runs on main thread (lazy chunk); no main-thread measurement
+- id: R-UI-030
+  status: partial
+  evidence: tokens.css typography/spacing/radii/colours/shadows/z-index/motion
+  note: tokens not documented outside CSS comments
+- id: R-LAYOUT-003
+  status: partial
+  evidence: tests/e2e/visual.spec.ts no page overflow at 320px; editor.css pre/.tableWrapper overflow-x
+  note: sample page has no code block, wide table or image
+- id: R-UI-031
+  status: partial
+  evidence: tests/e2e/visual.spec.ts 6 widths × 2 themes + CSS zoom
+  note: long Russian words, RTL, WCAG audit not covered; 200% is emulated with CSS zoom on one page at 1280px (media queries do not switch as with real browser zoom)
+- id: R-UI-032
+  status: partial
+  evidence: tokens.css durations, ease without bounce
+  note: CLS during animations not measured
+- id: R-A11Y-005
+  status: partial
+  evidence: tokens.css reduced-motion rule; animations use transform/opacity
+  note: no test
+- id: R-UI-033
+  status: partial
+  evidence: skeletons (App Suspense, EditorSkeleton), PageError, offline banner
+  note: conflict/permission-denied not on every screen; not verified
+- id: R-QA-018
+  status: partial
+  evidence: 'fast-check: tests/unit/markdown.test.ts, collab.test.ts randomised convergence; core.test CSRF; import-export zip-slip/bomb; content SVG sanitising; security-headers.test.ts'
+  note: no migration contract tests, undo/redo or paste property tests, DOCX/HTML fuzz, SSRF/XSS-paste tests; no CI
+- id: R-QA-019
+  status: partial
+  evidence: tests/e2e/collab.spec.ts paste via helpers.paste (synthetic ClipboardEvent)
+  note: only Chromium is installed (playwright.config.ts, DECISIONS D-18); no real clipboard, no DnD
+- id: R-QA-020
+  status: partial
+  evidence: tests/e2e/visual.spec.ts
+  note: screenshots are only written to test-results/visual, never compared to a baseline; no thresholds
+- id: R-QA-021
+  status: partial
+  evidence: crash-restart (SIGKILL), db-connection-loss, collab offline/restart, AT-77 delete/edit conflict, two contexts in CO
+  note: no 1/30/300 s outage profile, no local-storage-full, no server-disk-full
+- id: AT-80
+  status: partial
+  evidence: tokens.css dual theme; VS dark/light screenshots
+  note: 'measured: white on --accent #5a85c6 (.btn.primary) 3.75:1, .sync-status.ok --success 4.28:1 at 12px — below AA 4.5:1; no automated contrast check'
+- id: AT-81
+  status: partial
+  evidence: 'tests/e2e/visual.spec.ts 320–1920 × light/dark + 200% zoom: no horizontal overflow, key controls visible'
+  note: overlaps/clipping not checked; 200% is emulated with CSS zoom on one page at 1280px (media queries do not switch as with real browser zoom)
+- id: AT-82
+  status: partial
+  evidence: tokens.css reduced-motion
+  note: not tested
+- id: AT-83
+  status: partial
+  evidence: editor.css .tableWrapper/pre overflow-x:auto
+  note: VS sample has only a 3-column table, no long code; no dedicated test
+- id: AT-84
+  status: partial
+  evidence: 'tests/e2e/collab.spec.ts "typing latency on a long document stays within budget": 400 paragraphs (~5k words), 40 samples, execCommand insertText -> next rAF, no CPU/network throttling; last
+    run p95≈31 ms'
+  note: ≈5k words, page switching not measured
+- id: AT-85
+  status: missing
+  evidence: tests/e2e/collab.spec.ts uses 2 authors
+  note: no 10-author sync latency test
+- id: AT-88
+  status: env-blocked
+  evidence: tests/e2e/collab.spec.ts paste test (Chromium, synthetic paste)
+  note: only Chromium is installed (playwright.config.ts, DECISIONS D-18)
+- id: AT-89
+  status: partial
+  evidence: tests/e2e/visual.spec.ts
+  note: screenshots are only written to test-results/visual, never compared to a baseline
+- id: R-PROCESS-037
+  status: process
+  evidence: n/a
+  note: no per-stage demos/limitations
+- id: R-PROCESS-038
+  status: process
+  evidence: n/a
+  note: not reconciled with sources
+- id: R-UI-034
+  status: done
+  evidence: tests/e2e/editor.spec.ts "create page, type with Markdown shortcuts…"; helpers.newPage (no dialog, autosave)
+  note: linking step not in the test
+- id: R-UI-035
+  status: manual
+  evidence: page actions in menus, block handle on hover
+  note: needs design review
+- id: R-UI-036
+  status: manual
+  evidence: n/a
+  note: 3-minute usability test not performed
+- id: R-A11Y-006
+  status: partial
+  evidence: tests/e2e/editor.spec.ts slash menu by keyboard; Alt+Shift+↑/↓ (editor/extensions/blockOps.ts)
+  note: no keyboard-only editor pass
+- id: R-LAYOUT-004
+  status: partial
+  evidence: tokens.css --content-w 760px (+wide 1180px)
+  note: ≈90 chars per line at 16px Inter, above the usual 60–80; not measured
+- id: R-UI-037
+  status: partial
+  evidence: editor.css h1 28 / h2 22 / h3 18 / h4–h6 16px, code, quotes
+  note: h4–h6 visually identical; vertical rhythm not tokenised
+- id: R-LAYOUT-005
+  status: partial
+  evidence: editor.css overflow-wrap:anywhere, .tableWrapper overflow-x, img max-width + captions
+  note: untested
+- id: R-UI-038
+  status: partial
+  evidence: tests/e2e/visual.spec.ts up to 1920px both themes
+  note: no 4K; theme-switch size stability not measured
+- id: R-QA-022
+  status: partial
+  evidence: tests/e2e/visual.spec.ts
+  note: no approved baselines
+- id: R-UI-039
+  status: partial
+  evidence: tree chevron, menu pop-in, drawer, panel slide animations via tokens
+  note: untested
+- id: R-PERF-013
+  status: partial
+  evidence: only chrome animations; editor content not animated
+  note: not measured
+- id: R-UI-040
+  status: partial
+  evidence: base.css skeleton shimmer; reduced-motion
+  note: CLS not measured
+- id: R-PERF-014
+  status: missing
+  evidence: n/a
+  note: no device/throttling report
+- id: R-PERF-015
+  status: partial
+  evidence: 'tests/e2e/collab.spec.ts "typing latency on a long document stays within budget": 400 paragraphs (~5k words), 40 samples, execCommand insertText -> next rAF, no CPU/network throttling; last
+    run p95≈31 ms'
+  note: cached open, sync p95 and long tasks not measured
+- id: R-PERF-016
+  status: partial
+  evidence: conversions/OCR server-side
+  note: tables not virtualised
+- id: UX13-09
+  status: missing
+  evidence: n/a
+  note: no 20-minute continuous typing test
+- id: UX13-11
+  status: partial
+  evidence: tests/e2e/mobile.layout.spec.ts; tests/e2e/visual.spec.ts at 375px
+  note: no long article on mobile
+- id: UX13-12
+  status: partial
+  evidence: tests/e2e/visual.spec.ts zoom test
+  note: 200% is emulated with CSS zoom on one page at 1280px (media queries do not switch as with real browser zoom); keyboard navigation not combined
+- id: UX13-13
+  status: partial
+  evidence: theme only swaps colour tokens
+  note: no CLS test on theme switch
+- id: UX13-19
+  status: missing
+  evidence: n/a
+  note: no 100-image import responsiveness test
+- id: UX13-20
+  status: partial
+  evidence: tests/e2e/visual.spec.ts 6 widths × 2 themes
+  note: screenshots are only written to test-results/visual, never compared to a baseline
+- id: R-PROCESS-039
+  status: missing
+  evidence: n/a
+  note: no release gate
+- id: R-QA-023
+  status: manual
+  evidence: n/a
+  note: usability test with ≥8 employees not performed
+- id: R-UI-041
+  status: manual
+  evidence: n/a
+  note: design principle; needs review
+- id: R-QA-024
+  status: manual
+  evidence: n/a
+  note: no reference mockups to compare against
+- id: R-LAYOUT-006
+  status: partial
+  evidence: columns node + drag handle; editor.css:173 stacking
+  note: untested
+- id: R-LAYOUT-007
+  status: partial
+  evidence: page icon, cover field, wide flag; central tokens
+  note: no page-level font/density settings
+- id: R-UI-042
+  status: partial
+  evidence: Editor sync-status; tests/e2e/editor.spec.ts saved + offline; tests/e2e/collab.spec.ts read-only
+  note: reconnecting/conflict/failed not tested
+- id: E2E-100
+  status: partial
+  evidence: SidebarTree @tanstack/react-virtual + keyboard
+  note: not tested with 10 000 nodes
+- id: E2E-112
+  status: partial
+  evidence: tokens.css --c-*/--hl-* palettes
+  note: c-yellow on hl-yellow 4.38:1, c-orange on hl-orange 4.27:1 (light) < 4.5; untested
+- id: E2E-115
+  status: done
+  evidence: tests/e2e/editor.spec.ts "slash menu inserts a table and a callout" (keyboard only)
+  note: ''
+- id: E2E-117
+  status: partial
+  evidence: editor.css:173 columns stack ≤640px
+  note: no test
+- id: E2E-120
+  status: missing
+  evidence: n/a
+  note: no 200-formatting-ops stress test
+- id: R-PERF-017
+  status: partial
+  evidence: virtualised tree, cached children via react-query
+  note: not measured
+- id: R-UI-043
+  status: partial
+  evidence: tests/e2e/visual.spec.ts overflow only
+  note: overlaps not detected; 200% only at one width
+- id: R-QA-025
+  status: partial
+  evidence: Chromium E2E
+  note: only Chromium is installed (playwright.config.ts, DECISIONS D-18); no screenshots of tree/share dialog/block states
+- id: R-QA-026
+  status: manual
+  evidence: n/a
+  note: pilot not performed
+- id: R-UI-044
+  status: done
+  evidence: tokens.css light tokens, radii 8/12, soft shadows
+  note: ''
+- id: R-UI-045
+  status: done
+  evidence: main.tsx @fontsource-variable/inter; editor 16px, line-height 1.7; heading scale
+  note: ''
+- id: R-UI-046
+  status: partial
+  evidence: tokens.css accents + dark theme
+  note: 'measured: white on --accent #5a85c6 (.btn.primary) 3.75:1, .sync-status.ok --success 4.28:1 at 12px — below AA 4.5:1'
+- id: R-UI-047
+  status: partial
+  evidence: motion tokens in range
+  note: non-blocking of focus/typing not tested
+- id: R-LAYOUT-008
+  status: partial
+  evidence: page-body centred with max-width
+  note: at widths < content+panel closing the panel changes text width; untested
+- id: R-UI-048
+  status: partial
+  evidence: skeletons; SidebarTree @tanstack/react-virtual
+  note: search/history/audit lists not virtualised; App loading spinner has no timeout
+- id: R-PERF-018
+  status: missing
+  evidence: n/a
+  note: click/branch-expand latency not measured
+- id: V15-A11
+  status: partial
+  evidence: ellipsis/admin-chip styles
+  note: no long-name test
+- id: V15-A12
+  status: partial
+  evidence: ShareDialog full-screen on ≤600px
+  note: no mobile access-management test
+- id: V15-A18
+  status: partial
+  evidence: editor.css callout variants on *-soft tokens (text ≥13:1 light)
+  note: dark variants untested
+- id: V15-A19
+  status: partial
+  evidence: tokens.css reduced-motion
+  note: no test
+- id: V15-A20
+  status: missing
+  evidence: n/a
+  note: no 1000 users/100k pages ACL+search profiling
+- id: R-QA-027
+  status: partial
+  evidence: tests/integration/acl.test.ts negative ACL tests; VS screenshots
+  note: critical-scenario coverage not 100%; screenshots are only written to test-results/visual, never compared to a baseline
+- id: R-PROCESS-040
+  status: process
+  evidence: registry keeps v1.5 items
+  note: exists
+- id: V16-S17
+  status: partial
+  evidence: tests/e2e/visual.spec.ts
+  note: overlaps not detected
+- id: V16-S18
+  status: missing
+  evidence: n/a
+  note: no load tests for search/import/export/publish
+- id: V16-S19
+  status: partial
+  evidence: tests/e2e/visual.spec.ts
+  note: menus, search, modals, tables, admin not in screenshot set; screenshots are only written to test-results/visual, never compared to a baseline
+- id: R-PROCESS-041
+  status: process
+  evidence: n/a
+  note: reconciliation not done
+- id: R-PROCESS-042
+  status: process
+  evidence: n/a
+  note: no defect registry to prioritise
+- id: R-UI-049
+  status: manual
+  evidence: Home.tsx minimal blocks
+  note: needs review
+- id: R-UI-050
+  status: done
+  evidence: tests/e2e/editor.spec.ts create→type→"Сохранено" with no type/format/mode choice
+  note: ''
+- id: R-UI-051
+  status: partial
+  evidence: empty-state texts, PageError retry
+  note: no check that every button works
+- id: R-QA-028
+  status: manual
+  evidence: n/a
+  note: usability metrics not collected
+- id: V17-F02
+  status: missing
+  evidence: n/a
+  note: no 100 readers + 20 editors load test
+- id: V17-F09
+  status: partial
+  evidence: 'tests/e2e/visual.spec.ts 320–1920: no horizontal scroll, key controls visible'
+  note: overlaps, jumps, lost elements not detected
+- id: V17-F10
+  status: manual
+  evidence: n/a
+  note: usability test not performed
+- id: R-PROCESS-043
+  status: process
+  evidence: n/a
+  note: reconciliation not done
+- id: R-LAYOUT-009
+  status: partial
+  evidence: editor/nodeviews/ImageView.tsx aspectRatio + width/height + loading=lazy
+  note: CLS not measured; no narrow-screen image test
+- id: R-A11Y-007
+  status: partial
+  evidence: mobile panels as sheets; 200% is emulated with CSS zoom on one page at 1280px (media queries do not switch as with real browser zoom)
+  note: IME, screen readers, real touch not available; no a11y audit
+- id: R-QA-029
+  status: missing
+  evidence: n/a
+  note: no per-action condition matrix
+- id: R-UI-052
+  status: partial
+  evidence: ErrorBoundary/PageError/offline texts answer what/saved/what to do
+  note: generic "Ошибка NNN" messages from api/client.ts:67; no template enforcement
+- id: R-UI-053
+  status: partial
+  evidence: Dialog Esc/close + focus return; disabledReason in menus
+  note: no dead-end E2E; App "loading" spinner unbounded
+- id: R-QA-030
+  status: missing
+  evidence: n/a
+  note: no component state registry
+- id: R-UI-054
+  status: manual
+  evidence: n/a
+  note: settings review not done
+- id: R-PERF-019
+  status: partial
+  evidence: OCR/import/export server jobs; uploads via XHR
+  note: typing during upload/OCR/export not tested
+- id: V18-A09
+  status: partial
+  evidence: image alignment CSS
+  note: untested at 375px
+- id: V18-A15
+  status: partial
+  evidence: local-first editing (Yjs + pending store)
+  note: no slow-network typing measurement
+- id: V18-A18
+  status: partial
+  evidence: tests/e2e/visual.spec.ts zoom test
+  note: 200% is emulated with CSS zoom on one page at 1280px (media queries do not switch as with real browser zoom)
+- id: V18-A19
+  status: partial
+  evidence: keyboard handlers across shell/tree/editor
+  note: no keyboard pass test
+- id: V18-A23
+  status: partial
+  evidence: ImportPage cancel; uploads abort (lib/uploads.ts); integration AT-72
+  note: export/OCR cancel or explanation not verified in UI
+- id: R-PROCESS-044
+  status: missing
+  evidence: n/a
+  note: no release gate
+- id: R-PERF-020
+  status: partial
+  evidence: v1.7 targets referenced by tests (typing <50 ms)
+  note: most targets unmeasured
+- id: R-UI-055
+  status: partial
+  evidence: apps/web/src/styles/* use tokens
+  note: 'some hard-coded colours (#9cc0f5 toast, #000 embed) and inline styles (HistoryPanel fontSize 22)'
+- id: R-UI-056
+  status: done
+  evidence: 'tokens.css matches #F8F9FB/#FFFFFF/#F3F5F7/#24272D/#68717D/#E5E8ED'
+  note: ''
+- id: R-UI-057
+  status: done
+  evidence: AppShell Ctrl+K; editor/extensions/find.ts Mod-f; ?block= links (tests/e2e/collab.spec.ts search jump); sidebar buttons for mouse
+  note: ''
+- id: R-UI-058
+  status: partial
+  evidence: '@media (pointer: coarse) reveals tree/page actions, 40px buttons, 44px menu items'
+  note: no visualViewport handling for on-screen keyboard; touch untested
+- id: R-UI-059
+  status: partial
+  evidence: Menu/Tooltip floating-ui (flip/shift/size/portal), Dialog focus trap + return
+  note: no positioning tests
+- id: R-UI-060
+  status: partial
+  evidence: hover only reveals controls/tooltips; actions on click
+  note: no test
+- id: R-UI-061
+  status: missing
+  evidence: n/a
+  note: no per-operation state documentation (no TEST_MATRIX/UX_ACCEPTANCE)
+- id: R-UI-062
+  status: partial
+  evidence: pending store + beforeunload (sync/collab.ts), Dialog persistent flag
+  note: untested
+- id: UX-131
+  status: missing
+  evidence: no scroll restoration for .main-area/.page-scroll
+  note: back navigation does not restore scroll
+- id: UX-136
+  status: partial
+  evidence: layout/SidebarTree.tsx onKeyDown (arrows/Home/End/Alt+Shift move)
+  note: tests/e2e/content.spec.ts tree test title says "keyboard navigation" but presses no keys
+- id: UX-139
+  status: partial
+  evidence: Menu flip middleware
+  note: untested
+- id: UX-140
+  status: partial
+  evidence: Menu shift middleware
+  note: untested
+- id: UX-141
+  status: partial
+  evidence: no hover-triggered actions found in code
+  note: untested
+- id: UX-146
+  status: partial
+  evidence: 'mobile: only "/" via on-screen keyboard; editor.css:296 hides block handle ≤860px'
+  note: no "+" control on mobile; untested
+- id: UX-147
+  status: partial
+  evidence: tests/e2e/visual.spec.ts zoom test
+  note: 200% is emulated with CSS zoom on one page at 1280px (media queries do not switch as with real browser zoom)
+- id: UX-150
+  status: manual
+  evidence: n/a
+  note: novice scenario test not performed
+- id: R-UI-063
+  status: manual
+  evidence: n/a
+  note: action counting not done
+- id: R-QA-031
+  status: manual
+  evidence: n/a
+  note: tests with new users not performed
+- id: R-PROCESS-045
+  status: process
+  evidence: n/a
+  note: no blocker registry; known blockers e.g. UX-131, contrast
+- id: R-PROCESS-046
+  status: process
+  evidence: n/a
+  note: reconciliation not done
+- id: R-QA-032
+  status: partial
+  evidence: tests/e2e/visual.spec.ts 320–1920 + zoom; Chromium/Linux, RU only
+  note: Edge/Firefox/Safari, Windows/macOS, touch, EN, IME, screen readers absent (env)
+- id: E214
+  status: missing
+  evidence: n/a
+  note: no E2E for moving between columns
+- id: E223
+  status: partial
+  evidence: tests/e2e/editor.spec.ts slash menu by keyboard
+  note: no keyboard-only E2E
+- id: E224
+  status: partial
+  evidence: Menu role=menu/menuitem; tests/e2e/collab.spec.ts history uses getByRole("menuitem")
+  note: no focus/role assertions
+- id: R-PERF-021
+  status: partial
+  evidence: 'tests/e2e/collab.spec.ts "typing latency on a long document stays within budget": 400 paragraphs (~5k words), 40 samples, execCommand insertText -> next rAF, no CPU/network throttling; last
+    run p95≈31 ms'
+  note: palette/formatting latency and hover layout shift not measured
+- id: R-A11Y-008
+  status: partial
+  evidence: 'coarse: icon-btn 40px, menu-item 44px; focus ring'
+  note: '40px < 44px; measured: white on --accent #5a85c6 (.btn.primary) 3.75:1, .sync-status.ok --success 4.28:1 at 12px — below AA 4.5:1'
+- id: R-QA-033
+  status: partial
+  evidence: browser autotests; network-loss tests; MD round-trip (import-export.test.ts)
+  note: manual UX testing with employees not done
+- id: R-UI-064
+  status: partial
+  evidence: motion tokens; no animation on typing
+  note: drag inertia/hover timing untested
+- id: R-LAYOUT-010
+  status: partial
+  evidence: tests/e2e/visual.spec.ts
+  note: 4 columns, nested tables, long names, touch not covered
+- id: UX21-185
+  status: missing
+  evidence: n/a
+  note: no evidence/test of moving an image into another column
+- id: UX21-192
+  status: partial
+  evidence: blockOps.ts Alt-Shift-ArrowUp/Down
+  note: untested
+- id: UX21-204
+  status: partial
+  evidence: tokens.css reduced-motion
+  note: untested
+- id: UX21-205
+  status: partial
+  evidence: editor.css:173 stacking
+  note: untested
+- id: R-PERF-022
+  status: partial
+  evidence: components/ImageViewer.tsx CSS transform
+  note: no requestAnimationFrame batching; gesture latency/fps not measured
+- id: R-QA-034
+  status: partial
+  evidence: collab.test.ts randomised convergence with disconnects; D-02 resend dedupe test
+  note: 2 clients only; no partition/reorder injection, 20 editors, load
+- id: R-PROCESS-047
+  status: process
+  evidence: this assessment
+  note: followed
+- id: R-UI-065
+  status: manual
+  evidence: n/a
+  note: needs UX review
+- id: R-PERF-023
+  status: partial
+  evidence: SidebarTree virtualisation
+  note: not tested at 10 000 nodes
+- id: R-UI-066
+  status: partial
+  evidence: SidebarTree virtualised
+  note: '"Показать ещё/Загрузить ещё" buttons in SearchPage.tsx:531, HistoryPanel.tsx:194, AuditSection.tsx:285 instead of continuous loading'
+- id: R-PERF-024
+  status: partial
+  evidence: cursor pagination (useInfiniteQuery), audit datetime-local filter (AuditSection.tsx:189)
+  note: lists not virtualised; history has no jump-to-date
+- id: R-PERF-025
+  status: partial
+  evidence: ImageView lazy + aspect-ratio reservation
+  note: no table virtualisation; long documents untested beyond 400 paragraphs
+- id: R-PERF-026
+  status: partial
+  evidence: 'tests/e2e/collab.spec.ts "typing latency on a long document stays within budget": 400 paragraphs (~5k words), 40 samples, execCommand insertText -> next rAF, no CPU/network throttling; last
+    run p95≈31 ms'
+  note: other actions not profiled
+- id: R-PERF-027
+  status: partial
+  evidence: lib/telemetry.ts input latency → kb_client_input_latency_ms; server histograms
+  note: no INP/reconnect/DnD metrics; no regression budgets in CI (no CI)
+- id: R-UI-067
+  status: partial
+  evidence: PageError, App offline screen, empty states
+  note: untested
+- id: UX23-212
+  status: partial
+  evidence: virtualised tree
+  note: not tested with 10 000 pages
+- id: UX23-223
+  status: partial
+  evidence: tests/e2e/mobile.layout.spec.ts creates a page on mobile
+  note: move without hover untested
+- id: UX23-224
+  status: manual
+  evidence: n/a
+  note: usability test not performed
+- id: R-PROCESS-048
+  status: process
+  evidence: deploy/ is empty
+  note: not yet deployed; docs incomplete
+- id: R-UI-068
+  status: partial
+  evidence: see R-UI-026
+  note: no dead-end inventory/tests
+- id: R-PROCESS-049
+  status: partial
+  evidence: docs/DECISIONS.md 18 entries
+  note: not every decision has an ADR
+- id: R-PROCESS-050
+  status: process
+  evidence: n/a
+  note: n/a
+- id: R-PROCESS-051
+  status: missing
+  evidence: n/a
+  note: no open-issues/defects registry
+- id: R-QA-035
+  status: process
+  evidence: n/a
+  note: no defect registry/classification doc
+- id: R-PERF-028
+  status: partial
+  evidence: 'tests/e2e/collab.spec.ts "typing latency on a long document stays within budget": 400 paragraphs (~5k words), 40 samples, execCommand insertText -> next rAF, no CPU/network throttling; last
+    run p95≈31 ms'
+  note: typing only; other local actions unmeasured
+- id: R-PERF-029
+  status: partial
+  evidence: tests/e2e/collab.spec.ts two people edit — convergence only
+  note: latency not measured
+- id: R-QA-036
+  status: missing
+  evidence: n/a
+  note: no scenario × path matrix
+- id: R-QA-037
+  status: partial
+  evidence: crash-restart typing, concurrent paragraph edits, paste table
+  note: no mapping of the 12 trials to tests
+- id: R-QA-038
+  status: partial
+  evidence: unit/integration/E2E/property/chaos present
+  note: no component/load/contract tests; no regression-per-defect traceability
+- id: R-PROCESS-052
+  status: missing
+  evidence: n/a
+  note: no gate checklist; no pilot, load, a11y audit, manual UX check
+- id: R-PROCESS-053
+  status: missing
+  evidence: n/a
+  note: gate not defined/passed
+- id: OPS-012
+  status: partial
+  evidence: ImportPage progress + cancel
+  note: no browser test
+- id: OPS-015
+  status: partial
+  evidence: tests/e2e/mobile.layout.spec.ts
+  note: single phone test; no tablet project
+- id: OPS-016
+  status: partial
+  evidence: keyboard handlers
+  note: no keyboard pass
+- id: OPS-017
+  status: missing
+  evidence: n/a
+  note: no long-session/load degradation test
+- id: OPS-018
+  status: missing
+  evidence: n/a
+  note: no defect registry
+- id: ACL-174
+  status: partial
+  evidence: ShareDialog
+  note: no test at 320px/keyboard/tablet
+- id: QA26-01
+  status: missing
+  evidence: n/a
+  note: no inventory of actions
+- id: QA26-02
+  status: manual
+  evidence: n/a
+  note: comparison trials not performed
+- id: QA26-03
+  status: missing
+  evidence: n/a
+  note: no matrix records
+- id: QA26-04
+  status: missing
+  evidence: n/a
+  note: no route/component inventory
+- id: QA26-05
+  status: partial
+  evidence: states styled in ui.css
+  note: not verified
+- id: QA26-21
+  status: manual
+  evidence: n/a
+  note: Notion comparison not performed
+- id: QA26-22
+  status: partial
+  evidence: 'tests/e2e/collab.spec.ts "typing latency on a long document stays within budget": 400 paragraphs (~5k words), 40 samples, execCommand insertText -> next rAF, no CPU/network throttling; last
+    run p95≈31 ms'
+  note: panel/page-load/fps not measured
+- id: QA26-23
+  status: partial
+  evidence: tests/e2e/visual.spec.ts
+  note: zoom only 200% (no 125/150); only Chromium is installed (playwright.config.ts, DECISIONS D-18)
+- id: QA26-27
+  status: missing
+  evidence: n/a
+  note: no PASS/FAIL/BLOCKED per scenario with build/run links
+- id: QA26-28
+  status: missing
+  evidence: n/a
+  note: gate not defined
+- id: QA26-29
+  status: partial
+  evidence: scripts/backup/* (backup, restore, verify), DECISIONS.md
+  note: coverage report, performance measurements, admin guide, runbooks missing
+- id: QA26-30
+  status: missing
+  evidence: n/a
+  note: no pairwise suite
+- id: QA26-31
+  status: partial
+  evidence: collab convergence, core.test concurrent moves no cycle, markdown text-never-lost property, ACL widening confirmation
+  note: no systematic invariant suite in CI
+- id: R-UI-069
+  status: partial
+  evidence: tests/e2e/content.spec.ts child page via "+"
+  note: DnD/copy/publish action counts not measured
+- id: R-UI-070
+  status: done
+  evidence: 'tests/e2e/content.spec.ts "sidebar tree: create child page via +"; SidebarTree chevron toggles, title opens'
+  note: ''
+- id: R-UI-071
+  status: partial
+  evidence: quick switcher, keyboard, undo toasts
+  note: not verified
+- id: R-UI-072
+  status: partial
+  evidence: confirmation only on visibility widening (tests/integration/acl.test.ts)
+  note: no audit of dialogs in typical ops
+- id: R-QA-039
+  status: manual
+  evidence: n/a
+  note: Notion comparison not performed
+- id: R-PROCESS-054
+  status: missing
+  evidence: n/a
+  note: no release gate

@@ -12,8 +12,21 @@ function invalidateTree(spaceId?: string) {
 }
 
 /** Creates a page immediately (no wizard) and returns its id. Idempotent per click via requestId. */
+const inFlight = new Map<string, Promise<any>>();
+
 export async function createPage(spaceId: string, parentId: string | null, opts: { title?: string; templateId?: string; afterId?: string } = {}) {
-  const r = await post('/api/v1/pages', { spaceId, parentId, title: opts.title ?? '', templateId: opts.templateId, afterId: opts.afterId, requestId: uuid() });
+  // A double click on "+" must not create two pages: the same request is reused while it is in flight.
+  const key = [spaceId, parentId, opts.templateId, opts.afterId].join('|');
+  const existing = inFlight.get(key);
+  if (existing) return (await existing).page as { id: string; spaceId: string; title: string };
+  const req = post('/api/v1/pages', { spaceId, parentId, title: opts.title ?? '', templateId: opts.templateId, afterId: opts.afterId, requestId: uuid() });
+  inFlight.set(key, req);
+  let r: any;
+  try {
+    r = await req;
+  } finally {
+    inFlight.delete(key);
+  }
   if (parentId) useUi.getState().toggleExpanded(parentId, true);
   useUi.getState().toggleExpanded('space:' + spaceId, true);
   invalidateTree(spaceId);

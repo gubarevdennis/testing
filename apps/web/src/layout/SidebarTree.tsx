@@ -14,6 +14,7 @@ import { IconPickerPopover } from '../components/IconPicker';
 import { patch, ApiError } from '../api/client';
 import { toast } from '../components/ui/Toast';
 import { queryClient } from '../App';
+import { useTreeScrollMemory, useRevealCurrentPage } from './treeState';
 
 const ROW_H = 32;
 const INDENT = 14;
@@ -118,6 +119,8 @@ export function SidebarTree({ personal, spaces, shared, onNavigate }: Props) {
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const virtualizer = useVirtualizer({ count: rows.length, getScrollElement: () => scrollRef.current, estimateSize: () => ROW_H, overscan: 12 });
+  useTreeScrollMemory(scrollRef, rows.length);
+  useRevealCurrentPage(currentPage);
 
   // ---------------- keyboard navigation (roving tabindex)
   const [focusIdx, setFocusIdx] = useState(0);
@@ -363,7 +366,7 @@ export function SidebarTree({ personal, spaces, shared, onNavigate }: Props) {
   return (
     <>
       <div ref={scrollRef} className="tree-scroll" role="tree" aria-label="Страницы">
-        <div style={{ height: virtualizer.getTotalSize(), position: 'relative' }}>
+        <div role="none" style={{ height: virtualizer.getTotalSize(), position: 'relative' }}>
           {virtualizer.getVirtualItems().map((vi) => {
             const r = rows[vi.index];
             const style = { position: 'absolute' as const, top: 0, left: 0, right: 0, height: ROW_H, transform: `translateY(${vi.start}px)` };
@@ -371,7 +374,7 @@ export function SidebarTree({ personal, spaces, shared, onNavigate }: Props) {
             const isDropInside = drag?.target?.index === vi.index && drag.target.zone === 'inside';
             const invalidHere = drag?.target?.index === vi.index && !drag.target.valid;
             return (
-              <div key={r.key} data-index={vi.index} style={style} className={'tree-row-wrap' + (isDropInside && !invalidHere ? ' drop-inside' : '') + (invalidHere ? ' drop-invalid' : '')}>
+              <div role="none" key={r.key} data-index={vi.index} style={style} className={'tree-row-wrap' + (isDropInside && !invalidHere ? ' drop-inside' : '') + (invalidHere ? ' drop-invalid' : '')}>
                 <TreeRow
                   row={r}
                   tabIndex={tabIndex}
@@ -463,14 +466,14 @@ const TreeRow = memo(function TreeRow({ row: r, tabIndex, active, renaming, drag
     );
   if (r.kind === 'loading')
     return (
-      <div className="tree-row placeholder" style={{ paddingLeft: 8 + r.depth * INDENT + 20 }} aria-busy>
+      <div className="tree-row placeholder" style={{ paddingLeft: 8 + r.depth * INDENT + 20 }} role="treeitem" aria-level={r.depth + 1} aria-disabled aria-busy aria-label="Загрузка">
         <div className="skeleton" style={{ height: 10, width: '55%' }} />
       </div>
     );
   if (r.kind === 'error')
     return (
-      <div className="tree-row placeholder" style={{ paddingLeft: 8 + r.depth * INDENT + 20 }} role="alert">
-        <span className="muted small ellipsis">Не удалось загрузить</span>
+      <div className="tree-row placeholder" style={{ paddingLeft: 8 + r.depth * INDENT + 20 }} role="treeitem" aria-level={r.depth + 1}>
+        <span className="muted small ellipsis" role="alert">Не удалось загрузить</span>
         <button className="icon-btn sm" onClick={r.retry} aria-label="Повторить загрузку">
           <RotateCw size={13} />
         </button>
@@ -478,7 +481,7 @@ const TreeRow = memo(function TreeRow({ row: r, tabIndex, active, renaming, drag
     );
   if (r.kind === 'empty')
     return (
-      <div className="tree-row placeholder" style={{ paddingLeft: 8 + r.depth * INDENT + 20 }}>
+      <div className="tree-row placeholder" style={{ paddingLeft: 8 + r.depth * INDENT + 20 }} role="treeitem" aria-level={r.depth + 1}>
         {r.canCreate ? (
           <button className="tree-empty-btn" onClick={() => onNew(r.spaceId, r.parentId)}>
             <Plus size={13} /> Создать первую страницу
@@ -488,7 +491,7 @@ const TreeRow = memo(function TreeRow({ row: r, tabIndex, active, renaming, drag
         )}
       </div>
     );
-  if (r.kind === 'more') return <div className="tree-row placeholder muted small" style={{ paddingLeft: 8 + r.depth * INDENT + 20 }}>Показаны первые 500 страниц — используйте поиск</div>;
+  if (r.kind === 'more') return <div className="tree-row placeholder muted small" style={{ paddingLeft: 8 + r.depth * INDENT + 20 }} role="treeitem" aria-level={r.depth + 1} aria-disabled>Показаны первые 500 страниц — используйте поиск</div>;
   if (r.kind === 'space') {
     const s = r.space;
     return (
@@ -566,7 +569,7 @@ const TreeRow = memo(function TreeRow({ row: r, tabIndex, active, renaming, drag
           draggable={false}
         >
           {n.title || <span className="muted">Без названия</span>}
-          {!n.inheritPermissions && <Lock size={11} className="tree-lock" aria-label="Особые права" />}
+          {(!n.inheritPermissions || n.hasExplicitGrants) && <Lock size={11} className="tree-lock" aria-label={n.inheritPermissions ? 'Есть отдельные права' : 'Особые права'} />}
         </a>
       )}
       <span className="tree-actions">

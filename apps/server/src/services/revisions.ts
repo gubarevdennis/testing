@@ -1,6 +1,9 @@
 import { collectBlocks, docToPlainText, type PMNode } from '@kb/shared';
 import { diffWordsWithSpace } from 'diff';
+import * as Y from 'yjs';
 import type { Queryable } from '../db/pool.js';
+import { notFound, unprocessable } from '../lib/errors.js';
+import { ydocToJson, titleOf } from '../collab/ydoc.js';
 
 export type RevisionKind = 'auto' | 'manual' | 'publish' | 'import' | 'restore' | 'pre-restore' | 'create' | 'migration';
 
@@ -111,4 +114,40 @@ function lcsMoved(a: string[], b: string[]): string[] {
 
 export function textOf(doc: PMNode) {
   return docToPlainText(doc);
+}
+
+/**
+ * Reconstructs the document right after journal operation `seq` (R-HISTORY-026). Preferably replays the journal
+ * from the first operation; if older operations were compacted by retention, starts from the newest revision
+ * whose state is exactly at a journal position and replays the rest. Refuses when the gap cannot be bridged.
+ */
+export async function stateAtSeq(q: Queryable, pageId: string, seq: number): Promise<{ content: PMNode; title: string; at: Date | null; authorName: string | null; base: string }> {
+  const st = (await q.query('select last_seq from doc_state where page_id = $1', [pageId])).rows[0];
+  if (!st || seq > Number(st.last_seq)) throw notFound('Такой операции в журнале нет');
+  const op = (await q.query(`select u.created_at, us.name from doc_updates u left join users us on us.id = u.user_id where u.page_id = $1 and u.seq = $2`, [pageId, seq])).rows[0];
+  const replay = async (fromSeq: number, doc: Y.Doc) => {
+    const rows = (await q.query('select seq, update from doc_updates where page_id = $1 and seq > $2 and seq <= $3 order by seq', [pageId, fromSeq, seq])).rows;
+    if (rows.length !== seq - fromSeq) return false;
+    for (const r of rows) Y.applyUpdate(doc, new Uint8Array(r.update));
+    return true;
+  };
+  const doc = new Y.Doc({ gc: false });
+  let base = 'journal';
+  if (!(await replay(0, doc))) {
+    // Journal head was compacted: start from a revision state taken at a journal position not after `seq`.
+    const revs = (await q.query(`select number, state, seq_upto from page_revisions where page_id = $1 and seq_upto <= $2 and kind in ('auto', 'manual', 'publish', 'create', 'import', 'pre-restore') order by seq_upto desc, number desc limit 5`, [pageId, seq])).rows;
+    let ok = false;
+    for (const r of revs) {
+      const d = new Y.Doc({ gc: false });
+      Y.applyUpdate(d, new Uint8Array(r.state));
+      if (await replay(Number(r.seq_upto), d)) {
+        Y.applyUpdate(doc, Y.encodeStateAsUpdate(d));
+        base = `revision ${r.number}`;
+        ok = true;
+        break;
+      }
+    }
+    if (!ok) throw unprocessable('journal_pruned', 'Журнал операций для этого момента уже сокращён по сроку хранения. Восстановите ближайшую сохранённую версию.');
+  }
+  return { content: ydocToJson(doc), title: titleOf(doc), at: op?.created_at ?? null, authorName: op?.name ?? null, base };
 }

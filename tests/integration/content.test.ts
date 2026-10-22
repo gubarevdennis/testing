@@ -70,7 +70,7 @@ describe('attachments', () => {
     expect(res.headers.get('x-content-type-options')).toBe('nosniff');
   });
 
-  it('files of a private page are not accessible by direct link; revocation invalidates signed links (E2E-102, A14, A17, ACL-164)', async () => {
+  it('files of a private page are not accessible by direct link; revocation invalidates signed links (E2E-102, A14, V18-A17, V15-A08, ACL-164)', async () => {
     const u = await org.user('Владелец файла');
     const me = await u.get('/api/v1/auth/me');
     const p = (await u.post('/api/v1/pages', { spaceId: me.personalSpaceId, title: 'Личная с файлом' })).page;
@@ -87,7 +87,7 @@ describe('attachments', () => {
     expect((await fetch(ts.url + link.url)).status).toBe(404);
   });
 
-  it('respects download policy: viewers can see the page but cannot download when forbidden (A15)', async () => {
+  it('respects download policy: viewers can see the page but cannot download when forbidden (A15, UX21-182)', async () => {
     const sp = (await org.owner.post('/api/v1/spaces', { name: 'Без скачивания', kind: 'project', visibility: 'open', orgLevel: 'view', policy: { allowDownload: false }, confirmWiden: true })).space;
     const p = (await org.owner.post('/api/v1/pages', { spaceId: sp.id, title: 'Чертежи' })).page;
     const a = (await upload(org.owner, p.id, 'drawing.txt', Buffer.from('data'))).attachments[0];
@@ -158,7 +158,7 @@ describe('attachments', () => {
 });
 
 describe('OCR (SC-21..24, AT, §8)', () => {
-  it('recognises Russian and English text on a screenshot, keeps original, result is searchable with origin marker', async () => {
+  it('recognises Russian and English text on a screenshot, keeps original, result is searchable with origin marker (R-SEARCH-002, SC-23)', async () => {
     const page = (await org.owner.post('/api/v1/pages', { spaceId: org.generalSpaceId, title: 'Скриншот щита' })).page;
     const png = await textImage(['Регламент освещения KNX', 'Артикул ABC-1234', 'Distribution board']);
     const a = (await upload(org.owner, page.id, 'screen.png', png, 'image/png')).attachments[0];
@@ -195,7 +195,7 @@ describe('OCR (SC-21..24, AT, §8)', () => {
 });
 
 describe('search (§9, S01–S03, V16)', () => {
-  it('finds by morphology, typo, wrong layout, applies ACL before results and jumps to block', async () => {
+  it('finds by morphology, typo, wrong layout, applies ACL before results and jumps to block (R-SEARCH-004, R-SEARCH-005, R-SEARCH-006, R-SEARCH-011, R-SEARCH-014, E2E-101, ACL-163, V16-S03)', async () => {
     const page = (await org.owner.post('/api/v1/pages', { spaceId: org.generalSpaceId, title: 'Инструкция по монтажу светильников' })).page;
     const c = await openClient(ts.url, org.owner, page.id);
     c.insert(0, 0, 'Вводный абзац.');
@@ -234,7 +234,7 @@ describe('search (§9, S01–S03, V16)', () => {
     c.close();
   });
 
-  it('space scope does not leak neighbouring spaces (S02)', async () => {
+  it('space scope does not leak neighbouring spaces (S02, V16-S02)', async () => {
     const sp = (await org.owner.post('/api/v1/spaces', { name: 'Отдельное', kind: 'project', visibility: 'private' })).space;
     await org.owner.post('/api/v1/pages', { spaceId: sp.id, title: 'Уникальныйтермин в пространстве' });
     await org.owner.post('/api/v1/pages', { spaceId: org.generalSpaceId, title: 'Уникальныйтермин в общем' });
@@ -247,7 +247,7 @@ describe('search (§9, S01–S03, V16)', () => {
 });
 
 describe('comments and mentions', () => {
-  it('threads, replies, resolve/reopen, mention notifications only for those with access', async () => {
+  it('threads, replies, resolve/reopen, mention notifications only for those with access (R-COMMENTS-001)', async () => {
     const page = (await org.owner.post('/api/v1/pages', { spaceId: org.personalSpaceId, title: 'Обсуждаемая' })).page;
     const colleague = await org.user('Коллега-комментатор');
     const outsider = await org.user('Посторонний-упомянутый');
@@ -273,7 +273,7 @@ describe('comments and mentions', () => {
 });
 
 describe('publishing workflow (§11, S05, ROUTE Автор)', () => {
-  it('readers see the published revision while the draft evolves; approval required when configured', async () => {
+  it('readers see the published revision while the draft evolves; approval required when configured (V16-S05, R-PUBLISH-006, R-PUBLISH-007)', async () => {
     const sp = (await org.owner.post('/api/v1/spaces', { name: 'Регламенты (публикация)', kind: 'org', visibility: 'open', orgLevel: 'view', policy: { publishingMode: 'publish', requireApproval: true } })).space;
     const author = await org.user('Автор регламента');
     await org.owner.put('/api/v1/grants', { resourceType: 'space', resourceId: sp.id, subjectType: 'user', subjectId: author.id, level: 'edit', canPublish: false });

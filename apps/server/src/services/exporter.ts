@@ -111,6 +111,8 @@ export interface ExportResult {
   mime: string;
   warnings: ConversionWarning[];
   report: Record<string, unknown>;
+  /** Pages whose content is in the file (re-checked when a stored export is downloaded later). */
+  pageIds?: string[];
 }
 
 function resolvers(s: Services, pages: ExportPage[]) {
@@ -152,9 +154,9 @@ export async function exportPages(s: Services, user: AuthUser, rootIds: string[]
       const fm = /^---\n[\s\S]*?\n---\n/.exec(md.markdown)?.[0] ?? '';
       files.push({ path: here, data: Buffer.from(fm + (fm ? '\n' : '') + `# ${p.title}\n\n` + md.markdown.slice(fm.length).replace(/^\n+/, ''), 'utf8') });
     }
-    if (pages.length === 1 && !assets.size) return { buffer: files[0].data, filename: slugify(root.title) + '.md', mime: 'text/markdown; charset=utf-8', warnings, report: { pages: 1, assets: 0 } };
+    if (pages.length === 1 && !assets.size) return { buffer: files[0].data, filename: slugify(root.title) + '.md', mime: 'text/markdown; charset=utf-8', warnings, pageIds: pages.map((p) => p.id), report: { pages: 1, assets: 0 } };
     const zip = await buildZip(s, files, [...assets.values()], warnings, { title: root.title, pages: pages.length });
-    return { buffer: zip, filename: slugify(root.title) + '.zip', mime: 'application/zip', warnings, report: { pages: pages.length, assets: assets.size } };
+    return { buffer: zip, filename: slugify(root.title) + '.zip', mime: 'application/zip', warnings, pageIds: pages.map((p) => p.id), report: { pages: pages.length, assets: assets.size } };
   }
 
   if (format === 'docx') {
@@ -176,16 +178,16 @@ export async function exportPages(s: Services, user: AuthUser, rootIds: string[]
       },
     });
     warnings.push(...out.warnings);
-    return { buffer: out.buffer, filename: slugify(root.title) + '.docx', mime: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', warnings, report: { pages: pages.length } };
+    return { buffer: out.buffer, filename: slugify(root.title) + '.docx', mime: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', warnings, pageIds: pages.map((p) => p.id), report: { pages: pages.length } };
   }
 
   // HTML / PDF share the same rendering.
   const merged = mergeForSingleDocument(pages);
   const { assets } = await collectAssets(s, user, pages, () => '');
   const html = await standaloneHtml(s, root.title, merged, assets, { inlineImages: true });
-  if (format === 'html') return { buffer: Buffer.from(html, 'utf8'), filename: slugify(root.title) + '.html', mime: 'text/html; charset=utf-8', warnings, report: { pages: pages.length } };
+  if (format === 'html') return { buffer: Buffer.from(html, 'utf8'), filename: slugify(root.title) + '.html', mime: 'text/html; charset=utf-8', warnings, pageIds: pages.map((p) => p.id), report: { pages: pages.length } };
   const pdf = await htmlToPdf(s, html, root.title);
-  return { buffer: pdf, filename: slugify(root.title) + '.pdf', mime: 'application/pdf', warnings, report: { pages: pages.length } };
+  return { buffer: pdf, filename: slugify(root.title) + '.pdf', mime: 'application/pdf', warnings, pageIds: pages.map((p) => p.id), report: { pages: pages.length } };
 }
 
 /** Child pages are appended after their parent with a heading, producing one printable document. */

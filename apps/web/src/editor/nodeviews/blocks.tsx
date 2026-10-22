@@ -355,13 +355,13 @@ export function CollectionBlockView({ node, selected }: NodeViewProps) {
         <div className="row" style={{ marginBottom: 6 }}>
           <Database size={15} /> <b className="ellipsis">{data?.collection?.name ?? 'Реестр'}</b>
           <span className="grow" />
-          {data?.collection?.pageId && (
-            <Link className="btn sm ghost" to={'/p/' + data.collection.pageId}>
+          {data?.collection?.page_id && (
+            <Link className="btn sm ghost" to={'/p/' + data.collection.page_id}>
               Открыть
             </Link>
           )}
         </div>
-        {error ? <div className="muted small">{error}</div> : !data ? <div className="skeleton" style={{ height: 60 }} /> : <CollectionMini collectionId={node.attrs.collectionId} fields={data.collection?.fields ?? []} />}
+        {error ? <div className="muted small">{error}</div> : !data ? <div className="skeleton" style={{ height: 60 }} /> : <CollectionMini collectionId={node.attrs.collectionId} fields={data.collection?.schema ?? []} />}
       </div>
     </NodeViewWrapper>
   );
@@ -383,6 +383,7 @@ function CollectionMini({ collectionId, fields }: { collectionId: string; fields
       <table className="table">
         <thead>
           <tr>
+            <th>Название</th>
             {shown.map((f) => (
               <th key={f.id}>{f.name}</th>
             ))}
@@ -391,6 +392,9 @@ function CollectionMini({ collectionId, fields }: { collectionId: string; fields
         <tbody>
           {rows.map((r) => (
             <tr key={r.id}>
+              <td className="ellipsis" style={{ maxWidth: 260 }}>
+                <Link to={'/p/' + r.id}>{r.title || 'Без названия'}</Link>
+              </td>
               {shown.map((f) => (
                 <td key={f.id} className="ellipsis" style={{ maxWidth: 220 }}>
                   {formatCell(r.values?.[f.id] ?? r.cells?.[f.id])}
@@ -400,7 +404,7 @@ function CollectionMini({ collectionId, fields }: { collectionId: string; fields
           ))}
           {!rows.length && (
             <tr>
-              <td colSpan={shown.length || 1} className="muted">
+              <td colSpan={shown.length + 1} className="muted">
                 Записей пока нет
               </td>
             </tr>

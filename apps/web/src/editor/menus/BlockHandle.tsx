@@ -9,7 +9,7 @@ import { Tooltip } from '../../components/ui/Tooltip';
 import { duplicateBlock, deleteBlock, moveBlock } from '../extensions/blockOps';
 import { turnIntoItems } from './BubbleToolbar';
 import { TEXT_COLORS } from '../palette';
-import { toast } from '../../components/ui/Toast';
+import { copyWithFeedback } from '../clipboard/copy';
 
 // Must be a stable object: DragHandle re-registers its plugin (re-initialising every plugin view) when it changes.
 const POSITION = { placement: 'left-start' as const, strategy: 'absolute' as const };
@@ -85,7 +85,7 @@ export function BlockHandle({ editor, pageId, onComment }: { editor: Editor; pag
         icon: <Link2 size={15} />,
         onSelect: () => {
           const id = blockId();
-          navigator.clipboard.writeText(`${location.origin}/p/${pageId}${id ? '?block=' + id : ''}`).then(() => toast.success('Ссылка на блок скопирована'));
+          void copyWithFeedback({ text: `${location.origin}/p/${pageId}${id ? '?block=' + id : ''}` }, 'Ссылка на блок скопирована');
         },
       },
       {
@@ -96,7 +96,7 @@ export function BlockHandle({ editor, pageId, onComment }: { editor: Editor; pag
           if (!c) return;
           const { docToMarkdown } = await loadMarkdown();
           const { markdown } = docToMarkdown({ type: 'doc', content: [c.node.toJSON()] } as any, { markers: false });
-          navigator.clipboard.writeText(markdown).then(() => toast.success('Скопировано в формате Markdown'));
+          await copyWithFeedback({ text: markdown }, 'Скопировано в формате Markdown');
         },
       },
       { id: 'comment', label: 'Комментировать', icon: <MessageSquarePlus size={15} />, onSelect: () => (isText ? textInside() : selectCurrent(), onComment(blockId())) },

@@ -1,6 +1,6 @@
 import { keyBetween, emptyDoc, ensureBlockIds, walk, type PMNode, LEVEL_RANK } from '@kb/shared';
 import type { Queryable, Tx } from '../db/pool.js';
-import { badRequest, conflict, forbidden, notFound } from '../lib/errors.js';
+import { badRequest, conflict, forbidden, notFound, unprocessable } from '../lib/errors.js';
 import { audit, type AuditActor } from './audit.js';
 import { jsonToUpdate, updateToJson } from '../collab/ydoc.js';
 import { docToPlainText, countWords } from '@kb/shared';
@@ -29,9 +29,35 @@ export interface PageRow {
   content_updated_at: Date | null;
   published_revision_id: string | null;
   deleted_at: Date | null;
+  legal_hold: boolean;
   version: number;
   review_due_at: string | null;
   verified_at: Date | null;
+}
+
+/** Maximum nesting level of pages under a space root (a root page is level 1). */
+export const MAX_TREE_DEPTH = 15;
+
+/** Level of a page in its space tree (root page = 1). */
+export async function pageLevel(q: Queryable, pageId: string): Promise<number> {
+  const r = await q.query('select coalesce(max(depth), 0)::int as d from page_ancestors where page_id = $1', [pageId]);
+  return r.rows[0].d + 1;
+}
+
+/** Height of the subtree below a page (0 for a leaf). */
+export async function subtreeHeight(q: Queryable, pageId: string): Promise<number> {
+  const r = await q.query('select coalesce(max(depth), 0)::int as d from page_ancestors where ancestor_id = $1', [pageId]);
+  return r.rows[0].d;
+}
+
+function depthError(wouldBe: number) {
+  return unprocessable('depth_limit', `Слишком глубокая вложенность: допускается не более ${MAX_TREE_DEPTH} уровней страниц (получилось бы ${wouldBe}). Выберите место выше по дереву.`, { max: MAX_TREE_DEPTH, wouldBe });
+}
+
+/** Rejects placing a subtree of the given height under `parentId` if it would exceed MAX_TREE_DEPTH. */
+export async function assertDepth(q: Queryable, parentId: string | null, height = 0) {
+  const level = (parentId ? (await pageLevel(q, parentId)) + 1 : 1) + height;
+  if (level > MAX_TREE_DEPTH) throw depthError(level);
 }
 
 /** Serialises structural changes of an organisation's tree (prevents concurrent moves creating cycles). */
@@ -136,6 +162,7 @@ export async function createPage(q: Tx, user: AuthUser, actor: AuditActor, input
     await requireSpace(q, user, spaceId, 'create');
   }
   await lockTree(q, user.orgId);
+  await assertDepth(q, parentId);
   const sortKey = await placementKey(q, spaceId, parentId, { beforeId: input.beforeId, afterId: input.afterId, position: input.position });
   const title = (input.title ?? '').slice(0, 500);
   const r = await q.query(
@@ -190,6 +217,18 @@ async function resolveMoveTarget(q: Queryable, user: AuthUser, page: PageRow, in
   return { targetSpaceId: targetSpaceId!, targetParentId };
 }
 
+/** Adds human readable names to the subjects of an audience diff (confirmation dialogs). */
+async function nameAudience(q: Queryable, audience: AudienceDiff) {
+  const all = [...audience.gained, ...audience.lost];
+  const users = all.filter((g) => g.subjectType === 'user').map((g) => g.subjectId);
+  const groups = all.filter((g) => g.subjectType === 'group').map((g) => g.subjectId);
+  const names = new Map<string, string>([
+    ...((users.length ? (await q.query('select id, name from users where id = any($1::uuid[])', [users])).rows : []) as any[]).map((r) => [r.id, r.name] as [string, string]),
+    ...((groups.length ? (await q.query('select id, name from groups where id = any($1::uuid[])', [groups])).rows : []) as any[]).map((r) => [r.id, r.name] as [string, string]),
+  ]);
+  for (const e of all) (e as any).name = e.subjectType === 'org' ? 'Все сотрудники организации' : names.get(e.subjectId ?? '') ?? '—';
+}
+
 export async function previewMove(q: Queryable, user: AuthUser, input: MoveInput): Promise<MovePreview> {
   const page = await getPage(q, input.pageId);
   if (!page || page.deleted_at) throw notFound();
@@ -233,6 +272,7 @@ export async function movePage(q: Tx, user: AuthUser, actor: AuditActor, input: 
   const preview = await previewMove(q, user, input);
   if (preview.requiresConfirmation && !input.confirmAudienceChange) throw conflict('audience_change', 'Перенос изменит аудиторию документа — требуется подтверждение', preview);
   const { spaceId: targetSpaceId, parentId: targetParentId } = preview.to;
+  await assertDepth(q, targetParentId, await subtreeHeight(q, page.id));
   const sortKey = await placementKey(q, targetSpaceId, targetParentId, { beforeId: input.beforeId, afterId: input.afterId, position: input.position });
   const undo: MoveInput = { pageId: page.id, targetSpaceId: page.space_id, targetParentId: page.parent_id, ...(await neighbourAnchor(q, page)), confirmAudienceChange: true };
 
@@ -377,12 +417,25 @@ export function remapAttachments(doc: PMNode, map: Map<string, string>): PMNode 
 }
 
 /** Duplicates a page (optionally with children). New ids; attachments are copied as new records over the same blobs; guest grants are not copied. */
-export async function duplicatePage(q: Tx, user: AuthUser, actor: AuditActor, pageId: string, opts: { includeChildren: boolean; targetParentId?: string | null; targetSpaceId?: string | null; requestId?: string | null }): Promise<PageRow> {
+export async function duplicatePage(q: Tx, user: AuthUser, actor: AuditActor, pageId: string, opts: { includeChildren: boolean; targetParentId?: string | null; targetSpaceId?: string | null; requestId?: string | null; confirmAudienceChange?: boolean }): Promise<PageRow> {
   const src = await getPage(q, pageId);
   if (!src || src.deleted_at) throw notFound();
   await requirePage(q, user, pageId, 'view');
   const parentId = opts.targetParentId === undefined ? src.parent_id : opts.targetParentId;
   const spaceId = opts.targetSpaceId ?? src.space_id;
+  // A copy placed elsewhere gets that location's audience: show who would newly see it and require confirmation.
+  const targetSpace = parentId ? ((await getPage(q, parentId))?.space_id ?? spaceId) : spaceId;
+  if (targetSpace !== src.space_id || parentId !== src.parent_id) {
+    const before = await pageAudience(q, pageId);
+    const after = await hypotheticalAudience(q, pageId, { spaceId: targetSpace, parentId });
+    const audience = diffAudience(before, after);
+    const personalSource = (await q.query('select kind from spaces where id = $1', [src.space_id])).rows[0]?.kind === 'personal';
+    if ((audience.widens || (personalSource && targetSpace !== src.space_id)) && !opts.confirmAudienceChange) {
+      await nameAudience(q, audience);
+      throw conflict('audience_change', 'Копия станет доступна другому кругу людей — требуется подтверждение', { audience, to: { spaceId: targetSpace, parentId }, requiresConfirmation: true });
+    }
+  }
+  await assertDepth(q, parentId, opts.includeChildren ? await subtreeHeight(q, pageId) : 0);
   const ids = opts.includeChildren
     ? (await q.query(`select a.page_id, a.depth from page_ancestors a join pages p on p.id = a.page_id where a.ancestor_id = $1 and p.deleted_at is null order by a.depth`, [pageId])).rows
     : [{ page_id: pageId, depth: 0 }];

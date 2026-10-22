@@ -8,7 +8,7 @@
 import yazl from 'yazl';
 import { createHash, randomUUID } from 'node:crypto';
 import Papa from 'papaparse';
-import { docToMarkdown, collectBlocks, walk, CONTENT_SCHEMA_VERSION, type PMNode } from '@kb/shared';
+import { docToMarkdown, collectBlocks, walk, migrateContent, CONTENT_SCHEMA_VERSION, type PMNode } from '@kb/shared';
 import type { Services } from '../app.js';
 import type { Tx } from '../db/pool.js';
 import { blobKey } from '../storage/blob-store.js';
@@ -269,6 +269,8 @@ export async function analyzeArchive(s: Services, orgId: string, buf: Buffer): P
   const manifest = JSON.parse(mf.toString('utf8'));
   if (manifest.format !== ARCHIVE_FORMAT) throw unprocessable('not_archive', 'Неизвестный формат архива');
   if (manifest.formatVersion > ARCHIVE_VERSION) throw unprocessable('newer_format', `Архив создан более новой версией системы (формат ${manifest.formatVersion}); обновите приложение`);
+  if ((manifest.contentSchemaVersion ?? 1) > CONTENT_SCHEMA_VERSION)
+    throw unprocessable('newer_schema', `Документы архива созданы более новой версией схемы (${manifest.contentSchemaVersion}); обновите приложение`);
   const checksumErrors: string[] = [];
   const missingFiles: string[] = [];
   const sums = entries.get('checksums.sha256')?.toString('utf8') ?? '';
@@ -392,9 +394,12 @@ export async function restoreArchive(s: Services, q: Tx, orgId: string, actor: A
     });
     return d;
   };
+  // Documents of older schema versions are migrated step by step (packages/shared/src/editor/migrations.ts).
+  const schemaVersion = Number(analysis.manifest.contentSchemaVersion ?? 1);
+  const upgrade = (c: PMNode) => migrateContent(rewrite(c), schemaVersion).doc;
   for (const p of ordered) {
     const id = map(p.id)!;
-    const content = rewrite(JSON.parse(entries.get(`metadata/content/${p.id}.json`)?.toString('utf8') ?? 'null') ?? { type: 'doc', content: [{ type: 'paragraph' }] });
+    const content = upgrade(JSON.parse(entries.get(`metadata/content/${p.id}.json`)?.toString('utf8') ?? 'null') ?? { type: 'doc', content: [{ type: 'paragraph' }] });
     await q.query(
       `insert into pages (id, org_id, space_id, parent_id, sort_key, title, icon, cover, status, inherit_permissions, locked, wide, properties, owner_id, created_by, updated_by, created_at, review_due_at)
        values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $15, $16, $17)`,
@@ -410,7 +415,7 @@ export async function restoreArchive(s: Services, q: Tx, orgId: string, actor: A
     const revs = (j(`metadata/versions/${p.id}.json`) as any[]) ?? [];
     let n = 0;
     for (const r of revs) {
-      const rc = rewrite(r.content);
+      const rc = upgrade(r.content);
       await q.query(`insert into page_revisions (page_id, number, kind, label, title, state, content, seq_upto, authors, created_by, created_at) values ($1, $2, $3, $4, $5, $6, $7, 0, $8, $9, $10)`, [
         id,
         r.number,

@@ -126,7 +126,7 @@ function toSource(g: GrantRow): AccessSource {
 }
 
 /** Combines matching grants into an effective access record. Deny ('none') wins over any allow. */
-export function combine(grants: GrantRow[], subjects: Subjects, policy: SpacePolicy, opts: { guest: boolean; personalOwner: boolean; now?: Date }): EffectiveAccess {
+export function combine(grants: GrantRow[], subjects: Subjects, policy: SpacePolicy, opts: { guest: boolean; personalOwner: boolean; now?: Date; guestsDisabled?: boolean }): EffectiveAccess {
   const now = opts.now ?? new Date();
   const mine = grants.filter((g) => active(g, now) && matches(g, subjects));
   const denies = mine.filter((g) => g.level === 'none');
@@ -142,7 +142,11 @@ export function combine(grants: GrantRow[], subjects: Subjects, policy: SpacePol
   } else {
     for (const g of allows) if (LEVEL_RANK[g.level] > LEVEL_RANK[level]) level = g.level;
   }
-  if (opts.guest && !policy.allowGuests && !opts.personalOwner) {
+  if (opts.guest && opts.guestsDisabled && !opts.personalOwner) {
+    // Organisation policy beats any grant: existing guest grants stop working while guest access is disabled.
+    if (level !== 'none') explanation.push('Гостевой доступ отключён политикой организации');
+    level = 'none';
+  } else if (opts.guest && !policy.allowGuests && !opts.personalOwner) {
     if (level !== 'none') explanation.push('Политика пространства запрещает гостевой доступ');
     level = 'none';
   }
@@ -166,6 +170,12 @@ function describe(g: GrantRow): string {
   return `${g.level}: ${who}, ${where}${g.expires_at ? ` (до ${g.expires_at.toISOString()})` : ''}`;
 }
 
+/** Organisation-wide guest switch (organizations.settings.guestsEnabled, enabled by default). */
+export async function orgGuestsDisabled(q: Queryable, orgId: string): Promise<boolean> {
+  const r = await q.query(`select settings->'guestsEnabled' as g from organizations where id = $1`, [orgId]);
+  return r.rows[0]?.g === false;
+}
+
 export function policyOf(settings: any): SpacePolicy {
   return { ...DEFAULT_SPACE_POLICY, ...(settings?.policy ?? {}) };
 }
@@ -181,6 +191,7 @@ export async function accessForPages(q: Queryable, user: AuthUser, pageIds: stri
     [pageIds],
   );
   const grants = (await q.query(APPLICABLE_GRANTS_SQL, [pageIds])).rows as GrantRow[];
+  const guestsDisabled = user.kind === 'guest' && (await orgGuestsDisabled(q, user.orgId));
   const byPage = new Map<string, GrantRow[]>();
   for (const g of grants) {
     const list = byPage.get(g.target_page) ?? [];
@@ -191,7 +202,7 @@ export async function accessForPages(q: Queryable, user: AuthUser, pageIds: stri
     if (m.org_id !== user.orgId) continue;
     const policy = policyOf(m.settings);
     const personalOwner = m.kind === 'personal' && m.owner_user_id === user.id;
-    const eff = combine(byPage.get(m.id) ?? [], s, policy, { guest: user.kind === 'guest', personalOwner });
+    const eff = combine(byPage.get(m.id) ?? [], s, policy, { guest: user.kind === 'guest', personalOwner, guestsDisabled });
     out.set(m.id, { ...eff, pageId: m.id, spaceId: m.space_id, spaceKind: m.kind, policy, deleted: !!m.deleted_at || !!m.space_deleted });
   }
   return out;
@@ -246,6 +257,7 @@ export async function accessForSpaces(q: Queryable, user: AuthUser, spaceIds?: s
     ? ((await q.query(`select g.*, g.resource_id as target_page, null::int as depth from grants g where g.resource_type = 'space' and g.resource_id = any($1::uuid[]) and g.revoked_at is null`, [ids])).rows as GrantRow[])
     : [];
   const out = new Map<string, SpaceAccess>();
+  const guestsDisabled = user.kind === 'guest' && (await orgGuestsDisabled(q, user.orgId));
   for (const sp of spaces.rows) {
     const policy = policyOf(sp.settings);
     const personalOwner = sp.kind === 'personal' && sp.owner_user_id === user.id;
@@ -253,7 +265,7 @@ export async function accessForSpaces(q: Queryable, user: AuthUser, spaceIds?: s
       grants.filter((g) => g.resource_id === sp.id),
       s,
       policy,
-      { guest: user.kind === 'guest', personalOwner },
+      { guest: user.kind === 'guest', personalOwner, guestsDisabled },
     );
     out.set(sp.id, { ...eff, spaceId: sp.id, kind: sp.kind, visibility: sp.visibility, policy });
   }
@@ -457,7 +469,8 @@ export async function usersWithAction(q: Queryable, orgId: string, r: ResourceRe
   const rg = await resourceGrants(q, r);
   if (!rg) return [];
   const people = await orgPeople(q, orgId);
-  return people.filter((p) => combine(rg.rows, p.subjects, rg.policy, { guest: p.kind === 'guest', personalOwner: rg.personalOwnerId === p.id }).actions[action]);
+  const guestsDisabled = await orgGuestsDisabled(q, orgId);
+  return people.filter((p) => combine(rg.rows, p.subjects, rg.policy, { guest: p.kind === 'guest', personalOwner: rg.personalOwnerId === p.id, guestsDisabled }).actions[action]);
 }
 
 export interface AudiencePreview {
@@ -476,8 +489,9 @@ export async function previewGrantAudience(q: Queryable, orgId: string, r: Resou
   const people = await orgPeople(q, orgId);
   const added: AudiencePreview['added'] = [];
   const removed: AudiencePreview['removed'] = [];
+  const guestsDisabled = await orgGuestsDisabled(q, orgId);
   for (const p of people) {
-    const opts = { guest: p.kind === 'guest', personalOwner: rg.personalOwnerId === p.id };
+    const opts = { guest: p.kind === 'guest', personalOwner: rg.personalOwnerId === p.id, guestsDisabled };
     const b = combine(rg.rows, p.subjects, rg.policy, opts);
     const a = combine(after, p.subjects, rg.policy, opts);
     if (!b.actions.view && a.actions.view) added.push({ id: p.id, name: p.name, level: a.level });

@@ -43,6 +43,7 @@ export interface CollabCallbacks {
   onPresence?(users: PresenceUser[]): void;
   onFatal?(code: string, message: string): void;
   onSynced?(): void;
+  onStorageError?(message: string, quota: boolean): void;
 }
 
 function wsUrl(pageId: string) {
@@ -54,11 +55,12 @@ function wsUrl(pageId: string) {
  * Opens the collaborative document of a page: a local IndexedDB replica (works offline, survives reloads)
  * plus the server connection. Unacknowledged operations are persisted separately and resent on reconnect.
  */
-export function openCollab(pageId: string, generation: string | null, cb: CollabCallbacks): CollabSession {
+export function openCollab(pageId: string, generation: string | null, userId: string, cb: CollabCallbacks): CollabSession {
   const doc = new Y.Doc({ gc: true });
   // Local replica and pending queue are keyed by the document generation: a replica of an older CRDT history
   // (e.g. before an archive restore) must never be merged into the new one.
-  const key = generation ? `${pageId}:${generation}` : pageId;
+  // ...and by user: on a shared computer one person's unsent changes must never be sent (or shown) as another's.
+  const key = `${userId}:${pageId}${generation ? ':' + generation : ''}`;
   const local = new IndexeddbPersistence('kb-doc-' + key, doc);
   const localReady = new Promise<void>((resolve) => {
     local.once('synced', () => resolve());
@@ -78,6 +80,7 @@ export function openCollab(pageId: string, generation: string | null, cb: Collab
     onPresence: cb.onPresence,
     onFatal: cb.onFatal,
     onSynced: cb.onSynced,
+    onStorageError: cb.onStorageError,
   });
   const onUnload = (e: BeforeUnloadEvent) => {
     provider.flush();

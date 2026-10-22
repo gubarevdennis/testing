@@ -36,7 +36,7 @@ test('image: upload via file chooser, resize presets, caption, full-screen viewe
   await expect(viewer).toBeHidden();
 });
 
-test('sidebar tree: create child page via "+", rename inline, keyboard navigation', async ({ page }) => {
+test('sidebar tree: "+" creates a child page under the selected parent with focus in the title (R-TREE-002, UX-121, UX23-201)', async ({ page }) => {
   await ensureOwner(page);
   const parentTitle = 'Родитель ' + Date.now();
   await newPage(page, parentTitle);

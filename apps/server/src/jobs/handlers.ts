@@ -21,7 +21,7 @@ registerJob('ocr', async ({ s, job }) => {
     const out = await recognize(await s.store.readBuffer(blobKey(v.blob_sha256)), { tessdataDir: s.cfg.tessdataDir, region, rotation, log: s.log });
     const status = !out.text ? 'partial' : out.confidence < 55 ? 'partial' : 'done';
     await s.db.query(`update ocr_results set status = $2, text = $3, words = $4, confidence = $5, error = null, updated_at = now() where id = $1`, [target, status, out.text, JSON.stringify(out.words), out.confidence]);
-    if (v.page_id) await indexPage(s.db, v.page_id);
+    if (v.page_id) await indexPage(s.db, v.page_id, s.store);
     return { result: { status, confidence: out.confidence, chars: out.text.length } };
   } catch (e) {
     await s.db.query(`update ocr_results set status = 'error', error = $2, updated_at = now() where id = $1`, [target, (e as Error).message.slice(0, 500)]);

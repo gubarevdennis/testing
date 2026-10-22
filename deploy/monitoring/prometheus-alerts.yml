@@ -1,0 +1,219 @@
+# Prometheus alert rules for the knowledge base.
+# Assumes scrape jobs: job="kb" (app /metrics, every instance), job="node" (node_exporter, with the
+# textfile collector reading BACKUP_METRICS_FILE / VERIFY_METRICS_FILE), job="postgres" (postgres_exporter).
+# Application metric names come from apps/server/src/observability/metrics.ts (prefix kb_).
+# Every alert has an owner label and a runbook link into docs/OPERATIONS.md.
+# Validate: promtool check rules deploy/monitoring/prometheus-alerts.yml
+groups:
+  - name: kb-availability
+    rules:
+      - alert: KbInstanceDown
+        expr: up{job="kb"} == 0
+        for: 2m
+        labels: { severity: critical, owner: ops }
+        annotations:
+          summary: "Экземпляр базы знаний {{ $labels.instance }} недоступен"
+          runbook: "docs/OPERATIONS.md#runbook-app-down"
+      - alert: KbAllInstancesDown
+        expr: sum(up{job="kb"}) == 0
+        for: 1m
+        labels: { severity: critical, owner: ops }
+        annotations:
+          summary: "Все экземпляры базы знаний недоступны — сервис не работает"
+          runbook: "docs/OPERATIONS.md#runbook-app-down"
+      - alert: KbHigh5xxRate
+        expr: |
+          sum(rate(kb_http_request_duration_seconds_count{job="kb",status=~"5.."}[5m]))
+            / clamp_min(sum(rate(kb_http_request_duration_seconds_count{job="kb"}[5m])), 1e-9) > 0.02
+        for: 5m
+        labels: { severity: critical, owner: ops }
+        annotations:
+          summary: "Более 2% ответов API — ошибки 5xx ({{ $value | humanizePercentage }})"
+          description: "503 db_unavailable означает недоступность PostgreSQL; см. журнал по correlationId."
+          runbook: "docs/OPERATIONS.md#runbook-db-down"
+      - alert: KbApiLatencyHigh
+        expr: |
+          histogram_quantile(0.95, sum by (le) (rate(kb_http_request_duration_seconds_bucket{job="kb",route!~".*(collab|events|attachments|export|import|archives).*"}[5m]))) > 1
+        for: 10m
+        labels: { severity: warning, owner: ops }
+        annotations:
+          summary: "p95 задержки API {{ $value | humanizeDuration }} (> 1 с)"
+          runbook: "docs/OPERATIONS.md#runbook-slow"
+      - alert: KbEventLoopLag
+        expr: max by (instance) (kb_nodejs_eventloop_lag_p99_seconds{job="kb"}) > 0.25
+        for: 5m
+        labels: { severity: warning, owner: ops }
+        annotations:
+          summary: "Event loop lag p99 {{ $value | humanizeDuration }} на {{ $labels.instance }}"
+          runbook: "docs/OPERATIONS.md#runbook-slow"
+      - alert: KbMemoryHigh
+        expr: max by (instance) (kb_process_resident_memory_bytes{job="kb"}) > 3e9
+        for: 15m
+        labels: { severity: warning, owner: ops }
+        annotations:
+          summary: "RSS процесса {{ $value | humanize1024 }}B на {{ $labels.instance }}"
+          runbook: "docs/OPERATIONS.md#runbook-slow"
+      - alert: KbRestartLoop
+        expr: changes(kb_process_start_time_seconds{job="kb"}[15m]) > 3
+        labels: { severity: critical, owner: ops }
+        annotations:
+          summary: "Экземпляр {{ $labels.instance }} перезапускается циклически"
+          runbook: "docs/OPERATIONS.md#runbook-app-down"
+
+  - name: kb-collaboration
+    rules:
+      - alert: KbCollabPersistFailures
+        expr: sum(increase(kb_collab_persist_failures_total{job="kb"}[5m])) > 0
+        labels: { severity: critical, owner: ops }
+        annotations:
+          summary: "Изменения документов не удаётся зафиксировать ({{ $value }} за 5 мин)"
+          description: "Клиенты держат изменения локально и повторяют отправку; статус «сохранено» не показывается."
+          runbook: "docs/OPERATIONS.md#runbook-collab-persist"
+      - alert: KbCollabCommitLatencyHigh
+        expr: histogram_quantile(0.99, sum by (le) (rate(kb_collab_persist_seconds_bucket{job="kb"}[5m]))) > 0.5
+        for: 10m
+        labels: { severity: warning, owner: ops }
+        annotations:
+          summary: "p99 фиксации правок {{ $value | humanizeDuration }} (> 500 мс)"
+          runbook: "docs/OPERATIONS.md#runbook-collab-persist"
+      - alert: KbCollabRejectedUpdates
+        expr: sum(increase(kb_collab_rejected_total{job="kb"}[15m])) > 10
+        labels: { severity: warning, owner: dev }
+        annotations:
+          summary: "Сервер отклоняет некорректные правки ({{ $value }} за 15 мин) — возможна несовместимость клиента"
+          runbook: "docs/OPERATIONS.md#runbook-collab-persist"
+      - alert: KbClientUnsyncedChangesOld
+        expr: |
+          histogram_quantile(0.95, sum by (le) (rate(kb_client_unsynced_queue_age_seconds_bucket{job="kb"}[15m]))) > 300
+        for: 15m
+        labels: { severity: warning, owner: ops }
+        annotations:
+          summary: "У клиентов есть неотправленные изменения старше 5 минут (p95 {{ $value | humanizeDuration }})"
+          runbook: "docs/OPERATIONS.md#runbook-collab-persist"
+      - alert: KbClientErrorsSpike
+        expr: sum(increase(kb_client_errors_total{job="kb"}[10m])) > 50
+        labels: { severity: warning, owner: dev }
+        annotations:
+          summary: "Всплеск ошибок в браузерах ({{ $value }} за 10 мин)"
+          runbook: "docs/OPERATIONS.md#runbook-slow"
+
+  - name: kb-background
+    rules:
+      - alert: KbJobsBacklog
+        expr: max(kb_jobs_queued{job="kb"}) > 100
+        for: 15m
+        labels: { severity: warning, owner: ops }
+        annotations:
+          summary: "Очередь фоновых задач {{ $value }} (импорт, OCR, экспорт)"
+          runbook: "docs/OPERATIONS.md#runbook-stuck-jobs"
+      - alert: KbJobsFailing
+        expr: |
+          sum by (type) (increase(kb_jobs_total{job="kb",status="failed"}[30m]))
+            / clamp_min(sum by (type) (increase(kb_jobs_total{job="kb"}[30m])), 1) > 0.2
+        for: 10m
+        labels: { severity: warning, owner: ops }
+        annotations:
+          summary: "Более 20% задач {{ $labels.type }} завершаются ошибкой"
+          runbook: "docs/OPERATIONS.md#runbook-stuck-jobs"
+      - alert: KbSearchIndexLag
+        expr: max(kb_outbox_pending{job="kb"}) > 1000
+        for: 15m
+        labels: { severity: warning, owner: ops }
+        annotations:
+          summary: "Отставание поисковой индексации: {{ $value }} событий"
+          runbook: "docs/OPERATIONS.md#runbook-stuck-jobs"
+      - alert: KbIntegrityErrors
+        expr: max(kb_integrity_errors{job="kb"}) > 0
+        labels: { severity: critical, owner: ops }
+        annotations:
+          summary: "Проверка целостности нашла {{ $value }} проблем(ы) (файлы/ссылки)"
+          runbook: "docs/OPERATIONS.md#runbook-storage"
+
+  - name: kb-backup
+    rules:
+      # From the application (reads the backups table, updated by backup.sh / verify-backup.sh).
+      - alert: KbBackupTooOld
+        expr: max(kb_backup_age_seconds{job="kb"}) > 26 * 3600
+        labels: { severity: critical, owner: ops }
+        annotations:
+          summary: "Последняя успешная резервная копия старше 26 ч ({{ $value | humanizeDuration }})"
+          runbook: "docs/OPERATIONS.md#runbook-backup"
+      - alert: KbBackupNeverSucceeded
+        expr: absent(kb_backup_age_seconds{job="kb"}) and on() sum(up{job="kb"}) > 0
+        for: 26h
+        labels: { severity: critical, owner: ops }
+        annotations:
+          summary: "Нет ни одной успешной резервной копии"
+          runbook: "docs/OPERATIONS.md#runbook-backup"
+      - alert: KbRestoreVerificationTooOld
+        expr: max(kb_restore_verification_age_seconds{job="kb"}) > 8 * 86400
+        labels: { severity: warning, owner: ops }
+        annotations:
+          summary: "Проверка восстановления не выполнялась более 8 дней"
+          runbook: "docs/OPERATIONS.md#runbook-backup"
+      # From the backup host (textfile collector), independent of the application being up.
+      - alert: KbBackupHostStale
+        expr: time() - max(kb_backup_last_success_timestamp_seconds) > 26 * 3600
+        labels: { severity: critical, owner: ops }
+        annotations:
+          summary: "backup.sh не завершался успешно более 26 ч (данные node_exporter)"
+          runbook: "docs/OPERATIONS.md#runbook-backup"
+      - alert: KbWalArchivingFailing
+        expr: increase(pg_stat_archiver_failed_count{job="postgres"}[10m]) > 0
+        labels: { severity: critical, owner: dba }
+        annotations:
+          summary: "PostgreSQL не может архивировать WAL — RPO 5 мин под угрозой, pg_wal растёт"
+          runbook: "scripts/backup/wal-archive.md"
+      - alert: KbWalArchiveStale
+        expr: pg_stat_archiver_last_archive_age{job="postgres"} > 600
+        for: 5m
+        labels: { severity: critical, owner: dba }
+        annotations:
+          summary: "Последний WAL заархивирован {{ $value | humanizeDuration }} назад (archive_timeout = 60 с)"
+          runbook: "scripts/backup/wal-archive.md"
+
+  - name: kb-infrastructure
+    rules:
+      - alert: KbPostgresDown
+        expr: pg_up{job="postgres"} == 0
+        for: 1m
+        labels: { severity: critical, owner: dba }
+        annotations:
+          summary: "PostgreSQL недоступен"
+          runbook: "docs/OPERATIONS.md#runbook-db-down"
+      - alert: KbPostgresConnectionsHigh
+        expr: sum(pg_stat_activity_count{job="postgres"}) / max(pg_settings_max_connections{job="postgres"}) > 0.85
+        for: 5m
+        labels: { severity: warning, owner: dba }
+        annotations:
+          summary: "Использовано {{ $value | humanizePercentage }} соединений PostgreSQL"
+          runbook: "docs/OPERATIONS.md#runbook-db-down"
+      - alert: KbPostgresLongTransaction
+        expr: max(pg_stat_activity_max_tx_duration{job="postgres",datname="kb"}) > 600
+        for: 5m
+        labels: { severity: warning, owner: dba }
+        annotations:
+          summary: "Транзакция выполняется более 10 мин (блокирует VACUUM)"
+          runbook: "docs/OPERATIONS.md#runbook-slow"
+      - alert: KbDiskSpaceLow
+        expr: |
+          (node_filesystem_avail_bytes{job="node",fstype!~"tmpfs|overlay"} / node_filesystem_size_bytes{job="node",fstype!~"tmpfs|overlay"}) < 0.15
+        for: 10m
+        labels: { severity: warning, owner: ops }
+        annotations:
+          summary: "Свободно {{ $value | humanizePercentage }} на {{ $labels.instance }}:{{ $labels.mountpoint }}"
+          runbook: "docs/OPERATIONS.md#runbook-disk-full"
+      - alert: KbDiskWillFill
+        expr: predict_linear(node_filesystem_avail_bytes{job="node",fstype!~"tmpfs|overlay"}[6h], 24 * 3600) < 0
+        for: 30m
+        labels: { severity: critical, owner: ops }
+        annotations:
+          summary: "{{ $labels.instance }}:{{ $labels.mountpoint }} заполнится в течение суток"
+          runbook: "docs/OPERATIONS.md#runbook-disk-full"
+      - alert: KbHostDown
+        expr: up{job="node"} == 0
+        for: 2m
+        labels: { severity: critical, owner: ops }
+        annotations:
+          summary: "Хост {{ $labels.instance }} недоступен"
+          runbook: "docs/OPERATIONS.md#runbook-app-down"

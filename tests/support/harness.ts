@@ -20,7 +20,8 @@ let counter = 0;
 export async function startServer(overrides: Partial<Config> = {}, opts: { worker?: boolean; dbName?: string } = {}): Promise<TestServer> {
   const tpl = inject('templateDb' as never) as string;
   const adminUrl = inject('adminUrl' as never) as string;
-  const name = opts.dbName ?? `kb_t_${process.pid}_${Date.now()}_${counter++}`;
+  const runTag = inject('runTag' as never) as string;
+  const name = opts.dbName ?? `kb_t_${runTag}_${process.pid}_${Date.now()}_${counter++}`;
   if (!opts.dbName) {
     const a = new pg.Client({ connectionString: adminUrl });
     await a.connect();

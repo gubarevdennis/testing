@@ -3,7 +3,7 @@ import { ensureOwner, newPage, editor, expectSaved, apiContent, createUser, logi
 
 test.describe.configure({ mode: 'serial' });
 
-test('two people edit the same page: changes converge, presence is shown, revoking edit makes it read-only', async ({ page, browser }) => {
+test('two people edit the same page: changes converge, presence is shown, revoking edit makes it read-only (E219, R-COLLAB-006, R-COLLAB-012)', async ({ page, browser }) => {
   await ensureOwner(page);
   const id = await newPage(page, 'Совместная работа');
   await page.keyboard.type('Начало.');
@@ -42,7 +42,7 @@ test('two people edit the same page: changes converge, presence is shown, revoki
   await ctx2.close();
 });
 
-test('history: save a version, change text, restore the version', async ({ page }) => {
+test('history: save a version, change text, restore the version (R-HISTORY-004, UX13-14, UX21-201)', async ({ page }) => {
   await ensureOwner(page);
   await newPage(page, 'История');
   await page.keyboard.type('Версия один');
@@ -66,7 +66,7 @@ test('history: save a version, change text, restore the version', async ({ page 
   await expect(editor(page)).not.toContainText('Версия два');
 });
 
-test('search finds a page by a word from its body and jumps to the block', async ({ page }) => {
+test('search finds a page by a word from its body and jumps to the block (V16-S01, R-SEARCH-005)', async ({ page }) => {
   await ensureOwner(page);
   const word = 'Квазиуникальность' + Math.floor(Math.random() * 1e6);
   await newPage(page, 'Поисковая');

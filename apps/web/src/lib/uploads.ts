@@ -1,4 +1,5 @@
 import { ApiError, api, upload } from '../api/client';
+import { Sha256 } from './sha256';
 
 export interface AttachmentDto {
   id: string;
@@ -10,11 +11,40 @@ export interface AttachmentDto {
   size: number;
   width: number | null;
   height: number | null;
+  sha256?: string;
   contentUrl: string;
   downloadUrl: string;
 }
 
 const RESUMABLE_FROM = 8 * 1024 * 1024;
+
+/** SHA-256 of a small file (whole buffer). */
+async function hashSmall(file: Blob): Promise<string> {
+  const buf = new Uint8Array(await file.arrayBuffer());
+  if (globalThis.crypto?.subtle) {
+    const d = new Uint8Array(await crypto.subtle.digest('SHA-256', buf));
+    return Array.from(d, (x) => x.toString(16).padStart(2, '0')).join('');
+  }
+  return new Sha256().update(buf).digestHex();
+}
+
+/** Upload sessions survive a page reload: the same file re-added later resumes from the bytes already on the server. */
+const sessionKey = (file: File, pageId: string | null, replaceId?: string) => `kb:upload:${pageId ?? '-'}:${replaceId ?? '-'}:${file.name}:${file.size}:${file.lastModified}`;
+function rememberSession(k: string, id: string | null) {
+  try {
+    if (id) localStorage.setItem(k, id);
+    else localStorage.removeItem(k);
+  } catch {
+    /* storage unavailable */
+  }
+}
+function recallSession(k: string): string | null {
+  try {
+    return localStorage.getItem(k);
+  } catch {
+    return null;
+  }
+}
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -42,7 +72,10 @@ export async function uploadFile(file: File, pageId: string | null, onProgress?:
         fd.append('file', file, file.name || 'file');
         const r = await upload<{ attachments: AttachmentDto[]; errors: Array<{ filename: string; message: string }> }>('/api/v1/attachments', fd, (f) => onProgress?.(f), signal);
         if (!r.attachments.length) throw new ApiError(422, 'rejected', r.errors?.[0]?.message ?? 'Файл отклонён');
-        return r.attachments[0];
+        // The server reports the checksum of what it stored: it must be the file we sent (R-FILES-004).
+        const a = r.attachments[0];
+        if (a.sha256 && a.sha256 !== (await hashSmall(file))) throw new ApiError(422, 'checksum_mismatch', 'Файл повреждён при передаче — загрузите его заново');
+        return a;
       } catch (e) {
         if (e instanceof ApiError && e.isNetwork && attempt < 50) {
           onProgress?.(0, 'waiting');
@@ -54,17 +87,37 @@ export async function uploadFile(file: File, pageId: string | null, onProgress?:
       }
     }
   }
-  const start = await api<{ uploadId: string; received: number; chunkSize: number }>('POST', '/api/v1/uploads', { pageId, filename: file.name || 'file', size: file.size, mime: file.type || undefined, replaceId });
+  const key = sessionKey(file, pageId, replaceId);
+  let start: { uploadId: string; received: number; chunkSize: number } | null = null;
+  const previous = recallSession(key);
+  if (previous) {
+    const st = await api<{ received: number; status: string; size: number }>('GET', `/api/v1/uploads/${previous}`).catch(() => null);
+    if (st && st.status === 'open' && Number(st.size) === file.size) start = { uploadId: previous, received: Number(st.received), chunkSize: 4 * 1024 * 1024 };
+  }
+  start ??= await api<{ uploadId: string; received: number; chunkSize: number }>('POST', '/api/v1/uploads', { pageId, filename: file.name || 'file', size: file.size, mime: file.type || undefined, replaceId });
+  rememberSession(key, start.uploadId);
+  // The checksum is computed while streaming (in file order) and verified by the server at completion.
+  const hasher = new Sha256();
+  let hashed = 0;
+  const hashUpTo = async (end: number) => {
+    while (hashed < end) {
+      const next = Math.min(end, hashed + 4 * 1024 * 1024);
+      hasher.update(new Uint8Array(await file.slice(hashed, next).arrayBuffer()));
+      hashed = next;
+    }
+  };
   let offset = start.received;
   let failures = 0;
   while (offset < file.size) {
     if (signal?.aborted) {
       await api('DELETE', `/api/v1/uploads/${start.uploadId}`).catch(() => undefined);
+      rememberSession(key, null);
       throw new DOMException('aborted', 'AbortError');
     }
     const chunk = file.slice(offset, offset + start.chunkSize);
     try {
       const r = await api<{ received: number }>('PUT', `/api/v1/uploads/${start.uploadId}?offset=${offset}`, chunk, { headers: { 'content-type': 'application/octet-stream' }, signal });
+      await hashUpTo(Math.min(r.received, offset + chunk.size));
       offset = r.received;
       failures = 0;
       onProgress?.(offset / file.size);
@@ -88,8 +141,15 @@ export async function uploadFile(file: File, pageId: string | null, onProgress?:
       throw e;
     }
   }
-  const done = await api<{ attachment: AttachmentDto }>('POST', `/api/v1/uploads/${start.uploadId}/complete`);
-  return done.attachment;
+  await hashUpTo(file.size);
+  try {
+    const done = await api<{ attachment: AttachmentDto }>('POST', `/api/v1/uploads/${start.uploadId}/complete`, { sha256: hasher.digestHex() });
+    rememberSession(key, null);
+    return done.attachment;
+  } catch (e) {
+    if (e instanceof ApiError && e.code === 'checksum_mismatch') rememberSession(key, null);
+    throw e;
+  }
 }
 
 export function isImageFile(f: File) {

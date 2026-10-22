@@ -15,7 +15,7 @@ async function dept(name: string, parentId?: string) {
 }
 
 describe('department spaces and inheritance', () => {
-  it('new employee of a department automatically gets its space (A04, S13, ACL-152, UX v2.7)', async () => {
+  it('new employee of a department automatically gets its space (V15-A04, V16-S13, V15-A01, ACL-152, ACL-159, ACL-162, R-ORG-005, R-ADMIN-020, R-ACL-081, UX v2.7)', async () => {
     const eng = await dept('Проектирование');
     const sales = await dept('Продажи');
     const sp = (await org.owner.post('/api/v1/spaces', { name: 'Проектирование', kind: 'department', visibility: 'private', groups: [{ groupId: eng, level: 'edit' }] })).space;
@@ -38,7 +38,7 @@ describe('department spaces and inheritance', () => {
     expect(tree.nodes).toEqual([]);
   });
 
-  it('nested departments: member of a sub-department inherits parent department access', async () => {
+  it('nested departments: member of a sub-department inherits parent department access (R-ORG-001)', async () => {
     const parent = await dept('Производство');
     const child = await dept('Цех №1', parent);
     const sp = (await org.owner.post('/api/v1/spaces', { name: 'Производство', kind: 'department', visibility: 'private', groups: [{ groupId: parent, level: 'view' }] })).space;
@@ -46,7 +46,7 @@ describe('department spaces and inheritance', () => {
     expect((await worker.get('/api/v1/spaces')).spaces.map((s: any) => s.id)).toContain(sp.id);
   });
 
-  it('removing a user from a department revokes access; personal grants remain (ACL v1.5)', async () => {
+  it('removing a user from a department revokes access; personal grants remain (R-ACL-039, E2E-107)', async () => {
     const g = await dept('Отдел качества');
     const sp = (await org.owner.post('/api/v1/spaces', { name: 'Качество', kind: 'department', visibility: 'private', groups: [{ groupId: g, level: 'view' }] })).space;
     const p1 = (await org.owner.post('/api/v1/pages', { spaceId: sp.id, title: 'Общая' })).page;
@@ -63,7 +63,7 @@ describe('department spaces and inheritance', () => {
 });
 
 describe('permission levels (ACL-153, ACL-154, A10)', () => {
-  it('company-wide view, editing only by authors; view-only cannot modify via API', async () => {
+  it('company-wide view, editing only by authors; view-only cannot modify via API (V15-A10, ACL-153)', async () => {
     const sp = (await org.owner.post('/api/v1/spaces', { name: 'Регламенты', kind: 'org', visibility: 'open', orgLevel: 'view' })).space;
     const page = (await org.owner.post('/api/v1/pages', { spaceId: sp.id, title: 'Регламент' })).page;
     const reader = await org.user('Читатель');
@@ -74,7 +74,7 @@ describe('permission levels (ACL-153, ACL-154, A10)', () => {
     await expectStatus(reader.put('/api/v1/grants', { resourceType: 'page', resourceId: page.id, subjectType: 'user', subjectId: reader.id, level: 'edit' }), 403);
   });
 
-  it('editor without share right cannot grant access', async () => {
+  it('editor without share right cannot grant access (ACL-154, R-ACL-059)', async () => {
     const page = (await org.owner.post('/api/v1/pages', { spaceId: org.generalSpaceId, title: 'Редактируемая' })).page;
     const editor = await org.user('Редактор');
     const other = await org.user('Другой');
@@ -85,7 +85,7 @@ describe('permission levels (ACL-153, ACL-154, A10)', () => {
 });
 
 describe('exceptions and denies', () => {
-  it('restricted child page is not accessible through parent rights (A05, ACL-160)', async () => {
+  it('restricted child page is not accessible through parent rights (ACL-160, R-ACL-034, E2E-104, UX-149)', async () => {
     const parent = (await org.owner.post('/api/v1/pages', { spaceId: org.generalSpaceId, title: 'Открытый раздел' })).page;
     const secret = (await org.owner.post('/api/v1/pages', { spaceId: org.generalSpaceId, parentId: parent.id, title: 'Секретная' })).page;
     const emp = await org.user('Сотрудник');
@@ -103,7 +103,7 @@ describe('exceptions and denies', () => {
     expect(tree.hasChildren).toBe(false); // no leak through "has children" marker
   });
 
-  it('explicit deny wins over group allow', async () => {
+  it('explicit deny wins over group allow (R-ACL-066)', async () => {
     const g = await dept('Бухгалтерия');
     const sp = (await org.owner.post('/api/v1/spaces', { name: 'Бух', kind: 'department', visibility: 'private', groups: [{ groupId: g, level: 'edit' }] })).space;
     const page = (await org.owner.post('/api/v1/pages', { spaceId: sp.id, title: 'Зарплаты' })).page;
@@ -113,7 +113,7 @@ describe('exceptions and denies', () => {
     await expectStatus(u.get(`/api/v1/pages/${page.id}`), 404);
   });
 
-  it('explains why a user has access (ACL-161, A09, S15)', async () => {
+  it('explains why a user has access (ACL-161, V15-A09, V16-S15, R-ACL-078)', async () => {
     const g = await dept('Логистика');
     const sp = (await org.owner.post('/api/v1/spaces', { name: 'Логистика', kind: 'department', visibility: 'private', groups: [{ groupId: g, level: 'comment' }] })).space;
     const page = (await org.owner.post('/api/v1/pages', { spaceId: sp.id, title: 'Маршруты' })).page;
@@ -129,7 +129,7 @@ describe('exceptions and denies', () => {
 });
 
 describe('admin does not see private content (A03, S15, §4.1)', () => {
-  it('org admin cannot open a personal page nor a private space page without a grant', async () => {
+  it('org admin cannot open a personal page nor a private space page without a grant (V15-A03, R-ACL-047)', async () => {
     const admin = await org.user('Админ', { orgRole: 'admin' });
     const u = await org.user('Автор');
     const me = await u.get('/api/v1/auth/me');
@@ -141,7 +141,7 @@ describe('admin does not see private content (A03, S15, §4.1)', () => {
 });
 
 describe('temporary access and guests (ACL-155, ACL-156, ACL-158, A07, S14, ACL-171)', () => {
-  it('guest invited to one page sees only it, no directory, no org-wide content', async () => {
+  it('guest invited to one page sees only it, no directory, no org-wide content (ACL-155, ACL-171, R-ACL-029, R-ACL-082, V15-A02)', async () => {
     const sp = (await org.owner.post('/api/v1/spaces', { name: 'Проект с подрядчиком', kind: 'project', visibility: 'private', policy: { allowGuests: true } })).space;
     const page = (await org.owner.post('/api/v1/pages', { spaceId: sp.id, title: 'ТЗ для подрядчика' })).page;
     const other = (await org.owner.post('/api/v1/pages', { spaceId: sp.id, title: 'Внутреннее' })).page;
@@ -163,7 +163,7 @@ describe('temporary access and guests (ACL-155, ACL-156, ACL-158, A07, S14, ACL-
     await expectStatus(org.owner.put('/api/v1/grants', { resourceType: 'page', resourceId: page.id, subjectType: 'user', subjectId: guest.id, level: 'view' }), 403);
   });
 
-  it('time-limited grant expires on the server without client activity', async () => {
+  it('time-limited grant expires on the server without client activity (ACL-156)', async () => {
     const page = (await org.owner.post('/api/v1/pages', { spaceId: org.personalSpaceId, title: 'Временно' })).page;
     const u = await org.user('Временный');
     const g = (await org.owner.put('/api/v1/grants', { resourceType: 'page', resourceId: page.id, subjectType: 'user', subjectId: u.id, level: 'view', expiresAt: new Date(Date.now() + 60_000).toISOString() })).grant;
@@ -172,7 +172,7 @@ describe('temporary access and guests (ACL-155, ACL-156, ACL-158, A07, S14, ACL-
     await expectStatus(u.get(`/api/v1/pages/${page.id}`), 404);
   });
 
-  it('user access expiry blocks the account', async () => {
+  it('user access expiry blocks the account (V16-S14)', async () => {
     const u = await org.user('Срочный');
     await ts.db.query(`update users set access_expires_at = now() - interval '1 second' where id = $1`, [u.id]);
     await expectStatus(u.get('/api/v1/spaces'), 401);
@@ -180,7 +180,7 @@ describe('temporary access and guests (ACL-155, ACL-156, ACL-158, A07, S14, ACL-
 });
 
 describe('moving changes audience (ACL-165, ACL-166, A06, UX23-210)', () => {
-  it('moving a private page to an open space requires confirmation and shows who gains access; undo restores', async () => {
+  it('moving a private page to an open space requires confirmation and shows who gains access; undo restores (ACL-165, ACL-166, V15-A06, UX23-210, E2E-098, R-ACL-035, R-ACL-084, R-ACL-079, R-TREE-028, R-TREE-014, UX-126, UX21-188)', async () => {
     const u = await org.user('Перемещающий');
     const me = await u.get('/api/v1/auth/me');
     const draft = (await u.post('/api/v1/pages', { spaceId: me.personalSpaceId, title: 'Черновик регламента' })).page;
@@ -205,7 +205,7 @@ describe('moving changes audience (ACL-165, ACL-166, A06, UX23-210)', () => {
     await expectStatus(u.post(`/api/v1/pages/${p.id}/move`, { targetSpaceId: org.generalSpaceId, targetParentId: null, confirmAudienceChange: true }), 403);
   });
 
-  it('opening the page to the whole company requires explicit confirmation', async () => {
+  it('opening the page to the whole company requires explicit confirmation (R-ACL-069)', async () => {
     const page = (await org.owner.post('/api/v1/pages', { spaceId: org.personalSpaceId, title: 'Личная' })).page;
     const e = await expectStatus(org.owner.put('/api/v1/grants', { resourceType: 'page', resourceId: page.id, subjectType: 'org', subjectId: null, level: 'view' }), 409);
     expect(e.error.code).toBe('audience_change');
@@ -214,7 +214,7 @@ describe('moving changes audience (ACL-165, ACL-166, A06, UX23-210)', () => {
 });
 
 describe('concurrency and audit of ACL (ACL-169, ACL-172, A13)', () => {
-  it('parallel grant changes do not lose updates (one active grant per subject)', async () => {
+  it('parallel grant changes do not lose updates (one active grant per subject) (ACL-169, ACL-172, E2E-110, R-AUDIT-004)', async () => {
     const page = (await org.owner.post('/api/v1/pages', { spaceId: org.generalSpaceId, title: 'Параллельно' })).page;
     const users = await Promise.all([1, 2, 3, 4, 5].map((i) => org.user('Параллельный' + i)));
     await Promise.all(users.map((u) => org.owner.put('/api/v1/grants', { resourceType: 'page', resourceId: page.id, subjectType: 'user', subjectId: u.id, level: 'edit' })));
@@ -224,20 +224,20 @@ describe('concurrency and audit of ACL (ACL-169, ACL-172, A13)', () => {
     expect(log.events.length).toBe(5);
   });
 
-  it('deleting a group revokes its grants and keeps users and pages', async () => {
+  it('deleting a group revokes its grants and keeps users and pages (V15-A13)', async () => {
     const g = await dept('Временный отдел');
     const sp = (await org.owner.post('/api/v1/spaces', { name: 'Временное', kind: 'department', visibility: 'private', groups: [{ groupId: g, level: 'edit' }] })).space;
     const p = (await org.owner.post('/api/v1/pages', { spaceId: sp.id, title: 'Документ' })).page;
     const u = await org.user('Участник', { groupIds: [g] });
     await u.get(`/api/v1/pages/${p.id}`);
-    await org.owner.del(`/api/v1/admin/groups/${g}`);
+    await org.owner.del(`/api/v1/admin/groups/${g}`, { confirm: true });
     await expectStatus(u.get(`/api/v1/pages/${p.id}`), 404);
     await org.owner.get(`/api/v1/pages/${p.id}`);
     const orphan = await ts.db.query(`select count(*)::int c from grants where subject_type = 'group' and subject_id = $1 and revoked_at is null`, [g]);
     expect(orphan.rows[0].c).toBe(0);
   });
 
-  it('transfer preview shows spaces gained and lost (A16)', async () => {
+  it('transfer preview shows spaces gained and lost (V15-A16, R-ADMIN-006, R-ADMIN-023)', async () => {
     const a = await dept('Отдел А');
     const b = await dept('Отдел Б');
     const spA = (await org.owner.post('/api/v1/spaces', { name: 'А', kind: 'department', visibility: 'private', groups: [{ groupId: a, level: 'edit' }] })).space;
@@ -251,7 +251,7 @@ describe('concurrency and audit of ACL (ACL-169, ACL-172, A13)', () => {
 });
 
 describe('space policy', () => {
-  it('export/download flags are reflected in actions', async () => {
+  it('export/download flags are reflected in actions (R-ACL-031)', async () => {
     const sp = (await org.owner.post('/api/v1/spaces', { name: 'Без экспорта', kind: 'project', visibility: 'private', policy: { allowExport: false } })).space;
     const p = (await org.owner.post('/api/v1/pages', { spaceId: sp.id, title: 'X' })).page;
     const acc = await org.owner.get(`/api/v1/pages/${p.id}`);

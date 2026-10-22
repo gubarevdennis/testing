@@ -311,7 +311,7 @@ export default function SearchPage() {
             <X size={16} />
           </button>
         )}
-        <button type="button" className={'icon-btn' + (showFilters ? ' active' : '')} aria-pressed={showFilters} aria-label="Фильтры" aria-controls="search-filters" onClick={() => setShowFilters((v) => !v)}>
+        <button type="button" className={'icon-btn' + (showFilters ? ' active' : '')} aria-label="Фильтры" aria-expanded={showFilters} aria-controls={showFilters ? "search-filters" : undefined} onClick={() => setShowFilters((v) => !v)}>
           <SlidersHorizontal size={16} />
           {filtersActive && <span className="search-dot" aria-hidden />}
         </button>
@@ -512,6 +512,7 @@ export default function SearchPage() {
                       </span>
                     )}
                     {r.matchedIn.includes('properties') && <span className="badge">В свойствах</span>}
+                    {r.matchedIn.includes('comment') && <span className="badge">В комментариях</span>}
                     {r.matchedIn.includes('fuzzy') && <span className="badge amber">Похожее название</span>}
                     {r.publishedVersion && <span className="badge green">Опубликованная версия</span>}
                     {r.status && r.status !== 'published' && <span className="badge">{STATUS_LABEL[r.status] ?? r.status}</span>}

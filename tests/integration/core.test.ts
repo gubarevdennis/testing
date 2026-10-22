@@ -29,7 +29,7 @@ describe('auth', () => {
     await expectStatus(new Api(ts.url).post('/api/v1/setup', { orgName: 'X', ownerEmail: 'x@x.test', ownerName: 'X', password: 'Password-123456' }), 409);
   });
 
-  it('suspended user loses access immediately (ACL-157)', async () => {
+  it('suspended user loses access immediately (ACL-157, R-AUTH-002)', async () => {
     const u = await org.user('Suspend Me');
     await u.get('/api/v1/spaces');
     await org.owner.post(`/api/v1/admin/users/${u.id}/status`, { status: 'suspended', reason: 'test' });
@@ -41,7 +41,7 @@ describe('auth', () => {
 });
 
 describe('personal space (UX23-199, ACL-151)', () => {
-  it('each employee gets a private personal space invisible to others and to admins', async () => {
+  it('each employee gets a private personal space invisible to others and to admins (UX23-199, ACL-151, R-SPACE-004)', async () => {
     const a = await org.user('Alice');
     const b = await org.user('Bob');
     const meA = await a.get('/api/v1/auth/me');
@@ -55,7 +55,7 @@ describe('personal space (UX23-199, ACL-151)', () => {
 });
 
 describe('page tree', () => {
-  it('creates nested pages, idempotent by requestId (UX23-203)', async () => {
+  it('creates nested pages, idempotent by requestId (UX23-203, R-COLLAB-028)', async () => {
     const parent = await org.owner.post('/api/v1/pages', { spaceId: org.generalSpaceId, title: 'Раздел' });
     const reqId = 'req-' + Date.now();
     const [c1, c2] = await Promise.all([
@@ -70,7 +70,7 @@ describe('page tree', () => {
     expect(root.nodes.find((n: any) => n.id === parent.page.id).hasChildren).toBe(true);
   });
 
-  it('prevents moving a page into its own descendant (E2E-099, UX23-208)', async () => {
+  it('prevents moving a page into its own descendant (E2E-099, UX23-208, UX21-189)', async () => {
     const a = await org.owner.post('/api/v1/pages', { spaceId: org.generalSpaceId, title: 'A' });
     const b = await org.owner.post('/api/v1/pages', { spaceId: org.generalSpaceId, parentId: a.page.id, title: 'B' });
     const c = await org.owner.post('/api/v1/pages', { spaceId: org.generalSpaceId, parentId: b.page.id, title: 'C' });
@@ -79,7 +79,7 @@ describe('page tree', () => {
     await expectStatus(org.owner.post(`/api/v1/pages/${a.page.id}/move`, { targetParentId: a.page.id }), 409);
   });
 
-  it('concurrent opposite moves never create a cycle (COLLAB-194)', async () => {
+  it('concurrent opposite moves never create a cycle (COLLAB-194, UX23-218, R-TREE-022)', async () => {
     const x = await org.owner.post('/api/v1/pages', { spaceId: org.generalSpaceId, title: 'X' });
     const y = await org.owner.post('/api/v1/pages', { spaceId: org.generalSpaceId, title: 'Y' });
     const results = await Promise.allSettled([
@@ -91,7 +91,7 @@ describe('page tree', () => {
     expect(cyc.rows[0].c).toBe(0);
   });
 
-  it('moves keep ids, ancestors closure is consistent, order respected', async () => {
+  it('moves keep ids, ancestors closure is consistent, order respected, undo restores (R-TREE-004, D-06, SC-01, E2E-097, R-TREE-017, UX21-187, E216, R-HISTORY-016)', async () => {
     const p1 = await org.owner.post('/api/v1/pages', { spaceId: org.generalSpaceId, title: 'P1' });
     const p2 = await org.owner.post('/api/v1/pages', { spaceId: org.generalSpaceId, title: 'P2' });
     const k1 = await org.owner.post('/api/v1/pages', { spaceId: org.generalSpaceId, parentId: p1.page.id, title: 'K1' });
@@ -111,7 +111,7 @@ describe('page tree', () => {
     expect(kids).toEqual(['K2', 'K1']);
   });
 
-  it('trash and restore a branch with children (D-05, SC-29, V17-F08)', async () => {
+  it('trash and restore a branch with children (D-05, SC-29, V17-F08, E-05, R-HISTORY-003, R-HISTORY-034, UX13-14)', async () => {
     const r = await org.owner.post('/api/v1/pages', { spaceId: org.generalSpaceId, title: 'Ветка' });
     const c = await org.owner.post('/api/v1/pages', { spaceId: org.generalSpaceId, parentId: r.page.id, title: 'Лист' });
     const del = await org.owner.del(`/api/v1/pages/${r.page.id}`);
@@ -125,7 +125,7 @@ describe('page tree', () => {
     expect(content.mode).toBe('live');
   });
 
-  it('duplicates a branch with new ids', async () => {
+  it('duplicates a branch with new ids (R-PAGE-021)', async () => {
     const r = await org.owner.post('/api/v1/pages', { spaceId: org.generalSpaceId, title: 'Оригинал' });
     await org.owner.post('/api/v1/pages', { spaceId: org.generalSpaceId, parentId: r.page.id, title: 'Дочерняя' });
     const d = await org.owner.post(`/api/v1/pages/${r.page.id}/duplicate`, { includeChildren: true });
@@ -137,7 +137,7 @@ describe('page tree', () => {
 });
 
 describe('audit', () => {
-  it('is hash-chained and append-only', async () => {
+  it('is hash-chained and append-only (R-AUDIT-005)', async () => {
     const v = await org.owner.get('/api/v1/audit/verify');
     expect(v.ok).toBe(true);
     expect(v.checked).toBeGreaterThan(3);

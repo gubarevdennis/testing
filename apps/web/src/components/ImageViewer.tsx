@@ -38,8 +38,25 @@ interface Tiles {
   format: string;
 }
 
-const MIN_SCALE = 0.02;
-const MAX_SCALE = 16;
+/** Zoom limits (R-MEDIA-021): 10–800 %; very large images may be fitted below 10 %. */
+export const MIN_SCALE = 0.1;
+export const MAX_SCALE = 8;
+
+export interface ViewState {
+  scale: number;
+  x: number;
+  y: number;
+}
+
+/**
+ * Keeps the image inside the viewer (R-MEDIA-018): an image smaller than the viewport is centred on that axis,
+ * a larger one cannot be dragged away from the edges. Rotated images are not constrained.
+ */
+export function clampView(t: ViewState, nat: { w: number; h: number } | null, stage: { w: number; h: number }, rotation = 0): ViewState {
+  if (!nat || rotation % 360 !== 0 || !stage.w || !stage.h) return t;
+  const axis = (pos: number, size: number, view: number) => (size <= view ? (view - size) / 2 : Math.min(0, Math.max(view - size, pos)));
+  return { scale: t.scale, x: axis(t.x, nat.w * t.scale, stage.w), y: axis(t.y, nat.h * t.scale, stage.h) };
+}
 
 /**
  * Full-screen image viewer: wheel/pinch zoom anchored at the pointer, drag to pan, double click/tap to zoom,
@@ -56,8 +73,19 @@ export function ImageViewer() {
 function ViewerInner({ img, index, total }: { img: ViewerImage; index: number; total: number }) {
   const stage = useRef<HTMLDivElement>(null);
   const [nat, setNat] = useState<{ w: number; h: number } | null>(img.naturalWidth && img.naturalHeight ? { w: img.naturalWidth, h: img.naturalHeight } : null);
-  const [t, setT] = useState({ scale: 1, x: 0, y: 0 });
+  const [t, setRawT] = useState<ViewState>({ scale: 1, x: 0, y: 0 });
+  const minScale = useRef(MIN_SCALE);
+  const openedAt = useRef(Date.now());
+  const geom = useRef<{ nat: { w: number; h: number } | null; rotation: number }>({ nat: null, rotation: 0 });
+  const setT = useCallback((u: ViewState | ((p: ViewState) => ViewState)) => {
+    setRawT((p) => {
+      const next = typeof u === 'function' ? u(p) : u;
+      const el = stage.current;
+      return clampView(next, geom.current.nat, { w: el?.clientWidth ?? 0, h: el?.clientHeight ?? 0 }, geom.current.rotation);
+    });
+  }, []);
   const [rotation, setRotation] = useState(0);
+  geom.current = { nat, rotation };
   const [fitScale, setFitScale] = useState(1);
   const [tiles, setTiles] = useState<Tiles | null>(null);
   const [hiRes, setHiRes] = useState(false);
@@ -92,8 +120,9 @@ function ViewerInner({ img, index, total }: { img: ViewerImage; index: number; t
     const pad = window.innerWidth < 600 ? 8 : 48;
     const s = Math.min((el.clientWidth - pad * 2) / w, (el.clientHeight - pad * 2) / h, 1);
     setFitScale(s);
+    minScale.current = Math.min(MIN_SCALE, s);
     setT({ scale: s, x: (el.clientWidth - nat.w * s) / 2, y: (el.clientHeight - nat.h * s) / 2 });
-  }, [nat, rotation]);
+  }, [nat, rotation, setT]);
   useLayoutEffect(fit, [fit]);
   useEffect(() => {
     window.addEventListener('resize', fit);
@@ -102,11 +131,11 @@ function ViewerInner({ img, index, total }: { img: ViewerImage; index: number; t
 
   const zoomAt = useCallback((factor: number, cx: number, cy: number) => {
     setT((p) => {
-      const scale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, p.scale * factor));
+      const scale = Math.max(minScale.current, Math.min(MAX_SCALE, p.scale * factor));
       const k = scale / p.scale;
       return { scale, x: cx - (cx - p.x) * k, y: cy - (cy - p.y) * k };
     });
-  }, []);
+  }, [setT]);
   const center = () => ({ x: (stage.current?.clientWidth ?? 0) / 2, y: (stage.current?.clientHeight ?? 0) / 2 });
   const setScaleAt = (scale: number, cx: number, cy: number) => setT((p) => ({ scale, x: cx - ((cx - p.x) * scale) / p.scale, y: cy - ((cy - p.y) * scale) / p.scale }));
 
@@ -173,7 +202,7 @@ function ViewerInner({ img, index, total }: { img: ViewerImage; index: number; t
       const [a, b] = [...pointers.current.values()];
       const p = pinch.current;
       const r = stage.current!.getBoundingClientRect();
-      const scale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, (p.scale * Math.hypot(a.x - b.x, a.y - b.y)) / p.dist));
+      const scale = Math.max(minScale.current, Math.min(MAX_SCALE, (p.scale * Math.hypot(a.x - b.x, a.y - b.y)) / p.dist));
       const cx = (a.x + b.x) / 2 - r.left;
       const cy = (a.y + b.y) / 2 - r.top;
       const k = scale / p.scale;
@@ -192,7 +221,8 @@ function ViewerInner({ img, index, total }: { img: ViewerImage; index: number; t
     drag.current = null;
     if (d && !d.moved) {
       const r = stage.current!.getBoundingClientRect();
-      if (e.target === stage.current && e.pointerType === 'mouse') return close(); // click on the backdrop
+      // click on the backdrop closes (not the second click of the double click that opened the viewer)
+      if (e.target === stage.current && e.pointerType === 'mouse') return Date.now() - openedAt.current > 450 ? close() : undefined;
       const now = Date.now();
       if (now - lastTap.current < 320) {
         lastTap.current = 0;

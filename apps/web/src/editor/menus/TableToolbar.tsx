@@ -12,7 +12,7 @@ import { loadMarkdown } from '../../lib/markdown';
 import { Tooltip } from '../../components/ui/Tooltip';
 import { Menu } from '../../components/ui/Menu';
 import { HIGHLIGHTS } from '../palette';
-import { toast } from '../../components/ui/Toast';
+import { copyWithFeedback, fragmentHtml } from '../clipboard/copy';
 
 const inTable = (e: Editor) => e.isActive('table');
 const TABLE_OPTIONS = { placement: 'top-start' as const, offset: 6, flip: true, shift: { padding: 8 } };
@@ -34,12 +34,16 @@ export function TableToolbar({ editor }: { editor: Editor }) {
     </Tooltip>
   );
   const copy = async (kind: 'tsv' | 'md') => {
-    const { docToMarkdown } = await loadMarkdown();
     const t = tableNode(editor);
     if (!t) return;
     const json = t.node.toJSON();
-    const text = kind === 'tsv' ? rowsToTsv(tableToRows(json)) : docToMarkdown({ type: 'doc', content: [json] } as any, { markers: false }).markdown;
-    navigator.clipboard.writeText(text).then(() => toast.success(kind === 'tsv' ? 'Таблица скопирована — вставьте в Excel' : 'Скопировано в формате Markdown'));
+    if (kind === 'tsv') {
+      // TSV for spreadsheets + HTML table for Word/mail (R-CLIPBOARD-006, R-CLIPBOARD-017)
+      await copyWithFeedback({ text: rowsToTsv(tableToRows(json)), html: fragmentHtml(editor, { type: 'doc', content: [json] }) }, 'Таблица скопирована — вставьте в Excel или Word');
+      return;
+    }
+    const { docToMarkdown } = await loadMarkdown();
+    await copyWithFeedback({ text: docToMarkdown({ type: 'doc', content: [json] } as any, { markers: false }).markdown }, 'Скопировано в формате Markdown');
   };
   const multi = st.multi;
   return (

@@ -1,0 +1,20 @@
+# Daily logical backup (scripts/backup/backup.sh). Triggered by kb-backup.timer.
+# /etc/kb/backup.env holds BACKUP_* settings and DATABASE_URL of the backup-operator role (not the app role).
+[Unit]
+Description=Knowledge base backup
+After=network-online.target postgresql.service
+
+[Service]
+Type=oneshot
+User=kb-backup
+Group=kb
+EnvironmentFile=/etc/kb/backup.env
+Environment=BACKUP_DIR=/srv/backups/kb STORAGE_ROOT=/var/lib/kb/objects BACKUP_METRICS_FILE=/var/lib/node_exporter/textfile/kb_backup.prom
+ExecStart=/opt/kb/scripts/backup/backup.sh
+# Weekly restore verification into a temporary database (needs VERIFY_ADMIN_URL with CREATEDB):
+ExecStartPost=/bin/sh -c '[ "$(date +%%u)" = 7 ] && VERIFY_METRICS_FILE=/var/lib/node_exporter/textfile/kb_verify.prom /opt/kb/scripts/backup/verify-backup.sh --latest /srv/backups/kb || true'
+Nice=10
+IOSchedulingClass=idle
+ProtectSystem=strict
+ReadWritePaths=/srv/backups/kb /var/lib/node_exporter/textfile /tmp
+ReadOnlyPaths=/var/lib/kb

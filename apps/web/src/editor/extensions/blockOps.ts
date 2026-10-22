@@ -86,6 +86,28 @@ export function selectBlock(editor: Editor, at?: number): boolean {
   return true;
 }
 
+function exitDocumentEnd(editor: Editor, onlyAtBottomEdge: boolean): boolean {
+  const { state, view } = editor;
+  const last = state.doc.lastChild;
+  if (!editor.isEditable || !last || (last.type.name === 'paragraph' && last.childCount === 0)) {
+    if (!onlyAtBottomEdge && last) {
+      editor.commands.setTextSelection(state.doc.content.size - 1);
+      return true;
+    }
+    return false;
+  }
+  if (last.isTextblock) return false;
+  const lastStart = state.doc.content.size - last.nodeSize;
+  if (state.selection.from < lastStart) {
+    if (onlyAtBottomEdge) return false;
+  } else if (onlyAtBottomEdge && !view.endOfTextblock('down')) return false;
+  const end = state.doc.content.size;
+  const tr = state.tr.insert(end, state.schema.nodes.paragraph.create());
+  tr.setSelection(TextSelection.create(tr.doc, end + 1));
+  view.dispatch(tr.scrollIntoView());
+  return true;
+}
+
 /**
  * Keyboard shortcuts and Markdown shortcuts beyond StarterKit:
  *  "> " → toggle block, "\" " → quote (as agreed in spec v2.0), Mod+D duplicate, Alt+Shift+↑/↓ move block, Esc select block.
@@ -102,6 +124,9 @@ export const BlockOps = Extension.create({
         if (this.editor.state.selection instanceof NodeSelection) return false;
         return selectBlock(this.editor);
       },
+      // Leaving the last block of the document (table, image, callout…) by keyboard creates a paragraph below it.
+      ArrowDown: () => exitDocumentEnd(this.editor, true),
+      'Mod-End': () => exitDocumentEnd(this.editor, false),
       'Mod-k': () => {
         window.dispatchEvent(new CustomEvent('kb:link-open'));
         return true;

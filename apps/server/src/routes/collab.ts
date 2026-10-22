@@ -62,8 +62,9 @@ export async function collabRoutes(app: FastifyInstance, s: Services) {
         }
         if (e.type === 'acl-changed' && e.orgId === user.orgId) {
           if (sessionId) {
-            const st = (await s.db.query(`select s.revoked_at, u.status from sessions s join users u on u.id = s.user_id where s.id = $1`, [sessionId])).rows[0];
-            if (!st || st.revoked_at || st.status !== 'active') {
+            const st = (await s.db.query(`select s.revoked_at, s.expires_at, u.status, u.access_expires_at from sessions s join users u on u.id = s.user_id where s.id = $1`, [sessionId])).rows[0];
+            const expired = (d: Date | null) => !!d && new Date(d) <= new Date();
+            if (!st || st.revoked_at || st.status !== 'active' || expired(st.expires_at) || expired(st.access_expires_at)) {
               send({ type: 'session-ended', reason: 'revoked' });
               socket.close(CLOSE.ACCESS_REVOKED, 'revoked');
               return;
@@ -81,6 +82,11 @@ export async function collabRoutes(app: FastifyInstance, s: Services) {
         if (e.type === 'page-changed' && e.orgId === user.orgId) {
           const acc = await pageAccess(s.db, user, e.pageId);
           if (acc?.actions.view) send({ type: 'page-changed', pageId: e.pageId, fields: e.fields });
+          return;
+        }
+        if (e.type === 'page-restored' && e.orgId === user.orgId && e.actorId !== user.id) {
+          const acc = await pageAccess(s.db, user, e.pageId);
+          if (acc?.actions.view) send({ type: 'page-restored', pageId: e.pageId, actorName: e.actorName, label: e.label, preRestoreRevisionId: acc.actions.view_history ? e.preRestoreRevisionId : null, preRestoreNumber: e.preRestoreNumber });
           return;
         }
         if (e.type === 'comments-changed') {

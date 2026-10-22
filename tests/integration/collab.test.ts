@@ -25,7 +25,7 @@ async function serverText(pageId: string) {
 }
 
 describe('durability contract', () => {
-  it('"saved" is reported only after the update is committed to the journal (E-13, D-10)', async () => {
+  it('"saved" is reported only after the update is committed to the journal (E-13, D-10, R-COLLAB-003, R-COLLAB-014, R-COLLAB-016, R-COLLAB-025, R-COLLAB-029, R-COLLAB-043)', async () => {
     const pageId = await newPage();
     const c = await openClient(ts.url, org.owner, pageId);
     const before = (await ts.db.query('select count(*)::int c from doc_updates where page_id = $1', [pageId])).rows[0].c;
@@ -39,7 +39,7 @@ describe('durability contract', () => {
     c.close();
   });
 
-  it('re-delivered operation is acknowledged once and not duplicated (D-02, E-03, UX23-214)', async () => {
+  it('re-delivered operation is acknowledged once and not duplicated (D-02, E-03, UX23-214, R-COLLAB-019, R-COLLAB-023, R-COLLAB-044, R-OFFLINE-009)', async () => {
     const pageId = await newPage();
     const doc = new Y.Doc();
     const ws = new WebSocket(ts.url.replace('http', 'ws') + '/api/v1/collab/' + pageId, { headers: { cookie: org.owner.cookieHeader() } });
@@ -70,7 +70,7 @@ describe('durability contract', () => {
 });
 
 describe('concurrent editing', () => {
-  it('two editors typing in the same paragraph converge without loss (SC-25, AT-74, COLLAB-192, UX23-217)', async () => {
+  it('two editors typing in the same paragraph converge without loss (SC-25, AT-74, COLLAB-192, UX23-217, OPS-005, R-COLLAB-001, UX13-08)', async () => {
     const pageId = await newPage();
     const editor = await org.user('Соавтор');
     await org.owner.put('/api/v1/grants', { resourceType: 'page', resourceId: pageId, subjectType: 'user', subjectId: editor.id, level: 'edit' });
@@ -111,7 +111,7 @@ describe('concurrent editing', () => {
 });
 
 describe('offline and reconnection', () => {
-  it('offline edits are kept locally and synchronised after reconnect, concurrent with others (SC-26, AT-57, AT-76, UX23-215)', async () => {
+  it('offline edits are kept locally and synchronised after reconnect, concurrent with others (SC-26, AT-57, AT-76, UX23-215, R-COLLAB-007, COLLAB-195, R-OFFLINE-008, R-OFFLINE-011, UX23-213)', async () => {
     const pageId = await newPage();
     const a = await openClient(ts.url, org.owner, pageId);
     const b = await openClient(ts.url, org.owner, pageId);
@@ -133,7 +133,7 @@ describe('offline and reconnection', () => {
     b.close();
   });
 
-  it('unacknowledged changes survive a client restart via the pending store (AT-58, UX23-219, E-02)', async () => {
+  it('unacknowledged changes survive a client restart via the pending store (AT-58, UX23-219, E-02, R-OFFLINE-002, V18-A20, V17-F03)', async () => {
     const pageId = await newPage();
     const persisted = new Map<string, { update: Uint8Array; ts: number }>();
     const store = {
@@ -173,7 +173,7 @@ describe('offline and reconnection', () => {
     s2.p.destroy();
   });
 
-  it('server restart during a session loses no acknowledged change and resends the rest (OPS-009, V17-F04)', async () => {
+  it('server restart during a session loses no acknowledged change and resends the rest (OPS-009, V17-F04, R-COLLAB-047, R-COLLAB-050, UX13-15)', async () => {
     const dbName = new URL(ts.dbUrl).pathname.slice(1);
     const second = await startServer({}, { dbName });
     const pageId = await newPage();
@@ -196,7 +196,7 @@ describe('offline and reconnection', () => {
 });
 
 describe('permissions in live sessions', () => {
-  it('read-only user cannot write; revoking edit switches session to read-only; revoking view closes it (AT-78, COLLAB-196, E2E-105, ACL-168)', async () => {
+  it('read-only user cannot write; revoking edit switches session to read-only; revoking view closes it (AT-78, COLLAB-196, E2E-105, ACL-168, SC-32, OPS-008, V15-A08, R-ACL-083)', async () => {
     const pageId = await newPage();
     const u = await org.user('Живой редактор');
     const grant = (await org.owner.put('/api/v1/grants', { resourceType: 'page', resourceId: pageId, subjectType: 'user', subjectId: u.id, level: 'edit' })).grant;
@@ -219,7 +219,7 @@ describe('permissions in live sessions', () => {
     c.close();
   });
 
-  it('suspending a user closes their live sessions (ACL-157)', async () => {
+  it('suspending a user closes their live sessions (ACL-157, R-AUTH-002)', async () => {
     const pageId = await newPage();
     const u = await org.user('Будет приостановлен');
     await org.owner.put('/api/v1/grants', { resourceType: 'page', resourceId: pageId, subjectType: 'user', subjectId: u.id, level: 'edit' });
@@ -239,7 +239,7 @@ describe('permissions in live sessions', () => {
 });
 
 describe('server-side validation', () => {
-  it('rejects schema-invalid updates and keeps the document valid', async () => {
+  it('rejects schema-invalid updates and keeps the document valid (R-COLLAB-020, R-COLLAB-031)', async () => {
     const pageId = await newPage();
     const c = await openClient(ts.url, org.owner, pageId);
     c.insert(0, 0, 'валидно');
@@ -255,7 +255,7 @@ describe('server-side validation', () => {
 });
 
 describe('history: revisions, restore, journal', () => {
-  it('restoring a revision creates a new revision and keeps concurrent edits (HIST-189, COLLAB-197, SC-28, S11)', async () => {
+  it('restoring a revision creates a new revision and keeps concurrent edits (HIST-189, COLLAB-197, SC-28, S11, R-HISTORY-004, R-HISTORY-007, UX21-201, OPS-010, R-HISTORY-034)', async () => {
     const pageId = await newPage('История');
     const a = await openClient(ts.url, org.owner, pageId);
     a.insert(0, 0, 'Версия один');
@@ -284,7 +284,7 @@ describe('history: revisions, restore, journal', () => {
     b.close();
   });
 
-  it('restores a single deleted block from a revision (HIST block restore)', async () => {
+  it('restores a single deleted block from a revision (R-HISTORY-003, R-HISTORY-013)', async () => {
     const pageId = await newPage();
     const a = await openClient(ts.url, org.owner, pageId);
     a.insert(0, 0, 'остаётся');
@@ -303,7 +303,7 @@ describe('history: revisions, restore, journal', () => {
     a.close();
   });
 
-  it('records a journal of edit operations grouped per author (HIST-187)', async () => {
+  it('records a journal of edit operations grouped per author (HIST-187, R-HISTORY-023, R-HISTORY-024)', async () => {
     const pageId = await newPage();
     const a = await openClient(ts.url, org.owner, pageId);
     for (const ch of 'журнал') a.insert(0, 0, ch);
@@ -317,7 +317,7 @@ describe('history: revisions, restore, journal', () => {
     a.close();
   });
 
-  it('title is edited collaboratively and synced to the tree', async () => {
+  it('title is edited collaboratively and synced to the tree (R-PAGE-019)', async () => {
     const pageId = await newPage('Старое название');
     const a = await openClient(ts.url, org.owner, pageId);
     expect(a.doc.getText('title').toString()).toBe('Старое название');
@@ -333,7 +333,7 @@ describe('history: revisions, restore, journal', () => {
   });
 });
 
-describe('randomised convergence (COLLAB-198, property-based)', () => {
+describe('randomised convergence (COLLAB-198, R-COLLAB-008, R-COLLAB-030, R-COLLAB-044, property-based)', () => {
   it('random concurrent edits with random disconnects converge to the server state', async () => {
     await fc.assert(
       fc.asyncProperty(

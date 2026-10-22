@@ -61,7 +61,7 @@ export function GroupsSection() {
     });
     if (!ok) return;
     try {
-      await del(`/api/v1/admin/groups/${g.id}`);
+      await del(`/api/v1/admin/groups/${g.id}`, { confirm: true });
       toast.success('Удалено');
       if (selected === g.id) setSelected(null);
       refresh();

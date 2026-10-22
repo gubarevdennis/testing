@@ -10,7 +10,7 @@ import { inspectFile, registerBlob, makeImageDerivatives, sanitizeSvgFile, safeF
 import { docxToDoc } from '../convert/docx-import.js';
 import { htmlToDoc, htmlToNodes } from '../convert/html.js';
 import { parseCsv, parseXlsx, sheetPreview, normalizeDate, normalizeNumber, inferTypes, type Sheet } from '../convert/tabular.js';
-import { createPage } from './pages.js';
+import { createPage, assertDepth } from './pages.js';
 import { requirePage, requireSpace, type AuthUser } from '../acl/engine.js';
 import { audit, type AuditActor } from './audit.js';
 import { unprocessable } from '../lib/errors.js';
@@ -371,6 +371,22 @@ function replaceRefs(doc: PMNode, pageIds: Map<string, string>, assetIds: Map<st
   return d;
 }
 
+/** Height of the planned page forest (0 when every page is a root of the import). */
+function planHeight(pages: PlannedPage[]): number {
+  const byId = new Map(pages.map((p) => [p.tempId, p]));
+  let max = 0;
+  for (const p of pages) {
+    let d = 0;
+    let cur = p.parentTempId ? byId.get(p.parentTempId) : undefined;
+    while (cur && d <= pages.length) {
+      d++;
+      cur = cur.parentTempId ? byId.get(cur.parentTempId) : undefined;
+    }
+    max = Math.max(max, d);
+  }
+  return max;
+}
+
 /**
  * Publishes a plan atomically: every page, attachment and link is created in ONE transaction.
  * If anything fails, nothing is visible (no half-imported pages).
@@ -378,6 +394,8 @@ function replaceRefs(doc: PMNode, pageIds: Map<string, string>, assetIds: Map<st
 export async function commitDocuments(s: Services, q: Tx, user: AuthUser, actor: AuditActor, plan: ImportPlan, target: ImportTarget, jobId: string) {
   if (target.parentId) await requirePage(q, user, target.parentId, 'create');
   else await requireSpace(q, user, target.spaceId, 'create');
+  // Nesting limit is checked for the whole plan up front: a clear error instead of failing half-way.
+  await assertDepth(q, target.parentId ?? null, planHeight(plan.pages));
   const pageIds = new Map(plan.pages.map((p) => [p.tempId, randomUUID()]));
   const created: string[] = [];
   const ordered = topo(plan.pages);

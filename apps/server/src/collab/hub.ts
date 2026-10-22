@@ -19,6 +19,8 @@ const FLUSH_MAX_MS = 10_000;
 const COMPACT_EVERY = 300;
 const IDLE_UNLOAD_MS = 60_000;
 const MAX_UPDATE_BYTES = 10 * 1024 * 1024;
+/** How often time-based access changes (grant / membership / account expiry, delayed grant start) are detected. */
+const EXPIRY_CHECK_MS = Number(process.env.KB_ACL_EXPIRY_CHECK_MS ?? 5_000);
 
 export interface Conn {
   id: string;
@@ -50,6 +52,8 @@ interface LiveDoc {
   changedSinceRevision: boolean;
   idleTimer: NodeJS.Timeout | null;
   awarenessClients: Map<string, Set<number>>;
+  /** Memory may hold changes the database does not have: never serve, flush or persist from it again. */
+  evicted: boolean;
 }
 
 /**
@@ -63,6 +67,8 @@ export class CollabHub {
   private heartbeat: NodeJS.Timeout;
   private unsub: () => void;
   private aclRecheck = new Map<string, NodeJS.Timeout>();
+  private expiryTimer: NodeJS.Timeout;
+  private lastExpiryCheck = new Date();
 
   constructor(
     private pool: pg.Pool,
@@ -71,11 +77,18 @@ export class CollabHub {
     private metrics: Metrics,
   ) {
     this.heartbeat = setInterval(() => this.ping(), 30_000);
+    this.expiryTimer = setInterval(() => void this.checkExpirations().catch((err) => this.log.warn({ err: (err as Error).message }, 'access expiry check failed')), EXPIRY_CHECK_MS);
+    this.expiryTimer.unref?.();
     this.unsub = bus.on((e) => {
       if (e.type === 'acl-changed') this.scheduleAclRecheck(e.orgId);
       else if (e.type === 'user-revoked') this.closeUser(e.userId, CLOSE.ACCESS_REVOKED, e.reason);
       else if (e.type === 'doc-update' && e.origin !== bus.instanceId) void this.catchUp(e.pageId);
       else if (e.type === 'tree-changed' && e.pageIds) for (const id of e.pageIds) this.closeIfDeleted(id);
+      else if (e.type === 'bus-resync') {
+        // Notifications were lost while the bus was disconnected: catch up every live document and re-check access.
+        for (const id of [...this.docs.keys()]) void this.catchUp(id).catch((err) => this.log.error({ err }, 'catch-up after resync failed'));
+        void this.recheckAccess();
+      }
     });
   }
 
@@ -125,6 +138,7 @@ export class CollabHub {
         changedSinceRevision: false,
         idleTimer: null,
         awarenessClients: new Map(),
+        evicted: false,
       };
       live.awareness.setLocalState(null);
       this.docs.set(pageId, live);
@@ -292,6 +306,7 @@ export class CollabHub {
 
   private async acceptUpdate(live: LiveDoc, conn: Conn, opId: string, update: Uint8Array) {
     const nack = (code: string, message: string) => this.send(conn.ws, { type: MSG.NACK, opId, code, message });
+    if (live.evicted) return; // connection is being closed; the client re-sends after reconnecting
     if (!conn.canEdit) return nack('forbidden', 'Нет права на редактирование');
     if (!opId || opId.length > 100) return nack('bad_request', 'Некорректный идентификатор операции');
     if (update.byteLength > MAX_UPDATE_BYTES) return nack('too_large', 'Слишком большое изменение');
@@ -335,9 +350,9 @@ export class CollabHub {
       res = await this.persist(live, update, conn.user.id, conn.clientId, opId);
     } catch (err) {
       this.log.error({ err, pageId: live.pageId }, 'failed to persist update');
-      // Not durable: roll the in-memory state back to what the database has and tell the client to retry.
-      await this.reload(live);
       this.metrics.collabPersistFailures.inc();
+      // Not durable: roll the in-memory state back to what the database has and tell the client to retry.
+      if (!(await this.reloadOrEvict(live))) return;
       return nack('persist_failed', 'Сервер не смог сохранить изменение — оно остаётся на устройстве и будет отправлено повторно');
     }
     if (res.seq > live.lastSeq + 1 && !res.duplicate) {
@@ -354,6 +369,30 @@ export class CollabHub {
     this.bus.emit({ type: 'doc-update', pageId: live.pageId, seq: res.seq, origin: this.bus.instanceId });
     this.metrics.collabUpdates.inc();
     this.markDirty(live, conn.user.id);
+  }
+
+  /**
+   * After a failed commit the in-memory document contains a change the database does not have. If it cannot
+   * be rebuilt from the database either (database unreachable), the document is evicted: its editors are
+   * disconnected and resynchronise against the durable state on reconnect, re-sending their unacknowledged
+   * operations. Serving the diverged memory instead would let clients believe the change is saved.
+   */
+  private async reloadOrEvict(live: LiveDoc): Promise<boolean> {
+    try {
+      await this.reload(live);
+      return true;
+    } catch (err) {
+      this.log.error({ err, pageId: live.pageId }, 'cannot rebuild document after failed persist — evicting it from memory');
+      live.evicted = true;
+      if (this.docs.get(live.pageId) === live) this.docs.delete(live.pageId);
+      this.metrics.collabDocs.set(this.docs.size);
+      if (live.flushTimer) clearTimeout(live.flushTimer);
+      if (live.idleTimer) clearTimeout(live.idleTimer);
+      live.flushTimer = null;
+      live.idleTimer = null;
+      for (const c of live.conns) c.ws.close(CLOSE.SERVER_RESTART, 'resync');
+      return false;
+    }
   }
 
   /** Rebuilds the in-memory doc from the database (after a rejected/failed update). */
@@ -393,7 +432,7 @@ export class CollabHub {
           const res = await this.persist(live, update, userId, null, opId);
           seq = res.seq;
         } catch (err) {
-          await this.reload(live);
+          await this.reloadOrEvict(live);
           throw err;
         }
         live.lastSeq = Math.max(live.lastSeq, seq);
@@ -437,6 +476,7 @@ export class CollabHub {
 
   /** Materialises JSON/text for search & API, records the edit journal, creates auto revisions and compacts. */
   private async flushNow(live: LiveDoc, opts: { revision: boolean; kind?: 'auto' | 'manual' | 'pre-restore'; label?: string; userId?: string | null }) {
+    if (live.evicted) return null; // never materialise state the journal does not have
     if (live.flushTimer) {
       clearTimeout(live.flushTimer);
       live.flushTimer = null;
@@ -543,6 +583,27 @@ export class CollabHub {
     );
   }
 
+  /**
+   * Expiry of a temporary grant, group membership or account produces no event, yet it changes access.
+   * Finds organisations where such a moment passed since the previous check and signals an ACL change for them,
+   * so open editors are downgraded/closed and event streams refreshed without any client activity.
+   */
+  async checkExpirations(): Promise<string[]> {
+    if (this.stopping) return [];
+    const since = this.lastExpiryCheck;
+    const now = new Date();
+    const r = await this.pool.query(
+      `select org_id from grants where (expires_at > $1 and expires_at <= $2) or (starts_at > $1 and starts_at <= $2)
+       union select g.org_id from group_members m join groups g on g.id = m.group_id where m.expires_at > $1 and m.expires_at <= $2
+       union select org_id from users where access_expires_at > $1 and access_expires_at <= $2`,
+      [since, now],
+    );
+    this.lastExpiryCheck = now;
+    const orgs = r.rows.map((x) => x.org_id as string);
+    for (const orgId of orgs) this.bus.emit({ type: 'acl-changed', orgId });
+    return orgs;
+  }
+
   /** Re-validates every open connection of the org after an ACL / membership / status change. */
   async recheckAccess(orgId?: string) {
     for (const live of this.docs.values()) {
@@ -627,6 +688,7 @@ export class CollabHub {
     if (this.stopping) return;
     this.stopping = true;
     clearInterval(this.heartbeat);
+    clearInterval(this.expiryTimer);
     this.unsub();
     for (const t of this.aclRecheck.values()) clearTimeout(t);
     for (const live of [...this.docs.values()]) {

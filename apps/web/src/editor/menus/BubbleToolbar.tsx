@@ -11,6 +11,17 @@ import { Tooltip } from '../../components/ui/Tooltip';
 import { Menu } from '../../components/ui/Menu';
 import { TEXT_COLORS, HIGHLIGHTS } from '../palette';
 import { FONT_SIZES, FONT_FAMILIES, sanitizeHref } from '@kb/shared';
+import { convertToCodeBlock, type CodeConversionLoss } from '../convert';
+import { confirm } from '../../components/ui/Confirm';
+
+/** Converting to code removes formatting: ask first, explaining what will be lost (R-EDITOR-067). */
+function confirmCodeLoss(loss: CodeConversionLoss) {
+  return confirm({
+    title: 'Преобразовать в блок кода?',
+    body: `В блоке кода нет форматирования: жирный, курсив, цвета, ссылки и отметки комментариев будут сняты${loss.inlineNodes ? ', упоминания и формулы станут обычным текстом' : ''}. Текст сохранится. Отменить можно через Ctrl+Z.`,
+    confirmLabel: 'Преобразовать',
+  });
+}
 
 /** Re-renders only when the formatting state at the selection changes (not on every transaction). */
 function useFormatState(editor: Editor) {
@@ -58,7 +69,7 @@ export function turnIntoItems(editor: Editor) {
     { id: 'ol', label: 'Нумерованный список', icon: <ListOrdered size={15} />, shortcut: 'Mod+Shift+7', onSelect: () => c().toggleOrderedList().run() },
     { id: 'todo', label: 'Чек-лист', icon: <ListChecks size={15} />, shortcut: 'Mod+Shift+9', onSelect: () => c().toggleTaskList().run() },
     { id: 'quote', label: 'Цитата', icon: <Quote size={15} />, onSelect: () => c().toggleBlockquote().run() },
-    { id: 'code', label: 'Блок кода', icon: <Code2 size={15} />, onSelect: () => c().toggleCodeBlock().run() },
+    { id: 'code', label: 'Блок кода', icon: <Code2 size={15} />, onSelect: () => void convertToCodeBlock(editor, confirmCodeLoss) },
     { id: 'callout', label: 'Выделенный блок', icon: <Info size={15} />, onSelect: () => c().wrapIn('callout', { variant: 'info' }).run() },
   ];
 }

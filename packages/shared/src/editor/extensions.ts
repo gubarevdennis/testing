@@ -18,7 +18,7 @@ import { PageLink, PageMention, UserMention, CommentMark } from './nodes/links.j
 import { Mermaid, TableOfContentsBlock, SyncedBlock, CollectionView } from './nodes/special.js';
 import { sanitizeHref } from './url.js';
 
-/** Version of the canonical document schema. Bump with a migration in apps/server/src/collab/schema-migrations.ts. */
+/** Version of the canonical document schema. Bump together with a migration in packages/shared/src/editor/migrations.ts (SCHEMA_MIGRATIONS). */
 export const CONTENT_SCHEMA_VERSION = 1;
 
 /** Block node types that carry a stable `id` attribute (anchors, comments, history, block links). */

@@ -4,6 +4,7 @@ export * from './editor/url.js';
 export * from './editor/ids.js';
 export * from './editor/nodes/callout.js';
 export * from './editor/json.js';
+export * from './editor/migrations.js';
 export * from './editor/markdown.js';
 export * from './permissions.js';
 export * from './sort-key.js';

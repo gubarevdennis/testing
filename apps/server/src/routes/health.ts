@@ -4,6 +4,7 @@ import { parse, requireUser, type Services } from '../app.js';
 import { isOrgAdmin } from '../acl/engine.js';
 import { forbidden } from '../lib/errors.js';
 import { migrationStatus } from '../db/migrate.js';
+import { integrityProblems } from '../services/integrity.js';
 
 export async function healthRoutes(app: FastifyInstance, s: Services) {
   /** Liveness: the process is up. */
@@ -79,6 +80,7 @@ export async function healthRoutes(app: FastifyInstance, s: Services) {
     const backups = (await s.db.query(`select kind, status, location, size_bytes, finished_at, verified_at, verify_status from backups order by started_at desc limit 10`)).rows;
     const lastBackup = backups.find((b) => b.status === 'ok');
     const lastVerified = backups.find((b) => b.verify_status === 'ok');
+    const corruptFiles = await integrityProblems(s.db, user.orgId);
     let storage = 'ok';
     try {
       await s.store.healthCheck();
@@ -92,12 +94,14 @@ export async function healthRoutes(app: FastifyInstance, s: Services) {
       jobs,
       failedJobs,
       backups,
+      integrity: { problems: corruptFiles },
       lastSuccessfulBackupAt: lastBackup?.finished_at ?? null,
       lastSuccessfulRestoreVerificationAt: lastVerified?.verified_at ?? null,
       warnings: [
         ...(!lastBackup ? ['Нет успешных резервных копий'] : new Date(lastBackup.finished_at).getTime() < Date.now() - 26 * 3600_000 ? ['Последняя резервная копия старше 26 часов'] : []),
         ...(!lastVerified ? ['Восстановление из резервной копии ещё не проверялось'] : new Date(lastVerified.verified_at).getTime() < Date.now() - 35 * 86400_000 ? ['Проверка восстановления старше 35 дней'] : []),
         ...(outbox.pending > 1000 ? ['Отставание поисковой индексации'] : []),
+        ...(corruptFiles ? [`Файлов, не прошедших проверку целостности: ${corruptFiles} — восстановите их из резервной копии`] : []),
       ],
     };
   });

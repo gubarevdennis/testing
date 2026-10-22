@@ -33,6 +33,8 @@ export interface Config {
   oidc: { issuer: string; clientId: string; clientSecret: string; redirectUri: string } | null;
   logLevel: string;
   retention: { trashDays: number; journalDays: number; revisionDays: number };
+  /** Stored files re-hashed per maintenance run (hourly). */
+  integrityBatch: number;
   rateLimitPerMinute: number;
   authRateLimitPerMinute: number;
   clamavHost: string | null;
@@ -78,6 +80,7 @@ export function loadConfig(overrides: Partial<Config> = {}): Config {
       ? { issuer: env('OIDC_ISSUER'), clientId: env('OIDC_CLIENT_ID'), clientSecret: env('OIDC_CLIENT_SECRET'), redirectUri: env('OIDC_REDIRECT_URI', env('PUBLIC_URL', 'http://localhost:8080') + '/api/v1/auth/oidc/callback') }
       : null,
     logLevel: env('LOG_LEVEL', nodeEnv === 'test' ? 'warn' : 'info'),
+    integrityBatch: int('INTEGRITY_BATCH', 500),
     retention: { trashDays: int('RETENTION_TRASH_DAYS', 90), journalDays: int('RETENTION_JOURNAL_DAYS', 90), revisionDays: int('RETENTION_REVISION_DAYS', 365) },
     rateLimitPerMinute: int('RATE_LIMIT_PER_MINUTE', 600),
     authRateLimitPerMinute: int('AUTH_RATE_LIMIT_PER_MINUTE', 30),

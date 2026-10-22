@@ -247,18 +247,61 @@ export async function createGroup(q: Tx, admin: AuthUser, actor: AuditActor, inp
   return g;
 }
 
-/** Deleting a group never deletes users or pages; grants to the group are revoked (recorded in audit). */
-export async function deleteGroup(q: Tx, admin: AuthUser, actor: AuditActor, groupId: string) {
+/**
+ * Deleting a group never deletes users or pages. While the group still carries rights or is somebody's primary
+ * department, deletion is refused (409 group_in_use, with the affected grants) until the caller either reassigns
+ * them to another group (`reassignTo`) or explicitly confirms their revocation (`confirm`). Everything is audited.
+ */
+export async function deleteGroup(q: Tx, admin: AuthUser, actor: AuditActor, groupId: string, opts: { confirm?: boolean; reassignTo?: string | null } = {}) {
   if (!canManagePeople(admin)) throw forbidden();
-  const g = (await q.query('select * from groups where id = $1 and org_id = $2 and deleted_at is null', [groupId, admin.orgId])).rows[0];
+  const g = (await q.query('select * from groups where id = $1 and org_id = $2 and deleted_at is null for update', [groupId, admin.orgId])).rows[0];
   if (!g) throw notFound();
   const children = await q.query('select count(*)::int c from groups where parent_id = $1 and deleted_at is null', [groupId]);
   if (children.rows[0].c) throw conflict('group_has_children', 'Сначала перенесите или удалите вложенные подразделения');
-  const grants = await q.query(`update grants set revoked_at = now(), revoked_by = $2 where subject_type = 'group' and subject_id = $1 and revoked_at is null returning id, resource_type, resource_id, level`, [groupId, admin.id]);
+  const active = (
+    await q.query(
+      `select gr.id, gr.resource_type, gr.resource_id, gr.level, gr.expires_at, coalesce(p.title, sp.name) as resource_name
+         from grants gr left join pages p on gr.resource_type = 'page' and p.id = gr.resource_id left join spaces sp on gr.resource_type = 'space' and sp.id = gr.resource_id
+        where gr.subject_type = 'group' and gr.subject_id = $1 and gr.revoked_at is null order by gr.created_at`,
+      [groupId],
+    )
+  ).rows;
+  const primary = (await q.query('select count(*)::int c from users where primary_group_id = $1', [groupId])).rows[0].c as number;
+  const members = (await q.query('select count(*)::int c from group_members where group_id = $1', [groupId])).rows[0].c as number;
+  if (opts.reassignTo === groupId) throw badRequest('Нельзя переназначить права на удаляемую группу');
+  let target: any = null;
+  if (opts.reassignTo) {
+    target = (await q.query('select * from groups where id = $1 and org_id = $2 and deleted_at is null', [opts.reassignTo, admin.orgId])).rows[0];
+    if (!target) throw notFound('Группа для переназначения не найдена');
+  }
+  if ((active.length || primary) && !opts.confirm && !target)
+    throw conflict('group_in_use', 'Группе выданы права или она является основным отделом сотрудников — переназначьте их или подтвердите отзыв', {
+      grants: active.map((x) => ({ id: x.id, resourceType: x.resource_type, resourceId: x.resource_id, resourceName: x.resource_name, level: x.level, expiresAt: x.expires_at })),
+      primaryMembers: primary,
+      members,
+    });
+  const reassigned: string[] = [];
+  if (target) {
+    for (const x of active) {
+      // Keep the stronger of the two grants for the target group; never weaken what it already has.
+      const ex = (await q.query(`select id, level from grants where resource_type = $1 and resource_id = $2 and subject_type = 'group' and subject_id = $3 and revoked_at is null`, [x.resource_type, x.resource_id, target.id])).rows[0];
+      const rank: Record<string, number> = { none: 0, view: 1, comment: 2, edit: 3, full: 4 };
+      if (ex && (ex.level === 'none' || rank[ex.level] >= rank[x.level])) continue;
+      if (ex) await q.query('update grants set revoked_at = now(), revoked_by = $2 where id = $1', [ex.id, admin.id]);
+      await q.query(
+        `insert into grants (org_id, resource_type, resource_id, subject_type, subject_id, level, can_export, can_download, can_share, can_publish, starts_at, expires_at, reason, granted_by)
+         select org_id, resource_type, resource_id, 'group', $2, level, can_export, can_download, can_share, can_publish, starts_at, expires_at, $3, $4 from grants where id = $1`,
+        [x.id, target.id, `reassigned from deleted group ${g.name}`, admin.id],
+      );
+      reassigned.push(x.id);
+    }
+    await q.query('update users set primary_group_id = $2 where primary_group_id = $1', [groupId, target.kind === 'department' ? target.id : null]);
+  }
+  const revoked = await q.query(`update grants set revoked_at = now(), revoked_by = $2 where subject_type = 'group' and subject_id = $1 and revoked_at is null returning id, resource_type, resource_id, level`, [groupId, admin.id]);
   await q.query('update groups set deleted_at = now() where id = $1', [groupId]);
   await q.query('update users set primary_group_id = null where primary_group_id = $1', [groupId]);
   await q.query('delete from group_members where group_id = $1', [groupId]);
-  await audit(q, actor, { action: 'group.delete', targetType: 'group', targetId: groupId, details: { name: g.name, revokedGrants: grants.rows } });
+  await audit(q, actor, { action: 'group.delete', targetType: 'group', targetId: groupId, details: { name: g.name, revokedGrants: revoked.rows, reassignedTo: target?.id ?? null, reassignedGrants: reassigned.length, primaryMembers: primary, members } });
   await bumpAclEpoch(q, admin.orgId);
 }
 

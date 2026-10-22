@@ -1,13 +1,14 @@
 import * as Y from 'yjs';
 import { prosemirrorJSONToYDoc, yXmlFragmentToProsemirrorJSON, updateYFragment } from '@tiptap/y-tiptap';
-import { getKbSchema, ensureBlockIds, type PMNode } from '@kb/shared';
+import { getKbSchema, ensureBlockIds, sanitizeDocUrls, findUnsafeUrls, type PMNode } from '@kb/shared';
 
 /** Name of the XmlFragment holding the document (Tiptap Collaboration default). */
 export const FRAGMENT = 'default';
 
 export function jsonToYDoc(json: PMNode): Y.Doc {
   const schema = getKbSchema();
-  const doc = ensureBlockIds(structuredClone(json));
+  // Content built outside the editor (import, restore, templates) gets unusable/unsafe URLs cleaned first.
+  const doc = ensureBlockIds(sanitizeDocUrls(json).doc);
   // Validate against the canonical schema before it becomes durable state.
   schema.nodeFromJSON(doc).check();
   return prosemirrorJSONToYDoc(schema, doc, FRAGMENT);
@@ -63,7 +64,7 @@ export function updateToJson(update: Uint8Array): PMNode {
  */
 export function replaceContent(doc: Y.Doc, json: PMNode, origin: unknown = 'server-replace') {
   const schema = getKbSchema();
-  const node = schema.nodeFromJSON(ensureBlockIds(structuredClone(json)));
+  const node = schema.nodeFromJSON(ensureBlockIds(sanitizeDocUrls(json).doc));
   node.check();
   const fragment = doc.getXmlFragment(FRAGMENT);
   doc.transact(() => {
@@ -71,11 +72,14 @@ export function replaceContent(doc: Y.Doc, json: PMNode, origin: unknown = 'serv
   }, origin);
 }
 
-/** Validates that a document state decodes to a schema-valid ProseMirror document. */
+/** Validates that a document state decodes to a schema-valid ProseMirror document without dangerous URLs. */
 export function validateDoc(doc: Y.Doc): { ok: true; json: PMNode } | { ok: false; error: string } {
   try {
     const json = ydocToJson(doc);
     getKbSchema().nodeFromJSON(json).check();
+    // Script-capable URLs (javascript:, data:text/html…) are never accepted from clients.
+    const unsafe = findUnsafeUrls(json);
+    if (unsafe.length) return { ok: false, error: `unsafe url in ${unsafe[0].node}.${unsafe[0].attr}` };
     return { ok: true, json };
   } catch (e) {
     return { ok: false, error: (e as Error).message };

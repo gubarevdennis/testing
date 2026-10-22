@@ -44,7 +44,7 @@ async function waitJob(api: Api, path: string) {
 }
 
 describe('organisation archive round trip (F06, V18-A01..A05, A24, SC-38, S20)', () => {
-  it('export → readable without the app → restore into a clean installation → verified', async () => {
+  it('export → readable without the app → restore into a clean installation → verified (V18-A05, R-ACL-049, R-SECURITY-010)', async () => {
     const o = orgA.owner;
     // --- build representative content
     const dept = (await o.post('/api/v1/admin/groups', { name: 'Инженеры', kind: 'department' })).group.id;
