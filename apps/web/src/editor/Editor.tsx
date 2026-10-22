@@ -19,6 +19,7 @@ import { Dialog } from '../components/ui/Dialog';
 import { toast } from '../components/ui/Toast';
 import { post } from '../api/client';
 import { PagePicker } from './PagePicker';
+import { ImageUrlDialog } from './ImageUrlDialog';
 import type { CommandContext } from './commands';
 import type { ConflictInfo } from './extensions/conflictGuard';
 import { copyWithFeedback, useCopyPageCommands } from './clipboard/copy';
@@ -180,6 +181,7 @@ function EditorInner(p: Props & { session: CollabSession }) {
   const fileInput = useRef<HTMLInputElement>(null);
   const [pick, setPick] = useState<null | 'link' | 'synced'>(null);
   const [embed, setEmbed] = useState(false);
+  const [imageUrl, setImageUrl] = useState(false);
   const [math, setMath] = useState<{ kind: 'inline' | 'block'; pos: number; latex: string } | null>(null);
   const [findOpen, setFindOpen] = useState(false);
   const [flash, setFlash] = useState<{ top: number; left: number; width: number; height: number; id: string } | null>(null);
@@ -304,6 +306,7 @@ function EditorInner(p: Props & { session: CollabSession }) {
       }
     },
     insertSyncedBlock: () => setPick('synced'),
+    imageFromUrl: () => setImageUrl(true),
   };
 
   useEffect(() => {
@@ -474,6 +477,20 @@ function EditorInner(p: Props & { session: CollabSession }) {
             if (pick === 'link') editor?.chain().focus().insertContent({ type: 'pageLink', attrs: { pageId: page.id, title: page.title } }).run();
             else editor?.chain().focus().insertContent({ type: 'syncedBlock', attrs: { sourcePageId: page.id, sourceBlockId: blockId } }).run();
             setPick(null);
+          }}
+        />
+      )}
+      {imageUrl && editor && (
+        <ImageUrlDialog
+          pageId={p.pageId}
+          onClose={() => setImageUrl(false)}
+          onInsert={(a, alt) => {
+            setImageUrl(false);
+            editor
+              .chain()
+              .focus()
+              .insertContent({ type: 'image', attrs: { src: a.contentUrl, attachmentId: a.id, alt, naturalWidth: a.width, naturalHeight: a.height, width: a.width && a.width > 720 ? null : a.width } })
+              .run();
           }}
         />
       )}

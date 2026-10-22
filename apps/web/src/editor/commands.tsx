@@ -22,6 +22,7 @@ export interface CommandContext {
   embedUrl(): void;
   insertCollection(): void;
   insertSyncedBlock(): void;
+  imageFromUrl(): void;
 }
 
 const S = 16;
@@ -48,6 +49,7 @@ export const SLASH_COMMANDS: SlashCommand[] = [
   { id: 'cols2', group: 'Блоки', title: 'Две колонки', keywords: 'columns layout колонки столбцы две', icon: <Columns2 size={S} />, run: (e, r) => insertColumns(e, r, 2) },
   { id: 'cols3', group: 'Блоки', title: 'Три колонки', keywords: 'columns layout колонки столбцы три', icon: <Columns3 size={S} />, run: (e, r) => insertColumns(e, r, 3) },
   { id: 'image', group: 'Медиа', title: 'Изображение', hint: 'Загрузить или вставить из буфера', keywords: 'image picture photo screenshot изображение картинка фото скриншот', icon: <Image size={S} />, run: (e, r, c) => (del(e, r).run(), c.pickFiles('image/*')) },
+  { id: 'image-url', group: 'Медиа', title: 'Изображение по ссылке', hint: 'Скопировать картинку с сайта', keywords: 'image url link picture изображение ссылка адрес картинка интернет', icon: <Link2 size={S} />, run: (e, r, c) => (del(e, r).run(), c.imageFromUrl()) },
   { id: 'file', group: 'Медиа', title: 'Файл', keywords: 'file attachment pdf docx файл вложение документ', icon: <Paperclip size={S} />, run: (e, r, c) => (del(e, r).run(), c.pickFiles('*/*')) },
   { id: 'video', group: 'Медиа', title: 'Видео или ссылка', keywords: 'video embed youtube rutube видео встроить ссылка', icon: <Video size={S} />, run: (e, r, c) => (del(e, r).run(), c.embedUrl()) },
   { id: 'subpage', group: 'Страницы', title: 'Вложенная страница', keywords: 'page subpage child страница вложенная подстраница', icon: <FileText size={S} />, run: (e, r, c) => (del(e, r).run(), c.createChildPage()) },
