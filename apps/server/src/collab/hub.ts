@@ -266,6 +266,7 @@ export class CollabHub {
           const d = dec.createDecoder(msg.update);
           const len = dec.readVarUint(d);
           const ids = live.awarenessClients.get(conn.id) ?? new Set<number>();
+          const knownBefore = conn.clientId;
           for (let i = 0; i < len; i++) {
             const clientId = dec.readVarUint(d);
             dec.readVarUint(d);
@@ -276,7 +277,8 @@ export class CollabHub {
           live.awarenessClients.set(conn.id, ids);
           awarenessProtocol.applyAwarenessUpdate(live.awareness, msg.update, conn);
           this.broadcast(live, { type: MSG.AWARENESS, update: msg.update }, conn);
-          this.sendPresence(live);
+          // presence (who is here) changes only when a connection announces its client id, not on cursor moves
+          if (conn.clientId !== knownBefore) this.sendPresence(live);
         } catch {
           /* ignore malformed awareness */
         }

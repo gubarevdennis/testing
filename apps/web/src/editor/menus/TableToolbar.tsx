@@ -2,7 +2,8 @@ import { BubbleMenu } from '@tiptap/react/menus';
 import type { Editor } from '@tiptap/core';
 import { CellSelection } from '@tiptap/pm/tables';
 import { findParentNode } from '@tiptap/core';
-import { useEffect, useReducer } from 'react';
+import { useCallback } from 'react';
+import { useEditorState } from '@tiptap/react';
 import {
   ArrowUpToLine, ArrowDownToLine, ArrowLeftToLine, ArrowRightToLine, Trash2, TableCellsMerge, TableCellsSplit, PaintBucket, AlignLeft, AlignCenter, AlignRight, MoreHorizontal, Copy, Rows3, Columns3, Heading, AlignVerticalJustifyStart, AlignVerticalJustifyCenter, AlignVerticalJustifyEnd,
 } from 'lucide-react';
@@ -13,6 +14,8 @@ import { HIGHLIGHTS } from '../palette';
 import { toast } from '../../components/ui/Toast';
 
 const inTable = (e: Editor) => e.isActive('table');
+const TABLE_OPTIONS = { placement: 'top-start' as const, offset: 6, flip: true, shift: { padding: 8 } };
+const tableShouldShow = ({ editor: e }: { editor: Editor }) => e.isEditable && inTable(e);
 
 function tableNode(editor: Editor) {
   return findParentNode((n) => n.type.name === 'table')(editor.state.selection);
@@ -20,13 +23,7 @@ function tableNode(editor: Editor) {
 
 /** Contextual toolbar above a table: rows/columns, merging, cell colours and alignment, copy to Excel. */
 export function TableToolbar({ editor }: { editor: Editor }) {
-  const [, force] = useReducer((x) => x + 1, 0);
-  useEffect(() => {
-    editor.on('selectionUpdate', force);
-    return () => {
-      editor.off('selectionUpdate', force);
-    };
-  }, [editor]);
+  const st = useEditorState({ editor, selector: ({ editor: e }) => ({ multi: e.state.selection instanceof CellSelection, canSplit: e.can().splitCell() }) });
   const c = () => editor.chain().focus();
   const b = (label: string, icon: React.ReactNode, run: () => void, disabled = false) => (
     <Tooltip label={label}>
@@ -42,20 +39,20 @@ export function TableToolbar({ editor }: { editor: Editor }) {
     const text = kind === 'tsv' ? rowsToTsv(tableToRows(json)) : docToMarkdown({ type: 'doc', content: [json] } as any, { markers: false }).markdown;
     navigator.clipboard.writeText(text).then(() => toast.success(kind === 'tsv' ? 'Таблица скопирована — вставьте в Excel' : 'Скопировано в формате Markdown'));
   };
-  const multi = editor.state.selection instanceof CellSelection;
+  const multi = st.multi;
   return (
     <BubbleMenu
       editor={editor}
       pluginKey="kbTableMenu"
-      shouldShow={({ editor: e }) => e.isEditable && inTable(e)}
-      getReferencedVirtualElement={() => {
+      shouldShow={tableShouldShow}
+      getReferencedVirtualElement={useCallback(() => {
         const t = tableNode(editor);
         if (!t) return null;
         const dom = editor.view.nodeDOM(t.pos) as HTMLElement | null;
         const el = dom?.closest('.tableWrapper') ?? dom;
         return el ? { getBoundingClientRect: () => el.getBoundingClientRect(), getClientRects: () => el.getClientRects() } : null;
-      }}
-      options={{ placement: 'top-start', offset: 6, flip: true, shift: { padding: 8 } }}
+      }, [editor])}
+      options={TABLE_OPTIONS}
       className="table-toolbar"
     >
       <div className="row" style={{ gap: 1 }} role="toolbar" aria-label="Таблица">
@@ -65,7 +62,7 @@ export function TableToolbar({ editor }: { editor: Editor }) {
         {b('Столбец справа', <ArrowRightToLine size={15} />, () => c().addColumnAfter().run())}
         <span className="toolbar-sep" />
         {b('Объединить ячейки', <TableCellsMerge size={15} />, () => c().mergeCells().run(), !multi)}
-        {b('Разделить ячейку', <TableCellsSplit size={15} />, () => c().splitCell().run(), !editor.can().splitCell())}
+        {b('Разделить ячейку', <TableCellsSplit size={15} />, () => c().splitCell().run(), !st.canSplit)}
         <Menu
           label="Цвет ячейки"
           items={[

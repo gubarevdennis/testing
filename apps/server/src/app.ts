@@ -159,7 +159,7 @@ export async function buildApp(base: Omit<Services, 'hub' | 'bus' | 'metrics'> &
   });
 
   app.setNotFoundHandler((req, reply) => {
-    if (req.url.startsWith('/api/')) return reply.status(404).send({ error: { code: 'not_found', message: 'Не найдено' }, correlationId: req.correlationId });
+    if (req.url.startsWith('/api/') || req.url.startsWith('/assets/')) return reply.status(404).send({ error: { code: 'not_found', message: 'Не найдено' }, correlationId: req.correlationId });
     if (services.cfg.webDist && existsSync(join(services.cfg.webDist, 'index.html'))) return reply.type('text/html').sendFile('index.html', services.cfg.webDist);
     return reply.status(404).send('Not found');
   });
@@ -170,10 +170,10 @@ export async function buildApp(base: Omit<Services, 'hub' | 'bus' | 'metrics'> &
   if (base.cfg.webDist && existsSync(base.cfg.webDist)) {
     await app.register(fstatic, {
       root: base.cfg.webDist,
-      wildcard: false,
+      wildcard: true, // serve files present on disk now (new releases without restart)
       setHeaders: (res: any, path: string) => {
-        if (path.includes('/assets/')) res.setHeader('cache-control', 'public, max-age=31536000, immutable');
-        else res.setHeader('cache-control', 'no-cache');
+        const set = (k: string, v: string) => (typeof res.setHeader === 'function' ? res.setHeader(k, v) : res.header(k, v));
+        set('cache-control', path.includes('/assets/') ? 'public, max-age=31536000, immutable' : 'no-cache');
       },
     });
   }

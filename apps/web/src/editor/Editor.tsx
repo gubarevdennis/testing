@@ -60,10 +60,14 @@ export function PageEditor(p: Props) {
   const [session, setSession] = useState<CollabSession | null>(null);
   const [fatal, setFatal] = useState<{ code: string; message: string } | null>(null);
   const [serverCanEdit, setServerCanEdit] = useState<boolean | null>(null);
+  const [ready, setReady] = useState(false);
   const cbs = useRef(p);
   cbs.current = p;
   useEffect(() => {
+    let synced: () => void = () => undefined;
+    const firstSync = new Promise<void>((r) => (synced = r));
     const s = openCollab(p.pageId, p.generation, {
+      onSynced: () => synced(),
       onAccess: (canEdit, _level, reason) => {
         setServerCanEdit(canEdit);
         cbs.current.onAccess?.(canEdit, reason);
@@ -72,12 +76,20 @@ export function PageEditor(p: Props) {
       onFatal: (code, message) => setFatal({ code, message }),
     });
     setSession(s);
+    setReady(false);
+    let alive = true;
+    // Mount the editor only on real content: the local replica, then the server state (or offline after a short wait).
+    // An editor started on an empty document would let normalising plugins write placeholder blocks into the CRDT.
+    s.localReady
+      .then(() => Promise.race([firstSync, new Promise((r) => setTimeout(r, navigator.onLine ? 4000 : 300))]))
+      .then(() => alive && setReady(true));
     return () => {
+      alive = false;
       s.destroy();
       setSession(null);
     };
   }, [p.pageId, p.generation]);
-  if (!session) return <EditorSkeleton />;
+  if (!session || !ready) return <EditorSkeleton />;
   return (
     <>
       {fatal && <FatalBanner fatal={fatal} session={session} />}
@@ -220,6 +232,8 @@ function EditorInner(p: Props & { session: CollabSession }) {
   useEffect(() => {
     if (editor) {
       (editor.storage as any).kbPage = { pageId: p.pageId };
+      // diagnostics hook for support and browser tests (enable with localStorage['kb:debug'] = '1')
+      if (import.meta.env.DEV || localStorage.getItem('kb:debug') === '1') Object.assign(window as any, { __kbEditor: editor, __kbDoc: session.doc });
       p.onReady?.({ editor, session });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -312,6 +326,20 @@ function EditorInner(p: Props & { session: CollabSession }) {
       {editor && (
         <>
           <EditorContent editor={editor} className="editor-content" />
+          {p.canEdit && (
+            <div
+              className="editor-tail"
+              aria-hidden
+              onMouseDown={(e) => {
+                // Clicking below the last block continues writing there (instead of an always-present trailing paragraph).
+                e.preventDefault();
+                const doc = editor.state.doc;
+                const last = doc.lastChild;
+                if (last && last.type.name === 'paragraph' && last.content.size === 0) editor.chain().focus('end').run();
+                else editor.chain().insertContentAt(doc.content.size, { type: 'paragraph' }).focus('end').run();
+              }}
+            />
+          )}
           {p.canEdit && <BubbleToolbar editor={editor} onComment={() => requestComment()} />}
           {p.canEdit && <TableToolbar editor={editor} />}
           {p.canEdit && <BlockHandle editor={editor} pageId={p.pageId} onComment={(id) => requestComment(id)} />}

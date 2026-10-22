@@ -2,7 +2,8 @@ import { BubbleMenu } from '@tiptap/react/menus';
 import type { Editor } from '@tiptap/core';
 import { NodeSelection } from '@tiptap/pm/state';
 import { CellSelection } from '@tiptap/pm/tables';
-import { useEffect, useRef, useState, useReducer } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { useEditorState } from '@tiptap/react';
 import {
   Bold, Italic, Underline, Strikethrough, Code, Link2, Baseline, ChevronDown, AlignLeft, AlignCenter, AlignRight, AlignJustify, MessageSquarePlus, Subscript, Superscript, RemoveFormatting, Type, Heading1, Heading2, Heading3, List, ListOrdered, ListChecks, Quote, Code2, Info, Check, X, ExternalLink, Unlink, MoreHorizontal, Sigma,
 } from 'lucide-react';
@@ -11,14 +12,27 @@ import { Menu } from '../../components/ui/Menu';
 import { TEXT_COLORS, HIGHLIGHTS } from '../palette';
 import { FONT_SIZES, FONT_FAMILIES, sanitizeHref } from '@kb/shared';
 
-function useEditorTick(editor: Editor) {
-  const [, force] = useReducer((x) => x + 1, 0);
-  useEffect(() => {
-    editor.on('transaction', force);
-    return () => {
-      editor.off('transaction', force);
-    };
-  }, [editor]);
+/** Re-renders only when the formatting state at the selection changes (not on every transaction). */
+function useFormatState(editor: Editor) {
+  return useEditorState({
+    editor,
+    selector: ({ editor: e }) => ({
+      type: blockTypeLabel(e),
+      bold: e.isActive('bold'),
+      italic: e.isActive('italic'),
+      underline: e.isActive('underline'),
+      strike: e.isActive('strike'),
+      code: e.isActive('code'),
+      link: e.isActive('link'),
+      sub: e.isActive('subscript'),
+      sup: e.isActive('superscript'),
+      color: (e.getAttributes('textStyle').color as string | undefined) ?? null,
+      hl: (e.getAttributes('highlight').color as string | undefined) ?? null,
+      hasHl: e.isActive('highlight'),
+      fontSize: (e.getAttributes('textStyle').fontSize as string | undefined) ?? null,
+      align: (['left', 'center', 'right', 'justify'] as const).find((a) => e.isActive({ textAlign: a })) ?? null,
+    }),
+  });
 }
 
 export function blockTypeLabel(editor: Editor) {
@@ -49,9 +63,18 @@ export function turnIntoItems(editor: Editor) {
   ];
 }
 
+// Stable references: BubbleMenu pushes option changes into the plugin with a transaction on every change.
+const BUBBLE_OPTIONS = { placement: 'top' as const, offset: 8, flip: true, shift: { padding: 8 } };
+function bubbleShouldShow({ editor: e, state, from, to }: { editor: Editor; state: any; from: number; to: number }) {
+  if (!e.isEditable || from === to) return false;
+  if (state.selection instanceof NodeSelection || state.selection instanceof CellSelection) return false;
+  if (e.isActive('codeBlock') || e.isActive('mermaid')) return false;
+  return state.doc.textBetween(from, to, ' ', '\uFFFC').trim().length > 0 || e.isActive('link');
+}
+
 /** Floating formatting toolbar for text selections. Hidden for node selections, tables cell ranges and code. */
 export function BubbleToolbar({ editor, onComment }: { editor: Editor; onComment(): void }) {
-  useEditorTick(editor);
+  const f = useFormatState(editor);
   const [linkMode, setLinkMode] = useState(false);
   const [href, setHref] = useState('');
   const linkInput = useRef<HTMLInputElement>(null);
@@ -84,8 +107,8 @@ export function BubbleToolbar({ editor, onComment }: { editor: Editor; onComment
     }
     setLinkMode(false);
   };
-  const color = editor.getAttributes('textStyle').color as string | undefined;
-  const hl = editor.getAttributes('highlight').color as string | undefined;
+  const color = f.color ?? undefined;
+  const hl = f.hl ?? undefined;
   return (
     <BubbleMenu
       editor={editor}
@@ -126,17 +149,17 @@ export function BubbleToolbar({ editor, onComment }: { editor: Editor; onComment
             items={turnIntoItems(editor)}
             trigger={({ ref, props }) => (
               <button ref={ref} className="btn ghost sm bubble-type" onMouseDown={(e) => e.preventDefault()} {...props}>
-                {blockTypeLabel(editor)} <ChevronDown size={13} />
+                {f.type} <ChevronDown size={13} />
               </button>
             )}
           />
           <span className="toolbar-sep" />
-          {btn('Жирный', <Bold size={15} />, editor.isActive('bold'), () => editor.chain().focus().toggleBold().run(), 'Mod+B')}
-          {btn('Курсив', <Italic size={15} />, editor.isActive('italic'), () => editor.chain().focus().toggleItalic().run(), 'Mod+I')}
-          {btn('Подчёркнутый', <Underline size={15} />, editor.isActive('underline'), () => editor.chain().focus().toggleUnderline().run(), 'Mod+U')}
-          {btn('Зачёркнутый', <Strikethrough size={15} />, editor.isActive('strike'), () => editor.chain().focus().toggleStrike().run(), 'Mod+Shift+S')}
-          {btn('Код', <Code size={15} />, editor.isActive('code'), () => editor.chain().focus().toggleCode().run(), 'Mod+E')}
-          {btn('Ссылка', <Link2 size={15} />, editor.isActive('link'), () => (setHref(editor.getAttributes('link').href ?? ''), setLinkMode(true)), 'Mod+K')}
+          {btn('Жирный', <Bold size={15} />, f.bold, () => editor.chain().focus().toggleBold().run(), 'Mod+B')}
+          {btn('Курсив', <Italic size={15} />, f.italic, () => editor.chain().focus().toggleItalic().run(), 'Mod+I')}
+          {btn('Подчёркнутый', <Underline size={15} />, f.underline, () => editor.chain().focus().toggleUnderline().run(), 'Mod+U')}
+          {btn('Зачёркнутый', <Strikethrough size={15} />, f.strike, () => editor.chain().focus().toggleStrike().run(), 'Mod+Shift+S')}
+          {btn('Код', <Code size={15} />, f.code, () => editor.chain().focus().toggleCode().run(), 'Mod+E')}
+          {btn('Ссылка', <Link2 size={15} />, f.link, () => (setHref(editor.getAttributes('link').href ?? ''), setLinkMode(true)), 'Mod+K')}
           <Menu
             label="Цвет"
             items={[
@@ -144,7 +167,7 @@ export function BubbleToolbar({ editor, onComment }: { editor: Editor; onComment
               { id: 'c-default', label: 'По умолчанию', icon: <span className="swatch-text">A</span>, checked: !color, onSelect: () => editor.chain().focus().unsetColor().run() },
               ...TEXT_COLORS.map((c) => ({ id: 'c-' + c.id, label: c.label, icon: <span className="swatch-text" style={{ color: c.value }}>A</span>, checked: color === c.value, onSelect: () => editor.chain().focus().setColor(c.value).run() })),
               { label: 'Выделение фоном', header: true },
-              { id: 'h-none', label: 'Без фона', icon: <span className="swatch-bg" />, checked: !hl && !editor.isActive('highlight'), onSelect: () => editor.chain().focus().unsetHighlight().run() },
+              { id: 'h-none', label: 'Без фона', icon: <span className="swatch-bg" />, checked: !hl && !f.hasHl, onSelect: () => editor.chain().focus().unsetHighlight().run() },
               ...HIGHLIGHTS.map((c) => ({ id: 'h-' + c.id, label: c.label, icon: <span className="swatch-bg" style={{ background: c.value }} />, checked: hl === c.value, onSelect: () => editor.chain().focus().setHighlight({ color: c.value }).run() })),
             ]}
             trigger={({ ref, props }) => (
@@ -159,17 +182,17 @@ export function BubbleToolbar({ editor, onComment }: { editor: Editor; onComment
           <Menu
             label="Ещё"
             items={[
-              { id: 'left', label: 'По левому краю', icon: <AlignLeft size={15} />, checked: editor.isActive({ textAlign: 'left' }), onSelect: () => editor.chain().focus().setTextAlign('left').run() },
-              { id: 'center', label: 'По центру', icon: <AlignCenter size={15} />, checked: editor.isActive({ textAlign: 'center' }), onSelect: () => editor.chain().focus().setTextAlign('center').run() },
-              { id: 'right', label: 'По правому краю', icon: <AlignRight size={15} />, checked: editor.isActive({ textAlign: 'right' }), onSelect: () => editor.chain().focus().setTextAlign('right').run() },
-              { id: 'justify', label: 'По ширине', icon: <AlignJustify size={15} />, checked: editor.isActive({ textAlign: 'justify' }), onSelect: () => editor.chain().focus().setTextAlign('justify').run() },
+              { id: 'left', label: 'По левому краю', icon: <AlignLeft size={15} />, checked: f.align === 'left', onSelect: () => editor.chain().focus().setTextAlign('left').run() },
+              { id: 'center', label: 'По центру', icon: <AlignCenter size={15} />, checked: f.align === 'center', onSelect: () => editor.chain().focus().setTextAlign('center').run() },
+              { id: 'right', label: 'По правому краю', icon: <AlignRight size={15} />, checked: f.align === 'right', onSelect: () => editor.chain().focus().setTextAlign('right').run() },
+              { id: 'justify', label: 'По ширине', icon: <AlignJustify size={15} />, checked: f.align === 'justify', onSelect: () => editor.chain().focus().setTextAlign('justify').run() },
               { separator: true },
               {
                 id: 'size',
                 label: 'Размер шрифта',
                 children: [
                   { id: 'sz-default', label: 'По умолчанию', onSelect: () => editor.chain().focus().unsetFontSize().run() },
-                  ...FONT_SIZES.map((s) => ({ id: 'sz' + s, label: `${s} px`, checked: editor.getAttributes('textStyle').fontSize === `${s}px`, onSelect: () => editor.chain().focus().setFontSize(`${s}px`).run() })),
+                  ...FONT_SIZES.map((s) => ({ id: 'sz' + s, label: `${s} px`, checked: f.fontSize === `${s}px`, onSelect: () => editor.chain().focus().setFontSize(`${s}px`).run() })),
                 ],
               },
               {
@@ -182,8 +205,8 @@ export function BubbleToolbar({ editor, onComment }: { editor: Editor; onComment
                 ],
               },
               { separator: true },
-              { id: 'sub', label: 'Нижний индекс', icon: <Subscript size={15} />, checked: editor.isActive('subscript'), onSelect: () => editor.chain().focus().toggleSubscript().run() },
-              { id: 'sup', label: 'Верхний индекс', icon: <Superscript size={15} />, checked: editor.isActive('superscript'), onSelect: () => editor.chain().focus().toggleSuperscript().run() },
+              { id: 'sub', label: 'Нижний индекс', icon: <Subscript size={15} />, checked: f.sub, onSelect: () => editor.chain().focus().toggleSubscript().run() },
+              { id: 'sup', label: 'Верхний индекс', icon: <Superscript size={15} />, checked: f.sup, onSelect: () => editor.chain().focus().toggleSuperscript().run() },
               {
                 id: 'math',
                 label: 'Формула из выделения',

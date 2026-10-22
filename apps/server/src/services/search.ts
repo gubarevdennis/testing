@@ -57,6 +57,7 @@ export interface SearchParams {
   authorId?: string | null;
   from?: string | null;
   to?: string | null;
+  in?: 'all' | 'text' | 'images' | 'files';
   limit: number;
   offset: number;
 }
@@ -98,6 +99,9 @@ export async function search(q: Queryable, user: AuthUser, p: SearchParams) {
   if (p.authorId) add('pg.created_by = ?', p.authorId);
   if (p.from) add('pg.content_updated_at >= ?', p.from);
   if (p.to) add('pg.content_updated_at <= ?', p.to);
+  if (p.in === 'images') filters.push(`(to_tsvector('russian', s.ocr) || to_tsvector('english', s.ocr)) @@ query.tq`);
+  if (p.in === 'files') filters.push(`to_tsvector('russian', s.files) @@ query.tq`);
+  if (p.in === 'text') filters.push(`(s.tsv @@ query.tq or coalesce(s.pub_tsv @@ query.tq, false))`);
   params.push(p.q);
   const rawIdx = params.length;
   // Candidates: full-text match on live or published content, or fuzzy (trigram) title match for typos.

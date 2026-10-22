@@ -88,6 +88,15 @@ export function openCollab(pageId: string, generation: string | null, cb: Collab
     }
   };
   window.addEventListener('beforeunload', onUnload);
+  const onOnline = () => provider.reconnectNow();
+  // The browser knows about network loss before the socket times out: switch to "saved on this device" at once.
+  const onOffline = () => provider.disconnect();
+  window.addEventListener('offline', onOffline);
+  const onVisible = () => document.visibilityState === 'visible' && provider.reconnectNow();
+  window.addEventListener('online', onOnline);
+  document.addEventListener('visibilitychange', onVisible);
+  // connect after the local replica is loaded so the first HELLO carries the local state vector
+  void localReady.then(() => provider.connect());
   return {
     pageId,
     doc,
@@ -96,6 +105,9 @@ export function openCollab(pageId: string, generation: string | null, cb: Collab
     localReady,
     destroy() {
       window.removeEventListener('beforeunload', onUnload);
+      window.removeEventListener('online', onOnline);
+      window.removeEventListener('offline', onOffline);
+      document.removeEventListener('visibilitychange', onVisible);
       provider.flush();
       provider.destroy();
       local.destroy();

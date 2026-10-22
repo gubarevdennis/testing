@@ -12,11 +12,12 @@ const TYPES = new Set<string>(BLOCK_TYPES);
 export const ClientBlockIds = Extension.create({
   name: 'clientBlockIds',
   addProseMirrorPlugins() {
+    const editor = this.editor;
     return [
       new Plugin({
         key: new PluginKey('clientBlockIds'),
         appendTransaction(trs, _old, state) {
-          if (!trs.some((t) => t.docChanged) || trs.every((t) => t.getMeta(ySyncPluginKey)?.isChangeOrigin)) return null;
+          if (!editor.isEditable || !trs.some((t) => t.docChanged) || trs.every((t) => t.getMeta(ySyncPluginKey)?.isChangeOrigin)) return null;
           const seen = new Set<string>();
           let tr = state.tr;
           let changed = false;

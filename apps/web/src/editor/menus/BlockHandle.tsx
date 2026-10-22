@@ -11,6 +11,9 @@ import { turnIntoItems } from './BubbleToolbar';
 import { TEXT_COLORS } from '../palette';
 import { toast } from '../../components/ui/Toast';
 
+// Must be a stable object: DragHandle re-registers its plugin (re-initialising every plugin view) when it changes.
+const POSITION = { placement: 'left-start' as const, strategy: 'absolute' as const };
+
 /** Block controls on hover: "+" inserts a block below (opens the "/" menu), the grip drags or opens block actions. */
 export function BlockHandle({ editor, pageId, onComment }: { editor: Editor; pageId: string; onComment(blockId: string | null): void }) {
   const current = useRef<{ pos: number; node: any } | null>(null);
@@ -109,7 +112,7 @@ export function BlockHandle({ editor, pageId, onComment }: { editor: Editor; pag
         current.current = node ? { node, pos } : null;
         setTick((x) => x + 1);
       }}
-      computePositionConfig={{ placement: 'left-start', strategy: 'absolute' }}
+      computePositionConfig={POSITION}
     >
       <div className="block-handle-inner">
         <Tooltip label="Добавить блок ниже">

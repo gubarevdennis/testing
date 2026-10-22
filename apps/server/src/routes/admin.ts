@@ -380,6 +380,23 @@ export async function adminRoutes(app: FastifyInstance, s: Services) {
   });
 
   // ---- API tokens for integrations
+  app.get('/api/v1/me/tokens', async (req) => {
+    const user = requireUser(req);
+    const r = await s.db.query(`select id, name, created_at, expires_at, last_used_at from api_tokens where user_id = $1 and revoked_at is null order by created_at desc`, [user.id]);
+    return { tokens: r.rows.map((t) => ({ ...t, expired: !!t.expires_at && new Date(t.expires_at) <= new Date() })) };
+  });
+
+  app.delete('/api/v1/me/tokens/:id', async (req) => {
+    const user = requireUser(req);
+    const { id } = parse(z.object({ id: uuid }), req.params);
+    await tx(s.db, async (q) => {
+      const r = await q.query(`update api_tokens set revoked_at = now() where id = $1 and user_id = $2 and revoked_at is null returning name`, [id, user.id]);
+      if (!r.rowCount) throw notFound();
+      await audit(q, actorOf(req), { action: 'api_token.revoke', targetType: 'user', targetId: user.id, details: { name: r.rows[0].name } });
+    });
+    return { ok: true };
+  });
+
   app.post('/api/v1/me/tokens', async (req) => {
     const user = requireUser(req);
     if (user.kind === 'guest') throw forbidden();

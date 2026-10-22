@@ -200,8 +200,10 @@ export default function SearchPage() {
     if (status) u.set('status', status);
     if (from) u.set('from', toIsoStart(from));
     if (to) u.set('to', toIsoEnd(to));
+    if (type === 'images' || type === 'files') u.set('in', type);
+    else if (type === 'pages') u.set('in', 'text');
     return u.toString();
-  }, [q, spaceId, authorId, status, from, to]);
+  }, [q, spaceId, authorId, status, from, to, type]);
 
   const search = useInfiniteQuery({
     queryKey: ['search', qs],
@@ -219,13 +221,8 @@ export default function SearchPage() {
   const all = useMemo(() => (search.data?.pages ?? []).flatMap((p) => p.results), [search.data]);
   const results = useMemo(
     () =>
-      all.filter((r) => {
-        if (type === 'images') return r.matchedIn.includes('image');
-        if (type === 'files') return r.matchedIn.includes('file');
-        if (type === 'pages') return r.matchedIn.some((m) => m === 'text' || m === 'title' || m === 'properties' || m === 'fuzzy');
-        return true;
-      }),
-    [all, type],
+      all,
+    [all],
   );
   useEffect(() => setActive(-1), [qs, type]);
 

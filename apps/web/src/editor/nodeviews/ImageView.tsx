@@ -88,22 +88,22 @@ export function ImageView({ node, updateAttributes, selected, editor, getPos, de
       {selected && editable && (
         <div className="kb-node-toolbar" contentEditable={false} role="toolbar" aria-label="Изображение">
           <Tooltip label="По левому краю">
-            <button className="icon-btn sm" aria-pressed={a.align === 'left'} onClick={() => updateAttributes({ align: 'left' })}>
+            <button aria-label="По левому краю" className="icon-btn sm" aria-pressed={a.align === 'left'} onClick={() => updateAttributes({ align: 'left' })}>
               <AlignLeft size={15} />
             </button>
           </Tooltip>
           <Tooltip label="По центру">
-            <button className="icon-btn sm" aria-pressed={a.align === 'center'} onClick={() => updateAttributes({ align: 'center' })}>
+            <button aria-label="По центру" className="icon-btn sm" aria-pressed={a.align === 'center'} onClick={() => updateAttributes({ align: 'center' })}>
               <AlignCenter size={15} />
             </button>
           </Tooltip>
           <Tooltip label="По правому краю">
-            <button className="icon-btn sm" aria-pressed={a.align === 'right'} onClick={() => updateAttributes({ align: 'right' })}>
+            <button aria-label="По правому краю" className="icon-btn sm" aria-pressed={a.align === 'right'} onClick={() => updateAttributes({ align: 'right' })}>
               <AlignRight size={15} />
             </button>
           </Tooltip>
           <Tooltip label="На всю ширину">
-            <button className="icon-btn sm" aria-pressed={a.align === 'full'} onClick={() => updateAttributes({ align: 'full', width: null })}>
+            <button aria-label="На всю ширину" className="icon-btn sm" aria-pressed={a.align === 'full'} onClick={() => updateAttributes({ align: 'full', width: null })}>
               <StretchHorizontal size={15} />
             </button>
           </Tooltip>
@@ -122,43 +122,43 @@ export function ImageView({ node, updateAttributes, selected, editor, getPos, de
           ))}
           <span className="toolbar-sep" />
           <Tooltip label="Подпись">
-            <button className="icon-btn sm" aria-pressed={showCaption} onClick={() => (showCaption && a.caption ? updateAttributes({ caption: '' }) : null, setShowCaption(!showCaption))}>
+            <button aria-label="Подпись" className="icon-btn sm" aria-pressed={showCaption} onClick={() => (showCaption && a.caption ? updateAttributes({ caption: '' }) : null, setShowCaption(!showCaption))}>
               <Captions size={15} />
             </button>
           </Tooltip>
           <Tooltip label="Альтернативный текст">
-            <button className="icon-btn sm" onClick={() => setAltOpen(!altOpen)} aria-pressed={altOpen}>
+            <button aria-label="Альтернативный текст" className="icon-btn sm" onClick={() => setAltOpen(!altOpen)} aria-pressed={altOpen}>
               <AltIcon size={15} />
             </button>
           </Tooltip>
           {a.attachmentId && (
             <Tooltip label="Распознанный текст (OCR)">
-              <button className="icon-btn sm" onClick={() => setOcrOpen(true)}>
+            <button aria-label="Распознанный текст (OCR)" className="icon-btn sm" onClick={() => setOcrOpen(true)}>
                 <ScanText size={15} />
               </button>
             </Tooltip>
           )}
           {a.attachmentId && (
             <Tooltip label="Заменить">
-              <button className="icon-btn sm" onClick={replace}>
+            <button aria-label="Заменить" className="icon-btn sm" onClick={replace}>
                 <Replace size={15} />
               </button>
             </Tooltip>
           )}
           <Tooltip label="Открыть на весь экран">
-            <button className="icon-btn sm" onClick={open}>
+            <button aria-label="Открыть на весь экран" className="icon-btn sm" onClick={open}>
               <Maximize2 size={15} />
             </button>
           </Tooltip>
           {a.attachmentId && (
             <Tooltip label="Скачать оригинал">
-              <a className="icon-btn sm" href={`/api/v1/attachments/${a.attachmentId}/download`} download>
+            <a aria-label="Скачать оригинал" className="icon-btn sm" href={`/api/v1/attachments/${a.attachmentId}/download`} download>
                 <Download size={15} />
               </a>
             </Tooltip>
           )}
           <Tooltip label="Удалить">
-            <button className="icon-btn sm" onClick={() => deleteNode()}>
+            <button aria-label="Удалить" className="icon-btn sm" onClick={() => deleteNode()}>
               <Trash2 size={15} />
             </button>
           </Tooltip>

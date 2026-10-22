@@ -3,7 +3,8 @@ import { useState, type FormEvent } from 'react';
 import { NavLink, Navigate, Route, Routes } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { KeyRound, Monitor, Palette, ShieldCheck, Smartphone, User } from 'lucide-react';
-import { get, patch, post } from '../api/client';
+import { del, get, patch, post } from '../api/client';
+import type { Me } from '../api/types';
 import { useMe, useSession } from '../state/session';
 import { useUi } from '../state/ui';
 import { confirm } from '../components/ui/Confirm';
@@ -92,8 +93,83 @@ function ProfileTab() {
           )}
         </dl>
       </div>
-      <p className="muted small">Имя, должность и email меняет администратор организации — обратитесь к нему, если данные устарели.</p>
+      <ProfileForm />
+      <p className="muted small">Email и роль меняет администратор организации.</p>
     </section>
+  );
+}
+
+function ProfileForm() {
+  const me = useMe();
+  const setMe = useSession((s) => s.setMe);
+  const [name, setName] = useState(me.user.name);
+  const [title, setTitle] = useState(me.user.title ?? '');
+  const [error, setError] = useState<string | null>(null);
+  const dirty = name.trim() !== me.user.name || (title.trim() || null) !== (me.user.title ?? null);
+  const m = useMutation({
+    mutationFn: async () => {
+      const body: { name?: string; title?: string | null } = {};
+      if (name.trim() !== me.user.name) body.name = name.trim();
+      if ((title.trim() || null) !== (me.user.title ?? null)) body.title = title.trim() || null;
+      await patch<{ user: { name: string; title: string | null } }>('/api/v1/auth/me', body);
+      try {
+        setMe(await get<Me>('/api/v1/auth/me'));
+      } catch {
+        const cur = useSession.getState().me;
+        if (cur) setMe({ ...cur, user: { ...cur.user, name: body.name ?? cur.user.name, title: body.title !== undefined ? body.title : cur.user.title } });
+      }
+    },
+    onSuccess: () => {
+      setError(null);
+      toast.success('Профиль сохранён');
+    },
+    onError: (e) => setError(errMsg(e)),
+  });
+  return (
+    <form
+      className="card col"
+      style={{ gap: 14 }}
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (dirty && name.trim()) m.mutate();
+      }}
+    >
+      <h3 className="admin-card-title">Личные данные</h3>
+      {error && (
+        <div className="alert error" role="alert">
+          {error}
+        </div>
+      )}
+      <div className="admin-form-grid">
+        <div className="field">
+          <label htmlFor="pf-name">Имя и фамилия</label>
+          <input id="pf-name" className="input" maxLength={200} value={name} aria-invalid={!name.trim()} onChange={(e) => setName(e.target.value)} autoComplete="name" />
+          {!name.trim() && <div className="field-error">Имя не может быть пустым</div>}
+        </div>
+        <div className="field">
+          <label htmlFor="pf-title">Должность</label>
+          <input id="pf-title" className="input" maxLength={200} value={title} onChange={(e) => setTitle(e.target.value)} autoComplete="organization-title" />
+        </div>
+      </div>
+      <div className="row admin-wrap">
+        <span className="grow" />
+        <button
+          type="button"
+          className="btn"
+          disabled={!dirty || m.isPending}
+          onClick={() => {
+            setName(me.user.name);
+            setTitle(me.user.title ?? '');
+            setError(null);
+          }}
+        >
+          Отменить
+        </button>
+        <button type="submit" className="btn primary" disabled={!dirty || !name.trim() || m.isPending} aria-busy={m.isPending}>
+          {m.isPending && <span className="spinner" />} Сохранить
+        </button>
+      </div>
+    </form>
   );
 }
 
@@ -391,6 +467,20 @@ function SessionsTab() {
     },
     onError: (e) => toast.error(errMsg(e)),
   });
+  const [ending, setEnding] = useState<string | null>(null);
+  const endOne = async (s: SessionRow) => {
+    if (!(await confirm({ title: 'Завершить сеанс?', body: `На устройстве «${describeAgent(s.user_agent)}» будет выполнен выход.`, confirmLabel: 'Завершить', danger: true }))) return;
+    setEnding(s.id);
+    try {
+      await del(`/api/v1/auth/sessions/${s.id}`);
+      toast.success('Сеанс завершён');
+      qc.invalidateQueries({ queryKey: ['me', 'sessions'] });
+    } catch (e) {
+      toast.error(errMsg(e));
+    } finally {
+      setEnding(null);
+    }
+  };
   const list = q.data?.sessions ?? [];
   const others = list.filter((s) => !s.current).length;
   return (
@@ -429,6 +519,11 @@ function SessionsTab() {
                 </div>
                 <div className="muted small">Истекает {fullTime(s.expires_at)}</div>
               </div>
+              {!s.current && (
+                <button className="btn sm danger" disabled={ending === s.id} aria-busy={ending === s.id} onClick={() => endOne(s)}>
+                  {ending === s.id && <span className="spinner" />} Завершить
+                </button>
+              )}
             </li>
           ))}
         </ul>
@@ -439,17 +534,41 @@ function SessionsTab() {
 
 // ---------------------------------------------------------------- API tokens
 
+interface TokenRow {
+  id: string;
+  name: string;
+  created_at: string;
+  expires_at: string | null;
+  last_used_at: string | null;
+  expired: boolean;
+}
+
 function TokensTab() {
+  const qc = useQueryClient();
+  const tokens = useQuery({ queryKey: ['me', 'tokens'], queryFn: () => get<{ tokens: TokenRow[] }>('/api/v1/me/tokens') });
+  const [revoking, setRevoking] = useState<string | null>(null);
+  const revoke = async (t: TokenRow) => {
+    if (!(await confirm({ title: `Отозвать токен «${t.name}»?`, body: 'Интеграции, использующие этот токен, сразу потеряют доступ. Действие нельзя отменить.', confirmLabel: 'Отозвать', danger: true }))) return;
+    setRevoking(t.id);
+    try {
+      await del(`/api/v1/me/tokens/${t.id}`);
+      toast.success('Токен отозван');
+      qc.invalidateQueries({ queryKey: ['me', 'tokens'] });
+    } catch (e) {
+      toast.error(errMsg(e));
+    } finally {
+      setRevoking(null);
+    }
+  };
   const [name, setName] = useState('');
   const [days, setDays] = useState('90');
   const [error, setError] = useState<string | null>(null);
   const [created, setCreated] = useState<{ name: string; token: string } | null>(null);
-  const [history, setHistory] = useState<Array<{ name: string; at: string; days: number }>>([]);
   const m = useMutation({
     mutationFn: () => post<{ token: string }>('/api/v1/me/tokens', { name: name.trim(), expiresInDays: Number(days) }),
     onSuccess: (r) => {
       setCreated({ name: name.trim(), token: r.token });
-      setHistory((h) => [{ name: name.trim(), at: new Date().toISOString(), days: Number(days) }, ...h]);
+      qc.invalidateQueries({ queryKey: ['me', 'tokens'] });
       setName('');
       setError(null);
     },
@@ -504,18 +623,53 @@ function TokensTab() {
           </button>
         </div>
       </form>
-      {history.length > 0 && (
-        <div className="card">
-          <h3 className="admin-card-title">Создано в этом сеансе</h3>
-          <ul className="admin-list small">
-            {history.map((h, i) => (
-              <li key={i}>
-                {h.name} — {relTime(h.at)}, действует {h.days} дн.
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
+      <div className="card col" style={{ gap: 12 }}>
+        <h3 className="admin-card-title">Ваши токены</h3>
+        {tokens.isLoading ? (
+          <LoadingRows rows={3} />
+        ) : tokens.isError ? (
+          <ErrorState error={tokens.error} onRetry={() => tokens.refetch()} />
+        ) : !tokens.data?.tokens.length ? (
+          <Empty icon={<KeyRound size={28} />} title="Токенов нет">
+            Создайте токен, чтобы подключить интеграцию.
+          </Empty>
+        ) : (
+          <div className="table-wrap">
+            <table className="table admin-table">
+              <thead>
+                <tr>
+                  <th>Назначение</th>
+                  <th>Создан</th>
+                  <th>Действует до</th>
+                  <th>Последнее использование</th>
+                  <th aria-label="Действия" />
+                </tr>
+              </thead>
+              <tbody>
+                {tokens.data.tokens.map((t) => (
+                  <tr key={t.id}>
+                    <td className="admin-break">{t.name}</td>
+                    <td className="small admin-nowrap" title={fullTime(t.created_at)}>
+                      {relTime(t.created_at)}
+                    </td>
+                    <td className="small admin-nowrap" title={fullTime(t.expires_at)}>
+                      {t.expired ? <Badge color="red">истёк</Badge> : t.expires_at ? new Date(t.expires_at).toLocaleDateString('ru-RU') : 'бессрочно'}
+                    </td>
+                    <td className="small muted admin-nowrap" title={fullTime(t.last_used_at)}>
+                      {t.last_used_at ? relTime(t.last_used_at) : 'не использовался'}
+                    </td>
+                    <td className="admin-cell-actions">
+                      <button className="btn sm danger" disabled={revoking === t.id} aria-busy={revoking === t.id} onClick={() => revoke(t)}>
+                        {revoking === t.id && <span className="spinner" />} Отозвать
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
     </section>
   );
 }

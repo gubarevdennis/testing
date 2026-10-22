@@ -2,7 +2,7 @@ import type { AnyExtension, Editor } from '@tiptap/core';
 import { ReactNodeViewRenderer } from '@tiptap/react';
 import Collaboration from '@tiptap/extension-collaboration';
 import CollaborationCaret from '@tiptap/extension-collaboration-caret';
-import { Placeholder, Dropcursor, Gapcursor, TrailingNode, CharacterCount } from '@tiptap/extensions';
+import { Placeholder, Dropcursor, Gapcursor, CharacterCount } from '@tiptap/extensions';
 import type * as Y from 'yjs';
 import { createSchemaExtensions, FRAGMENT_NAME } from '@kb/shared';
 import type { CollabProvider } from '@kb/shared';
@@ -67,7 +67,6 @@ export function clientExtensions(o: ClientExtensionOptions): AnyExtension[] {
     }),
     Dropcursor.configure({ color: 'var(--accent)', width: 2 }),
     Gapcursor,
-    TrailingNode,
     CharacterCount,
     ClientBlockIds,
     BlockOps,

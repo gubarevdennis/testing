@@ -98,6 +98,20 @@ export async function authRoutes(app: FastifyInstance, s: Services) {
     };
   });
 
+  /** Own profile: display name and job title (email and role are managed by administrators / SSO). */
+  app.patch('/api/v1/auth/me', async (req) => {
+    const user = requireUser(req);
+    const body = parse(z.object({ name: z.string().trim().min(1).max(200).optional(), title: z.string().trim().max(200).nullable().optional() }), req.body);
+    const r = await tx(s.db, async (q) => {
+      const row = (
+        await q.query(`update users set name = coalesce($2, name), title = case when $3::boolean then $4 else title end, updated_at = now() where id = $1 returning name, title`, [user.id, body.name ?? null, body.title !== undefined, body.title ?? null])
+      ).rows[0];
+      await audit(q, actorOf(req), { action: 'user.profile_update', targetType: 'user', targetId: user.id, details: { fields: Object.keys(body) } });
+      return row;
+    });
+    return { user: r };
+  });
+
   app.patch('/api/v1/auth/me/preferences', async (req) => {
     const user = requireUser(req);
     const body = parse(z.record(z.string(), z.unknown()), req.body);
@@ -161,6 +175,15 @@ export async function authRoutes(app: FastifyInstance, s: Services) {
     const user = requireUser(req);
     const r = await s.db.query(`select id, created_at, last_seen_at, expires_at, ip, user_agent from sessions where user_id = $1 and revoked_at is null and expires_at > now() order by last_seen_at desc`, [user.id]);
     return { sessions: r.rows.map((x) => ({ ...x, current: x.id === req.session?.id })) };
+  });
+
+  app.delete('/api/v1/auth/sessions/:id', async (req) => {
+    const user = requireUser(req);
+    const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
+    if (id === req.session?.id) throw badRequest('Чтобы завершить текущий сеанс, выйдите из системы');
+    const r = await s.db.query(`update sessions set revoked_at = now(), revoke_reason = 'user' where id = $1 and user_id = $2 and revoked_at is null`, [id, user.id]);
+    if (!r.rowCount) throw new AppError(404, 'not_found', 'Сеанс не найден');
+    return { ok: true };
   });
 
   app.post('/api/v1/auth/sessions/revoke-others', async (req) => {
