@@ -70,6 +70,7 @@ export async function buildApp(base: Omit<Services, 'hub' | 'bus' | 'metrics'> &
   const app = Fastify({
     loggerInstance: base.log as any,
     trustProxy: true,
+    maxParamLength: 2000,
     bodyLimit: 20 * 1024 * 1024,
     genReqId: (req) => (req.headers['x-correlation-id'] as string)?.slice(0, 64) || randomUUID(),
     disableRequestLogging: base.cfg.env === 'test',

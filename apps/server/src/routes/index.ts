@@ -8,6 +8,8 @@ import { accessRoutes } from './access.js';
 import { collabRoutes } from './collab.js';
 import { adminRoutes } from './admin.js';
 import { healthRoutes } from './health.js';
+import { attachmentRoutes } from './attachments.js';
+import { searchCommentRoutes } from './search-comments.js';
 
 export async function registerRoutes(app: FastifyInstance, s: Services) {
   await healthRoutes(app, s);
@@ -18,4 +20,6 @@ export async function registerRoutes(app: FastifyInstance, s: Services) {
   await accessRoutes(app, s);
   await collabRoutes(app, s);
   await adminRoutes(app, s);
+  await attachmentRoutes(app, s);
+  await searchCommentRoutes(app, s);
 }
