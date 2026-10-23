@@ -19,6 +19,27 @@ import { PageLink, PageMention, UserMention, CommentMark } from './nodes/links.j
 import { Mermaid, TableOfContentsBlock, SyncedBlock, CollectionView } from './nodes/special.js';
 import { sanitizeHref } from './url.js';
 
+/**
+ * Subscript and superscript exclude each other when toggled (QA-E8): one character cannot be both, as in word
+ * processors. Only the commands change — the schema still reads stored text that carries both marks.
+ */
+const KbSubscript = Subscript.extend({
+  addCommands() {
+    return {
+      ...this.parent?.(),
+      toggleSubscript: () => ({ editor, commands }) => (editor.isActive(this.name) ? commands.unsetMark(this.name) : commands.unsetMark('superscript') && commands.setMark(this.name)),
+    };
+  },
+});
+const KbSuperscript = Superscript.extend({
+  addCommands() {
+    return {
+      ...this.parent?.(),
+      toggleSuperscript: () => ({ editor, commands }) => (editor.isActive(this.name) ? commands.unsetMark(this.name) : commands.unsetMark('subscript') && commands.setMark(this.name)),
+    };
+  },
+});
+
 export { CONTENT_SCHEMA_VERSION } from './version.js';
 
 /** Block node types that carry a stable `id` attribute (anchors, comments, history, block links). */
@@ -174,8 +195,8 @@ export function createSchemaExtensions(): AnyExtension[] {
     FontSize,
     Highlight.configure({ multicolor: true }),
     TextAlign.configure({ types: ['heading', 'paragraph'], alignments: ['left', 'center', 'right', 'justify'] }),
-    Subscript,
-    Superscript,
+    KbSubscript,
+    KbSuperscript,
     KbDetails.configure({ persist: true }),
     DetailsSummary,
     DetailsContent,

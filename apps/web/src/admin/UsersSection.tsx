@@ -770,7 +770,7 @@ function ImportDialog({ onClose, onDone }: { onClose: () => void; onDone: () => 
     );
   }
   return (
-    <Dialog open size="xwide" persistent={busy || !!csv} title="Импорт сотрудников из CSV" onClose={onClose} footer={footer}>
+    <Dialog open size="xwide" persistent={busy || !!csv} dirty={!result && !!csv.trim()} title="Импорт сотрудников из CSV" onClose={onClose} footer={footer}>
       {body}
     </Dialog>
   );

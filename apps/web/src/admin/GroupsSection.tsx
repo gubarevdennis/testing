@@ -228,11 +228,12 @@ function GroupDialog({ group, kind, initialParent, all, onClose, onSaved }: { gr
   });
   const once = useInFlight();
   const submit = () => once(() => m.mutateAsync());
-  const dirty = name !== (group?.name ?? '') || description !== (group?.description ?? '');
+  const dirty = name !== (group?.name ?? '') || description !== (group?.description ?? '') || parentId !== (group?.parent_id ?? initialParent ?? '') || (manager?.id ?? null) !== (group?.manager_id ?? null);
   return (
     <Dialog
       open
       persistent={dirty}
+      dirty={dirty}
       title={group ? `Изменить «${group.name}»` : kind === 'department' ? 'Новый отдел' : 'Новая группа'}
       onClose={onClose}
       footer={

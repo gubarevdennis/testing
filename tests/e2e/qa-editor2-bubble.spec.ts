@@ -65,13 +65,13 @@ test('R-EDITOR-005, QA26-07 «Тип блока»: Текст, Заголово�
     if (/список|Чек-лист|Цитата|Выделенный/.test(label)) {
       await selectFirst(page);
       await typeMenu().click();
-      await page.getByRole('menuitem', { name: 'Текст', exact: true }).click();
+      await page.getByRole('menuitem', { name: 'Текст' }).click();
       await expectSaved(page);
       await expect.poll(async () => (await first(page, id)).type).toBe('paragraph');
     }
     await selectFirst(page);
     await typeMenu().click();
-    await page.getByRole('menuitem', { name: label, exact: true }).click();
+    await page.getByRole('menuitem', { name: label }).click();
     await expectSaved(page);
     await expect.poll(async () => pred(await first(page, id)), { message: label }).toBe(true);
     await expect(editor(page).locator(css).first()).toContainText('Строка для преобразования');
@@ -94,27 +94,28 @@ test('R-EDITOR-010 «Цвет»: a text colour and a background, «По умол
   await page.keyboard.type('Цветная строка');
   await expectSaved(page);
   const colorMenu = () => bar(page).getByRole('button', { name: 'Цвет', exact: true });
-  const pick = async (item: string) => {
+  // items carry a sample swatch («A») and a ✓ for the current value in their accessible name
+  const pick = async (item: RegExp) => {
     await selectFirst(page);
     await colorMenu().click();
-    await page.getByRole('menuitemcheckbox', { name: item, exact: true }).click();
+    await page.getByRole('menuitemcheckbox', { name: item }).click();
     await expectSaved(page);
   };
   // the trigger shows the tooltip «Цвет текста и фона»
   await selectFirst(page);
   await colorMenu().hover();
   await expect(page.getByRole('tooltip').or(page.locator('.tooltip')).filter({ hasText: 'Цвет текста и фона' })).toBeVisible();
-  await pick('Красный');
-  await pick('Жёлтый фон');
+  await pick(/Красный( ✓)?$/);
+  await pick(/Жёлтый фон( ✓)?$/);
   await expect.poll(async () => marksOf(await first(page, id)).map((m) => m.type).sort()).toEqual(['highlight', 'textStyle']);
   expect(JSON.stringify(marksOf(await first(page, id)))).toContain('#b4372b');
   await expect(editor(page).locator('mark')).toHaveText('Цветная строка');
   // «По умолчанию» removes the text colour, the background stays
-  await pick('По умолчанию');
+  await pick(/По умолчанию( ✓)?$/);
   await expect.poll(async () => JSON.stringify(marksOf(await first(page, id)))).not.toContain('#b4372b');
   expect(marksOf(await first(page, id)).map((m) => m.type)).toContain('highlight');
   // «Без фона» removes the background
-  await pick('Без фона');
+  await pick(/Без фона( ✓)?$/);
   await expect.poll(async () => marksOf(await first(page, id)).filter((m) => m.type === 'highlight')).toEqual([]);
   await expect(editor(page).locator('mark')).toHaveCount(0);
   // Undo brings the background back, Redo removes it again
