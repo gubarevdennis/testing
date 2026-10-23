@@ -44,7 +44,7 @@ Markdown-экспорт остаётся читаемым, а невыражае
 Триггер запрещает UPDATE/DELETE; канонический JSON для стабильного хеша; проверка `npm run audit-verify` и в админке.
 
 ## D-13. Санитизация HTML на сервере через sanitize-html (вместо DOMPurify)
-DOMPurify в серверном DOM (happy-dom) вырезал заголовки; sanitize-html работает без DOM, тот же allowlist используется для SVG.
+DOMPurify в серверном DOM (happy-dom) вырезал заголовки; sanitize-html работает без DOM, тот же allowlist используется для SVG. Для импорта (HTML, DOCX, HTML-блоки Markdown) с D-38 действует общий с буфером обмена allowlist-нормализатор (собственный обход DOM, не DOMPurify; заголовки сохраняются — проверено тестами на happy-dom), sanitize-html — для HTML, который хранится или отдаётся как HTML.
 
 ## D-14. Собственная реализация TOTP (RFC 6238)
 Библиотека otplib v13 сменила API; RFC реализован в 40 строк и покрыт тестом с эталонными векторами.

@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import * as Y from 'yjs';
 import WebSocket from 'ws';
 import fc from 'fast-check';
-import { encodeClient, MSG, decodeServer } from '@kb/shared';
+import { encodeClient, MSG, decodeServer, CONTENT_SCHEMA_VERSION } from '@kb/shared';
 import { startServer, setupOrg, expectStatus, type TestServer } from '../support/harness.js';
 import { openClient, waitFor } from '../support/collab.js';
 
@@ -46,7 +46,8 @@ describe('durability contract', () => {
     const msgs: any[] = [];
     ws.on('message', (d: Buffer) => msgs.push(decodeServer(new Uint8Array(d))));
     await new Promise((r) => ws.on('open', r));
-    ws.send(encodeClient({ type: MSG.HELLO, stateVector: Y.encodeStateVector(doc) }));
+    // a client declares the document format it writes (absent = format 1, refused for current documents, D-28)
+    ws.send(encodeClient({ type: MSG.HELLO, stateVector: Y.encodeStateVector(doc), schemaVersion: CONTENT_SCHEMA_VERSION }));
     await waitFor(() => msgs.some((m) => m.type === MSG.SYNC));
     Y.applyUpdate(doc, msgs.find((m) => m.type === MSG.SYNC).update);
     const sv = Y.encodeStateVector(doc);

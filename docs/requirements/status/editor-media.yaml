@@ -347,10 +347,9 @@
   evidence: apps/web/src/editor/extensions/uploads.ts (DnD, Ctrl+V, выбор, пакетно, прогресс, отмена, повтор); FileView (предпросмотр, скачать)
   note: Нет паузы, переименования и удаления вложения в UI (API PATCH/DELETE есть), копирования ссылки на файл
 - id: R-MEDIA-007
-  status: partial
-  evidence: apps/web/src/editor/nodeviews/ImageView.tsx; apps/server/src/services/attachments.ts makeImageDerivatives (оригинал не меняется)
-  note: tests/integration/content.test.ts:'uploads an image, stores the original byte-exact with checksum…'. Нет inline-изображений в строке; копия блока на другую страницу ссылается на вложение исходной
-    страницы (права)
+  status: done
+  evidence: "packages/shared/src/editor/nodes/media.ts InlineImage (+ правило «строка/блок» isInlineImageElement); apps/web/src/editor/nodeviews/InlineImageView.tsx (размер, выравнивание в строке, alt, подпись, просмотрщик, оригинал, «Сделать блоком»), ImageView.tsx («В строку текста»); apps/server/src/services/attachments.ts makeImageDerivatives (оригинал не меняется); apps/server/src/services/attachment-copy.ts (одно правило копирования для вставки, переноса блоков, дублирования, шаблонов, копии конфликта), apps/web/src/editor/extensions/paste.ts (HTML без внутреннего формата тоже копирует вложения); D-37, D-39"
+  note: "tests/e2e/editor-footnotes-media.spec.ts:'R-MEDIA-007: a picture in a line of text…' (вставка в строку, загрузка как вложение страницы, оригинал байт-в-байт, размер, выравнивание, alt, Alt+Shift+→ + Undo, просмотрщик, блок ↔ строка одним шагом Undo), 'a picture copied from another page as HTML…'; tests/integration/media-ingest-p0.test.ts (дублирование копирует и чужие картинки, читатель копии их открывает, исходник не меняется; шаблон хранит свои копии, страница из шаблона — свои вложения, после удаления исходной страницы; шаблон не выносит чужой файл); tests/integration/attachment-copy.test.ts; tests/integration/content.test.ts:'uploads an image, stores the original byte-exact…'; tests/unit/editor-footnotes-ingest.test.ts:'R-MEDIA-007 inline images'"
 - id: R-FILES-003
   status: done
   evidence: apps/server/src/routes/attachments.ts attachmentDto (sha256, version, size), loadAttachment
@@ -518,9 +517,9 @@
   evidence: Mod+Shift+C по выделению → Markdown
   note: Направление в Word не проверено (env)
 - id: R-EDITOR-038
-  status: partial
-  evidence: "packages/shared/src/editor/extensions.ts; apps/web/src/editor/commands.tsx SLASH_COMMANDS"
-  note: "Все элементы, кроме сносок, есть (колонки — с переносом блоков между ними, editor-p0-dnd.spec.ts). Сносок (footnotes) в схеме нет — Markdown-импорт сносок превращает их в надстрочные номера и раздел «Сноски»"
+  status: done
+  evidence: "packages/shared/src/editor/nodes/footnote.ts (узел footnote, текст примечания в ссылке), footnotes.ts (миграция 1 → 2), markdown.ts ([^n]), html-normalize.ts (inlineFootnotes / footnotesToEndnotes); apps/web/src/editor/extensions/footnotes.ts (всплывающий редактор, Ctrl+Alt+F, /Сноска), FootnotesList.tsx (список и переходы); apps/server/src/convert/docx-export.ts (сноски Word); D-36. Остальные элементы списка — extensions.ts, commands.tsx SLASH_COMMANDS"
+  note: "tests/e2e/editor-footnotes-media.spec.ts:'R-EDITOR-038: footnotes — insert…' (вставка, нумерация, переходы ссылка ↔ список, правка, Undo/Redo, удаление + Undo, копирование/вставка, сохранение, перезагрузка), 'Markdown with [^1] pasted…'; tests/unit/editor-footnotes-ingest.test.ts (миграция 1 → 2 и отказ при неоднозначности, Markdown/HTML round trip, Word/Google Docs/GitHub/mammoth, поиск, сравнение версий, Yjs); tests/integration/collab-schema.test.ts:'real migration 1 → 2…' (клиент формата 1); tests/integration/media-ingest-p0.test.ts:'Markdown [^n] import → footnotes; search…; MD / HTML / DOCX export…; DOCX re-import'; tests/integration/io-p0-import.test.ts (сноски DOCX)"
 - id: R-EDITOR-039
   status: manual
   evidence: apps/web/src/editor/palette.ts TEXT_COLORS/HIGHLIGHTS; styles/editor.css dark remap; «По умолчанию» в apps/web/src/editor/menus/BubbleToolbar.tsx

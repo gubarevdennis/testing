@@ -150,7 +150,9 @@ export const SmartPaste = Extension.create({
             const kind = clipboardKind(input, env);
             if (kind === 'none' || kind === 'files') return false; // pictures / files: the Uploads plugin (same nodes)
             // a range pasted into a table goes cell by cell (prosemirror-tables), from the same normalised HTML / text
-            const inTable = view.state.selection instanceof CellSelection || /^table(Cell|Header)$/.test($from.node(-1)?.type.name ?? '');
+            // (and anything pasted over a selection of cells fills those cells)
+            if (view.state.selection instanceof CellSelection) return false;
+            const inTable = /^table(Cell|Header)$/.test($from.node(-1)?.type.name ?? '');
             if (inTable && (kind === 'rows' || (kind === 'html' && /<table/i.test(html)))) return false;
             let res: ReturnType<typeof ingestClipboard>;
             try {

@@ -213,7 +213,12 @@ test('R-MEDIA-007: a picture copied from another page as HTML (no internal clipb
   const target = await newPage(page, 'Целевая страница');
   // the attachment id travels in the HTML (data-attachment-id) as when copying between tabs/browsers
   await paste(page, { 'text/html': html.replace('data-attachment-id=""', `data-attachment-id="${original}"`), 'text/plain': '' });
-  await expect.poll(async () => nodesOf((await apiContent(page.request, target)).content, 'image')[0]?.attrs?.attachmentId ?? null, { timeout: 20_000 }).not.toBe(original);
+  await expect
+    .poll(async () => {
+      const a = nodesOf((await apiContent(page.request, target)).content, 'image')[0]?.attrs?.attachmentId ?? null;
+      return a && a !== original ? 'copied' : a ?? 'none';
+    }, { timeout: 20_000 })
+    .toBe('copied');
   const copied = nodesOf((await apiContent(page.request, target)).content, 'image')[0].attrs.attachmentId as string;
   expect(copied).toBeTruthy();
   const meta = await (await page.request.get(`/api/v1/attachments/${copied}`)).json();

@@ -309,9 +309,9 @@
   evidence: All data in self-hosted PostgreSQL + own object store; org archive export (services/archive.ts) + backups
   note: ''
 - id: R-IMPORT-021
-  status: partial
-  evidence: services/importer.ts analyzeImport for DOCX/MD/ZIP/HTML/CSV/XLSX
-  note: Clipboard paste uses a separate client-side pipeline
+  status: done
+  evidence: "packages/shared/src/editor/ingest.ts (ingestHtml/Markdown/Text/Rows/Files, clipboardKind, finalizeIngest, отчёт converted/dropped/warnings) + html-normalize.ts — общие для apps/server/src/convert/html.ts (импорт HTML/DOCX/MD/TXT/CSV/XLSX как таблица, services/importer.ts) и apps/web/src/editor/extensions/paste.ts (буфер: text/html, text/markdown, text/plain, TSV, изображения и файлы через uploads.ts → ingestFiles); clipboard/hooks.ts — обработчик картинок других сайтов; D-38. Пакетно и ZIP с относительными изображениями — services/importer.ts"
+  note: "Совпадение документа и отчёта доказано: tests/unit/editor-footnotes-ingest.test.ts:'R-IMPORT-021 one pipeline…' (HTML, Markdown, текст, TSV ↔ строки CSV/XLSX, встроенные картинки, выбор формата буфера); tests/integration/media-ingest-p0.test.ts:'R-IMPORT-021…' (эндпоинт импорта .html/.txt/.md против вставки); tests/e2e/editor-footnotes-media.spec.ts:'R-IMPORT-021: the same HTML pasted in the browser and imported as a file…'. Сознательные различия (D-38): H1 файла — название страницы; вставка диапазона в существующую таблицу — по ячейкам (prosemirror-tables) из того же нормализованного HTML"
 - id: R-IMPORT-022
   status: partial
   evidence: Import button (Sidebar, Home, SpacePage), /import route, Ctrl/Cmd+V paste
