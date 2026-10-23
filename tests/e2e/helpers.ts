@@ -1,4 +1,4 @@
-import { expect, type Page, type APIRequestContext } from '@playwright/test';
+import { expect, type Page, type APIRequestContext, type Locator } from '@playwright/test';
 
 export const OWNER = { org: 'ООО «Тест»', name: 'Анна Владелец', email: 'owner@corp.test', password: 'Owner-password-1' };
 
@@ -115,4 +115,37 @@ export async function treeLink(page: Page, name: string | RegExp, role: 'link' |
     if (end && !(await link.count()) && i > 5) break;
   }
   return link.first();
+}
+
+/**
+ * Puts the caret at the end of a block's text. `End` is not enough: it goes to the end of the visual line, and a long
+ * paragraph wraps over several lines.
+ */
+export async function caretToEnd(page: Page, block: Locator) {
+  await block.click();
+  await block.evaluate((el) => {
+    // the end of the last text node: the end of a container (a table cell around its paragraph) is not a text position
+    const w = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+    let last: Node | null = null;
+    for (let n = w.nextNode(); n; n = w.nextNode()) if (n.textContent) last = n;
+    const r = document.createRange();
+    if (last) r.setStart(last, last.textContent!.length);
+    else r.selectNodeContents(el);
+    r.collapse(!!last);
+    const s = window.getSelection()!;
+    s.removeAllRanges();
+    s.addRange(r);
+  });
+  await expect
+    .poll(() =>
+      block.evaluate((el) => {
+        const s = window.getSelection();
+        if (!s?.anchorNode || !s.isCollapsed || !el.contains(s.anchorNode)) return false;
+        const rest = document.createRange();
+        rest.setStart(s.anchorNode, s.anchorOffset);
+        rest.setEnd(el, el.childNodes.length);
+        return rest.toString() === ''; // nothing of the block's text after the caret
+      }),
+    )
+    .toBe(true);
 }

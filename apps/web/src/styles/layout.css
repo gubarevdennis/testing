@@ -46,6 +46,7 @@ body.resizing * { cursor: col-resize !important; }
 .tree-row:not(.placeholder):hover { background: var(--surface-hover); }
 .tree-row.active { background: var(--surface-active); }
 .tree-row.active .tree-title { font-weight: 500; }
+.tree-row.active .muted { color: var(--text); font-style: italic; } /* secondary grey on the selected-row background is below 4.5:1 */
 .tree-row.dragging { opacity: 0.45; }
 .tree-row.placeholder { display: flex; gap: 8px; align-items: center; }
 .tree-handle { grid-column: 1; display: grid; place-items: center; height: 100%; color: var(--text-3); cursor: grab; opacity: 0; transition: opacity var(--t-fast); }

@@ -272,7 +272,11 @@ test('ROUTE-01: employee route — login → own spaces → regulation → searc
   // Search finds it.
   await expect
     .poll(async () => {
+      // count() does not wait: let the search request finish (results or the empty state) first
+      const answered = p.waitForResponse((r) => r.url().includes('/api/v1/search?'), { timeout: 15_000 }).catch(() => undefined);
       await p.goto(`/search?q=${encodeURIComponent('приёмки ' + stamp)}`);
+      await answered;
+      await p.locator('.search-results:not([aria-busy="true"]), .search-tips').first().waitFor({ timeout: 15_000 }).catch(() => undefined);
       return p.getByRole('list', { name: 'Результаты поиска' }).getByRole('link', { name: new RegExp(`Регламент приёмки ${stamp}`) }).count();
     }, { timeout: 90_000, intervals: [1000, 2000, 3000] })
     .toBeGreaterThan(0);

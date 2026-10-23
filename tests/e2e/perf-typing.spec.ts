@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
-import { ensureOwner, newPage, editor, expectSaved, apiContent } from './helpers';
+import { ensureOwner, newPage, editor, expectSaved, apiContent, caretToEnd } from './helpers';
 import { md, importMarkdown, spaceOf, para, heading, table, countWords, startLatencyProbe, readLatency, stats, journal, throttleCpu, caret, expectBudget } from './perf-helpers';
 
 /**
@@ -66,8 +66,7 @@ test('R-PERF-008, AT-84: typing in a 10 000-word article with CPU throttled 4x �
   const id = await prepare(page, 'Статья 10 тыс. слов', content);
   // caret into the middle of the article
   const target = editor(page).locator('p', { hasText: /^П300 / });
-  await target.click();
-  await page.keyboard.press('End');
+  await caretToEnd(page, target);
   const before = (await target.textContent())!;
   const top0 = await target.evaluate((e) => e.getBoundingClientRect().top);
   const cdp = await throttleCpu(page, CPU_RATE);
@@ -102,8 +101,7 @@ test('SC-04: 5 000 blocks and a long table: typing keeps the caret in place and 
   // 1) a paragraph deep in the document
   const p = editor(page).locator('p', { hasText: /^П4001 / });
   await p.scrollIntoViewIfNeeded();
-  await p.click();
-  await page.keyboard.press('End');
+  await caretToEnd(page, p);
   const before = (await p.textContent())!;
   const top0 = await p.evaluate((e) => e.getBoundingClientRect().top);
   const text = typingText(SAMPLES);
@@ -117,8 +115,7 @@ test('SC-04: 5 000 blocks and a long table: typing keeps the caret in place and 
   // 2) a cell in the middle of the 200-row table
   const cell = editor(page).locator('td', { hasText: /^R120C2 / });
   await cell.scrollIntoViewIfNeeded();
-  await cell.click();
-  await page.keyboard.press('End');
+  await caretToEnd(page, cell);
   const cellBefore = (await cell.textContent())!;
   const cellText = typingText(80);
   const r2 = await typeMeasured(page, cellText);
@@ -142,8 +139,7 @@ test('R-PERF-013: typing starts no animations on document content (input latency
   for (let i = 0; i < 200; i++) content.push(para(i, 12));
   await prepare(page, 'Анимации и ввод', content);
   const p = editor(page).locator('p', { hasText: /^П100 / });
-  await p.click();
-  await page.keyboard.press('End');
+  await caretToEnd(page, p);
   await page.evaluate(() => {
     const w = window as any;
     w.__kbAnim = [];

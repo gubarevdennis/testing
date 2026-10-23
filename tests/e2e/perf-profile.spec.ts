@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { writeFileSync, mkdirSync } from 'node:fs';
-import { ensureOwner, newPage, editor } from './helpers';
+import { ensureOwner, newPage, editor, caretToEnd } from './helpers';
 import { md, importMarkdown, spaceOf, para, heading, table, startLatencyProbe, readLatency, stats, journal } from './perf-helpers';
 
 /**
@@ -80,8 +80,7 @@ test('profile typing', async ({ page }) => {
   const n = Math.floor(BLOCKS * 0.43);
   const target = editor(page).locator('p', { hasText: new RegExp(`^П${n} `) });
   await target.scrollIntoViewIfNeeded();
-  await target.click();
-  await page.keyboard.press('End');
+  await caretToEnd(page, target);
   await page.waitForTimeout(1500);
   if (process.env.KB_PERF_IDENTITY === '1') {
     // how many top-level nodes each transaction replaces (identity), and where the transactions come from

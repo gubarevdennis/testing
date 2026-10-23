@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
-import { ensureOwner, newPage, editor, expectSaved, apiContent, api } from './helpers';
+import { ensureOwner, newPage, editor, expectSaved, apiContent, api, caretToEnd } from './helpers';
 import { startLatencyProbe, readLatency, stats, journal, throttleCpu } from './perf-helpers';
 
 /**
@@ -40,8 +40,7 @@ async function typeDuringUpload(page: Page, label: string, inThread: boolean) {
   const exp = await api(page, 'POST', '/api/v1/exports', { pageIds: [id], format: 'docx' });
   // back into the first paragraph and type
   const p = editor(page).locator('p', { hasText: 'Абзац для набора.' });
-  await p.click();
-  await page.keyboard.press('End');
+  await caretToEnd(page, p);
   const thr = await throttleCpu(page, CPU_RATE);
   await startLatencyProbe(page);
   const text = ' набор во время тяжёлых операций'.replace(/[^\x20-\x7e]/g, 'x').padEnd(160, 'abc');

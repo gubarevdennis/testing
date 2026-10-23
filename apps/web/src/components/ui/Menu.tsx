@@ -111,6 +111,13 @@ export function Menu({ trigger, items, placement = 'bottom-start', label, onOpen
   );
 }
 
+let lastTouch = 0;
+if (typeof window !== 'undefined') window.addEventListener('touchstart', () => (lastTouch = Date.now()), { capture: true, passive: true });
+/** A hover is a mouse hover: not a touch, and not the mouse events a browser synthesizes right after a tap. */
+function hoverOpens(e: React.PointerEvent) {
+  return e.pointerType === 'mouse' && Date.now() - lastTouch > 1000 && !matchMedia('(hover: none)').matches;
+}
+
 function SubMenu({ item, onClose, itemRef, itemProps, active }: { item: MenuItemDef; onClose: () => void; itemRef: (el: HTMLElement | null) => void; itemProps: Record<string, unknown>; active: boolean }) {
   const [open, setOpen] = useState(false);
   const { refs, floatingStyles } = useFloating({
@@ -132,9 +139,10 @@ function SubMenu({ item, onClose, itemRef, itemProps, active }: { item: MenuItem
   };
   return (
     <div
-      // hover opens submenus for a mouse only: a tap emulates hover and would open a submenu over the item being tapped
-      onPointerEnter={(e) => e.pointerType === 'mouse' && (closeTimer.current && clearTimeout(closeTimer.current), setOpen(true))}
-      onPointerLeave={(e) => e.pointerType === 'mouse' && (closeTimer.current = window.setTimeout(() => setOpen(false), 160))}
+      // hover opens submenus for a real mouse only: after a tap the browser emits compatibility mouse events, which would
+      // open a submenu over the item being tapped
+      onPointerEnter={(e) => hoverOpens(e) && (closeTimer.current && clearTimeout(closeTimer.current), setOpen(true))}
+      onPointerLeave={(e) => hoverOpens(e) && (closeTimer.current = window.setTimeout(() => setOpen(false), 160))}
     >
       <button
         ref={(el) => {
