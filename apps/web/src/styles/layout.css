@@ -131,3 +131,8 @@ button.pick-item:hover, .pick-item:hover { background: var(--surface-hover); }
 .page-heading { font-size: 26px; font-weight: 650; letter-spacing: -0.01em; margin-bottom: 4px; }
 .page-sub { color: var(--text-2); margin-bottom: 24px; }
 @media (max-width: 860px) { .page-container { padding: 56px 16px 80px; } }
+
+/* motion: tree rows appear smoothly when a branch expands; the drag handle and row actions fade in on hover */
+.tree-row { transition: background-color var(--t-fast) var(--ease); }
+.tree-row .chev { transition: transform var(--t-fast) var(--ease); }
+.tree-row.active { animation: kb-fade-in var(--t-fast) var(--ease); }

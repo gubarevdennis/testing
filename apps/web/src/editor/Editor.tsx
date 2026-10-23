@@ -12,6 +12,7 @@ import { clientExtensions } from './clientExtensions';
 import { BubbleToolbar } from './menus/BubbleToolbar';
 import { FootnotesList } from './FootnotesList';
 import { BlockHandle, TouchBlockActions } from './menus/BlockHandle';
+import { LassoSelect } from './menus/LassoSelect';
 import { TableToolbar } from './menus/TableToolbar';
 import { PasteOptionsMenu } from './menus/PasteOptionsMenu';
 import { startUploads, resumeUploads } from './extensions/uploads';
@@ -319,6 +320,8 @@ function EditorInner(p: Props & { session: CollabSession }) {
   );
 
   const editorRef = useRef<TEditor | null>(null);
+  // the lasso starts anywhere in the page's scroll area beside the text
+  const lassoScope = useCallback(() => (wrapRef.current?.closest('.page-scroll') as HTMLElement | null) ?? wrapRef.current, []);
   editorRef.current = editor;
 
   ctxRef.current = {
@@ -490,6 +493,7 @@ function EditorInner(p: Props & { session: CollabSession }) {
           {p.canEdit && <BubbleToolbar editor={editor} onComment={() => requestComment()} />}
           {p.canEdit && <TableToolbar editor={editor} />}
           {p.canEdit && <PasteOptionsMenu editor={editor} />}
+          {p.canEdit && <LassoSelect editor={editor} scope={lassoScope} />}
           {p.canEdit && (
             <BlockHandle
               editor={editor}

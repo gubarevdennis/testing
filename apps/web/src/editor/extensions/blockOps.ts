@@ -172,6 +172,22 @@ function setBlockRange(editor: Editor, from: number, to: number) {
   return true;
 }
 
+/** Selects the top-level blocks with indexes first..last (inclusive) as a block range, without scrolling (lasso). */
+export function selectTopLevelBlocks(editor: Editor, first: number, last: number): boolean {
+  const doc = editor.state.doc;
+  if (!doc.childCount) return false;
+  const a = Math.max(0, Math.min(first, last));
+  const b = Math.min(doc.childCount - 1, Math.max(first, last));
+  let from = 0;
+  for (let i = 0; i < a; i++) from += doc.child(i).nodeSize;
+  let to = from;
+  for (let i = a; i <= b; i++) to += doc.child(i).nodeSize;
+  const cur = blockRangeKey.getState(editor.state);
+  if (cur && cur.from === from && cur.to === to) return true;
+  editor.view.dispatch(editor.state.tr.setSelection(rangeSelection(editor.state, from, to)).setMeta(SET_RANGE, { from, to }));
+  return true;
+}
+
 /** Extends the block selection by one sibling block up or down. */
 export function extendBlockSelection(editor: Editor, dir: -1 | 1): boolean {
   const { state } = editor;

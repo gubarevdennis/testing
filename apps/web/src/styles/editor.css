@@ -422,3 +422,11 @@ body.kb-block-dragging, body.kb-block-dragging * { cursor: grabbing !important; 
 .kb-inline-toolbar { top: auto; bottom: calc(100% + 8px); line-height: normal; }
 .kb-inline-image-edit { display: inline-flex; margin-left: 4px; }
 .kb-inline-image-edit .input { width: 260px; height: 28px; font-size: 13px; }
+
+/* ---------- lasso selection and motion (all animations collapse under prefers-reduced-motion, tokens.css) */
+.kb-lasso { position: fixed; z-index: var(--z-popover); pointer-events: none; border: 1px solid var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); border-radius: 3px; animation: kb-fade-in var(--t-fast) var(--ease); }
+.kb-editor .kb-block-in-range { animation: kb-range-in var(--t-med) var(--ease); transition: background-color var(--t-fast) var(--ease), box-shadow var(--t-fast) var(--ease); }
+@keyframes kb-range-in { from { background-color: transparent; box-shadow: 0 0 0 0 var(--accent-soft); } }
+/* a page opens with a soft fade instead of popping in */
+.editor-wrap { animation: kb-page-in var(--t-med) var(--ease); }
+@keyframes kb-page-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
