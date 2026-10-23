@@ -122,8 +122,9 @@ export async function buildApp(base: Omit<Services, 'hub' | 'bus' | 'metrics' | 
         mediaSrc: ["'self'", 'blob:'],
         connectSrc: ["'self'", 'ws:', 'wss:'],
         fontSrc: ["'self'", 'data:'],
-        // same-origin previews (PDF/video) and the allow-listed video providers rendered by the embed block
-        frameSrc: ["'self'", 'https://www.youtube-nocookie.com', 'https://rutube.ru', 'https://vk.com'],
+        // same-origin previews (PDF/video) and the allow-listed video players rendered by the embed block
+        // (apps/web/src/editor/embedProviders.ts EMBED_ORIGINS: exact https origins the players are served from)
+        frameSrc: ["'self'", 'https://www.youtube-nocookie.com', 'https://rutube.ru', 'https://vk.com', 'https://vkvideo.ru'],
         objectSrc: ["'none'"],
         baseUri: ["'self'"],
         formAction: ["'self'"],

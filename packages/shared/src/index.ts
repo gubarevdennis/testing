@@ -14,6 +14,7 @@ export * from './editor/ingest.js';
 export { isInlineImageElement } from './editor/nodes/media.js';
 export * from './permissions.js';
 export * from './sort-key.js';
+export * from './appearance.js';
 export * from './collab-protocol.js';
 export * from './collab-client.js';
 export * from './collab-http.js';

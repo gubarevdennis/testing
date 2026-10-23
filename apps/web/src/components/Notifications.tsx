@@ -5,6 +5,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useNotifications } from '../hooks/data';
 import { post } from '../api/client';
 import { relTime } from '../lib/format';
+import { useFloatingMotion } from './ui/motion';
 
 const TEXT: Record<string, (n: any) => string> = {
   mention: (n) => `${n.data.from} упомянул(а) вас: «${n.data.excerpt ?? ''}»`,
@@ -20,8 +21,9 @@ export function NotificationsPopover({ trigger }: { trigger: (ref: (el: HTMLElem
   const { data } = useNotifications();
   const qc = useQueryClient();
   const navigate = useNavigate();
-  const { refs, floatingStyles, context } = useFloating({ open, onOpenChange: setOpen, placement: 'right-start', whileElementsMounted: autoUpdate, middleware: [offset(8), flip({ padding: 8 }), shift({ padding: 8 }), size({ padding: 8, apply: ({ availableHeight, elements }) => { Object.assign(elements.floating.style, { maxHeight: `${Math.min(520, availableHeight)}px` }); } })] });
+  const { refs, floatingStyles, context, isPositioned, placement } = useFloating({ open, onOpenChange: setOpen, placement: 'right-start', strategy: 'fixed', whileElementsMounted: autoUpdate, middleware: [offset(8), flip({ padding: 8 }), shift({ padding: 8 }), size({ padding: 8, apply: ({ availableHeight, elements }) => { Object.assign(elements.floating.style, { maxHeight: `${Math.min(520, availableHeight)}px` }); } })] });
   const { getReferenceProps, getFloatingProps } = useInteractions([useClick(context), useDismiss(context)]);
+  const motion = useFloatingMotion(open, isPositioned, placement);
   const markAll = async () => {
     await post('/api/v1/notifications/read', {});
     qc.invalidateQueries({ queryKey: ['notifications'] });
@@ -29,10 +31,10 @@ export function NotificationsPopover({ trigger }: { trigger: (ref: (el: HTMLElem
   return (
     <>
       {trigger(refs.setReference, getReferenceProps({ 'aria-label': 'Входящие уведомления' }))}
-      {open && (
+      {motion.isMounted && (
         <FloatingPortal>
           <FloatingFocusManager context={context} modal={false}>
-            <div ref={refs.setFloating} style={{ ...floatingStyles, width: 360, overflowY: 'auto' }} className="popover" {...getFloatingProps()}>
+            <div ref={refs.setFloating} style={{ ...floatingStyles, ...motion.styles, width: 360, overflowY: 'auto' }} className="popover" {...getFloatingProps()} {...motion.props}>
               <div className="row" style={{ padding: '10px 12px', borderBottom: '1px solid var(--border)' }}>
                 <b className="grow">Входящие</b>
                 {!!data?.unread && (

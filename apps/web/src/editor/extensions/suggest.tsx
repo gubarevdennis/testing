@@ -9,6 +9,7 @@ import { SuggestionList, type SuggestionItem, type SuggestionListHandle } from '
 import { SLASH_COMMANDS, filterCommands, type CommandContext } from '../commands';
 import { get } from '../../api/client';
 import { searchEmoji } from '../../lib/emoji';
+import { revealController } from '../../components/ui/motion';
 
 type Item = SuggestionItem & { run(editor: Editor, range: Range): void };
 
@@ -19,13 +20,17 @@ function popupRenderer(label: string, empty?: string, hideEmpty = false) {
     let el: HTMLDivElement | null = null;
     let cleanup: (() => void) | null = null;
     const listRef = createRef<SuggestionListHandle>();
+    // transparent until floating-ui has placed it next to the caret (it used to flash in the top-left corner first)
+    const reveal = revealController(() => el);
     const place = (clientRect: (() => DOMRect | null) | null | undefined) => {
       if (!el || !clientRect) return;
       const virtual = { getBoundingClientRect: () => clientRect() ?? new DOMRect() };
       cleanup?.();
       cleanup = autoUpdate(virtual as any, el, () => {
         computePosition(virtual as any, el!, { placement: 'bottom-start', strategy: 'fixed', middleware: [offset(6), flip({ padding: 8 }), shift({ padding: 8 })] }).then(({ x, y }) => {
-          if (el) Object.assign(el.style, { left: `${x}px`, top: `${y}px` });
+          if (!el) return;
+          Object.assign(el.style, { left: `${x}px`, top: `${y}px` });
+          reveal.placed();
         });
       });
     };
@@ -36,6 +41,7 @@ function popupRenderer(label: string, empty?: string, hideEmpty = false) {
         el.className = 'suggestion-popup';
         el.style.position = 'fixed';
         el.style.zIndex = 'var(--z-popover)';
+        reveal.hide();
         document.body.append(el);
         renderer = new ReactRenderer(SuggestionList as any, { props: props(p), editor: p.editor });
         el.append(renderer.element);
@@ -44,7 +50,11 @@ function popupRenderer(label: string, empty?: string, hideEmpty = false) {
       },
       onUpdate: (p: any) => {
         renderer?.updateProps(props(p));
-        if (el) el.style.display = hideEmpty && !p.items.length ? 'none' : '';
+        if (el) {
+          const hidden = hideEmpty && !p.items.length;
+          if (!hidden && el.style.display === 'none') reveal.hide();
+          el.style.display = hidden ? 'none' : '';
+        }
         place(p.clientRect);
       },
       onKeyDown: (p: any) => {

@@ -30,6 +30,7 @@ import type { ConflictInfo } from './extensions/conflictGuard';
 import { BlockConflictHost, DocConflictDialog, useConflicts } from './ConflictDialog';
 import { copyWithFeedback, useCopyPageCommands } from './clipboard/copy';
 import { useSelectionMemory } from './selectionMemory';
+import { embedKind } from './embedProviders';
 
 export interface EditorHandle {
   editor: TEditor | null;
@@ -582,7 +583,7 @@ function EditorInner(p: Props & { session: CollabSession }) {
           }}
         />
       )}
-      {embed && <EmbedDialog onClose={() => setEmbed(false)} onInsert={(url) => (editor?.chain().focus().insertContent({ type: 'embed', attrs: { url, kind: /youtu|rutube|vk\.com\/video/.test(url) ? 'video' : 'link' } }).run(), setEmbed(false))} />}
+      {embed && <EmbedDialog onClose={() => setEmbed(false)} onInsert={(url) => (editor?.chain().focus().insertContent({ type: 'embed', attrs: { url, kind: embedKind(url) } }).run(), setEmbed(false))} />}
       {math && (
         <MathDialog
           latex={math.latex}

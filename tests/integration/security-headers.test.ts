@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { startServer, setupOrg, type TestServer } from '../support/harness.js';
+import { EMBED_ORIGINS, toEmbed } from '../../apps/web/src/editor/embedProviders';
 
 let ts: TestServer;
 let org: Awaited<ReturnType<typeof setupOrg>>;
@@ -25,7 +26,13 @@ describe('security headers for user content (SECURITY)', () => {
     const res = await org.owner.raw('GET', '/api/v1/auth/me');
     const csp = res.headers.get('content-security-policy') ?? '';
     expect(csp).toContain("frame-ancestors 'none'");
-    expect(csp).toMatch(/frame-src 'self' https:\/\/www\.youtube-nocookie\.com https:\/\/rutube\.ru https:\/\/vk\.com/);
+    const frames = /frame-src ([^;]+)/.exec(csp)?.[1].trim().split(/\s+/) ?? [];
+    expect(frames[0]).toBe("'self'");
+    // every player origin of the embed block (RuTube, YouTube, VK) is allowed exactly — scheme and host
+    for (const origin of EMBED_ORIGINS) expect(frames, origin).toContain(origin);
+    expect(frames.filter((f) => f !== "'self'").sort()).toEqual([...EMBED_ORIGINS].sort());
+    for (const url of ['https://rutube.ru/video/c6cc4d620b1d4338901770a44b3e82f4/', 'https://rutube.ru/video/private/c6cc4d620b1d4338901770a44b3e82f4/?p=AbC', 'https://youtu.be/dQw4w9WgXcQ', 'https://vkvideo.ru/video-1_2'])
+      expect(frames, url).toContain(new URL(toEmbed(url)!.src).origin);
     expect(csp).toContain("script-src 'self'");
   });
 

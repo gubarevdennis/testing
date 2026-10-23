@@ -11,6 +11,7 @@ import { get } from '../../api/client';
 import { toast } from '../../components/ui/Toast';
 import { DocPreviewInline } from './DocPreviewInline';
 import { UploadPlaceholder } from './UploadPlaceholder';
+import { toEmbed } from '../embedProviders';
 
 const CALLOUT_LABEL: Record<string, string> = { info: 'Информация', tip: 'Совет', important: 'Важно', warning: 'Предупреждение', error: 'Ошибка / запрет', example: 'Пример', neutral: 'Заметка' };
 
@@ -141,14 +142,7 @@ function LoadedFileView({ node, selected, editor, updateAttributes }: NodeViewPr
   );
 }
 
-/** Embedded video or external link. Only allow-listed providers get an iframe; everything else is a safe link card. */
-const PROVIDERS: Array<{ re: RegExp; embed: (m: RegExpMatchArray) => string }> = [
-  { re: /^https?:\/\/(?:www\.)?youtube\.com\/watch\?v=([\w-]{6,})/, embed: (m) => `https://www.youtube-nocookie.com/embed/${m[1]}` },
-  { re: /^https?:\/\/youtu\.be\/([\w-]{6,})/, embed: (m) => `https://www.youtube-nocookie.com/embed/${m[1]}` },
-  { re: /^https?:\/\/rutube\.ru\/video\/([\w]+)/, embed: (m) => `https://rutube.ru/play/embed/${m[1]}` },
-  { re: /^https?:\/\/vk\.com\/video(-?\d+)_(\d+)/, embed: (m) => `https://vk.com/video_ext.php?oid=${m[1]}&id=${m[2]}` },
-];
-
+/** Embedded video or external link. Only allow-listed providers (../embedProviders) get an iframe; everything else is a safe link card. */
 export function EmbedView({ node, selected }: NodeViewProps) {
   const a = node.attrs;
   const url = sanitizeHref(a.url);
@@ -158,12 +152,22 @@ export function EmbedView({ node, selected }: NodeViewProps) {
         <video src={`/api/v1/attachments/${a.attachmentId}/content`} controls preload="metadata" contentEditable={false} />
       </NodeViewWrapper>
     );
-  const provider = url ? PROVIDERS.map((p) => [p, url.match(p.re)] as const).find(([, m]) => m) : null;
+  const player = toEmbed(url);
   return (
     <NodeViewWrapper className={'kb-embed' + (selected ? ' is-selected' : '')} data-drag-handle="">
-      {provider ? (
-        <div className="kb-embed-frame" contentEditable={false}>
-          <iframe src={provider[0].embed(provider[1]!)} title={a.title || 'Видео'} allow="encrypted-media; picture-in-picture; fullscreen" sandbox="allow-scripts allow-same-origin allow-presentation allow-popups" referrerPolicy="strict-origin-when-cross-origin" loading="lazy" />
+      {player ? (
+        <div className="kb-embed-frame" contentEditable={false} data-provider={player.provider}>
+          {/* the players need scripts, their own storage, fullscreen and popups («Смотреть на RuTube»); the page's
+              origin is sent as the referrer (players check the embedding site), the full address never */}
+          <iframe
+            src={player.src}
+            title={a.title || 'Видео'}
+            allow="autoplay; encrypted-media; fullscreen; picture-in-picture; clipboard-write; screen-wake-lock"
+            allowFullScreen
+            sandbox="allow-scripts allow-same-origin allow-presentation allow-popups allow-popups-to-escape-sandbox allow-forms"
+            referrerPolicy="strict-origin-when-cross-origin"
+            loading="lazy"
+          />
         </div>
       ) : (
         <a className="kb-link-card" href={url ?? '#'} target="_blank" rel="noopener noreferrer nofollow" contentEditable={false}>

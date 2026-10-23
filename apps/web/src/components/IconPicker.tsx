@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
-import { useFloating, autoUpdate, offset, flip, shift, FloatingPortal, useDismiss, useInteractions } from '@floating-ui/react';
+import { useFloating, autoUpdate, offset, flip, shift, size, FloatingPortal, useDismiss, useInteractions } from '@floating-ui/react';
 import { EMOJI } from '../lib/emoji';
+import { useFloatingMotion } from './ui/motion';
 
 /** Emoji/icon picker with Russian and English keyword search, recent icons and removal. */
 export function IconPicker({ onPick, onRemove }: { onPick(icon: string): void; onRemove?: () => void }) {
@@ -27,7 +28,15 @@ export function IconPicker({ onPick, onRemove }: { onPick(icon: string): void; o
   return (
     <div className="icon-picker">
       <div className="row" style={{ padding: 8, gap: 6 }}>
-        <input className="input" placeholder="Поиск: документ, склад, star…" value={q} onChange={(e) => setQ(e.target.value)} autoFocus aria-label="Поиск иконки" />
+        <input
+          className="input"
+          placeholder="Поиск: документ, склад, star…"
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          // focused without scrolling: the popover is still being placed when it mounts
+          ref={(el) => el && !el.dataset.focused && ((el.dataset.focused = '1'), el.focus({ preventScroll: true }))}
+          aria-label="Поиск иконки"
+        />
         {onRemove && (
           <button className="btn sm" onClick={onRemove}>
             Убрать
@@ -59,12 +68,21 @@ export function IconPicker({ onPick, onRemove }: { onPick(icon: string): void; o
 }
 
 export function IconPickerPopover({ anchor, onPick, onClose, onRemove }: { anchor: HTMLElement; onPick(icon: string): void; onClose(): void; onRemove?: () => void }) {
-  const { refs, floatingStyles, context } = useFloating({ open: true, onOpenChange: (o) => !o && onClose(), elements: { reference: anchor }, placement: 'bottom-start', whileElementsMounted: autoUpdate, middleware: [offset(4), flip({ padding: 8 }), shift({ padding: 8 })] });
+  const { refs, floatingStyles, context, isPositioned, placement } = useFloating({
+    open: true,
+    onOpenChange: (o) => !o && onClose(),
+    elements: { reference: anchor },
+    placement: 'bottom-start',
+    strategy: 'fixed',
+    whileElementsMounted: autoUpdate,
+    middleware: [offset(4), flip({ padding: 8 }), shift({ padding: 8 }), size({ padding: 8, apply: ({ availableHeight, elements }) => { Object.assign(elements.floating.style, { maxHeight: `${Math.max(200, availableHeight)}px` }); } })],
+  });
+  const motion = useFloatingMotion(true, isPositioned, placement);
   const dismiss = useDismiss(context);
   const { getFloatingProps } = useInteractions([dismiss]);
   return (
     <FloatingPortal>
-      <div ref={refs.setFloating} style={floatingStyles} className="popover" {...getFloatingProps()}>
+      <div ref={refs.setFloating} style={{ ...floatingStyles, ...motion.styles, overflowY: 'auto' }} className="popover" {...getFloatingProps()} {...motion.props}>
         <IconPicker onPick={onPick} onRemove={onRemove} />
       </div>
     </FloatingPortal>
