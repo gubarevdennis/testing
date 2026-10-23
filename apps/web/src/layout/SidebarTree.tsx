@@ -131,13 +131,12 @@ export function SidebarTree({ personal, spaces, shared, onNavigate }: Props) {
   const reveal = useRef<{ page: string | undefined; at: number; idx: number; user: boolean }>({ page: undefined, at: 0, idx: -1, user: false });
   useEffect(() => {
     reveal.current = { page: currentPage, at: Date.now(), idx: -1, user: false };
-    const el = scrollRef.current;
-    if (!el) return;
-    const mark = () => (reveal.current.user = true);
+    // delegated on the document: the tree's scroll element may not exist yet while spaces load
+    const mark = (e: Event) => (e.target as Element | null)?.closest?.('.tree-scroll') && (reveal.current.user = true);
     const evs = ['wheel', 'touchmove', 'keydown', 'pointerdown'] as const;
-    for (const e of evs) el.addEventListener(e, mark, { passive: true });
+    for (const e of evs) document.addEventListener(e, mark, { capture: true, passive: true });
     return () => {
-      for (const e of evs) el.removeEventListener(e, mark);
+      for (const e of evs) document.removeEventListener(e, mark, { capture: true });
     };
   }, [currentPage]);
   useEffect(() => {

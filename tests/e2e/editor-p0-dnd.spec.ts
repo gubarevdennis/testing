@@ -254,9 +254,13 @@ test('several selected blocks; images, tables and nested lists move whole; Alt-d
   await expectSaved(page);
   const ed = editor(page);
   // two selected blocks (Esc, Shift+↓) move together, the preview says how many
-  await ed.locator('p', { hasText: 'Блок Б' }).click();
-  await page.keyboard.press('Escape');
-  await page.keyboard.press('Shift+ArrowDown');
+  // the range must exist before dragging (the first click may only focus the editor)
+  await expect(async () => {
+    await ed.locator('p', { hasText: 'Блок Б' }).click();
+    await page.keyboard.press('Escape');
+    await page.keyboard.press('Shift+ArrowDown');
+    await expect(ed.locator('.kb-block-in-range')).toHaveCount(2, { timeout: 1000 });
+  }).toPass({ timeout: 10_000 });
   const top = await rect(ed.locator('p', { hasText: 'Начало' }));
   await dragTo(page, ed.locator('p', { hasText: 'Блок В' }), top.x + 40, top.y + 3);
   await expect(page.locator('.kb-drag-count')).toHaveText('2 блока');

@@ -47,6 +47,7 @@ export function useTreeScrollMemory(ref: RefObject<HTMLElement | null>, rowCount
   }, [ref]);
   useEffect(() => {
     const el = ref.current;
+    if (pageOpen) restored.current = true; // a page opened meanwhile: it is revealed instead
     if (!el || restored.current) return;
     const want = target.current;
     if (!want) {
@@ -58,7 +59,7 @@ export function useTreeScrollMemory(ref: RefObject<HTMLElement | null>, rowCount
     // give lazily loaded sections a moment, then stop trying (the user may have collapsed them)
     const stop = setTimeout(() => (restored.current = true), 3000);
     return () => clearTimeout(stop);
-  }, [ref, rowCount]);
+  }, [ref, rowCount, pageOpen]);
 }
 
 export interface LastPage {
