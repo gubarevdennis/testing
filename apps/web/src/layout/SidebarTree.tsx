@@ -621,8 +621,13 @@ function RenameInput({ node, onDone }: { node: TreeNode; onDone(): void }) {
   const [value, setValue] = useState(node.title);
   const ref = useRef<HTMLInputElement>(null);
   useEffect(() => {
-    ref.current?.focus();
-    ref.current?.select();
+    // opened from the row menu: the menu returns focus to its trigger as it closes, which would blur (and commit) the
+    // field at once — take focus after that has happened
+    const t = setTimeout(() => {
+      ref.current?.focus();
+      ref.current?.select();
+    }, 30);
+    return () => clearTimeout(t);
   }, []);
   const commit = async () => {
     onDone();

@@ -74,7 +74,7 @@ defects:
   - id: QA-D1
     title: 'GET /api/v1/spaces отвечает 500 (TypeError: reading ''actions'' of undefined, routes/spaces.ts), если пространство создано между расчётом прав и выборкой списка'
     severity: medium
-    status: open
+    status: fixed
     owner: команда «Администрирование и доступ»
     test: none (воспроизводится обходом tests/e2e/qa-crawl.spec.ts — сервер записал ошибку в журнал при создании пространства во время запроса списка)
     requirements: [R-UI-011]
@@ -91,7 +91,7 @@ defects:
   - id: QA-D3
     title: Мгновенное двойное нажатие «Создать токен» (два нажатия за несколько миллисекунд) создаёт два токена — состояние «выполняется» появляется только после уведомления react-query, у запроса нет ключа идемпотентности
     severity: low
-    status: open
+    status: fixed
     owner: команда «Навигация и оболочка»
     test: tests/e2e/qa-actions.spec.ts › QA-D3 (known defect) (test.fail; QA_SHOW_DEFECTS=1 показывает падение)
     requirements: [R-QA-004]
@@ -100,7 +100,7 @@ defects:
   - id: QA-D4
     title: Пункт «Переименовать» в меню строки дерева не работает — поле названия появляется и сразу закрывается (меню возвращает фокус кнопке, поле теряет фокус); F2 работает
     severity: high
-    status: open
+    status: fixed
     owner: команда «Навигация и оболочка»
     test: tests/e2e/qa-actions.spec.ts › QA-D4 (known defect) (test.fail)
     requirements: [R-UI-068, R-TREE-002]
@@ -109,7 +109,7 @@ defects:
   - id: QA-D5
     title: Пункт «Настройки и участники» меню пространства в боковой панели открывает вкладку «Страницы» — SpacePage не читает ?tab=settings
     severity: medium
-    status: open
+    status: fixed
     owner: команда «Администрирование и доступ»
     test: tests/e2e/qa-actions.spec.ts › QA-D5 (known defect) (test.fail)
     requirements: [R-UI-068]

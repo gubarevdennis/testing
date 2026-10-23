@@ -17,11 +17,13 @@ export async function spaceRoutes(app: FastifyInstance, s: Services) {
   app.get('/api/v1/spaces', async (req) => {
     const user = requireUser(req);
     const subjects = await userSubjects(s.db, user);
-    const acc = await accessForSpaces(s.db, user, undefined, subjects);
     const rows = (await s.db.query(`select * from spaces where org_id = $1 and deleted_at is null order by kind = 'personal' desc, sort_key collate "C", name`, [user.orgId])).rows;
+    // access for exactly these rows: a space created or deleted between the two queries must not break the list (QA-D1)
+    const acc = await accessForSpaces(s.db, user, rows.map((r) => r.id as string), subjects);
     const spaces = rows
       .map((r) => {
-        const a = acc.get(r.id)!;
+        const a = acc.get(r.id);
+        if (!a) return null;
         const member = a.actions.view;
         const discoverable = !member && r.visibility === 'closed' && user.kind === 'employee';
         if (!member && !discoverable) return null;

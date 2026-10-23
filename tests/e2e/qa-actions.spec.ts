@@ -134,8 +134,7 @@ test('R-QA-004 API tokens: empty name disables «Создать токен»; sl
   expect(errors).toEqual([]);
 });
 
-test('QA-D3 (known defect): an instantaneous double activation of «Создать токен» sends one request', async ({ page }) => {
-  test.fail(!process.env.QA_SHOW_DEFECTS, 'QA-D3: two presses within the same few milliseconds create two tokens — the busy state renders only after react-query notifies, and the request has no idempotency key');
+test('QA-D3 (fixed): an instantaneous double activation of «Создать токен» sends one request', async ({ page }) => {
   watch(page);
   await ensureOwner(page);
   await page.goto('/settings/tokens');
@@ -266,8 +265,7 @@ test('R-QA-004 trash: «Удалить в корзину» from the tree → toa
   expect(errors).toEqual([]);
 });
 
-test('QA-D4 (known defect): «Переименовать» in the tree row menu opens the inline title editor', async ({ page }) => {
-  test.fail(!process.env.QA_SHOW_DEFECTS, 'QA-D4: choosing «Переименовать» in the row menu mounts the editor, then the menu returns focus to its trigger, the editor blurs and closes at once (F2 works)');
+test('QA-D4 (fixed): «Переименовать» in the tree row menu opens the inline title editor', async ({ page }) => {
   watch(page);
   await ensureOwner(page);
   await api(page, 'POST', '/api/v1/pages', { spaceId: personalId, parentId: null, title: 'Дерево: через меню', requestId: crypto.randomUUID() });
@@ -395,8 +393,7 @@ test('R-QA-004 search: empty result explains itself, «Очистить» resets
   expect(errors).toEqual([]);
 });
 
-test('QA-D5 (known defect): «Настройки и участники» in the sidebar space menu opens the space settings', async ({ page }) => {
-  test.fail(!process.env.QA_SHOW_DEFECTS, 'QA-D5: the menu navigates to /s/:id?tab=settings, but SpacePage keeps its tab in local state and opens «Страницы»');
+test('QA-D5 (fixed): «Настройки и участники» in the sidebar space menu opens the space settings', async ({ page }) => {
   watch(page);
   await ensureOwner(page);
   await page.goto('/');

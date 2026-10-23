@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { FilePlus2, FileText, AlertTriangle, RefreshCw, Upload, LayoutTemplate, Users, Settings, Lock, Globe, EyeOff, ChevronRight, Archive, Trash2, Building2, User, UsersRound } from 'lucide-react';
 import { get, patch, del, ApiError } from '../api/client';
@@ -402,10 +402,14 @@ export default function SpacePage() {
   const qc = useQueryClient();
   const navigate = useNavigate();
   const q = useQuery({ queryKey: ['space', spaceId], queryFn: ({ signal }) => get<{ space: SpaceDetail }>(`/api/v1/spaces/${spaceId}`, signal), enabled: !!spaceId });
-  const [tab, setTab] = useState<'pages' | 'access' | 'settings'>('pages');
+  const [params] = useSearchParams();
+  const wanted = params.get('tab');
+  const initialTab = wanted === 'access' || wanted === 'settings' ? wanted : 'pages';
+  const [tab, setTab] = useState<'pages' | 'access' | 'settings'>(initialTab);
   const [busy, setBusy] = useState(false);
   const tabsRef = useRef<HTMLDivElement>(null);
-  useEffect(() => setTab('pages'), [spaceId]);
+  // ?tab=… (e.g. «Настройки и участники» in the tree menu) selects the section; switching spaces resets it
+  useEffect(() => setTab(initialTab), [spaceId, initialTab]);
 
   if (q.isLoading)
     return (

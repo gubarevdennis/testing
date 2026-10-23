@@ -1,5 +1,5 @@
 import '../styles/admin.css';
-import { useState, type FormEvent } from 'react';
+import { useRef, useState, type FormEvent } from 'react';
 import { NavLink, Navigate, Route, Routes } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { KeyRound, Monitor, Palette, ShieldCheck, Smartphone, User } from 'lucide-react';
@@ -574,6 +574,7 @@ function TokensTab() {
     },
     onError: (e) => setError(errMsg(e)),
   });
+  const submitting = useRef(false);
   const daysNum = Number(days);
   const daysBad = !Number.isInteger(daysNum) || daysNum < 1 || daysNum > 365;
   return (
@@ -597,7 +598,10 @@ function TokensTab() {
         style={{ gap: 14 }}
         onSubmit={(e) => {
           e.preventDefault();
-          if (name.trim() && !daysBad) m.mutate();
+          // a ref, not m.isPending: two clicks within one render would both see "not pending" and create two tokens
+          if (!name.trim() || daysBad || submitting.current) return;
+          submitting.current = true;
+          m.mutate(undefined, { onSettled: () => (submitting.current = false) });
         }}
       >
         <h3 className="admin-card-title">Новый токен</h3>
