@@ -4,7 +4,7 @@ import { audit, type AuditActor } from './audit.js';
 import { hashPassword, passwordProblems } from '../auth/passwords.js';
 import { revokeUserSessions } from '../auth/sessions.js';
 import { bumpAclEpoch, canManagePeople, isOrgAdmin, type AuthUser } from '../acl/engine.js';
-import { DEFAULT_SPACE_POLICY, keyBetween, type Level, type SpaceKind, type SpaceVisibility } from '@kb/shared';
+import { DEFAULT_APPEARANCE, DEFAULT_SPACE_POLICY, keyBetween, resolveAppearance, type Level, type SpaceKind, type SpaceVisibility } from '@kb/shared';
 
 export const DEFAULT_ORG_SETTINGS = {
   requireMfa: false,
@@ -14,11 +14,14 @@ export const DEFAULT_ORG_SETTINGS = {
   oidcJitProvisioning: false,
   retention: { trashDays: 90, journalDays: 90, revisionDays: 365 },
   quotaPerUserMb: 2048,
+  /** Default visual preset, content font and size for everyone in the organisation (item 7). */
+  appearance: { ...DEFAULT_APPEARANCE },
 };
 
 export async function orgSettings(q: Queryable, orgId: string) {
   const r = await q.query('select settings from organizations where id = $1', [orgId]);
-  return { ...DEFAULT_ORG_SETTINGS, ...(r.rows[0]?.settings ?? {}) };
+  const stored = r.rows[0]?.settings ?? {};
+  return { ...DEFAULT_ORG_SETTINGS, ...stored, appearance: resolveAppearance(stored.appearance) };
 }
 
 export interface BootstrapInput {

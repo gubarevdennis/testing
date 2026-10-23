@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { syncThemeColor } from '../theme/appearance';
 
 /** UI preferences persisted locally (and mirrored to the server profile where useful). */
 function load<T>(key: string, def: T): T {
@@ -100,4 +101,14 @@ export function applyTheme(theme: 'system' | 'light' | 'dark') {
   const root = document.documentElement;
   if (theme === 'system') root.removeAttribute('data-theme');
   else root.setAttribute('data-theme', theme);
+  syncThemeColor();
+}
+
+/** True when the theme was chosen on this device (otherwise the profile's choice from another device applies). */
+export function hasLocalTheme(): boolean {
+  try {
+    return localStorage.getItem('kb:theme') !== null;
+  } catch {
+    return false;
+  }
 }

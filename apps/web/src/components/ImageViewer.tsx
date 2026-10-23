@@ -79,12 +79,17 @@ function ViewerInner({ img, index, total }: { img: ViewerImage; index: number; t
   const minScale = useRef(MIN_SCALE);
   const openedAt = useRef(Date.now());
   const geom = useRef<{ nat: { w: number; h: number } | null; rotation: number }>({ nat: null, rotation: 0 });
+  /**
+   * The latest view state, updated synchronously. Gestures read and write it, not the rendered `t`: pointer events
+   * arrive faster than React renders, so a value captured by the last render may be several moves old — starting a
+   * drag or a pinch from it, or adding a drag offset to it after a wheel zoom, made the picture jump back.
+   */
+  const cur = useRef<ViewState>({ scale: 1, x: 0, y: 0 });
   const setT = useCallback((u: ViewState | ((p: ViewState) => ViewState)) => {
-    setRawT((p) => {
-      const next = typeof u === 'function' ? u(p) : u;
-      const el = stage.current;
-      return clampView(next, geom.current.nat, { w: el?.clientWidth ?? 0, h: el?.clientHeight ?? 0 }, geom.current.rotation);
-    });
+    const next = typeof u === 'function' ? u(cur.current) : u;
+    const el = stage.current;
+    cur.current = clampView(next, geom.current.nat, { w: el?.clientWidth ?? 0, h: el?.clientHeight ?? 0 }, geom.current.rotation);
+    setRawT(cur.current);
   }, []);
   const [rotation, setRotation] = useState(0);
   geom.current = { nat, rotation };
@@ -94,8 +99,12 @@ function ViewerInner({ img, index, total }: { img: ViewerImage; index: number; t
   const [error, setError] = useState(false);
   const pointers = useRef(new Map<number, { x: number; y: number }>());
   const pinch = useRef<{ dist: number; scale: number; cx: number; cy: number; x: number; y: number } | null>(null);
-  const drag = useRef<{ x: number; y: number; tx: number; ty: number; moved: boolean } | null>(null);
+  /** Pan: the last pointer position; each move shifts the current view by the pointer's own movement. */
+  const drag = useRef<{ id: number; x: number; y: number; sx: number; sy: number; moved: boolean } | null>(null);
+  /** The view was zoomed or moved by the user: a window resize keeps it (only re-fits an untouched view). */
+  const touched = useRef(false);
   const lastTap = useRef(0);
+  const metaFailed = useRef(false);
   const close = () => useViewer.setState({ open: false });
   const go = (d: number) => useViewer.setState((s) => ({ index: (s.index + d + s.images.length) % s.images.length }));
 
@@ -108,9 +117,12 @@ function ViewerInner({ img, index, total }: { img: ViewerImage; index: number; t
     get<{ attachment: { tiles: Tiles | null; width: number; height: number } }>(`/api/v1/attachments/${img.attachmentId}`)
       .then((r) => {
         if (r.attachment.tiles) setTiles(r.attachment.tiles);
-        if (r.attachment.width && r.attachment.height) setNat((n) => n ?? { w: r.attachment.width, h: r.attachment.height });
+        // the original's size: the 2048 px preview's own size is not the picture's (tiles and zoom % are in original px)
+        const { width: w, height: h } = r.attachment;
+        if (w && h) setNat((n) => (n && n.w === w && n.h === h ? n : { w, h }));
+        else metaFailed.current = true;
       })
-      .catch(() => undefined);
+      .catch(() => (metaFailed.current = true));
   }, [img.attachmentId]);
 
   const fit = useCallback(() => {
@@ -123,15 +135,20 @@ function ViewerInner({ img, index, total }: { img: ViewerImage; index: number; t
     const s = Math.min((el.clientWidth - pad * 2) / w, (el.clientHeight - pad * 2) / h, 1);
     setFitScale(s);
     minScale.current = Math.min(MIN_SCALE, s);
+    touched.current = false;
+    drag.current = null;
     setT({ scale: s, x: (el.clientWidth - nat.w * s) / 2, y: (el.clientHeight - nat.h * s) / 2 });
   }, [nat, rotation, setT]);
   useLayoutEffect(fit, [fit]);
   useEffect(() => {
-    window.addEventListener('resize', fit);
-    return () => window.removeEventListener('resize', fit);
-  }, [fit]);
+    // a resize (mobile address bar, rotation, window) used to re-fit in the middle of a pan: keep a zoomed view, just clamp it
+    const onResize = () => (touched.current ? setT((p) => p) : fit());
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, [fit, setT]);
 
   const zoomAt = useCallback((factor: number, cx: number, cy: number) => {
+    touched.current = true;
     setT((p) => {
       const scale = Math.max(minScale.current, Math.min(MAX_SCALE, p.scale * factor));
       const k = scale / p.scale;
@@ -139,7 +156,7 @@ function ViewerInner({ img, index, total }: { img: ViewerImage; index: number; t
     });
   }, [setT]);
   const center = () => ({ x: (stage.current?.clientWidth ?? 0) / 2, y: (stage.current?.clientHeight ?? 0) / 2 });
-  const setScaleAt = (scale: number, cx: number, cy: number) => setT((p) => ({ scale, x: cx - ((cx - p.x) * scale) / p.scale, y: cy - ((cy - p.y) * scale) / p.scale }));
+  const setScaleAt = (scale: number, cx: number, cy: number) => ((touched.current = true), setT((p) => ({ scale, x: cx - ((cx - p.x) * scale) / p.scale, y: cy - ((cy - p.y) * scale) / p.scale })));
 
   useEffect(() => {
     if (big && t.scale > (2048 / Math.max(nat?.w ?? 1, nat?.h ?? 1)) * 1.05 * devicePixelRatio && !tiles) setHiRes(true);
@@ -186,16 +203,23 @@ function ViewerInner({ img, index, total }: { img: ViewerImage; index: number; t
     return () => el.removeEventListener('wheel', onWheel);
   }, [zoomAt]);
 
+  const startPinch = () => {
+    const [a, b] = [...pointers.current.values()];
+    const r = stage.current!.getBoundingClientRect();
+    const v = cur.current;
+    pinch.current = { dist: Math.max(1, Math.hypot(a.x - b.x, a.y - b.y)), scale: v.scale, cx: (a.x + b.x) / 2 - r.left, cy: (a.y + b.y) / 2 - r.top, x: v.x, y: v.y };
+  };
   const onPointerDown = (e: React.PointerEvent) => {
     if ((e.target as HTMLElement).closest('button, a')) return;
+    if (e.pointerType === 'mouse' && e.button !== 0) return; // right/middle button: no pan
+    e.preventDefault(); // no text/image selection or native drag that would steal the following moves
+    // pointer capture: the moves keep coming to the stage outside it (over the toolbar, outside the window)
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
     pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
     if (pointers.current.size === 2) {
-      const [a, b] = [...pointers.current.values()];
-      const r = stage.current!.getBoundingClientRect();
-      pinch.current = { dist: Math.hypot(a.x - b.x, a.y - b.y), scale: t.scale, cx: (a.x + b.x) / 2 - r.left, cy: (a.y + b.y) / 2 - r.top, x: t.x, y: t.y };
+      startPinch();
       drag.current = null;
-    } else drag.current = { x: e.clientX, y: e.clientY, tx: t.x, ty: t.y, moved: false };
+    } else if (pointers.current.size === 1) drag.current = { id: e.pointerId, x: e.clientX, y: e.clientY, sx: e.clientX, sy: e.clientY, moved: false };
   };
   const onPointerMove = (e: React.PointerEvent) => {
     if (!pointers.current.has(e.pointerId)) return;
@@ -208,31 +232,46 @@ function ViewerInner({ img, index, total }: { img: ViewerImage; index: number; t
       const cx = (a.x + b.x) / 2 - r.left;
       const cy = (a.y + b.y) / 2 - r.top;
       const k = scale / p.scale;
+      touched.current = true;
       setT({ scale, x: cx - (p.cx - p.x) * k, y: cy - (p.cy - p.y) * k });
-    } else if (drag.current) {
-      const dx = e.clientX - drag.current.x;
-      const dy = e.clientY - drag.current.y;
-      if (Math.abs(dx) + Math.abs(dy) > 3) drag.current.moved = true;
-      setT((p) => ({ ...p, x: drag.current!.tx + dx, y: drag.current!.ty + dy }));
+    } else if (drag.current && drag.current.id === e.pointerId) {
+      const d = drag.current;
+      // relative to the previous move, applied to the current view: a wheel zoom or a re-render in between cannot
+      // make the picture jump back to where the drag started
+      const dx = e.clientX - d.x;
+      const dy = e.clientY - d.y;
+      d.x = e.clientX;
+      d.y = e.clientY;
+      if (Math.abs(e.clientX - d.sx) + Math.abs(e.clientY - d.sy) > 3) d.moved = true;
+      if (!dx && !dy) return;
+      touched.current = true;
+      setT((p) => ({ ...p, x: p.x + dx, y: p.y + dy }));
     }
   };
   const onPointerUp = (e: React.PointerEvent) => {
+    if (!pointers.current.has(e.pointerId)) return;
     pointers.current.delete(e.pointerId);
-    if (pointers.current.size < 2) pinch.current = null;
+    const wasPinch = !!pinch.current;
+    pinch.current = null;
     const d = drag.current;
     drag.current = null;
-    if (d && !d.moved) {
-      const r = stage.current!.getBoundingClientRect();
-      // click on the backdrop closes (not the second click of the double click that opened the viewer)
-      if (e.target === stage.current && e.pointerType === 'mouse') return Date.now() - openedAt.current > 450 ? close() : undefined;
-      const now = Date.now();
-      if (now - lastTap.current < 320) {
-        lastTap.current = 0;
-        // double tap/click: toggle between "fit" and a close-up at the pointer
-        if (t.scale > fitScale * 1.2) fit();
-        else setScaleAt(Math.max(1, fitScale * 2.5), e.clientX - r.left, e.clientY - r.top);
-      } else lastTap.current = now;
+    if (wasPinch) {
+      // one finger stays down after a pinch: it pans from where it is now (no jump to its old start)
+      const [rest] = [...pointers.current.entries()];
+      if (rest) drag.current = { id: rest[0], x: rest[1].x, y: rest[1].y, sx: rest[1].x, sy: rest[1].y, moved: true };
+      return;
     }
+    if (e.type !== 'pointerup' || !d || d.moved) return;
+    const r = stage.current!.getBoundingClientRect();
+    // click on the backdrop closes (not the second click of the double click that opened the viewer)
+    if (e.target === stage.current && e.pointerType === 'mouse') return Date.now() - openedAt.current > 450 ? close() : undefined;
+    const now = Date.now();
+    if (now - lastTap.current < 320) {
+      lastTap.current = 0;
+      // double tap/click: toggle between "fit" and a close-up at the pointer
+      if (cur.current.scale > fitScale * 1.2) fit();
+      else setScaleAt(Math.max(1, fitScale * 2.5), e.clientX - r.left, e.clientY - r.top);
+    } else lastTap.current = now;
   };
 
   const tileEls = useMemo(() => {
@@ -324,7 +363,7 @@ function ViewerInner({ img, index, total }: { img: ViewerImage; index: number; t
           </Tooltip>
         </div>
       </div>
-      <div ref={stage} className="viewer-stage" tabIndex={-1} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerUp}>
+      <div ref={stage} className="viewer-stage" tabIndex={-1} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerUp} onLostPointerCapture={onPointerUp}>
         {error ? (
           <div className="viewer-error">Не удалось загрузить изображение</div>
         ) : (
@@ -343,7 +382,12 @@ function ViewerInner({ img, index, total }: { img: ViewerImage; index: number; t
               src={big ? previewSrc : base}
               alt={img.alt}
               draggable={false}
-              onLoad={(e) => !nat && setNat({ w: e.currentTarget.naturalWidth, h: e.currentTarget.naturalHeight })}
+              onLoad={(e) => {
+                const el = e.currentTarget;
+                // a stored picture: the size comes from the server (this may be the smaller preview); without it, the loaded size
+                if (!nat && (!img.attachmentId || metaFailed.current || !big)) setNat({ w: el.naturalWidth, h: el.naturalHeight });
+                else if (!nat) setTimeout(() => setNat((n) => n ?? { w: el.naturalWidth, h: el.naturalHeight }), 3000);
+              }}
               onError={() => setError(true)}
               style={{ imageRendering: t.scale > 2 ? 'pixelated' : undefined }}
             />

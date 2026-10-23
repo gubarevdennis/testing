@@ -3,7 +3,7 @@
 const CACHE = 'kb-shell-v1';
 
 self.addEventListener('install', (e) => {
-  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(['/', '/favicon.svg', '/manifest.webmanifest'])).then(() => self.skipWaiting()));
+  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(['/', '/favicon.svg', '/manifest.webmanifest', '/theme-boot.js'])).then(() => self.skipWaiting()));
 });
 
 self.addEventListener('activate', (e) => {
@@ -25,6 +25,21 @@ self.addEventListener('fetch', (e) => {
           return res;
         })
         .catch(() => caches.match('/')),
+    );
+    return;
+  }
+  // Pre-paint theme script: network first (it changes with releases), the cached copy offline.
+  if (url.pathname === '/theme-boot.js') {
+    e.respondWith(
+      fetch(req)
+        .then((res) => {
+          if (res.ok) {
+            const copy = res.clone();
+            caches.open(CACHE).then((c) => c.put(req, copy));
+          }
+          return res;
+        })
+        .catch(() => caches.match(req)),
     );
     return;
   }

@@ -5,6 +5,7 @@ import { NodeSelection } from '@tiptap/pm/state';
 import { Tooltip } from '../../components/ui/Tooltip';
 import { openViewer, collectImages } from '../../components/ImageViewer';
 import { imageSrc } from './ImageView';
+import { useImageResize } from './imageResize';
 
 const SIZES = [16, 24, 48, 96, 200];
 
@@ -15,13 +16,24 @@ const SIZES = [16, 24, 48, 96, 200];
  */
 export function InlineImageView({ node, updateAttributes, selected, editor, getPos, deleteNode }: NodeViewProps) {
   const a = node.attrs as { src: string | null; attachmentId: string | null; alt: string; title: string | null; width: number | null; valign: string; naturalWidth: number | null; naturalHeight: number | null; uploadId: string | null };
-  const [dragW, setDragW] = useState<number | null>(null);
   const [edit, setEdit] = useState<null | 'alt' | 'title'>(null);
   const [failed, setFailed] = useState(false);
   const imgRef = useRef<HTMLImageElement>(null);
   const editable = editor.isEditable;
-  const width = dragW ?? a.width;
   const pos = () => (typeof getPos === 'function' ? (getPos() ?? -1) : -1);
+  const lineWidth = () => editor.view.dom.clientWidth || 720;
+  const resize = useImageResize({
+    editor,
+    getPos: () => (typeof getPos === 'function' ? getPos() : undefined),
+    measure: () => imgRef.current,
+    ratio: a.naturalWidth && a.naturalHeight ? a.naturalHeight / a.naturalWidth : imgRef.current?.naturalWidth ? imgRef.current.naturalHeight / imgRef.current.naturalWidth : null,
+    centered: false,
+    min: 12,
+    max: lineWidth,
+    container: lineWidth,
+    natural: a.naturalWidth,
+  });
+  const width = resize.width ?? a.width;
 
   if (a.uploadId && !a.attachmentId)
     return (
@@ -61,25 +73,6 @@ export function InlineImageView({ node, updateAttributes, selected, editor, getP
     editor.view.dispatch(tr.scrollIntoView());
   };
 
-  const startResize = (e: React.PointerEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    const startX = e.clientX;
-    const startW = imgRef.current?.getBoundingClientRect().width ?? 48;
-    const max = editor.view.dom.clientWidth || 720;
-    const move = (ev: PointerEvent) => setDragW(Math.round(Math.max(12, Math.min(max, startW + ev.clientX - startX))));
-    const up = () => {
-      window.removeEventListener('pointermove', move);
-      window.removeEventListener('pointerup', up);
-      setDragW((w) => {
-        if (w != null) setAttrs({ width: w });
-        return null;
-      });
-    };
-    window.addEventListener('pointermove', move);
-    window.addEventListener('pointerup', up);
-  };
-
   const valignCss = a.valign === 'middle' ? 'middle' : a.valign === 'top' ? 'text-top' : a.valign === 'bottom' ? 'text-bottom' : 'baseline';
   return (
     <NodeViewWrapper as="span" className={`kb-inline-image-wrap${selected ? ' is-selected' : ''}`} data-type="inline-image" style={{ verticalAlign: valignCss }}>
@@ -115,8 +108,8 @@ export function InlineImageView({ node, updateAttributes, selected, editor, getP
           }}
         />
       )}
-      {editable && selected && <span className="kb-resize inline" contentEditable={false} onPointerDown={startResize} aria-hidden />}
-      {dragW != null && <span className="kb-resize-badge">{dragW} px</span>}
+      {editable && (selected || resize.resizing) && resize.handles(['nw', 'ne', 'sw', 'se'], ' inline')}
+      {resize.badge}
       {selected && editable && (
         <span className="kb-node-toolbar kb-inline-toolbar" contentEditable={false} role="toolbar" aria-label="Изображение в строке" onMouseDown={(e) => (e.target as HTMLElement).closest('button') && e.preventDefault()}>
           {SIZES.map((s) => (

@@ -1,5 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
+import { APPEARANCE_FONTS, APPEARANCE_PRESETS, APPEARANCE_SIZES } from '@kb/shared';
 import { tx } from '../db/pool.js';
 import { actorOf, parse, requireUser, type Services } from '../app.js';
 import { accessForPages, accessForSpaces, canManagePeople, canReadAudit, isOrgAdmin, userSubjects, bumpAclEpoch, type AuthUser } from '../acl/engine.js';
@@ -360,18 +361,20 @@ export async function adminRoutes(app: FastifyInstance, s: Services) {
         oidcJitProvisioning: z.boolean().optional(),
         retention: z.object({ trashDays: z.number().int().min(30).max(3650).optional(), journalDays: z.number().int().min(90).max(3650).optional(), revisionDays: z.number().int().min(365).max(36500).optional() }).optional(),
         quotaPerUserMb: z.number().int().min(10).max(1_000_000).optional(),
+        appearance: z.object({ preset: z.enum(APPEARANCE_PRESETS).optional(), font: z.enum(APPEARANCE_FONTS).optional(), fontSize: z.enum(APPEARANCE_SIZES).optional() }).strict().optional(),
       }),
       req.body,
     );
     const settings = await tx(s.db, async (q) => {
       const cur = await orgSettings(q, user.orgId);
-      const next = { ...cur, ...body, retention: { ...cur.retention, ...(body.retention ?? {}) } };
+      const next = { ...cur, ...body, retention: { ...cur.retention, ...(body.retention ?? {}) }, appearance: { ...cur.appearance, ...(body.appearance ?? {}) } };
       await q.query('update organizations set settings = $2, updated_at = now() where id = $1', [user.orgId, next]);
       await audit(q, actorOf(req), { action: 'org.settings_update', targetType: 'org', targetId: user.orgId, details: { before: cur, after: next } });
-      await bumpAclEpoch(q, user.orgId);
+      // the appearance alone changes nothing about access: no re-check of every open session
+      if (Object.keys(body).some((k) => k !== 'appearance')) await bumpAclEpoch(q, user.orgId);
       return next;
     });
-    s.bus.emit({ type: 'acl-changed', orgId: user.orgId });
+    if (Object.keys(body).some((k) => k !== 'appearance')) s.bus.emit({ type: 'acl-changed', orgId: user.orgId });
     return { settings };
   });
 

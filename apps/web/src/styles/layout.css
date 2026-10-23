@@ -136,3 +136,4 @@ button.pick-item:hover, .pick-item:hover { background: var(--surface-hover); }
 .tree-row { transition: background-color var(--t-fast) var(--ease); }
 .tree-row .chev { transition: transform var(--t-fast) var(--ease); }
 .tree-row.active { animation: kb-fade-in var(--t-fast) var(--ease); }
+.tree-row[data-context='true'] { background: var(--surface-hover); box-shadow: inset 0 0 0 1px var(--border-strong); }

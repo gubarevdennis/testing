@@ -1,6 +1,6 @@
 import yazl from 'yazl';
 import { createHash } from 'node:crypto';
-import { docToMarkdown, walk, findBlock, type PMNode, type ConversionWarning } from '@kb/shared';
+import { docToMarkdown, walk, findBlock, whiteboardAttachmentIds, whiteboardSvgString, normalizeScene, type PMNode, type ConversionWarning, type WhiteboardScene } from '@kb/shared';
 import type { Services } from '../app.js';
 import { accessForPages, type AuthUser } from '../acl/engine.js';
 import { blobKey } from '../storage/blob-store.js';
@@ -113,6 +113,7 @@ async function collectAssets(s: Services, user: AuthUser, pages: ExportPage[], p
     const ids: string[] = [];
     walk(p.content, (n) => {
       if (n.attrs?.attachmentId) ids.push(n.attrs.attachmentId);
+      if (n.type === 'whiteboard') ids.push(...whiteboardAttachmentIds(n.attrs?.scene));
     });
     if (!ids.length) continue;
     if (!p.canDownload) {
@@ -160,6 +161,37 @@ function resolvers(s: Services, pages: ExportPage[]) {
   };
 }
 
+/**
+ * A board's scene with its pictures embedded (data: URLs of the attachments included in the export), so the SVG/PNG
+ * of the board is self-contained. Pictures that are not exported stay as absolute links to this instance.
+ */
+async function boardWithImages(s: Services, scene: unknown, assets: Map<string, AssetRef>): Promise<WhiteboardScene> {
+  const sc = normalizeScene(scene);
+  const files: NonNullable<WhiteboardScene['files']> = {};
+  for (const [k, f] of Object.entries(sc.files ?? {})) {
+    const a = assets.get(f.attachmentId);
+    let src = `${s.cfg.publicUrl}/api/v1/attachments/${f.attachmentId}/content`;
+    if (a && /^image\//.test(a.mime)) src = `data:${a.mime};base64,${(await s.store.readBuffer(blobKey(a.sha))).toString('base64')}`;
+    files[k] = { ...f, src };
+  }
+  return { ...sc, files };
+}
+
+/** Standalone SVG file of a board (white background: readable in any viewer and in Word). */
+async function boardSvgFile(s: Services, n: PMNode, assets: Map<string, AssetRef>): Promise<string | null> {
+  return whiteboardSvgString(await boardWithImages(s, n.attrs?.scene, assets), { idPrefix: n.attrs?.id ?? '', background: '#ffffff', title: 'Доска' });
+}
+
+/** Board → PNG for DOCX (2× density for print; logical size reported). */
+async function boardPng(s: Services, n: PMNode, assets: Map<string, AssetRef>) {
+  const svg = await boardSvgFile(s, n, assets);
+  if (!svg) return null;
+  const sharp = (await import('sharp')).default;
+  const data = await sharp(Buffer.from(svg), { density: 144 }).png().toBuffer();
+  const m = await sharp(data).metadata();
+  return { data, width: Math.round((m.width ?? 800) / 2), height: Math.round((m.height ?? 600) / 2), mime: 'image/png' };
+}
+
 /** Single page or branch as one document in the requested format. Multiple pages: ZIP. */
 export async function exportPages(s: Services, user: AuthUser, rootIds: string[], format: ExportFormat, opts: ExportOptions): Promise<ExportResult> {
   const out = await exportPagesInner(s, user, rootIds, format, opts);
@@ -186,10 +218,26 @@ async function exportPagesInner(s: Services, user: AuthUser, rootIds: string[], 
     const { assets, warnings: aw } = await collectAssets(s, user, pages, (p) => dirOf(paths.get(p.id)!));
     warnings.push(...aw);
     const files: Array<{ path: string; data: Buffer }> = [];
+    let boards = 0;
     for (const p of pages) {
       await cancelCheck();
       const here = paths.get(p.id)!;
+      // boards become SVG pictures next to the page (assets/board-<id>.svg); the scene stays in a marker for re-import
+      const boardHref = new Map<string, string>();
+      const boardNodes: PMNode[] = [];
+      walk(p.content, (n) => {
+        if (n.type === 'whiteboard') boardNodes.push(n);
+      });
+      for (const n of boardNodes) {
+        const svg = await boardSvgFile(s, n, p.canDownload ? assets : new Map());
+        if (!svg) continue;
+        const path = `${dirOf(here)}assets/board-${slugify(String(n.attrs?.id ?? boards + 1))}.svg`;
+        files.push({ path, data: Buffer.from(svg, 'utf8') });
+        boardHref.set(String(n.attrs?.id), relative(here, path));
+        boards++;
+      }
       const md = docToMarkdown(p.content, {
+        whiteboardHref: (n) => boardHref.get(String(n.attrs?.id)) ?? null,
         frontMatter: { title: p.title, id: p.id, ...(p.icon ? { icon: p.icon } : {}), status: p.status, updated: p.updatedAt?.toISOString?.() ?? null },
         assetHref: (aid) => (assets.has(aid) ? relative(here, assets.get(aid)!.path) : null),
         pageHref: (pid, bid) => (paths.has(pid) ? relative(here, paths.get(pid)!) + (bid ? '#' + bid : '') : `${s.cfg.publicUrl}/p/${pid}${bid ? '#' + bid : ''}`),
@@ -200,9 +248,9 @@ async function exportPagesInner(s: Services, user: AuthUser, rootIds: string[], 
       const fm = /^---\n[\s\S]*?\n---\n/.exec(md.markdown)?.[0] ?? '';
       files.push({ path: here, data: Buffer.from(fm + (fm ? '\n' : '') + `# ${mdTitle(p.title)}\n\n` + md.markdown.slice(fm.length).replace(/^\n+/, ''), 'utf8') });
     }
-    if (pages.length === 1 && !assets.size) return { buffer: files[0].data, filename: slugify(root.title) + '.md', mime: 'text/markdown; charset=utf-8', warnings, pageIds: pages.map((p) => p.id), report: { pages: 1, assets: 0 } };
+    if (pages.length === 1 && !assets.size && !boards) return { buffer: files[0].data, filename: slugify(root.title) + '.md', mime: 'text/markdown; charset=utf-8', warnings, pageIds: pages.map((p) => p.id), report: { pages: 1, assets: 0 } };
     const zip = await buildZip(s, files, [...assets.values()], warnings, { title: root.title, pages: pages.length });
-    return { buffer: zip, filename: slugify(root.title) + '.zip', mime: 'application/zip', warnings, pageIds: pages.map((p) => p.id), report: { pages: pages.length, assets: assets.size } };
+    return { buffer: zip, filename: slugify(root.title) + '.zip', mime: 'application/zip', warnings, pageIds: pages.map((p) => p.id), report: { pages: pages.length, assets: assets.size, boards } };
   }
 
   if (opts.layout === 'files' && pages.length > 1) {
@@ -234,6 +282,7 @@ async function exportPagesInner(s: Services, user: AuthUser, rootIds: string[], 
       pageTitle: r.pageTitle,
       syncedContent: r.syncedContent,
       loadImage: async (n) => {
+        if (n.type === 'whiteboard') return boardPng(s, n, assets);
         const a = n.attrs?.attachmentId ? assets.get(n.attrs.attachmentId) : null;
         if (!a) return null;
         const sharp = (await import('sharp')).default;
@@ -267,6 +316,7 @@ async function renderSingle(s: Services, title: string, content: PMNode, author:
       pageTitle: r.pageTitle,
       syncedContent: r.syncedContent,
       loadImage: async (n) => {
+        if (n.type === 'whiteboard') return boardPng(s, n, assets);
         const a = n.attrs?.attachmentId ? assets.get(n.attrs.attachmentId) : null;
         if (!a) return null;
         const sharp = (await import('sharp')).default;
@@ -376,6 +426,8 @@ const PRINT_CSS = `
   figure img { max-width: 100%; height: auto; }
   figcaption { color: var(--muted); font-size: .9em; }
   img.kb-inline-image { max-width: 100%; height: auto; }
+  figure.kb-whiteboard { margin: 1em 0; text-align: center; page-break-inside: avoid; }
+  figure.kb-whiteboard svg { max-width: 100%; height: auto; }
   sup.kb-fn-ref a { text-decoration: none; } sup.kb-fn-ref { line-height: 0; }
   section.kb-footnotes { border-top: 1px solid var(--border); margin-top: 2em; padding-top: .5em; font-size: .9em; color: #4A5260; }
   section.kb-footnotes a.kb-fn-back { text-decoration: none; }
@@ -409,6 +461,12 @@ export async function standaloneHtml(s: Services, title: string, doc: PMNode, as
         else if (n.attrs?.src?.startsWith('/')) n.attrs.src = s.cfg.publicUrl + n.attrs.src;
       }
       if (n.type === 'fileBlock' && n.attrs?.attachmentId) n.attrs.href = `${s.cfg.publicUrl}/api/v1/attachments/${n.attrs.attachmentId}/download`;
+      if (n.type === 'whiteboard' && n.attrs?.scene)
+        tasks.push(
+          (async () => {
+            n.attrs!.scene = await boardWithImages(s, n.attrs!.scene, assets);
+          })(),
+        );
     });
     await Promise.all(tasks);
   }

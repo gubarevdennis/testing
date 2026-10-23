@@ -129,7 +129,7 @@ const CHATGPT_DARK: Tokens = {
 /** Teamly-like corporate KB: cool light-grey canvas, white cards, violet-blue brand accent, medium radii, Inter. */
 const TEAMLY_LIGHT: Tokens = {
   ...CLASSIC_LIGHT,
-  bg: '#f4f5f9', surface: '#ffffff', 'surface-2': '#eef0f6', 'surface-3': '#e6e8f0', 'surface-hover': '#eceef5', 'surface-active': '#e2e5ef',
+  bg: '#f7f8fb', surface: '#ffffff', 'surface-2': '#f0f2f7', 'surface-3': '#e6e8f0', 'surface-hover': '#eceef5', 'surface-active': '#e2e5ef',
   text: '#1d2130', 'text-2': '#5d6378', 'text-3': '#8a8fa3', border: '#e1e4ec', 'border-strong': '#cfd3df', 'border-input': '#848aa0',
   accent: '#6366f1', 'accent-strong': '#4f46e5', 'accent-soft': '#ecedfd', 'accent-contrast': '#ffffff', focus: '#4f46e5',
   'info-soft': '#eceffd',

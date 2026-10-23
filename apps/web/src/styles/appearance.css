@@ -1,0 +1,10 @@
+/* Fonts and base size of page content (Настройки → Оформление). The preset sets --font (interface and default content
+   font); data-font / data-size on <html> override the content only, like Notion's «Default / Serif / Mono». */
+:root { --font-doc: var(--font); }
+:root[data-font='inter'] { --font-doc: 'Inter Variable', Inter, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; }
+:root[data-font='system'] { --font-doc: ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI Variable Display', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; }
+:root[data-font='serif'] { --font-doc: Lyon-Text, Georgia, 'PT Serif', ui-serif, 'Times New Roman', serif; }
+:root[data-font='mono'] { --font-doc: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace; }
+:root[data-size='small'] { --fs-base: 14px; }
+:root[data-size='large'] { --fs-base: 18px; }
+.kb-editor, .kb-static, .published-view, .editor-wrap .page-title-input, .page-title-static { font-family: var(--font-doc); }

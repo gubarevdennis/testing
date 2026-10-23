@@ -24,6 +24,7 @@ import {
 } from 'docx';
 import sharp from 'sharp';
 import type { PMNode, PMMark, ConversionWarning } from '@kb/shared';
+import { docToPlainText } from '@kb/shared';
 
 export interface DocxImage {
   data: Buffer;
@@ -304,6 +305,14 @@ export async function docToDocx(doc: PMNode, opts: DocxExportOptions): Promise<{
             ],
           }),
         ];
+      }
+      case 'whiteboard': {
+        // the board as a picture (PNG rendered by the exporter's loadImage); its text when it cannot be drawn
+        const run = await imageRun(n, MAX_IMAGE_WIDTH);
+        if (run) return [new Paragraph({ alignment: AlignmentType.CENTER, children: [run] })];
+        const text = docToPlainText({ type: 'doc', content: [n] });
+        warn('whiteboard', 'Некоторые доски экспортированы текстом');
+        return [new Paragraph({ children: [new TextRun({ text: 'Доска' + (text ? ': ' + text : ''), italics: true })] })];
       }
       case 'image': {
         const run = await imageRun(n, MAX_IMAGE_WIDTH);

@@ -2,7 +2,7 @@ import { BubbleMenu } from '@tiptap/react/menus';
 import type { Editor } from '@tiptap/core';
 import { CellSelection } from '@tiptap/pm/tables';
 import { findParentNode } from '@tiptap/core';
-import { useCallback } from 'react';
+import { useCallback, useMemo, useRef } from 'react';
 import { useEditorState } from '@tiptap/react';
 import {
   ArrowUpToLine, ArrowDownToLine, ArrowLeftToLine, ArrowRightToLine, Trash2, TableCellsMerge, TableCellsSplit, PaintBucket, AlignLeft, AlignCenter, AlignRight, MoreHorizontal, Copy, Rows3, Columns3, Heading, AlignVerticalJustifyStart, AlignVerticalJustifyCenter, AlignVerticalJustifyEnd, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, ArrowDownAZ, ArrowDownZA,
@@ -15,6 +15,7 @@ import { HIGHLIGHTS } from '../palette';
 import { copyWithFeedback, fragmentHtml } from '../clipboard/copy';
 import { moveTableRow, moveTableColumn, sortTableByColumn, TABLE_OP_ERRORS, type TableOpResult } from '../tableOps';
 import { toast } from '../../components/ui/Toast';
+import { withReveal } from '../../components/ui/motion';
 
 function report(r: TableOpResult, editor: Editor) {
   if (r !== 'ok' && TABLE_OP_ERRORS[r]) toast.error(TABLE_OP_ERRORS[r]);
@@ -36,6 +37,8 @@ function tableNode(editor: Editor) {
 export function TableToolbar({ editor }: { editor: Editor }) {
   // outside a table the toolbar is hidden: skip the (document-wide) command dry run on every keystroke
   const st = useEditorState({ editor, selector: ({ editor: e }) => (inTable(e) ? { multi: e.state.selection instanceof CellSelection, canSplit: e.can().splitCell() } : NOT_IN_TABLE) });
+  const menuEl = useRef<HTMLDivElement | null>(null);
+  const options = useMemo(() => withReveal(TABLE_OPTIONS, () => menuEl.current), []);
   const c = () => editor.chain().focus();
   const b = (label: string, icon: React.ReactNode, run: () => void, disabled = false) => (
     <Tooltip label={label}>
@@ -59,6 +62,7 @@ export function TableToolbar({ editor }: { editor: Editor }) {
   const multi = st.multi;
   return (
     <BubbleMenu
+      ref={menuEl}
       editor={editor}
       pluginKey="kbTableMenu"
       shouldShow={tableShouldShow}
@@ -69,7 +73,7 @@ export function TableToolbar({ editor }: { editor: Editor }) {
         const el = dom?.closest('.tableWrapper') ?? dom;
         return el ? { getBoundingClientRect: () => el.getBoundingClientRect(), getClientRects: () => el.getClientRects() } : null;
       }, [editor])}
-      options={TABLE_OPTIONS}
+      options={options}
       className="table-toolbar"
     >
       <div className="row" style={{ gap: 1 }} role="toolbar" aria-label="Таблица">

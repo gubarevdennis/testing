@@ -13,6 +13,7 @@ export interface PMNode {
 
 import { BLOCK_TYPES } from './extensions.js';
 import { newId } from './ids.js';
+import { whiteboardText, whiteboardAttachmentIds } from './whiteboard.js';
 
 const BLOCK_SET = new Set<string>(BLOCK_TYPES);
 
@@ -80,6 +81,9 @@ export function docToPlainText(doc: PMNode): string {
       case 'embed':
         out.push(n.attrs?.title || n.attrs?.url || '');
         return;
+      case 'whiteboard':
+        out.push(whiteboardText(n.attrs?.scene));
+        return;
     }
     n.content?.forEach(visit);
   };
@@ -131,7 +135,7 @@ export function collectBlocks(doc: PMNode): BlockInfo[] {
     (n.content ?? []).forEach((c, index) => {
       const id = c.attrs?.id;
       if (id && BLOCK_SET.has(c.type)) {
-        list.push({ id, type: c.type, text: TEXTBLOCKS.has(c.type) ? inlineText(c) : c.type === 'table' ? docToPlainText(c) : '', hash: fingerprint(c), parentId, index });
+        list.push({ id, type: c.type, text: TEXTBLOCKS.has(c.type) ? inlineText(c) : c.type === 'table' || c.type === 'whiteboard' ? docToPlainText(c) : '', hash: fingerprint(c), parentId, index });
         visit(c, id);
       } else visit(c, parentId);
     });
@@ -194,6 +198,7 @@ export function extractAttachmentIds(doc: PMNode): string[] {
   const ids = new Set<string>();
   walk(doc, (n) => {
     if (n.attrs?.attachmentId) ids.add(n.attrs.attachmentId);
+    if (n.type === 'whiteboard') for (const id of whiteboardAttachmentIds(n.attrs?.scene)) ids.add(id);
   });
   return [...ids];
 }

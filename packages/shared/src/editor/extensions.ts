@@ -17,6 +17,7 @@ import { ImageBlock, InlineImage, FileBlock, Embed } from './nodes/media.js';
 import { Footnote } from './nodes/footnote.js';
 import { PageLink, PageMention, UserMention, CommentMark } from './nodes/links.js';
 import { Mermaid, TableOfContentsBlock, SyncedBlock, CollectionView } from './nodes/special.js';
+import { Whiteboard } from './nodes/whiteboard.js';
 import { sanitizeHref } from './url.js';
 
 /**
@@ -68,6 +69,7 @@ export const BLOCK_TYPES = [
   'syncedBlock',
   'collectionView',
   'blockMath',
+  'whiteboard',
 ] as const;
 
 export const FONT_SIZES = [12, 14, 16, 18, 20, 24, 28, 32] as const;
@@ -218,6 +220,7 @@ export function createSchemaExtensions(): AnyExtension[] {
     TableOfContentsBlock,
     SyncedBlock,
     CollectionView,
+    Whiteboard,
     BlockIdAttribute,
   ];
 }

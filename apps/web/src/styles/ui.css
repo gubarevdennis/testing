@@ -73,7 +73,9 @@
   display: flex; align-items: center; gap: 10px; width: 100%; min-height: 32px; padding: 6px 10px;
   border: none; background: transparent; border-radius: var(--r-sm); text-align: left; color: var(--text);
   cursor: pointer; user-select: none;
+  transition: background-color 80ms var(--ease), color 80ms var(--ease);
 }
+.menu-item:active:not(:disabled) { background: var(--surface-active); }
 .menu-item:hover, .menu-item[data-active='true'] { background: var(--surface-hover); }
 .menu-item:disabled, .menu-item[aria-disabled='true'] { opacity: 0.45; cursor: not-allowed; }
 .menu-item .menu-icon { width: 18px; color: var(--text-2); display: grid; place-items: center; flex: none; }
@@ -91,6 +93,13 @@
   padding: 5px 8px; border-radius: var(--r-sm); max-width: 280px; pointer-events: none; box-shadow: var(--shadow-2);
   animation: kb-fade-in var(--t-fast) var(--ease);
 }
+/* Surfaces placed by floating-ui animate with inline styles (useFloatingMotion): no keyframe on top of them */
+.menu[data-status], .popover[data-status], .tooltip[data-status] { animation: none; }
+/* Surfaces placed outside React (tiptap bubble toolbars, «/» «@» «:» lists): transparent until placed, then fade in */
+[data-motion] { transition: opacity var(--t-fast) var(--ease), transform var(--t-fast) var(--ease); }
+[data-motion='pending'] { opacity: 0 !important; transform: translateY(3px) scale(0.98); transition: none; pointer-events: none; }
+[data-motion='in'] { opacity: 1; transform: none; }
+.suggestion-popup[data-motion] .menu, .context-menu { animation: none; }
 .tooltip kbd { background: rgba(255, 255, 255, 0.12); border-color: rgba(255, 255, 255, 0.2); color: #fff; margin-left: 6px; }
 :root[data-theme='dark'] .tooltip { background: #e7e9ec; color: #17191d; }
 
@@ -147,3 +156,21 @@
 .progress { height: 4px; background: var(--surface-3); border-radius: 4px; overflow: hidden; }
 .progress > div { height: 100%; background: var(--accent); transition: width var(--t-med) var(--ease); }
 .dialog-leave { display: flex; align-items: center; gap: 8px; margin: 0 16px 8px; flex-wrap: wrap; }
+
+/* ---------- soft interactions (R-UI «мягкость»): every frequently used control eases its hover/press highlight.
+   Only colours, borders and shadows transition (never layout); focus rings stay instant for keyboard users. */
+.nav-item, .workspace-btn, .tree-section-btn, .tree-chevron, .tree-empty-btn, .tree-row-main, .emoji-btn, .pick-item,
+.switcher-item, .notif-item, .tab, a.crumb, .page-icon, .backlink, .home-row, .space-page-row, .search-type,
+.search-result-link, .trash-item, a.kb-list-item, button.kb-list-item, .rev-item, .exp-option, .share-row, .share-chip button,
+.table td, .imp-page-row, summary.imp-report-row, .bubble-type, .toast .btn {
+  transition: background-color var(--t-fast) var(--ease), color var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease), box-shadow var(--t-fast) var(--ease);
+}
+.nav-item:active, .pick-item:active, .home-row:active, .search-result-link:active, .switcher-item:active { background: var(--surface-active); }
+.tab { border-radius: var(--r-sm) var(--r-sm) 0 0; }
+.tab:hover:not([aria-selected='true']) { background: var(--surface-hover); }
+.share-chip button { border-radius: 50%; }
+.share-chip button:hover { background: color-mix(in srgb, var(--accent) 18%, transparent); }
+.badge { transition: background-color var(--t-fast) var(--ease), color var(--t-fast) var(--ease); }
+/* checkboxes, radios and selects: a quiet hover hint */
+.select:hover:not(:disabled):not(:focus), .input:hover:not(:disabled):not(:focus), .textarea:hover:not(:disabled):not(:focus) { border-color: color-mix(in srgb, var(--border-input) 70%, var(--text)); }
+.checkbox:hover input:not(:disabled) { filter: brightness(0.96); }

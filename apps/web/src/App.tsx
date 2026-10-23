@@ -6,9 +6,12 @@ import type { Me } from './api/types';
 import { useSession } from './state/session';
 import { Toasts } from './components/ui/Toast';
 import { ConfirmHost } from './components/ui/Confirm';
+import { ContextMenuHost } from './components/ui/ContextMenu';
 import { LoginPage, SetupPage, InvitePage } from './pages/Auth';
 import { AppShell } from './layout/AppShell';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { useAppearance } from './theme/appearance';
+import { hasLocalTheme, useUi } from './state/ui';
 
 const PageView = lazy(() => import('./pages/PageView'));
 const Home = lazy(() => import('./pages/Home'));
@@ -89,6 +92,13 @@ function Authenticated() {
   useEffect(() => {
     if (me) localStorage.setItem('kb:me', JSON.stringify(me));
   }, [me]);
+  // Visual preset of the organisation + the user's overrides (item 7); the theme chosen on another device applies
+  // until one is chosen on this one.
+  useAppearance(me?.org.settings.appearance, me?.user.preferences?.appearance);
+  const profileTheme = me?.user.preferences?.theme;
+  useEffect(() => {
+    if ((profileTheme === 'light' || profileTheme === 'dark' || profileTheme === 'system') && !hasLocalTheme()) useUi.getState().setTheme(profileTheme);
+  }, [profileTheme]);
   if (state === 'loading') return <div className="center-screen"><span className="spinner" aria-label="Загрузка" /></div>;
   if (state === 'offline') return <div className="center-screen"><div className="empty-state"><div className="empty-icon">📡</div><h3>Нет связи с сервером</h3><p>Проверьте подключение к сети. Страница обновится автоматически.</p><button className="btn" onClick={() => location.pathname && window.location.reload()}>Повторить</button></div></div>;
   if (state === 'timeout')
@@ -138,6 +148,7 @@ export function App() {
         </Routes>
         <Toasts />
         <ConfirmHost />
+        <ContextMenuHost />
       </BrowserRouter>
     </QueryClientProvider>
   );

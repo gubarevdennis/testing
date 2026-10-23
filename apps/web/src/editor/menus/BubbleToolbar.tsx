@@ -2,7 +2,7 @@ import { BubbleMenu } from '@tiptap/react/menus';
 import type { Editor } from '@tiptap/core';
 import { NodeSelection } from '@tiptap/pm/state';
 import { CellSelection } from '@tiptap/pm/tables';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useEditorState } from '@tiptap/react';
 import {
   Bold, Italic, Underline, Strikethrough, Code, Link2, Baseline, ChevronDown, AlignLeft, AlignCenter, AlignRight, AlignJustify, MessageSquarePlus, Subscript, Superscript, RemoveFormatting, Type, Heading1, Heading2, Heading3, List, ListOrdered, ListChecks, Quote, Code2, Info, Check, X, ExternalLink, Unlink, MoreHorizontal, Sigma, Footprints,
@@ -14,6 +14,7 @@ import { FONT_SIZES, FONT_FAMILIES, sanitizeHref } from '@kb/shared';
 import { convertToCodeBlock, type CodeConversionLoss } from '../convert';
 import { confirm } from '../../components/ui/Confirm';
 import { insertFootnote } from '../extensions/footnotes';
+import { withReveal } from '../../components/ui/motion';
 
 /** Converting to code removes formatting: ask first, explaining what will be lost (R-EDITOR-067). */
 function confirmCodeLoss(loss: CodeConversionLoss) {
@@ -94,6 +95,9 @@ function bubbleShouldShow({ editor: e, state, from, to }: { editor: Editor; stat
 /** Floating formatting toolbar for text selections. Hidden for node selections, tables cell ranges and code. */
 export function BubbleToolbar({ editor, onComment }: { editor: Editor; onComment(): void }) {
   const f = useFormatState(editor);
+  // transparent until placed at the selection, then a soft fade-in (no flash at the previous place)
+  const menuEl = useRef<HTMLDivElement | null>(null);
+  const options = useMemo(() => withReveal(BUBBLE_OPTIONS, () => menuEl.current), []);
   const [linkMode, setLinkMode] = useState(false);
   const [href, setHref] = useState('');
   const linkInput = useRef<HTMLInputElement>(null);
@@ -130,9 +134,10 @@ export function BubbleToolbar({ editor, onComment }: { editor: Editor; onComment
   const hl = f.hl ?? undefined;
   return (
     <BubbleMenu
+      ref={menuEl}
       editor={editor}
       pluginKey="kbBubble"
-      options={BUBBLE_OPTIONS}
+      options={options}
       shouldShow={bubbleShouldShow}
       className="bubble-toolbar"
     >

@@ -12,6 +12,7 @@ import { toast } from '../../components/ui/Toast';
 import { DocPreviewInline } from './DocPreviewInline';
 import { UploadPlaceholder } from './UploadPlaceholder';
 import { toEmbed } from '../embedProviders';
+import { followLink } from '../linkNavigation';
 
 const CALLOUT_LABEL: Record<string, string> = { info: 'Информация', tip: 'Совет', important: 'Важно', warning: 'Предупреждение', error: 'Ошибка / запрет', example: 'Пример', neutral: 'Заметка' };
 
@@ -204,30 +205,32 @@ function RefLabel({ pageId, fallback }: { pageId: string | null; fallback: strin
 }
 
 export function PageLinkView({ node, selected }: NodeViewProps) {
+  const navigate = useNavigate();
+  const href = '/p/' + node.attrs.pageId;
   return (
     <NodeViewWrapper className={'kb-page-link' + (selected ? ' is-selected' : '')} data-drag-handle="">
-      <Link to={'/p/' + node.attrs.pageId} contentEditable={false} draggable={false} className="kb-page-link-a">
+      <a
+        href={href}
+        contentEditable={false}
+        draggable={false}
+        className="kb-page-link-a"
+        onClick={(e) => followLink(href, e, { navigate }) && e.preventDefault()}
+        onAuxClick={(e) => e.button === 1 && followLink(href, e, { navigate }) && e.preventDefault()}
+      >
         <RefLabel pageId={node.attrs.pageId} fallback={node.attrs.title} />
         {!node.attrs.child && <ArrowUpRight size={13} className="muted" />}
-      </Link>
+      </a>
     </NodeViewWrapper>
   );
 }
 
 export function PageMentionView({ node, selected }: NodeViewProps) {
   const navigate = useNavigate();
-  const href = '/p/' + node.attrs.pageId + (node.attrs.blockId ? '?block=' + node.attrs.blockId : '');
+  const href = '/p/' + node.attrs.pageId + (node.attrs.blockId ? '?block=' + encodeURIComponent(node.attrs.blockId) : '');
   return (
     <NodeViewWrapper as="span" className={'kb-page-mention' + (selected ? ' is-selected' : '')}>
-      <a
-        href={href}
-        onClick={(e) => {
-          if (e.metaKey || e.ctrlKey) return;
-          e.preventDefault();
-          navigate(href);
-        }}
-        draggable={false}
-      >
+      {/* a link to a block of this page scrolls to it; to another page opens it (and its block); Ctrl/Cmd+click — a new tab */}
+      <a href={href} onClick={(e) => followLink(href, e, { navigate }) && e.preventDefault()} onAuxClick={(e) => e.button === 1 && followLink(href, e, { navigate }) && e.preventDefault()} draggable={false}>
         <RefLabel pageId={node.attrs.pageId} fallback={node.attrs.title} />
       </a>
     </NodeViewWrapper>

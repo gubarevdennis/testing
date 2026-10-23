@@ -16,6 +16,7 @@ import YAML from 'yaml';
 import type { PMNode, PMMark } from './json.js';
 import { ensureBlockIds, hasMergedCells, walk } from './json.js';
 import { sanitizeHref } from './url.js';
+import { normalizeScene, whiteboardText, compactScene } from './whiteboard.js';
 import { newId } from './ids.js';
 import { type CalloutVariant } from './nodes/callout.js';
 import { toFootnoteContent } from './footnotes.js';
@@ -43,6 +44,8 @@ export interface ToMarkdownOptions {
   frontMatter?: Record<string, unknown> | null;
   /** Write `<!--kb:...-->` markers (default true). Disable for "clean" clipboard Markdown. */
   markers?: boolean;
+  /** Picture of a whiteboard written into the file (e.g. "assets/board-<id>.svg"); without it the board's text is written. */
+  whiteboardHref?: (node: PMNode) => string | null;
 }
 
 const ALERT_BY_VARIANT: Record<CalloutVariant, string> = {
@@ -330,6 +333,21 @@ export function docToMarkdown(doc: PMNode, opts: ToMarkdownOptions = {}): { mark
       case 'toc':
         if (!useMarkers) return [];
         return [{ type: 'html', value: '<!--kb:toc-->' }];
+      case 'whiteboard': {
+        // the scene travels in a marker (lossless re-import); readers see the picture (or the board's text)
+        const scene = n.attrs?.scene ? compactScene(normalizeScene(n.attrs.scene)) : null;
+        const out: Md[] = [];
+        if (useMarkers) out.push(marker({ t: 'whiteboard', scene }));
+        const href = opts.whiteboardHref?.(n) ?? null;
+        const text = whiteboardText(scene);
+        if (href) out.push(para([{ type: 'image', url: href, alt: text ? 'Доска: ' + text.slice(0, 300) : 'Доска', title: null }]));
+        else {
+          warn('whiteboard', 'Доски экспортированы текстом (рисунок доски — в экспорте HTML/PDF/DOCX)', id);
+          out.push(para([{ type: 'text', value: '🧩 Доска' + (text ? ': ' + text : '') }]));
+        }
+        if (useMarkers) out.push({ type: 'html', value: '<!--kb:/whiteboard-->' });
+        return out;
+      }
       case 'syncedBlock': {
         const a = n.attrs ?? {};
         const content = a.sourcePageId && a.sourceBlockId ? opts.syncedContent?.(a.sourcePageId, a.sourceBlockId) : null;
@@ -884,6 +902,13 @@ export function markdownToDoc(markdown: string, opts: FromMarkdownOptions = {}):
         }
         if (mk === 'toc') {
           out.push({ type: 'toc', attrs: pid() });
+          continue;
+        }
+        if (mk && typeof mk === 'object' && mk.t === 'whiteboard') {
+          let j = i + 1;
+          while (j < nodes.length && !(nodes[j].type === 'html' && parseMarker(nodes[j].value) === '/whiteboard')) j++;
+          out.push({ type: 'whiteboard', attrs: { ...pid(), scene: mk.scene ? normalizeScene(mk.scene) : null } });
+          i = j;
           continue;
         }
         if (mk && typeof mk === 'object' && (mk.t === 'synced' || mk.t === 'collection')) {

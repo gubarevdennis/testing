@@ -2,12 +2,13 @@ import { memo, useCallback, useEffect, useMemo, useRef, useState, type KeyboardE
 import { useQueries } from '@tanstack/react-query';
 import { useMatch, useNavigate } from 'react-router-dom';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { ChevronRight, Plus, MoreHorizontal, FileText, Lock, Users, Building2, Star, RotateCw, GripVertical, Table2 } from 'lucide-react';
+import { ChevronRight, Plus, MoreHorizontal, FileText, Lock, Users, Building2, Star, RotateCw, GripVertical, Table2, Pencil, Smile, FolderInput, Copy, Link2, Trash2, ExternalLink } from 'lucide-react';
 import { get } from '../api/client';
 import type { Space, TreeNode } from '../api/types';
 import { useUi } from '../state/ui';
 import { Menu, type MenuEntry } from '../components/ui/Menu';
 import { Tooltip } from '../components/ui/Tooltip';
+import { openContextMenu } from '../components/ui/ContextMenu';
 import { createPage, movePage, trashPage, duplicatePage, copyLink } from './treeActions';
 import { MoveDialog } from '../components/MoveDialog';
 import { IconPickerPopover } from '../components/IconPicker';
@@ -397,15 +398,17 @@ export function SidebarTree({ personal, spaces, shared, onNavigate }: Props) {
 
   const nodeMenu = (n: TreeNode, rowEl: HTMLElement | null): MenuEntry[] => [
     { id: 'new', label: 'Новая вложенная страница', icon: <Plus size={15} />, disabled: !n.canCreate, disabledReason: 'Нет права создавать страницы здесь', onSelect: () => void newChild(n.spaceId, n.id) },
-    { id: 'rename', label: 'Переименовать', icon: <FileText size={15} />, shortcut: 'F2', disabled: !n.canEdit, disabledReason: 'Нужно право на редактирование — запросите его у владельца страницы', onSelect: () => setRenaming(n.id) },
-    { id: 'icon', label: 'Изменить иконку', icon: <span>😀</span>, disabled: !n.canEdit, disabledReason: 'Нужно право на редактирование — запросите его у владельца страницы', onSelect: () => rowEl && setIconFor({ node: n, anchor: rowEl }) },
+    { id: 'open-tab', label: 'Открыть в новой вкладке', icon: <ExternalLink size={15} />, onSelect: () => void window.open('/p/' + n.id, '_blank', 'noopener') },
     { separator: true },
-    { id: 'move', label: 'Переместить в…', icon: <ChevronRight size={15} />, disabled: !n.canEdit, disabledReason: 'Нужно право на редактирование — запросите его у владельца страницы', onSelect: () => setMoving(n) },
-    { id: 'dup', label: 'Дублировать', icon: <FileText size={15} />, onSelect: () => void duplicatePage(n.id).then((p) => openPage(p.id)) },
-    { id: 'link', label: 'Копировать ссылку', icon: <FileText size={15} />, onSelect: () => void copyLink(n.id) },
+    { id: 'rename', label: 'Переименовать', icon: <Pencil size={15} />, shortcut: 'F2', disabled: !n.canEdit, disabledReason: 'Нужно право на редактирование — запросите его у владельца страницы', onSelect: () => setRenaming(n.id) },
+    { id: 'icon', label: 'Изменить иконку', icon: <Smile size={15} />, disabled: !n.canEdit, disabledReason: 'Нужно право на редактирование — запросите его у владельца страницы', onSelect: () => rowEl && setIconFor({ node: n, anchor: rowEl }) },
+    { separator: true },
+    { id: 'move', label: 'Переместить в…', icon: <FolderInput size={15} />, disabled: !n.canEdit, disabledReason: 'Нужно право на редактирование — запросите его у владельца страницы', onSelect: () => setMoving(n) },
+    { id: 'dup', label: 'Дублировать', icon: <Copy size={15} />, onSelect: () => void duplicatePage(n.id).then((p) => openPage(p.id)) },
+    { id: 'link', label: 'Копировать ссылку', icon: <Link2 size={15} />, onSelect: () => void copyLink(n.id) },
     { id: 'fav', label: 'В избранное', icon: <Star size={15} />, onSelect: () => void import('../api/client').then(({ put }) => put(`/api/v1/pages/${n.id}/favorite`)).then(() => queryClient.invalidateQueries({ queryKey: ['favorites'] })) },
     { separator: true },
-    { id: 'trash', label: 'Удалить в корзину', icon: <span>🗑</span>, danger: true, disabled: !n.canEdit, disabledReason: 'Нужно право на редактирование — запросите его у владельца страницы', onSelect: () => void trashPage(n.id, n.title, () => currentPage === n.id && navigate('/')) },
+    { id: 'trash', label: 'Удалить в корзину', icon: <Trash2 size={15} />, danger: true, disabled: !n.canEdit, disabledReason: 'Нужно право на редактирование — запросите его у владельца страницы', onSelect: () => void trashPage(n.id, n.title, () => currentPage === n.id && navigate('/')) },
   ];
 
   const spaceMenu = (s: Space): MenuEntry[] => [
@@ -504,6 +507,12 @@ interface RowProps {
   onRenameDone(): void;
 }
 
+/** Right click on a row: the row's actions at the pointer; the row stays highlighted while the menu is open. */
+function rowContextMenu(e: React.MouseEvent, row: HTMLElement | null, items: MenuEntry[], label: string) {
+  row?.setAttribute('data-context', 'true');
+  openContextMenu(e, items, { label, onClose: () => row?.removeAttribute('data-context') });
+}
+
 const TreeRow = memo(function TreeRow({ row: r, tabIndex, active, renaming, dragging, onFocus, onKeyDown, onToggle, onOpen, onOpenSpace, onNew, onPointerDown, nodeMenu, spaceMenu, onRenameDone }: RowProps) {
   const rowRef = useRef<HTMLDivElement>(null);
   if (r.kind === 'section')
@@ -546,7 +555,19 @@ const TreeRow = memo(function TreeRow({ row: r, tabIndex, active, renaming, drag
   if (r.kind === 'space') {
     const s = r.space;
     return (
-      <div ref={rowRef} className="tree-row space-row" role="treeitem" aria-level={1} aria-expanded={r.expanded} aria-selected={false} onPointerDown={(e) => onPointerDown(e, false)}>
+      <div
+        ref={rowRef}
+        className="tree-row space-row"
+        role="treeitem"
+        aria-level={1}
+        aria-expanded={r.expanded}
+        aria-selected={false}
+        onPointerDown={(e) => onPointerDown(e, false)}
+        onContextMenu={(e) => {
+          e.preventDefault();
+          rowContextMenu(e, rowRef.current, spaceMenu(s), `Действия пространства «${s.name}»`);
+        }}
+      >
         <button className="tree-chevron" tabIndex={-1} aria-label={r.expanded ? 'Свернуть' : 'Развернуть'} onClick={onToggle}>
           <ChevronRight size={14} className={'chev' + (r.expanded ? ' open' : '')} />
         </button>
@@ -587,8 +608,10 @@ const TreeRow = memo(function TreeRow({ row: r, tabIndex, active, renaming, drag
       style={{ paddingLeft: 4 + r.depth * INDENT }}
       onPointerDown={(e) => onPointerDown(e, false)}
       onContextMenu={(e) => {
+        // the rename field keeps the browser's own menu (copy / paste / spelling)
+        if ((e.target as HTMLElement).closest('input, textarea')) return;
         e.preventDefault();
-        (rowRef.current?.querySelector('.tree-more') as HTMLElement | null)?.click();
+        rowContextMenu(e, rowRef.current, nodeMenu(n, rowRef.current), `Действия со страницей «${n.title || 'Без названия'}»`);
       }}
     >
       {n.canEdit ? (

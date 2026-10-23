@@ -75,7 +75,7 @@ export function OrgSettingsSection() {
       qc.setQueryData(['admin', 'settings'], r);
       setForm(toForm(r.settings));
       setError(null);
-      if (me) setMe({ ...me, org: { ...me.org, settings: { guestsEnabled: r.settings.guestsEnabled, publicLinksEnabled: r.settings.publicLinksEnabled, requireMfa: r.settings.requireMfa } } });
+      if (me) setMe({ ...me, org: { ...me.org, settings: { ...me.org.settings, guestsEnabled: r.settings.guestsEnabled, publicLinksEnabled: r.settings.publicLinksEnabled, requireMfa: r.settings.requireMfa } } });
       toast.success('Настройки организации сохранены');
     },
     onError: (e) => setError(errMsg(e)),

@@ -13,6 +13,7 @@ import { schemaRegistry } from './schema-registry.js';
 import { replaceContent } from './ydoc.js';
 import { migrateContent } from '@kb/shared';
 import { enqueue } from '../services/pages.js';
+import { hasMention } from '../services/mentions.js';
 import { auditStandalone } from '../services/audit.js';
 import type { EventBus } from '../lib/events.js';
 import type { Metrics } from '../observability/metrics.js';
@@ -658,6 +659,8 @@ export class CollabHub {
           }
         }
         await enqueue(c, 'index-page', { pageId: live.pageId });
+        // people mentioned in the document are notified by the worker (item 29), with the editors of this save as authors
+        if (hasMention(json)) await enqueue(c, 'page-mentions', { pageId: live.pageId, actors: authors });
       }
       if (wantRevision) {
         revision = await createRevision(c, {

@@ -185,7 +185,17 @@ export async function pageRoutes(app: FastifyInstance, s: Services) {
       z.object({
         title: z.string().max(500).optional(),
         icon: z.string().max(200).nullable().optional(),
-        cover: z.object({ attachmentId: uuid.nullable().optional(), url: z.string().max(500).nullable().optional(), position: z.number().min(0).max(100).optional() }).nullable().optional(),
+        cover: z
+          .object({
+            attachmentId: uuid.nullable().optional(),
+            url: z.string().max(500).nullable().optional(),
+            // built-in gradient/colour (COVER_GALLERY)
+            gallery: z.string().max(40).nullable().optional(),
+            position: z.number().min(0).max(100).optional(),
+          })
+          .strict()
+          .nullable()
+          .optional(),
         wide: z.boolean().optional(),
         locked: z.boolean().optional(),
         properties: z.record(z.string(), z.unknown()).optional(),
@@ -197,6 +207,7 @@ export async function pageRoutes(app: FastifyInstance, s: Services) {
       req.body,
     );
     const acc = await requirePage(s.db, user, id, 'edit');
+    if (body.cover) await validateCover(s.db, id, body.cover);
     if (body.locked !== undefined && acc.level !== 'full') throw forbidden('Блокировать страницу может только владелец доступа');
     const cur = (await getPage(s.db, id))!;
     if (cur.locked && acc.level !== 'full' && body.locked === undefined) throw forbidden('Страница защищена от изменений — предложите правку через черновик или обратитесь к владельцу');
@@ -492,4 +503,21 @@ export async function pageRoutes(app: FastifyInstance, s: Services) {
 
 function snake(k: string) {
   return k.replace(/[A-Z]/g, (c) => '_' + c.toLowerCase());
+}
+
+/**
+ * A page cover (item 17) is a built-in gallery entry or an image attached to this very page (uploaded or copied from a
+ * link by the server); never a hot-linked URL (CSP img-src 'self') or another page's file (exports and public links
+ * show the cover to readers of this page only).
+ */
+async function validateCover(q: Queryable, pageId: string, cover: { attachmentId?: string | null; url?: string | null; gallery?: string | null }) {
+  const kinds = [cover.attachmentId, cover.gallery].filter(Boolean).length;
+  if (cover.url) throw badRequest('Обложка по ссылке сохраняется копией на сервере: загрузите её через «Ссылка»');
+  if (kinds !== 1) throw badRequest('Обложка — это изображение страницы или вариант из галереи');
+  if (cover.gallery && !coverGalleryCss(cover.gallery)) throw badRequest('Нет такой обложки в галерее');
+  if (cover.attachmentId) {
+    const a = (await q.query(`select page_id, mime from attachments a join attachment_versions v on v.attachment_id = a.id and v.version = a.current_version where a.id = $1 and a.deleted_at is null`, [cover.attachmentId])).rows[0];
+    if (!a || a.page_id !== pageId) throw badRequest('Изображение обложки должно быть загружено на эту страницу');
+    if (!/^image\/(png|jpeg|gif|webp|avif)$/.test(a.mime)) throw badRequest('Обложкой может быть только изображение (PNG, JPEG, GIF, WebP, AVIF)');
+  }
 }

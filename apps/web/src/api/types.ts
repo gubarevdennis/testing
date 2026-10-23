@@ -1,6 +1,8 @@
+import type { OrgAppearance, PageCover } from '@kb/shared';
+
 export interface Me {
-  user: { id: string; orgId: string; name: string; email: string; kind: 'employee' | 'guest'; orgRole: string; status: string; mfaEnabled: boolean; title: string | null; preferences: Record<string, any> };
-  org: { id: string; name: string; slug: string; settings: { guestsEnabled: boolean; publicLinksEnabled: boolean; requireMfa: boolean } };
+  user: { id: string; orgId: string; name: string; email: string; kind: 'employee' | 'guest'; orgRole: string; status: string; mfaEnabled: boolean; title: string | null; phone?: string | null; telegram?: string | null; preferences: Record<string, any> };
+  org: { id: string; name: string; slug: string; settings: { guestsEnabled: boolean; publicLinksEnabled: boolean; requireMfa: boolean; appearance?: OrgAppearance } };
   personalSpaceId: string | null;
   csrfToken: string | null;
   sso: boolean;
@@ -47,7 +49,7 @@ export interface PageDto {
   parentId: string | null;
   title: string;
   icon: string | null;
-  cover: { attachmentId?: string | null; url?: string | null; position?: number } | null;
+  cover: PageCover | null;
   status: 'draft' | 'review' | 'published' | 'archived';
   inheritPermissions: boolean;
   /** Page has its own explicit grants (an exception to inherited rights). */

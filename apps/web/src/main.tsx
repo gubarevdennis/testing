@@ -8,10 +8,13 @@ import './styles/ui.css';
 import './styles/layout.css';
 import './styles/editor.css';
 import './styles/pages.css';
+import './styles/appearance.css';
 import { App } from './App';
 import { applyTheme, useUi } from './state/ui';
 import { reportError } from './lib/telemetry';
+import { installPresetStyles } from './theme/appearance';
 
+installPresetStyles();
 applyTheme(useUi.getState().theme);
 // Ask the browser not to evict local document copies and queued changes under storage pressure.
 void navigator.storage?.persist?.().catch(() => undefined);

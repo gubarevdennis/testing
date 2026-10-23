@@ -11,6 +11,7 @@ import { checkConsistency, type ConsistencyReport } from '../services/consistenc
 import { attachedFilesText } from '../services/file-text.js';
 import type { BlobStore } from '../storage/blob-store.js';
 import { parseTraceparent } from '../observability/tracing.js';
+import { syncPageMentions } from '../services/mentions.js';
 
 export interface JobContext {
   s: Services;
@@ -106,6 +107,7 @@ export class Worker {
   private timers: NodeJS.Timeout[] = [];
   private running = 0;
   private stopped = false;
+  private afterCommit: Array<() => void> = [];
   private readonly id = `${hostname()}:${process.pid}:${Math.random().toString(36).slice(2, 6)}`;
 
   constructor(
@@ -158,7 +160,12 @@ export class Worker {
           await q.query('update outbox set attempts = attempts + 1, last_error = $2 where id = $1', [r.id, String((err as Error).message).slice(0, 500)]);
         }
       }
+    }).catch((e) => {
+      this.afterCommit = [];
+      throw e;
     });
+    const done = this.afterCommit.splice(0);
+    for (const fn of done) fn();
     return processed;
   }
 
@@ -174,6 +181,19 @@ export class Worker {
           throw e;
         }
         return;
+      case 'page-mentions': {
+        await q.query('savepoint mn');
+        try {
+          const notified = await syncPageMentions(q, payload.pageId, Array.isArray(payload.actors) ? payload.actors : []);
+          await q.query('release savepoint mn');
+          // after the commit of this outbox batch, so the inbox the client refetches already has the notification
+          for (const userId of notified) this.afterCommit.push(() => this.s.bus.emit({ type: 'notification', userId }));
+        } catch (e) {
+          await q.query('rollback to savepoint mn');
+          throw e;
+        }
+        return;
+      }
       case 'reindex-subtree': {
         const ids = (await q.query('select page_id from page_ancestors where ancestor_id = $1', [payload.pageId])).rows.map((r) => r.page_id);
         for (const id of ids) await indexPage(q, id, this.s.store);

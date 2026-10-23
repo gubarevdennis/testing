@@ -9,6 +9,7 @@ export * from './editor/markdown.js';
 export * from './editor/version.js';
 export * from './editor/palette.js';
 export * from './editor/footnotes.js';
+export * from './editor/whiteboard.js';
 export * from './editor/html-normalize.js';
 export * from './editor/ingest.js';
 export { isInlineImageElement } from './editor/nodes/media.js';

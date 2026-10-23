@@ -19,6 +19,7 @@ import { retentionRoutes } from './retention.js';
 import { draftRoutes } from './drafts.js';
 import { conflictRoutes } from './conflicts.js';
 import { aclExtraRoutes } from './acl-extra.js';
+import { peopleRoutes } from './people.js';
 
 export async function registerRoutes(app: FastifyInstance, s: Services) {
   await healthRoutes(app, s);
@@ -30,6 +31,7 @@ export async function registerRoutes(app: FastifyInstance, s: Services) {
   await revisionRoutes(app, s);
   await accessRoutes(app, s);
   await aclExtraRoutes(app, s);
+  await peopleRoutes(app, s);
   await collabRoutes(app, s);
   await adminRoutes(app, s);
   await attachmentRoutes(app, s);

@@ -128,3 +128,28 @@ export function revealController(getEl: () => HTMLElement | null) {
     },
   };
 }
+
+/**
+ * Adds the reveal to the options of a tiptap BubbleMenu (which shows its element first and positions it afterwards):
+ * the toolbar stays transparent until it is placed at the selection, then fades in.
+ */
+export function withReveal<T extends object>(options: T, getEl: () => HTMLElement | null): T & { onShow(): void; onUpdate(): void; onHide(): void } {
+  const r = revealController(getEl);
+  let fallback = 0;
+  return {
+    ...options,
+    onShow() {
+      r.hide();
+      // a show without a following position update (never expected) must not leave an invisible toolbar behind
+      window.clearTimeout(fallback);
+      fallback = window.setTimeout(() => !r.shown && r.placed(), 200);
+    },
+    onUpdate() {
+      r.placed();
+    },
+    onHide() {
+      window.clearTimeout(fallback);
+      r.hide();
+    },
+  };
+}

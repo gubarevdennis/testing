@@ -8,6 +8,7 @@ import { uploadFile } from '../../lib/uploads';
 import { toast } from '../../components/ui/Toast';
 import { OcrDialog } from '../../components/OcrDialog';
 import { UploadPlaceholder } from './UploadPlaceholder';
+import { useImageResize } from './imageResize';
 
 export function imageSrc(attrs: { src?: string | null; attachmentId?: string | null; naturalWidth?: number | null }, displayWidth: number) {
   if (attrs.attachmentId) {
@@ -34,7 +35,6 @@ function LoadedImageView({ node, updateAttributes, selected, editor, getPos, del
   const a = node.attrs as { src: string | null; attachmentId: string | null; alt: string; caption: string; width: number | null; align: string; naturalWidth: number | null; naturalHeight: number | null };
   const [state, setState] = useState<'loading' | 'ok' | 'error'>('loading');
   const [retry, setRetry] = useState(0);
-  const [dragW, setDragW] = useState<number | null>(null);
   const [showCaption, setShowCaption] = useState(!!a.caption);
   const [altOpen, setAltOpen] = useState(false);
   const [ocrOpen, setOcrOpen] = useState(false);
@@ -44,7 +44,19 @@ function LoadedImageView({ node, updateAttributes, selected, editor, getPos, del
     if (!selected) armed.current = false;
   }, [selected]);
   const editable = editor.isEditable;
-  const width = dragW ?? a.width;
+  const columnWidth = () => figRef.current?.closest('.ProseMirror')?.clientWidth ?? 760;
+  const resize = useImageResize({
+    editor,
+    getPos: () => (typeof getPos === 'function' ? getPos() : undefined),
+    measure: () => figRef.current?.querySelector('.kb-image-box') ?? null,
+    ratio: a.naturalWidth && a.naturalHeight ? a.naturalHeight / a.naturalWidth : null,
+    centered: a.align === 'center',
+    min: 80,
+    max: () => Math.min(columnWidth(), a.naturalWidth ? Math.max(a.naturalWidth, 80) * 4 : Infinity),
+    container: columnWidth,
+    natural: a.naturalWidth,
+  });
+  const width = resize.width ?? a.width;
   const ratio = a.naturalWidth && a.naturalHeight ? a.naturalHeight / a.naturalWidth : null;
   const src = imageSrc(a, width ?? 760) + (retry ? (imageSrc(a, 760).includes('?') ? '&' : '?') + 'r=' + retry : '');
   useEffect(() => setState('loading'), [a.attachmentId, a.src]);
@@ -53,31 +65,6 @@ function LoadedImageView({ node, updateAttributes, selected, editor, getPos, del
     const images = collectImages(editor);
     const pos = typeof getPos === 'function' ? getPos() : -1;
     openViewer(images, Math.max(0, images.findIndex((i) => i.pos === pos)));
-  };
-
-  const startResize = (e: React.PointerEvent, side: 'left' | 'right') => {
-    e.preventDefault();
-    e.stopPropagation();
-    const fig = figRef.current;
-    if (!fig) return;
-    const container = fig.parentElement?.closest('.ProseMirror')?.clientWidth ?? 760;
-    const startX = e.clientX;
-    const startW = fig.querySelector('img')?.getBoundingClientRect().width ?? 400;
-    const factor = a.align === 'center' ? 2 : 1;
-    const move = (ev: PointerEvent) => {
-      const dx = (ev.clientX - startX) * (side === 'right' ? 1 : -1) * factor;
-      setDragW(Math.round(Math.max(80, Math.min(container, a.naturalWidth ? Math.max(a.naturalWidth, 80) * 4 : container, startW + dx))));
-    };
-    const up = () => {
-      window.removeEventListener('pointermove', move);
-      window.removeEventListener('pointerup', up);
-      setDragW((w) => {
-        if (w != null) updateAttributes({ width: w });
-        return null;
-      });
-    };
-    window.addEventListener('pointermove', move);
-    window.addEventListener('pointerup', up);
   };
 
   const replace = () => {
@@ -114,7 +101,7 @@ function LoadedImageView({ node, updateAttributes, selected, editor, getPos, del
 
   const presets = [25, 50, 75, 100];
   return (
-    <NodeViewWrapper as="figure" ref={figRef as any} className={`kb-image-block align-${a.align}${selected ? ' is-selected' : ''}`} data-drag-handle="" data-block-id={node.attrs.id}>
+    <NodeViewWrapper as="figure" ref={figRef as any} className={`kb-image-block align-${a.align}${selected ? ' is-selected' : ''}${resize.resizing ? ' is-resizing' : ''}`} data-drag-handle="" data-block-id={node.attrs.id}>
       {selected && editable && (
         <div
           className="kb-node-toolbar"
@@ -241,13 +228,9 @@ function LoadedImageView({ node, updateAttributes, selected, editor, getPos, del
               }}
             />
           )}
-          {editable && a.align !== 'full' && (
-            <>
-              <span className="kb-resize left" contentEditable={false} onPointerDown={(e) => startResize(e, 'left')} aria-hidden />
-              <span className="kb-resize right" contentEditable={false} onPointerDown={(e) => startResize(e, 'right')} aria-hidden />
-            </>
-          )}
-          {dragW != null && <span className="kb-resize-badge">{dragW} px</span>}
+          {/* both sides and the four corners; proportional, the size is shown while dragging (R-MEDIA-012) */}
+          {editable && a.align !== 'full' && resize.handles(['w', 'e', 'nw', 'ne', 'sw', 'se'])}
+          {resize.badge}
         </div>
         {altOpen && editable && (
           <div className="kb-alt-edit" contentEditable={false}>

@@ -15,6 +15,7 @@ import { BlockHandle, TouchBlockActions } from './menus/BlockHandle';
 import { LassoSelect } from './menus/LassoSelect';
 import { TableToolbar } from './menus/TableToolbar';
 import { PasteOptionsMenu } from './menus/PasteOptionsMenu';
+import { EditorContextMenu } from './menus/EditorContextMenu';
 import { startUploads, resumeUploads } from './extensions/uploads';
 import { findKey } from './extensions/find';
 import { ImageViewer } from '../components/ImageViewer';
@@ -31,6 +32,7 @@ import { BlockConflictHost, DocConflictDialog, useConflicts } from './ConflictDi
 import { copyWithFeedback, useCopyPageCommands } from './clipboard/copy';
 import { useSelectionMemory } from './selectionMemory';
 import { embedKind } from './embedProviders';
+import { SCROLL_TO_BLOCK_EVENT } from './linkNavigation';
 
 export interface EditorHandle {
   editor: TEditor | null;
@@ -238,11 +240,13 @@ function EditorInner(p: Props & { session: CollabSession }) {
   const [pick, setPick] = useState<null | 'link' | 'synced'>(null);
   const [moveRange, setMoveRange] = useState<{ from: number; to: number } | null>(null);
   const navigate = useNavigate();
+  const navigateRef = useRef(navigate);
+  navigateRef.current = navigate;
   const [embed, setEmbed] = useState(false);
   const [imageUrl, setImageUrl] = useState(false);
   const [math, setMath] = useState<{ kind: 'inline' | 'block'; pos: number; latex: string } | null>(null);
   const [findOpen, setFindOpen] = useState(false);
-  const [flash, setFlash] = useState<{ top: number; left: number; width: number; height: number; id: string } | null>(null);
+  const [flash, setFlash] = useState<{ top: number; left: number; width: number; height: number; id: string; key: number } | null>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
   const user = useMemo(() => ({ name: p.user.name, color: colorForUser(p.user.id) }), [p.user]);
 
@@ -304,6 +308,7 @@ function EditorInner(p: Props & { session: CollabSession }) {
         createChildPage,
         onMathClick: (kind, pos, latex) => setMath({ kind, pos, latex }),
         onConflict: (c) => onConflictRef.current(c),
+        navigate: (to) => navigateRef.current(to),
       }),
       editable: p.canEdit,
       immediatelyRender: true,
@@ -379,27 +384,76 @@ function EditorInner(p: Props & { session: CollabSession }) {
     if (p.autoFocusTitle && p.canEdit) setTimeout(() => titleRef.current?.focus(), 30);
   }, [p.autoFocusTitle, p.canEdit]);
 
-  // Scroll to a block (?block=id) once content is present.
-  useEffect(() => {
-    if (!p.scrollToBlock || !editor) return;
-    let tries = 0;
-    const t = setInterval(() => {
-      const el = document.getElementById(p.scrollToBlock!) ?? editor.view.dom.querySelector(`[data-block-id="${CSS.escape(p.scrollToBlock!)}"]`);
-      if (el) {
-        el.scrollIntoView({ block: 'center' });
-        // highlight as an overlay: ProseMirror owns the node's DOM and would drop an added class
+  // Scroll to a block (?block=id, #id, a block link clicked in the text) and highlight it. The block is awaited while the
+  // document arrives (a large page syncs for a while) and the scroll is corrected while pictures above it load; the same
+  // request repeated later (another click on the link) scrolls and highlights again.
+  const scrollJob = useRef<{ id: string; at: number; stop(): void } | null>(null);
+  const scrollToBlockNow = useCallback(
+    (id: string) => {
+      if (!editor) return;
+      const prev = scrollJob.current;
+      if (prev && prev.id === id && Date.now() - prev.at < 400) return; // navigation + click event for one click
+      prev?.stop();
+      const timers: Array<ReturnType<typeof setTimeout>> = [];
+      const job = { id, at: Date.now(), stop: () => timers.forEach(clearTimeout) };
+      scrollJob.current = job;
+      const find = () => {
+        if (editor.isDestroyed) return null;
+        const sel = `[data-block-id="${CSS.escape(id)}"], [id="${CSS.escape(id)}"]`;
+        return (editor.view.dom.querySelector(sel) ?? document.getElementById(id)) as HTMLElement | null;
+      };
+      const highlight = (el: HTMLElement) => {
+        // an overlay: ProseMirror owns the node's DOM and would drop an added class
         const wrap = wrapRef.current;
-        if (wrap) {
-          const r = el.getBoundingClientRect();
-          const w = wrap.getBoundingClientRect();
-          setFlash({ top: r.top - w.top, left: r.left - w.left, width: r.width, height: r.height, id: p.scrollToBlock! });
-          setTimeout(() => setFlash(null), 2400);
+        if (!wrap) return;
+        const r = el.getBoundingClientRect();
+        const w = wrap.getBoundingClientRect();
+        setFlash({ top: r.top - w.top, left: r.left - w.left, width: r.width, height: r.height, id, key: job.at });
+      };
+      let tries = 0;
+      const attempt = () => {
+        const el = find();
+        if (!el) {
+          if (++tries < 200) timers.push(setTimeout(attempt, 100)); // up to 20 s
+          return;
         }
-        clearInterval(t);
-      } else if (++tries > 40) clearInterval(t);
-    }, 100);
-    return () => clearInterval(t);
-  }, [p.scrollToBlock, editor]);
+        el.scrollIntoView({ block: 'center' });
+        highlight(el);
+        // pictures and embeds above the block may still be loading: keep it in view while the layout settles
+        let lastTop = el.getBoundingClientRect().top;
+        for (const ms of [250, 600, 1200, 2000])
+          timers.push(
+            setTimeout(() => {
+              const now = find();
+              if (!now) return;
+              const top = now.getBoundingClientRect().top;
+              if (Math.abs(top - lastTop) > 4) {
+                now.scrollIntoView({ block: 'center' });
+                highlight(now);
+              }
+              lastTop = now.getBoundingClientRect().top;
+            }, ms),
+          );
+        timers.push(setTimeout(() => setFlash((f) => (f?.key === job.at ? null : f)), 2400));
+      };
+      attempt();
+    },
+    [editor],
+  );
+  useEffect(() => {
+    if (p.scrollToBlock) scrollToBlockNow(p.scrollToBlock);
+  }, [p.scrollToBlock, scrollToBlockNow]);
+  useEffect(() => {
+    const on = (e: Event) => {
+      const id = (e as CustomEvent<{ blockId: string }>).detail?.blockId;
+      if (id) scrollToBlockNow(id);
+    };
+    window.addEventListener(SCROLL_TO_BLOCK_EVENT, on);
+    return () => {
+      window.removeEventListener(SCROLL_TO_BLOCK_EVENT, on);
+      scrollJob.current?.stop();
+    };
+  }, [scrollToBlockNow]);
 
   useEffect(() => {
     const onFind = () => setFindOpen(true);
@@ -447,7 +501,7 @@ function EditorInner(p: Props & { session: CollabSession }) {
 
   return (
     <div ref={wrapRef} className={'editor-wrap' + (p.wide ? ' wide' : '')}>
-      {flash && <div className="kb-flash-overlay" data-block={flash.id} style={{ top: flash.top - 4, left: flash.left - 6, width: flash.width + 12, height: flash.height + 8 }} aria-hidden />}
+      {flash && <div key={flash.key} className="kb-flash-overlay" data-block={flash.id} style={{ top: flash.top - 4, left: flash.left - 6, width: flash.width + 12, height: flash.height + 8 }} aria-hidden />}
       {findOpen && editor && <FindBar editor={editor} onClose={() => setFindOpen(false)} />}
       <BlockConflictHost pageId={p.pageId} editor={editor} />
       <textarea
@@ -529,6 +583,18 @@ function EditorInner(p: Props & { session: CollabSession }) {
               }}
             />
           )}
+          <EditorContextMenu
+            editor={editor}
+            pageId={p.pageId}
+            canComment={!!p.onComment}
+            onComment={(id) => requestComment(id)}
+            onMoveToPage={(pos) => {
+              const range = blockRangeKey.getState(editor.state);
+              const node = editor.state.doc.nodeAt(pos);
+              if (range && pos >= range.from && pos < range.to) setMoveRange(range);
+              else if (node) setMoveRange({ from: pos, to: pos + node.nodeSize });
+            }}
+          />
         </>
       )}
       <input

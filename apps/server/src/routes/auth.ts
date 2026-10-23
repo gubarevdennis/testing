@@ -10,6 +10,7 @@ import { audit, auditStandalone } from '../services/audit.js';
 import { bootstrapOrg, ensurePersonalSpace, orgSettings } from '../services/org.js';
 import { AppError, badRequest, conflict, unauthorized } from '../lib/errors.js';
 import { sha256 } from '../lib/crypto.js';
+import { APPEARANCE_FONTS, APPEARANCE_PRESETS, APPEARANCE_SIZES, APPEARANCE_THEMES, normalizeTelegram, phoneHref } from '@kb/shared';
 
 const MAX_FAILED = 10;
 const LOCK_MINUTES = 15;
@@ -97,21 +98,41 @@ export async function authRoutes(app: FastifyInstance, s: Services) {
     const personal = (await s.db.query(`select id from spaces where kind = 'personal' and owner_user_id = $1`, [user.id])).rows[0];
     const settings = await orgSettings(s.db, user.orgId);
     return {
-      user: { ...toAuthUser(row), mfaEnabled: row.mfa_enabled, title: row.title, preferences: row.preferences, accessExpiresAt: row.access_expires_at },
-      org: { id: row.org_id, name: row.org_name, slug: row.org_slug, settings: { guestsEnabled: settings.guestsEnabled, publicLinksEnabled: settings.publicLinksEnabled, requireMfa: settings.requireMfa } },
+      user: { ...toAuthUser(row), mfaEnabled: row.mfa_enabled, title: row.title, phone: row.phone ?? null, telegram: row.telegram ?? null, preferences: row.preferences, accessExpiresAt: row.access_expires_at },
+      org: { id: row.org_id, name: row.org_name, slug: row.org_slug, settings: { guestsEnabled: settings.guestsEnabled, publicLinksEnabled: settings.publicLinksEnabled, requireMfa: settings.requireMfa, appearance: settings.appearance } },
       personalSpaceId: personal?.id ?? null,
       csrfToken: req.session?.csrfToken ?? null,
       sso: !!s.cfg.oidc,
     };
   });
 
-  /** Own profile: display name and job title (email and role are managed by administrators / SSO). */
+  /**
+   * Own profile: display name, job title and contacts shown on the profile card to colleagues of the organisation
+   * (phone, Telegram). Email and role are managed by administrators / SSO.
+   */
   app.patch('/api/v1/auth/me', async (req) => {
     const user = requireUser(req);
-    const body = parse(z.object({ name: z.string().trim().min(1).max(200).optional(), title: z.string().trim().max(200).nullable().optional() }), req.body);
+    const body = parse(
+      z.object({
+        name: z.string().trim().min(1).max(200).optional(),
+        title: z.string().trim().max(200).nullable().optional(),
+        phone: z.string().trim().max(40).nullable().optional(),
+        telegram: z.string().trim().max(80).nullable().optional(),
+      }),
+      req.body,
+    );
+    const phone = body.phone ? body.phone.replace(/\s+/g, ' ') : null;
+    if (phone && (!phoneHref(phone) || !/^\+?[0-9 ()-]+$/.test(phone))) throw badRequest('Телефон: только цифры, пробелы, скобки, дефисы и «+» в начале (5–16 цифр)');
+    const telegram = body.telegram ? normalizeTelegram(body.telegram) : null;
+    if (body.telegram && !telegram) throw badRequest('Telegram: имя пользователя из 5–32 латинских букв, цифр и «_» (можно со ссылкой t.me/…)');
     const r = await tx(s.db, async (q) => {
       const row = (
-        await q.query(`update users set name = coalesce($2, name), title = case when $3::boolean then $4 else title end, updated_at = now() where id = $1 returning name, title`, [user.id, body.name ?? null, body.title !== undefined, body.title ?? null])
+        await q.query(
+          `update users set name = coalesce($2, name), title = case when $3::boolean then $4 else title end,
+                  phone = case when $5::boolean then $6 else phone end, telegram = case when $7::boolean then $8 else telegram end, updated_at = now()
+            where id = $1 returning name, title, phone, telegram`,
+          [user.id, body.name ?? null, body.title !== undefined, body.title ?? null, body.phone !== undefined, phone, body.telegram !== undefined, telegram],
+        )
       ).rows[0];
       await audit(q, actorOf(req), { action: 'user.profile_update', targetType: 'user', targetId: user.id, details: { fields: Object.keys(body) } });
       return row;
@@ -123,6 +144,13 @@ export async function authRoutes(app: FastifyInstance, s: Services) {
     const user = requireUser(req);
     const body = parse(z.record(z.string(), z.unknown()), req.body);
     if (JSON.stringify(body).length > 20_000) throw badRequest('Слишком большие настройки');
+    // Appearance overrides are validated (they are applied to every page the user opens); null = as in the organisation.
+    if ('theme' in body) parse(z.object({ theme: z.enum(APPEARANCE_THEMES) }), { theme: body.theme });
+    if ('appearance' in body)
+      parse(
+        z.object({ appearance: z.object({ preset: z.enum(APPEARANCE_PRESETS).nullable().optional(), font: z.enum(APPEARANCE_FONTS).nullable().optional(), fontSize: z.enum(APPEARANCE_SIZES).nullable().optional() }).strict() }),
+        { appearance: body.appearance },
+      );
     const r = await s.db.query(`update users set preferences = preferences || $2::jsonb, updated_at = now() where id = $1 returning preferences`, [user.id, body]);
     return { preferences: r.rows[0].preferences };
   });

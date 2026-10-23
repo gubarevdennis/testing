@@ -25,6 +25,7 @@ import { slashExtension, mentionExtension, pageLinkExtension, emojiExtension } f
 import { FindInPage } from './extensions/find';
 import { ConflictGuard, type ConflictInfo } from './extensions/conflictGuard';
 import type { CommandContext } from './commands';
+import { LinkNavigation } from './linkNavigation';
 
 const VIEWS: Record<string, any> = {
   image: ImageView,
@@ -50,6 +51,8 @@ export interface ClientExtensionOptions {
   createChildPage: (title: string) => Promise<{ id: string; title: string } | null>;
   onMathClick: (kind: 'inline' | 'block', pos: number, latex: string) => void;
   onConflict: (c: ConflictInfo) => void;
+  /** In-app navigation for links in the text (react-router). */
+  navigate?: (to: string) => void;
 }
 
 /** Schema (shared with the server) + editing UI: node views, collaboration, menus, paste/upload handling. */
@@ -113,6 +116,7 @@ export function clientExtensions(o: ClientExtensionOptions): AnyExtension[] {
     PasteOptions,
     FindInPage,
     ConflictGuard.configure({ onConflict: (c) => o.onConflict(c) }),
+    LinkNavigation.configure({ navigate: (to) => (o.navigate ? o.navigate(to) : window.location.assign(to)) }),
     slashExtension(o.commandContext),
     mentionExtension(),
     pageLinkExtension(o.createChildPage),
