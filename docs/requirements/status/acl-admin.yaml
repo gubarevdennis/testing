@@ -152,11 +152,14 @@
     ''R-AUDIT-001 OPS-014: opening a document is audited …'''
   note: ''
 - id: R-SECURITY-002
-  status: partial
-  evidence: 'CSRF double submit (app.ts), helmet CSP, rate-limit, sanitize-html, SVG sanitising, type sniffing (inspectFile), zip-slip protection, optional ClamAV; SSRF-guarded remote fetcher (services/remote-fetch.ts);
-    tests/integration/acl-p0.test.ts ''SC-33 R-SECURITY-002: …'' (XSS in imports, CSRF, path traversal, sandboxed HTML files)'
-  note: No encryption at rest inside the application (left to disk/DB/S3), ClamAV not verified with a real daemon, no independent OWASP/ASVS test run; TLS is terminated by deploy/nginx.conf (not exercised
-    by tests).
+  status: done
+  evidence: 'tests/integration/security-dast.test.ts (baseline DAST, also black-box `npm run security:dast` on a built server): CSRF on all 117 mutating operations, authentication on all non-public
+    operations, CSP/nosniff/HSTS/Referrer-Policy/no-store on API, SPA, static, attachments and export, XSS in titles/comments/file names/imports inert in HTML and Markdown export and public pages, SSRF
+    (19 address forms + import), open redirect, path traversal (13 encodings), rate limits incl. X-Forwarded-For spoofing (TRUST_PROXY), cookie flags (Secure in production), malformed input without
+    stack traces; tests/integration/acl-p0.test.ts ''SC-33 R-SECURITY-002: …'', ''R-SECURITY-007: …'' (antivirus with emulated clamd, type checks); secrets only via env (config.ts, weak SECRET_KEY
+    refused in production); docs/SECURITY.md, docs/ASVS.md'
+  note: TLS is terminated by deploy/nginx.conf and encryption at rest is delegated to disk/DB/S3/backup encryption (BACKUP_RESTORE.md) — both are deployment concerns not exercised by automated tests;
+    ClamAV is verified with an emulated clamd only.
 - id: R-SECURITY-003
   status: done
   evidence: OCR local tesseract.js with bundled rus/eng data (apps/server/src/ocr/ocr.ts); no AI/external calls
@@ -204,9 +207,12 @@
   evidence: 'tests/integration/core.test.ts: regular user cannot read the org audit log (SC-39)'
   note: ''
 - id: R-SECURITY-004
-  status: missing
-  evidence: eslint only
-  note: No Lighthouse/Web Vitals, accessibility audit, ASVS review, SAST/DAST or dependency scanning configured.
+  status: partial
+  evidence: 'SAST `npm run security:sast` (eslint-plugin-security + no-unsanitized, 0 findings, justified suppressions only; also in `npm run lint`); dependency gate `npm run security:deps` (prod
+    0 high/critical; accepted advisories with reason and expiry in scripts/security/audit-allowlist.json); DAST `npm run security:dast` + tests/integration/security-dast.test.ts (0 findings);
+    OWASP ASVS 4.0.3 L2 mapping docs/ASVS.md; Lighthouse `npm run perf:lighthouse` (results in docs/PERFORMANCE.md); accessibility audit tests/e2e/a11y.spec.ts (axe); CI steps in .github/workflows/ci.yml'
+  note: 'Open: 2 critical advisories in dev-only vitest 3 (tinypool) accepted until 2026-12-31 (fix = vitest >= 4.1.11); Lighthouse mobile performance of the document page 0.76 < 0.8 (PageView/editor
+    chunk); ASVS L2 gaps (password length 12 / breached-password check, idle session timeout, TOTP secret not encrypted by the app); no independent pentest, DAST is an in-house baseline (no ZAP).'
 - id: R-HELP-001
   status: process
   evidence: in-app HelpCenter articles; seed.ts creates demo org (no demo content)

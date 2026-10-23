@@ -353,7 +353,10 @@ export class Dast {
           check(r.status === 200 && !text.includes(page.id), { target: `GET ${p}`, detail: 'private page of A found by B in search' });
           continue;
         }
-        check(r.status === 404, { target: `GET ${p.replace(/[0-9a-f-]{36}/g, ':id')}`, detail: `B got ${r.status}: ${text.slice(0, 120)}`, severity: r.status === 403 ? 'low' : 'high' });
+        // By design the tree of a space one cannot see answers 200 with only the pages shared individually (here:
+        // none) — the same answer as for a space with nothing shared, so it reveals nothing about the content.
+        const emptyTree = p.endsWith('/tree') && r.status === 200 && JSON.parse(text).nodes?.length === 0;
+        check(r.status === 404 || emptyTree, { target: `GET ${p.replace(/[0-9a-f-]{36}/g, ':id')}`, detail: `B got ${r.status}: ${text.slice(0, 120)}`, severity: r.status === 403 ? 'low' : 'high' });
         check(!text.includes('секрет A') && !text.includes('Личное A'), { target: `GET ${p}`, detail: 'response leaks content or title of A' });
       }
       const writes: Array<[string, string, unknown]> = [

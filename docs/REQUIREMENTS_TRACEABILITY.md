@@ -8,10 +8,10 @@
 
 | Приоритет | Всего | реализовано | частично | не реализовано | требует ручной проверки | ограничение окружения | процесс/документ | заменено | не оценено | покрыто тестами |
 |---|---|---|---|---|---|---|---|---|---|---|
-| P0 | 637 | 525 | 76 | 12 | 1 | 8 | 14 | 1 | 0 | 434 |
+| P0 | 637 | 527 | 75 | 11 | 1 | 8 | 14 | 1 | 0 | 445 |
 | P1 | 588 | 227 | 276 | 30 | 32 | 7 | 15 | 1 | 0 | 95 |
 | P2 | 73 | 26 | 24 | 6 | 7 | 0 | 9 | 1 | 0 | 1 |
-| **Итого** | 1298 | 778 | 376 | 48 | 40 | 15 | 38 | 3 | 0 | 530 |
+| **Итого** | 1298 | 780 | 375 | 47 | 40 | 15 | 38 | 3 | 0 | 541 |
 
 ## По модулям
 
@@ -23,7 +23,7 @@
 | ARCHIVE | 30 | 26 | 3 | 0 | 0 | 0 | 1 | 18 |
 | AUDIT | 11 | 11 | 0 | 0 | 0 | 0 | 0 | 9 |
 | AUTH | 5 | 5 | 0 | 0 | 0 | 0 | 0 | 3 |
-| BACKUP | 29 | 15 | 11 | 0 | 0 | 0 | 2 | 19 |
+| BACKUP | 29 | 15 | 11 | 0 | 0 | 0 | 2 | 22 |
 | CLIPBOARD | 45 | 24 | 16 | 1 | 0 | 4 | 0 | 21 |
 | COLLAB | 80 | 70 | 8 | 0 | 2 | 0 | 0 | 60 |
 | COLLECTION | 10 | 3 | 7 | 0 | 0 | 0 | 0 | 3 |
@@ -32,7 +32,7 @@
 | EXPORT | 37 | 23 | 10 | 0 | 2 | 1 | 0 | 21 |
 | FILES | 17 | 12 | 5 | 0 | 0 | 0 | 0 | 7 |
 | HELP | 11 | 5 | 2 | 0 | 3 | 0 | 1 | 0 |
-| HISTORY | 63 | 51 | 9 | 3 | 0 | 0 | 0 | 39 |
+| HISTORY | 63 | 51 | 9 | 3 | 0 | 0 | 0 | 41 |
 | IMPORT | 63 | 48 | 14 | 0 | 0 | 1 | 0 | 44 |
 | LAYOUT | 19 | 1 | 16 | 2 | 0 | 0 | 0 | 1 |
 | MEDIA | 43 | 31 | 10 | 0 | 0 | 1 | 0 | 13 |
@@ -40,18 +40,18 @@
 | OFFLINE | 28 | 26 | 2 | 0 | 0 | 0 | 0 | 25 |
 | OPS | 29 | 9 | 14 | 0 | 1 | 3 | 2 | 10 |
 | ORG | 7 | 6 | 1 | 0 | 0 | 0 | 0 | 5 |
-| PAGE | 50 | 30 | 15 | 4 | 1 | 0 | 0 | 7 |
+| PAGE | 50 | 30 | 15 | 4 | 1 | 0 | 0 | 8 |
 | PERF | 44 | 6 | 26 | 12 | 0 | 0 | 0 | 6 |
 | PROCESS | 57 | 9 | 11 | 7 | 2 | 0 | 28 | 0 |
 | PUBLISH | 15 | 9 | 5 | 1 | 0 | 0 | 0 | 4 |
-| QA | 56 | 6 | 25 | 9 | 10 | 3 | 3 | 4 |
-| SEARCH | 30 | 22 | 8 | 0 | 0 | 0 | 0 | 14 |
-| SECURITY | 15 | 12 | 1 | 1 | 0 | 0 | 1 | 9 |
+| QA | 56 | 6 | 25 | 9 | 10 | 3 | 3 | 6 |
+| SEARCH | 30 | 23 | 7 | 0 | 0 | 0 | 0 | 15 |
+| SECURITY | 15 | 13 | 1 | 0 | 0 | 0 | 1 | 10 |
 | SPACE | 15 | 13 | 1 | 1 | 0 | 0 | 0 | 8 |
 | TABLE | 9 | 5 | 4 | 0 | 0 | 0 | 0 | 2 |
 | TEMPLATES | 14 | 10 | 4 | 0 | 0 | 0 | 0 | 0 |
 | TREE | 63 | 50 | 11 | 1 | 1 | 0 | 0 | 24 |
-| UI | 89 | 18 | 54 | 2 | 14 | 1 | 0 | 16 |
+| UI | 89 | 18 | 54 | 2 | 14 | 1 | 0 | 17 |
 
 ## Открытые P0/P1 (частично / не реализовано / не оценено)
 
@@ -115,7 +115,6 @@
 - **R-PAGE-006** (P1, PAGE, частично): Оглавление, breadcrumbs, обратные ссылки, «связанные материалы», ссылки на блоки — Нет «связанных материалов»
 - **R-COMMENTS-001** (P1, COMMENTS, частично): Комментарии к выделению и блоку, ветки, @mention, разрешить/переоткрыть, привязка к версии и ID блока — revision_number = latest saved revision (may lag live content by up to the auto-revision interval).
 - **R-COLLAB-009** (P0, COLLAB, частично): Интеграционные тесты конфликтов при смене схемы, копировании блока, отключённой сети — Нет тестов конфликтов при смене схемы содержимого (миграции content_schema_version не реализованы)
-- **R-SECURITY-002** (P0, SECURITY, частично): TLS, шифрование на хранении, секреты, CSRF/XSS/SSRF, rate limit, CSP, антивирус и проверка типа вложений, path traversal, sanitize … — No encryption at rest inside the application (left to disk/DB/S3), ClamAV not verified with a real daemon, no independent OWASP/ASVS test run; TLS is terminated by deploy/nginx.conf (not exercised by tests).
 - **R-PROCESS-022** (P1, PROCESS, не реализовано): Внешние зависимости, особенно платные, лицензируются и фиксируются до разработки — no licence register
 - **R-BACKUP-003** (P0, BACKUP, частично): Бэкапы: ежедневные полные, инкрементальные/журналы, отдельное защищённое хранилище, шифрование, мониторинг, регулярный тест восстановления — Separate protected/offsite storage is deployment responsibility (documented, not configured)
 - **R-UI-021** (P1, UI, частично): 8-пиксельная сетка, последовательные отступы, ≥3 уровня текстовой иерархии, контролируемая ширина чтения и таблиц — many hard-coded 6/10/14 px paddings off the 8px grid; no token check
@@ -149,7 +148,7 @@
 - **R-QA-014** (P0, QA, частично): Критические потоки §18 проходят E2E на релизной сборке во всех браузерах; без заглушек — only Chromium is installed (playwright.config.ts, DECISIONS D-18); most §18 scenarios have no E2E
 - **R-OCR-012** (P1, OCR, частично): OCR RU/EN character accuracy ≥95% на чётких скриншотах; отдельная матрица плохих изображений — CER не измеряется (только regex), матрицы плохих изображений нет
 - **R-PERF-005** (P1, PERF, не реализовано): SLO §15 подтверждены нагрузкой; восстановление и отзыв прав — отдельные протоколы — SLO not confirmed by load; no protocols
-- **R-SECURITY-004** (P0, SECURITY, не реализовано): Lighthouse/Web Vitals, accessibility audit, OWASP ASVS, SAST/DAST, dependency scan без критических находок — No Lighthouse/Web Vitals, accessibility audit, ASVS review, SAST/DAST or dependency scanning configured.
+- **R-SECURITY-004** (P0, SECURITY, частично): Lighthouse/Web Vitals, accessibility audit, OWASP ASVS, SAST/DAST, dependency scan без критических находок — Open: 2 critical advisories in dev-only vitest 3 (tinypool) accepted until 2026-12-31 (fix = vitest >= 4.1.11); Lighthouse mobile performance of the document page 0.76 < 0.8 (PageView/editor chunk); ASVS L2 gaps (password length 12 / breached-password check, idle session timeout, TOTP secret not encrypted by the app); no independent pentest, DAST is an in-house baseline (no ZAP).
 - **R-OPS-010** (P1, OPS, частично): Артефакт: репозиторий с кодом, схемами, миграциями, Docker-файлами и инструкцией запуска без закрытых секретов — No README.md with clean-clone quick start in repo root
 - **R-OPS-011** (P1, OPS, частично): Артефакт: OpenAPI, схема БД, модель документа и конвертации, контракты websocket/ACL — No standalone DB schema document / WS protocol contract document
 - **R-QA-015** (P1, QA, частично): Артефакт: unit, integration, contract, E2E, load, security, accessibility тесты; fixtures DOCX/MD/изображений; отчёты прогонов — no contract, load or accessibility tests; no archived run reports
@@ -445,7 +444,6 @@
 - **QA26-29** (P1, PROCESS, частично): Сдать отчёт о покрытии, протоколы восстановления, измерения производительности, реестр решений, руководство администратора, runbooks — coverage report per run missing
 - **R-UI-069** (P1, UI, частично): Дочерняя статья, DnD, копирование, публикация — минимум действий; исключения доступа скрыты до запроса — DnD/copy/publish action counts not measured
 - **R-ADMIN-022** (P1, ADMIN, частично): Временные приглашения, гости, приостановка, отзыв сессий, массовое управление группами — No bulk group management.
-- **R-SEARCH-018** (P0, SEARCH, частично): Приватные материалы не включаются в общие индексы и уведомления — Личные материалы лежат в общей таблице search_index и отсекаются только фильтром ACL при запросе
 - **R-BACKUP-019** (P0, BACKUP, частично): Регулярная проверка бэкапов реальным восстановлением, контрольными суммами и сравнением импорт-экспорт-импорт — Regular production verification is an operational process
 - **R-UI-071** (P1, UI, частично): Умные значения по умолчанию, последняя позиция, быстрый поиск, клавиатура, отмена, понятная обратная связь — not verified
 - **R-UI-072** (P1, UI, частично): Без обязательных диалогов для типовых операций; предупреждения только при необратимом действии или изменении видимости — no audit of dialogs in typical ops
@@ -576,7 +574,7 @@
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| R-HISTORY-002 | P0 | Все операции обратимы где возможно; опасные действия — точный предпросмотр последствий без бесконечных подтверждений | частично | apps/web/src/layout/treeActions.tsx (undo перемещения, восстановление из корзины), apps/server/src/routes/revisions.ts pre-restore; Не все операции обратимы: смена иконки/свойств/заголовка через API без отмены (только запись before в page_events) |  |
+| R-HISTORY-002 | P0 | Все операции обратимы где возможно; опасные действия — точный предпросмотр последствий без бесконечных подтверждений | частично | apps/web/src/layout/treeActions.tsx (undo перемещения, восстановление из корзины), apps/server/src/routes/revisions.ts pre-restore; Не все операции обратимы: смена иконки/свойств/заголовка через API без отмены (только запись before в page_events) | tests/integration/history-p0.test.ts: version comparison and restore (R-HISTORY-013, V16-S11, QA26-15, R-HISTORY-002)<br>tests/integration/history-p0.test.ts: undo of property changes (R-HISTORY-002) |
 
 ### A11Y
 
@@ -698,7 +696,7 @@
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| E-14 | P0 | Обновления приложения и миграции имеют воспроизводимый откат | реализовано | db/migrate.ts migrateDown + SchemaTooNewError; tests/resilience/migrations.test.ts: every migration rolls back and re-applies with data; older release refuses newer schema; Image/tag rollback itself is procedural (docs/OPERATIONS.md §3) | tests/resilience/migrations.test.ts: schema migrations: rollback and re-apply (E-14, OPS-002, R-OPS-001)<br>tests/resilience/migrations.test.ts: every migration rolls back and re-applies step by step with data present; the application <br>tests/resilience/migrations.test.ts: a complete rollback to an empty schema and a fresh re-apply both succeed (E-14, R-OPS-007)<br>… ещё 1 |
+| E-14 | P0 | Обновления приложения и миграции имеют воспроизводимый откат | реализовано | db/migrate.ts migrateDown + SchemaTooNewError; tests/resilience/migrations.test.ts: every migration rolls back and re-applies with data; older release refuses newer schema; Image/tag rollback itself is procedural (docs/OPERATIONS.md §3) | tests/resilience/migrations-fresh.test.ts: migrations on a fresh database: up → down → up (R-OPS-022, E-14)<br>tests/resilience/migrations-fresh.test.ts: the CLI applies all migrations to an empty database, rolls every one back without leftover<br>tests/resilience/migrations.test.ts: schema migrations: rollback and re-apply (E-14, OPS-002, R-OPS-001)<br>… ещё 3 |
 
 ### QA
 
@@ -806,7 +804,7 @@
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| R-OPS-003 | P0 | Инфраструктура эксплуатации: health checks, метрики, логи, трассировки, алерты, backup/restore, миграции, CI/CD, секреты, runbooks | частично | routes/health.ts (/healthz,/readyz,/metrics), pino JSON logs + correlationId + traceId, observability/tracing.ts (W3C traceparent, OTLP/HTTP export of request and job spans), metrics kb_collab_reconnects_total / kb_import_files_total / kb_ocr_duration_seconds with alerts, deploy/monitoring/*, scripts/backup/*, .github/workflows/ci.yml, docs/OPERATIONS.md runbooks; tests/integration/io-p0-ops.test.ts; No CD/deploy pipeline; secrets only via env/EnvironmentFile (no secrets manager) | tests/integration/io-p0-ops.test.ts: distributed tracing (R-OPS-003, R-OPS-022)<br>tests/integration/io-p0-ops.test.ts: HTTP requests and background jobs are OpenTelemetry spans: W3C traceparent is continued an<br>tests/integration/io-p0-ops.test.ts: metrics behind the new alerts (R-OPS-003)<br>… ещё 3 |
+| R-OPS-003 | P0 | Инфраструктура эксплуатации: health checks, метрики, логи, трассировки, алерты, backup/restore, миграции, CI/CD, секреты, runbooks | частично | routes/health.ts (/healthz,/readyz,/metrics), pino JSON logs + correlationId + traceId, observability/tracing.ts (W3C traceparent, OTLP/HTTP export of request and job spans), metrics kb_collab_reconnects_total / kb_import_files_total / kb_ocr_duration_seconds with alerts, deploy/monitoring/*, scripts/backup/*, .github/workflows/ci.yml, docs/OPERATIONS.md runbooks; tests/integration/io-p0-ops.test.ts; No CD/deploy pipeline; secrets only via env/EnvironmentFile (no secrets manager) | tests/integration/ops-delivery.test.ts: health, readiness, metrics and structured logs of the server process (R-OPS-003, R-OPS-022<br>tests/integration/ops-delivery.test.ts: /healthz, /readyz (database, storage, migrations) and Prometheus /metrics answer; logs are<br>tests/integration/io-p0-ops.test.ts: distributed tracing (R-OPS-003, R-OPS-022)<br>… ещё 6 |
 
 ### PROCESS
 
@@ -1086,7 +1084,7 @@
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| R-PAGE-001 | P0 | Страница: неизменный UUID, название, slug, обложка, иконка, блоки, статус, владелец, автор, время, теги, версия, права, публикация … | частично | apps/server/migrations/0001_core.sql (pages); Нет slug и тегов; остальное есть |  |
+| R-PAGE-001 | P0 | Страница: неизменный UUID, название, slug, обложка, иконка, блоки, статус, владелец, автор, время, теги, версия, права, публикация … | частично | apps/server/migrations/0001_core.sql (pages); Нет slug и тегов; остальное есть | tests/integration/history-p0.test.ts: page model and search sources (R-PAGE-001, R-SEARCH-003) |
 
 ### PUBLISH
 
@@ -1323,7 +1321,7 @@
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| R-SEARCH-003 | P0 | Глобальный поиск по названиям, содержимому, заголовкам, тегам, комментариям (по праву), подписям, файлам, OCR | частично | apps/server/src/jobs/worker.ts#indexPage (комментарии, текст DOCX/TXT вложений), apps/server/src/services/file-text.ts, migrations/0006; tests/integration/history-tree.test.ts; Комментарии и DOCX/TXT индексируются; текст PDF не извлекается (PDF-парсер не установлен), тегов нет | tests/integration/history-tree.test.ts: search covers comments and attached documents (R-SEARCH-003, R-SEARCH-013)<br>tests/integration/history-tree.test.ts: finds a page by comment text and by text inside an attached DOCX/TXT, respecting access (R |
+| R-SEARCH-003 | P0 | Глобальный поиск по названиям, содержимому, заголовкам, тегам, комментариям (по праву), подписям, файлам, OCR | частично | apps/server/src/jobs/worker.ts#indexPage (комментарии, текст DOCX/TXT вложений), apps/server/src/services/file-text.ts, migrations/0006; tests/integration/history-tree.test.ts; Комментарии и DOCX/TXT индексируются; текст PDF не извлекается (PDF-парсер не установлен), тегов нет | tests/integration/history-p0.test.ts: page model and search sources (R-PAGE-001, R-SEARCH-003)<br>tests/integration/history-tree.test.ts: search covers comments and attached documents (R-SEARCH-003, R-SEARCH-013)<br>tests/integration/history-tree.test.ts: finds a page by comment text and by text inside an attached DOCX/TXT, respecting access (R |
 | R-SEARCH-004 | P1 | Полнотекстовый RU/EN, лемматизация, опечатки, подсветка, варианты слов, фильтры пространство/автор/дата/тип/статус | реализовано | apps/server/src/services/search.ts; tests/integration/content.test.ts (morphology, typo, wrong layout), tests/integration/gaps.test.ts; Отдельного фильтра «тип» нет — есть «in» (текст/изображения/файлы) | tests/integration/content.test.ts: finds by morphology, typo, wrong layout, applies ACL before results and jumps to block (R-<br>tests/integration/gaps.test.ts: suggests a corrected query when nothing is found (R-SEARCH-004) |
 | R-SEARCH-005 | P1 | Ctrl/Cmd+K, клавиатурная навигация, переход к совпадению внутри страницы | реализовано | apps/web/src/layout/QuickSwitcher.tsx, apps/web/src/layout/AppShell.tsx, apps/web/src/pages/SearchPage.tsx; tests/e2e/collab.spec.ts (jumps to the block) | tests/integration/content.test.ts: finds by morphology, typo, wrong layout, applies ACL before results and jumps to block (R-<br>tests/e2e/collab.spec.ts: search finds a page by a word from its body and jumps to the block (V16-S01, R-SEARCH-005) |
 
@@ -1422,7 +1420,7 @@
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| R-SECURITY-002 | P0 | TLS, шифрование на хранении, секреты, CSRF/XSS/SSRF, rate limit, CSP, антивирус и проверка типа вложений, path traversal, sanitize … | частично | CSRF double submit (app.ts), helmet CSP, rate-limit, sanitize-html, SVG sanitising, type sniffing (inspectFile), zip-slip protection, optional ClamAV; SSRF-guarded remote fetcher (services/remote-fetch.ts); tests/integration/acl-p0.test.ts 'SC-33 R-SECURITY-002: …' (XSS in imports, CSRF, path traversal, sandboxed HTML files); No encryption at rest inside the application (left to disk/DB/S3), ClamAV not verified with a real daemon, no independent OWASP/ASVS test run; TLS is terminated by deploy/nginx.conf (not exercised by tests). | tests/integration/acl-p0.test.ts: malicious inputs (SC-33, R-SECURITY-002, R-SECURITY-007)<br>tests/integration/acl-p0.test.ts: SC-33 R-SECURITY-002: XSS in imported HTML/Markdown is neutralised, CSRF without token and |
+| R-SECURITY-002 | P0 | TLS, шифрование на хранении, секреты, CSRF/XSS/SSRF, rate limit, CSP, антивирус и проверка типа вложений, path traversal, sanitize … | реализовано | tests/integration/security-dast.test.ts (baseline DAST, also black-box `npm run security:dast` on a built server): CSRF on all 117 mutating operations, authentication on all non-public operations, CSP/nosniff/HSTS/Referrer-Policy/no-store on API, SPA, static, attachments and export, XSS in titles/comments/file names/imports inert in HTML and Markdown export and public pages, SSRF (19 address forms + import), open redirect, path traversal (13 encodings), rate limits incl. X-Forwarded-For spoofing (TRUST_PROXY), cookie flags (Secure in production), malformed input without stack traces; tests/integration/acl-p0.test.ts 'SC-33 R-SECURITY-002: …', 'R-SECURITY-007: …' (antivirus with emulated clamd, type checks); secrets only via env (config.ts, weak SECRET_KEY refused in production); docs/SECURITY.md, docs/ASVS.md; TLS is terminated by deploy/nginx.conf and encryption at rest is delegated to disk/DB/S3/backup encryption (BACKUP_RESTORE.md) — both are deployment concerns not exercised by automated tests; ClamAV is verified with an emulated clamd only. | tests/integration/security-dast.test.ts: baseline DAST (R-SECURITY-004, R-SECURITY-002)<br>tests/integration/security-dast.test.ts: R-SECURITY-002 R-SECURITY-004: every non-public route requires authentication<br>tests/integration/security-dast.test.ts: R-SECURITY-002 R-SECURITY-004: CSRF token is enforced on every mutating route<br>… ещё 15 |
 | R-SECURITY-003 | P0 | Контент не уходит во внешние OCR/AI API без админ-включения, договора и видимого указания | реализовано | OCR local tesseract.js with bundled rus/eng data (apps/server/src/ocr/ocr.ts); no AI/external calls |  |
 
 ### PROCESS
@@ -1454,7 +1452,7 @@
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| R-BACKUP-003 | P0 | Бэкапы: ежедневные полные, инкрементальные/журналы, отдельное защищённое хранилище, шифрование, мониторинг, регулярный тест восстановления | частично | scripts/backup/backup.sh (daily full, incremental object pool, BACKUP_ENCRYPT_CMD), kb-backup.timer / backup-loop.sh, alerts KbBackupTooOld, weekly verify; Separate protected/offsite storage is deployment responsibility (documented, not configured) |  |
+| R-BACKUP-003 | P0 | Бэкапы: ежедневные полные, инкрементальные/журналы, отдельное защищённое хранилище, шифрование, мониторинг, регулярный тест восстановления | частично | scripts/backup/backup.sh (daily full, incremental object pool, BACKUP_ENCRYPT_CMD), kb-backup.timer / backup-loop.sh, alerts KbBackupTooOld, weekly verify; Separate protected/offsite storage is deployment responsibility (documented, not configured) | tests/resilience/offsite-sync.test.ts: copies add-only and read-only, verifies SHA256SUMS at the destination, survives deletion a |
 | R-BACKUP-004 | P0 | RPO ≤15 минут, RTO ≤4 часа для типового инцидента, подтверждённые испытаниями | заменено | overridden_by R-BACKUP-001 |  |
 | R-BACKUP-005 | P0 | Экспорт резервной копии: структура, медиа, ACL, версии, связи, метаданные в документированном формате | реализовано | Org archive (services/archive.ts: structure, media, ACL, versions, links, metadata, manifest) + kb-backup/1 manifest; tests/integration/archive.test.ts | tests/integration/archive.test.ts: export → readable without the app → restore into a clean installation → verified (V18-A05, |
 
@@ -1851,7 +1849,7 @@
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| R-SECURITY-004 | P0 | Lighthouse/Web Vitals, accessibility audit, OWASP ASVS, SAST/DAST, dependency scan без критических находок | не реализовано | eslint only; No Lighthouse/Web Vitals, accessibility audit, ASVS review, SAST/DAST or dependency scanning configured. |  |
+| R-SECURITY-004 | P0 | Lighthouse/Web Vitals, accessibility audit, OWASP ASVS, SAST/DAST, dependency scan без критических находок | частично | SAST `npm run security:sast` (eslint-plugin-security + no-unsanitized, 0 findings, justified suppressions only; also in `npm run lint`); dependency gate `npm run security:deps` (prod 0 high/critical; accepted advisories with reason and expiry in scripts/security/audit-allowlist.json); DAST `npm run security:dast` + tests/integration/security-dast.test.ts (0 findings); OWASP ASVS 4.0.3 L2 mapping docs/ASVS.md; Lighthouse `npm run perf:lighthouse` (results in docs/PERFORMANCE.md); accessibility audit tests/e2e/a11y.spec.ts (axe); CI steps in .github/workflows/ci.yml; Open: 2 critical advisories in dev-only vitest 3 (tinypool) accepted until 2026-12-31 (fix = vitest >= 4.1.11); Lighthouse mobile performance of the document page 0.76 < 0.8 (PageView/editor chunk); ASVS L2 gaps (password length 12 / breached-password check, idle session timeout, TOTP secret not encrypted by the app); no independent pentest, DAST is an in-house baseline (no ZAP). | tests/integration/security-dast.test.ts: baseline DAST (R-SECURITY-004, R-SECURITY-002)<br>tests/integration/security-dast.test.ts: R-SECURITY-004: route inventory comes from the OpenAPI description<br>tests/integration/security-dast.test.ts: R-SECURITY-002 R-SECURITY-004: every non-public route requires authentication<br>… ещё 12 |
 
 ### PROCESS
 
@@ -1934,7 +1932,7 @@
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| R-UI-026 | P0 | Не создавать UI-элементы без работающих действий, ошибок, состояний и автотестов | частично | tests/e2e: 6 spec files, ~22 tests; most UI (admin, ShareDialog, trash, templates, import UI, export, OCR dialog) has no browser test |  |
+| R-UI-026 | P0 | Не создавать UI-элементы без работающих действий, ошибок, состояний и автотестов | частично | tests/e2e: 6 spec files, ~22 tests; most UI (admin, ShareDialog, trash, templates, import UI, export, OCR dialog) has no browser test | tests/e2e/qa-crawl.spec.ts: QA26-01, QA26-04, R-UI-026: every route rendered as owner exposes only named controls; run |
 
 ### SECURITY
 
@@ -2031,7 +2029,7 @@
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| R-SECURITY-008 | P0 | Относительные пути изображений из ZIP; удалённые изображения копируются с проверкой URL/SSRF | реализовано | services/remote-fetch.ts (SSRF-guarded fetcher: every resolved address checked, pinned connection, re-checked redirects, size/time limits, REMOTE_FETCH_ALLOW_HOSTS) + services/remote-images.ts (import copies remote images as attachments, internal addresses removed with a report warning); tests/integration/acl-p0.test.ts 'R-SECURITY-008: on import remote images are copied …', 'SC-33 R-SECURITY-008: …'; Images in pasted HTML are still hot-linked by the browser (docs/SECURITY.md limitation 1). | tests/integration/acl-p0.test.ts: SSRF-guarded remote images (R-SECURITY-008, SC-33)<br>tests/integration/acl-p0.test.ts: SC-33 R-SECURITY-008: internal, loopback, link-local, mapped and reserved addresses are cl<br>tests/integration/acl-p0.test.ts: SC-33 R-SECURITY-008: the fetcher refuses internal targets, unsafe schemes, credentials an<br>… ещё 1 |
+| R-SECURITY-008 | P0 | Относительные пути изображений из ZIP; удалённые изображения копируются с проверкой URL/SSRF | реализовано | services/remote-fetch.ts (SSRF-guarded fetcher: every resolved address checked, pinned connection, re-checked redirects, size/time limits, REMOTE_FETCH_ALLOW_HOSTS) + services/remote-images.ts (import copies remote images as attachments, internal addresses removed with a report warning); tests/integration/acl-p0.test.ts 'R-SECURITY-008: on import remote images are copied …', 'SC-33 R-SECURITY-008: …'; Images in pasted HTML are still hot-linked by the browser (docs/SECURITY.md limitation 1). | tests/integration/security-dast.test.ts: R-SECURITY-002 R-SECURITY-004 R-SECURITY-008: SSRF — image by URL and import never reach l<br>tests/integration/acl-p0.test.ts: SSRF-guarded remote images (R-SECURITY-008, SC-33)<br>tests/integration/acl-p0.test.ts: SC-33 R-SECURITY-008: internal, loopback, link-local, mapped and reserved addresses are cl<br>… ещё 2 |
 
 ### CLIPBOARD
 
@@ -2165,7 +2163,7 @@
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| R-BACKUP-006 | P0 | Бэкапы БД, объектов, метаданных; шифрование, offsite, ежемесячный тест восстановления; RPO ≤5 мин, RTO ≤2 ч | частично | backup.sh (DB+objects+metadata, encryption hook), wal-archive.sh, verify-backup.sh; Offsite copy and monthly restore test are operational procedures not yet run; RPO/RTO only at test scale |  |
+| R-BACKUP-006 | P0 | Бэкапы БД, объектов, метаданных; шифрование, offsite, ежемесячный тест восстановления; RPO ≤5 мин, RTO ≤2 ч | частично | backup.sh (DB+objects+metadata, encryption hook), wal-archive.sh, verify-backup.sh; Offsite copy and monthly restore test are operational procedures not yet run; RPO/RTO only at test scale | tests/resilience/offsite-sync.test.ts: refuses to ship unencrypted backups off the site (R-BACKUP-012, R-BACKUP-006) |
 
 ### COLLAB
 
@@ -2476,7 +2474,7 @@
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
 | R-BACKUP-007 | P0 | 99.9% доступности, RPO ≤5 мин, RTO ≤60 мин; подтверждено нагрузкой и restore drill | частично | see R-BACKUP-001; restore drill measured; RTO ≤60 min not proven for production volume; no load test |  |
-| R-BACKUP-008 | P0 | Снимки БД, WAL/PITR, versioned object storage, шифрование, проверка восстановления, целостность ссылок, защита последней копии | частично | tests/resilience/pitr.test.ts (PITR), BACKUP_ENCRYPT_CMD, verify-backup.sh link/sha checks, retention keeps last N, offsite Object Lock example (compose profile offsite); Versioned object storage not configured by the repo | tests/resilience/pitr.test.ts: recovers database and files to the moment before the incident; later damage is absent, ear |
+| R-BACKUP-008 | P0 | Снимки БД, WAL/PITR, versioned object storage, шифрование, проверка восстановления, целостность ссылок, защита последней копии | частично | tests/resilience/pitr.test.ts (PITR), BACKUP_ENCRYPT_CMD, verify-backup.sh link/sha checks, retention keeps last N, offsite Object Lock example (compose profile offsite); Versioned object storage not configured by the repo | tests/integration/download-integrity.test.ts: attachment downloads are byte-exact (R-BACKUP-008, R-BACKUP-019)<br>tests/integration/download-integrity.test.ts: gzip files, zlib-looking and random binary files download unchanged with and without Accep<br>tests/resilience/pitr.test.ts: recovers database and files to the moment before the incident; later damage is absent, ear |
 
 ### QA
 
@@ -3532,7 +3530,7 @@
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
 | R-HISTORY-012 | P0 | Журнал и снимки: автор, время, блоки, свойства, таблицы, права, публикации; история не заменяет бэкапы | реализовано | apps/server/src/collab/hub.ts#flushNow (page_events edit), apps/server/src/routes/pages.ts (updated/moved), apps/server/src/routes/revisions.ts |  |
-| R-HISTORY-013 | P0 | Сравнение двух версий с подсветкой; восстановление статьи или блока как новая версия | частично | apps/server/src/routes/revisions.ts#restore-block, apps/web/src/components/page/HistoryPanel.tsx; Восстановление блока не создаёт новую версию сразу (только событие restored-block) | tests/integration/collab.test.ts: restores a single deleted block from a revision (R-HISTORY-003, R-HISTORY-013) |
+| R-HISTORY-013 | P0 | Сравнение двух версий с подсветкой; восстановление статьи или блока как новая версия | частично | apps/server/src/routes/revisions.ts#restore-block, apps/web/src/components/page/HistoryPanel.tsx; Восстановление блока не создаёт новую версию сразу (только событие restored-block) | tests/integration/history-p0.test.ts: version comparison and restore (R-HISTORY-013, V16-S11, QA26-15, R-HISTORY-002)<br>tests/integration/collab.test.ts: restores a single deleted block from a revision (R-HISTORY-003, R-HISTORY-013) |
 | R-HISTORY-014 | P0 | Восстановление при совместной работе согласует текущие изменения, предупреждает редакторов, не теряет неподтверждённые операции | реализовано | apps/server/src/routes/revisions.ts#restoreContent (pre-restore + CRDT), событие page-restored (apps/server/src/routes/collab.ts /api/v1/events), apps/web/src/hooks/useEvents.ts (toast со ссылкой на версию до восстановления); tests/integration/history-tree.test.ts | tests/integration/history-tree.test.ts: restore notifies co-editors (R-HISTORY-014, COLLAB-197)<br>tests/integration/history-tree.test.ts: everyone else on the page gets a page-restored event with a link to the pre-restore versio |
 | R-HISTORY-015 | P1 | Раздельные версии черновика и публикаций; хранение, юридическое удержание, политики удаления | реализовано | apps/server/src/routes/retention.ts (PUT /api/v1/admin/legal-hold, аудит), apps/web/src/components/page/PageInfoPanel.tsx#LegalHold, apps/server/src/jobs/worker.ts#maintenance; tests/integration/history-tree.test.ts | tests/integration/history-tree.test.ts: legal hold (R-HISTORY-015, R-HISTORY-028)<br>tests/integration/history-tree.test.ts: only org admins set or release a hold; it is audited, shown on the page and blocks permane |
 
@@ -3608,7 +3606,7 @@
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| V16-S11 | P0 | Сравнение версий текста и свойств; восстановление не стирает историю | частично | apps/server/src/services/revisions.ts#diffDocs (текст), apps/server/src/routes/revisions.ts#restore; tests/integration/collab.test.ts; Сравнение свойств между версиями отсутствует (ревизия хранит только заголовок и содержимое) — по свойствам только журнал updated |  |
+| V16-S11 | P0 | Сравнение версий текста и свойств; восстановление не стирает историю | частично | apps/server/src/services/revisions.ts#diffDocs (текст), apps/server/src/routes/revisions.ts#restore; tests/integration/collab.test.ts; Сравнение свойств между версиями отсутствует (ревизия хранит только заголовок и содержимое) — по свойствам только журнал updated | tests/integration/history-p0.test.ts: version comparison and restore (R-HISTORY-013, V16-S11, QA26-15, R-HISTORY-002) |
 
 ### COLLAB
 
@@ -3777,7 +3775,7 @@
 |---|---|---|---|---|---|
 | R-BACKUP-010 | P0 | Проектные SLO: доступность 99,9%/мес, RPO ≤5 мин, RTO ≤2 ч для полной организации; подтверждаются испытаниями | частично | see R-BACKUP-001; tests/resilience/pitr.test.ts; Test scale only | tests/resilience/pitr.test.ts: recovers database and files to the moment before the incident; later damage is absent, ear |
 | R-BACKUP-011 | P0 | Непрерывный WAL и PITR PostgreSQL; ежедневные полные + инкрементальные; согласованные снимки файлов и метаданных | реализовано | scripts/backup/pitr-drill.sh + wal-archive.sh/wal-restore.sh; tests/resilience/pitr.test.ts: recovery to T with app data; backup.sh daily full + --objects-only | tests/resilience/pitr.test.ts: recovers database and files to the moment before the incident; later damage is absent, ear |
-| R-BACKUP-012 | P0 | Правило 3-2-1: ≥3 копии, 2 среды, 1 вне контура; шифрование, отдельные ключи, неизменяемое хранение от ransomware | частично | compose profile offsite: aws s3 sync of backups + WAL into an Object Lock (COMPLIANCE) bucket, key without delete; BACKUP_ENCRYPT_CMD; The bucket/second medium must be provisioned by infrastructure; not run here |  |
+| R-BACKUP-012 | P0 | Правило 3-2-1: ≥3 копии, 2 среды, 1 вне контура; шифрование, отдельные ключи, неизменяемое хранение от ransomware | частично | compose profile offsite: aws s3 sync of backups + WAL into an Object Lock (COMPLIANCE) bucket, key without delete; BACKUP_ENCRYPT_CMD; The bucket/second medium must be provisioned by infrastructure; not run here | tests/resilience/offsite-sync.test.ts: offsite copy to a second medium (R-BACKUP-012)<br>tests/resilience/offsite-sync.test.ts: refuses to ship unencrypted backups off the site (R-BACKUP-012, R-BACKUP-006)<br>tests/resilience/offsite-sync.test.ts: copies add-only and read-only, verifies SHA256SUMS at the destination, survives deletion a |
 | R-BACKUP-013 | P1 | Хранение: ежедневные 30 дней, еженедельные 12 недель, ежемесячные 12 месяцев (настраиваемо) | реализовано | backup.sh BACKUP_KEEP_DAILY=30/WEEKLY=12/MONTHLY=12 (+KEEP_LAST), pool GC; Retention logic verified manually, not by an automated test |  |
 | R-BACKUP-014 | P0 | Ежедневная проверка и checksums; ежемесячное тестовое восстановление страниц/вложений … | процесс/документ | verify-backup.sh (weekly in kb-backup.service/backup-loop.sh), SHA256SUMS; Monthly/quarterly drill protocols must be run by operations |  |
 | R-BACKUP-015 | P0 | Восстановление страницы, пространства, организации на точку времени; предпросмотр влияния; как новая версия/контур без затирания | реализовано | services/partial-restore.ts + cli restore-pages: page/space restore from a backup restored into a temporary DB — impact preview (per-page diff, missing files), apply as a new version (existing/trashed pages) or recreated page with files (purged pages), never overwriting; org level: restore.sh / PITR; tests/resilience/io-p0-partial-restore.test.ts: space restore from a backup restored into a temporary database… | tests/resilience/backup-restore.test.ts: restores content, attachment bytes, history, permissions and the audit chain into a new in<br>tests/resilience/io-p0-partial-restore.test.ts: partial restore from a backup (R-BACKUP-015)<br>tests/resilience/io-p0-partial-restore.test.ts: space restore from a backup restored into a temporary database: impact preview with per-pa |
@@ -4130,7 +4128,7 @@
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| V18-A25 | P0 | Восстановление прошло тест на независимом сервере | частично | tests/resilience/backup-restore.test.ts restores into a new database + directory and starts a separate server; Same PostgreSQL host, not an independent server | tests/resilience/backup-restore.test.ts: restores content, attachment bytes, history, permissions and the audit chain into a new in |
+| V18-A25 | P0 | Восстановление прошло тест на независимом сервере | частично | tests/resilience/backup-restore.test.ts restores into a new database + directory and starts a separate server; Same PostgreSQL host, not an independent server | tests/resilience/dr-drill.test.ts: PostgreSQL server binaries (initdb, pg_verifybackup) or age are not installed: install pos<br>tests/resilience/backup-restore.test.ts: restores content, attachment bytes, history, permissions and the audit chain into a new in |
 
 ### PROCESS
 
@@ -5174,7 +5172,7 @@
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| R-OPS-022 | P0 | Поставка: deployment без секретов в репо, миграции и откат, health/readiness, метрики/логи/трейсы, алерты, бэкапы и restore-тесты … | частично | Dockerfile, deploy/*, migrations + rollback + enforced pre-migration backup, health/readiness, metrics/logs/OpenTelemetry traces (tests/integration/io-p0-ops.test.ts), alerts, backup + restore tests, docs; CD pipeline and operations passport missing | tests/integration/io-p0-ops.test.ts: distributed tracing (R-OPS-003, R-OPS-022)<br>tests/integration/io-p0-ops.test.ts: HTTP requests and background jobs are OpenTelemetry spans: W3C traceparent is continued an<br>tests/integration/io-p0-ops.test.ts: every alert rule uses metrics the application or the backup scripts export and links to an |
+| R-OPS-022 | P0 | Поставка: deployment без секретов в репо, миграции и откат, health/readiness, метрики/логи/трейсы, алерты, бэкапы и restore-тесты … | частично | Dockerfile, deploy/*, migrations + rollback + enforced pre-migration backup, health/readiness, metrics/logs/OpenTelemetry traces (tests/integration/io-p0-ops.test.ts), alerts, backup + restore tests, docs; CD pipeline and operations passport missing | tests/integration/ops-delivery.test.ts: health, readiness, metrics and structured logs of the server process (R-OPS-003, R-OPS-022<br>tests/integration/ops-delivery.test.ts: /healthz, /readyz (database, storage, migrations) and Prometheus /metrics answer; logs are<br>tests/integration/ops-delivery.test.ts: deployment kit without secrets (R-OPS-022)<br>… ещё 8 |
 
 ### PROCESS
 
@@ -5450,10 +5448,10 @@
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| QA26-01 | P0 | Система не готова, пока не проверено каждое доступное действие, визуальный элемент и переход состояния; «в основном работает» не критерий | не реализовано | n/a; no inventory of actions |  |
+| QA26-01 | P0 | Система не готова, пока не проверено каждое доступное действие, визуальный элемент и переход состояния; «в основном работает» не критерий | не реализовано | n/a; no inventory of actions | tests/e2e/qa-crawl.spec.ts: QA26-01, QA26-04, R-UI-026: every route rendered as owner exposes only named controls; run |
 | QA26-02 | P1 | Качество взаимодействия не хуже Notion подтверждается сравнительными испытаниями; охват: корректность, скорость, понятность, визуал … | требует ручной проверки | n/a; comparison trials not performed |  |
 | QA26-03 | P0 | Запись матрицы на каждый экран/элемент/состояние/действие: ID, компонент, состояние, устройство, ввод, предусловия, действие, ожидание … | не реализовано | n/a; no matrix records |  |
-| QA26-04 | P0 | Инвентаризация из маршрутов и реестра компонентов; пропущенные действия блокируют релиз | не реализовано | n/a; no route/component inventory |  |
+| QA26-04 | P0 | Инвентаризация из маршрутов и реестра компонентов; пропущенные действия блокируют релиз | не реализовано | n/a; no route/component inventory | tests/e2e/qa-crawl.spec.ts: QA26-04 seed: a space with a page, a comment thread and a trashed page<br>tests/e2e/qa-crawl.spec.ts: QA26-01, QA26-04, R-UI-026: every route rendered as owner exposes only named controls; run |
 | QA26-05 | P1 | Состояния normal/hover/focus/active/disabled/loading/error/empty/overflow; подсказки, popover, modal, меню, drag-preview; клавиатура … | частично | states styled in ui.css; not verified |  |
 
 ### EDITOR
@@ -5499,7 +5497,7 @@
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
 | QA26-14 | P0 | Каждая редактирующая операция на обратимость и повтор; последовательности 1/10/100/1000; объединение ввода; границы после перезагрузки … | реализовано | tests/e2e/undo.spec.ts (1 и 10 шагов, форматирование, вставка, структура, совместная работа), tests/e2e/collab-p0-editing.spec.ts (последовательности 100 и 1000, граница после перезагрузки) | tests/e2e/collab-p0-editing.spec.ts: undo/redo sequences of 100 and 1000 steps, transform and delete are reversible; history do<br>tests/e2e/undo.spec.ts: undo/redo of typing: 1 and 10 steps, Ctrl+Shift+Z and Ctrl+Y; result is saved (QA26-14, UX<br>tests/e2e/undo.spec.ts: undo/redo of formatting keeps the text and the selection (QA26-14, SC-11, R-HISTORY-011, R<br>… ещё 3 |
-| QA26-15 | P0 | Восстановление не уничтожает последующие версии, аудит не подменяется; документ и блоки, после удаления/архивации … | частично | tests/integration/collab.test.ts, tests/integration/gaps.test.ts (pre-restore); Нет проверок после удаления/архивации, при совместной работе, очистки по сроку | tests/integration/gaps.test.ts: restore saves the current state as a "pre-restore" revision (QA26-15) |
+| QA26-15 | P0 | Восстановление не уничтожает последующие версии, аудит не подменяется; документ и блоки, после удаления/архивации … | частично | tests/integration/collab.test.ts, tests/integration/gaps.test.ts (pre-restore); Нет проверок после удаления/архивации, при совместной работе, очистки по сроку | tests/integration/history-p0.test.ts: version comparison and restore (R-HISTORY-013, V16-S11, QA26-15, R-HISTORY-002)<br>tests/integration/history-p0.test.ts: QA26-15: after deletion the history stays readable and restore says why it waits; after ar<br>tests/integration/gaps.test.ts: restore saves the current state as a "pre-restore" revision (QA26-15) |
 
 ### ARCHIVE
 
@@ -5634,7 +5632,7 @@
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| R-SEARCH-018 | P0 | Приватные материалы не включаются в общие индексы и уведомления | частично | apps/server/src/jobs/worker.ts#indexPage, apps/server/src/services/search.ts; Личные материалы лежат в общей таблице search_index и отсекаются только фильтром ACL при запросе |  |
+| R-SEARCH-018 | P0 | Приватные материалы не включаются в общие индексы и уведомления | реализовано | tests/integration/search-private.test.ts: personal page (title, text, comment, file name) invisible to colleagues and to the org owner in search results, counts, snippets, «did you mean», quick switcher, home and recent; «Только я» in a shared space hides the page and its children; mentions/replies/review requests reach only people with access (review request to a person without access is refused, routes/revisions.ts), earlier notifications disappear when access is lost; the events WebSocket does not announce private pages. Code paths: services/search.ts (ACL before counting/snippets, suggestions only from visible titles), routes/search-comments.ts (notification insert and read-time re-check), routes/collab.ts (events filter); The search index is one physical table (search_index); privacy is enforced on every read path rather than by separate per-audience indexes. | tests/integration/search-private.test.ts: private materials stay out of shared indexes and notifications (R-SEARCH-018)<br>tests/integration/search-private.test.ts: R-SEARCH-018: a personal page (title, text, comment, file name) is found by its author and<br>tests/integration/search-private.test.ts: R-SEARCH-018: a page made private in a shared space («Только я») disappears from colleague<br>… ещё 2 |
 
 ### COLLAB
 
@@ -5658,7 +5656,7 @@
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| R-BACKUP-019 | P0 | Регулярная проверка бэкапов реальным восстановлением, контрольными суммами и сравнением импорт-экспорт-импорт | частично | tests/resilience/backup-restore.test.ts, verify-backup.sh, archive round trip tests/integration/archive.test.ts; Regular production verification is an operational process | tests/resilience/backup-restore.test.ts: restores content, attachment bytes, history, permissions and the audit chain into a new in<br>tests/resilience/io-p0-partial-restore.test.ts: space restore from a backup restored into a temporary database: impact preview with per-pa |
+| R-BACKUP-019 | P0 | Регулярная проверка бэкапов реальным восстановлением, контрольными суммами и сравнением импорт-экспорт-импорт | частично | tests/resilience/backup-restore.test.ts, verify-backup.sh, archive round trip tests/integration/archive.test.ts; Regular production verification is an operational process | tests/integration/download-integrity.test.ts: attachment downloads are byte-exact (R-BACKUP-008, R-BACKUP-019)<br>tests/integration/download-integrity.test.ts: gzip files, zlib-looking and random binary files download unchanged with and without Accep<br>tests/resilience/backup-restore.test.ts: restores content, attachment bytes, history, permissions and the audit chain into a new in<br>… ещё 1 |
 
 ### UI
 

@@ -41,6 +41,10 @@ jobs:
         run: npm run typecheck
       - name: Lint
         run: npm run lint
+      - name: SAST (eslint-plugin-security, no-unsanitized; report in test-results/security)
+        run: npm run security:sast
+      - name: Dependency scan (npm audit gate, scripts/security/audit-allowlist.json)
+        run: npm run security:deps
       - name: Unit tests
         run: npm run test:unit
       - name: Integration tests (real PostgreSQL)
@@ -56,6 +60,13 @@ jobs:
         run: npx playwright install --with-deps chromium
       - name: Browser E2E (Chromium)
         run: npm run test:e2e
+      - name: DAST baseline against the built server (fresh DB, port 4390)
+        run: npm run security:dast
+        env:
+          KB_SERVER_BUILT: '1'
+      - name: Lighthouse lab audit (login, home, page; desktop + mobile) — report only
+        continue-on-error: true
+        run: CHROME_PATH="$(node -e "import('@playwright/test').then((m) => console.log(m.chromium.executablePath()))")" npm run perf:lighthouse
       - name: Requirements traceability
         run: python3 -m pip install pyyaml && npm run requirements:trace
       - uses: actions/upload-artifact@v4

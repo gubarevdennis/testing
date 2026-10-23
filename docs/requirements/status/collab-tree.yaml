@@ -1094,9 +1094,12 @@
   status: done
   evidence: apps/server/src/services/pages.ts#createPage (наследование), tests/e2e/editor.spec.ts
 - id: R-SEARCH-018
-  status: partial
-  evidence: apps/server/src/jobs/worker.ts#indexPage, apps/server/src/services/search.ts
-  note: Личные материалы лежат в общей таблице search_index и отсекаются только фильтром ACL при запросе
+  status: done
+  evidence: 'tests/integration/search-private.test.ts: personal page (title, text, comment, file name) invisible to colleagues and to the org owner in search results, counts, snippets, «did you mean»,
+    quick switcher, home and recent; «Только я» in a shared space hides the page and its children; mentions/replies/review requests reach only people with access (review request to a person without
+    access is refused, routes/revisions.ts), earlier notifications disappear when access is lost; the events WebSocket does not announce private pages. Code paths: services/search.ts (ACL before
+    counting/snippets, suggestions only from visible titles), routes/search-comments.ts (notification insert and read-time re-check), routes/collab.ts (events filter)'
+  note: The search index is one physical table (search_index); privacy is enforced on every read path rather than by separate per-audience indexes.
 - id: R-COLLAB-048
   status: done
   evidence: apps/server/src/collab/hub.ts

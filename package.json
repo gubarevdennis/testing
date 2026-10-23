@@ -31,7 +31,12 @@
     "restore:drill": "DR_DRILL_REPORT_DIR=docs/drills DR_BULK_MB=${DR_BULK_MB:-256} DR_BULK_PAGES=${DR_BULK_PAGES:-200} vitest run --project resilience tests/resilience/dr-drill.test.ts",
     "audit-verify": "node --import tsx --conditions=development apps/server/src/cli.ts audit-verify",
     "start": "node apps/server/dist/main.js",
-    "requirements:trace": "python3 scripts/requirements/trace.py"
+    "requirements:trace": "python3 scripts/requirements/trace.py",
+    "security:sast": "node scripts/security/sast.mjs",
+    "security:deps": "node scripts/security/audit-gate.mjs",
+    "security:dast": "node --import tsx --conditions=development scripts/security/dast.ts",
+    "security": "npm run security:sast && npm run security:deps && npm run security:dast",
+    "perf:lighthouse": "node --import tsx --conditions=development scripts/security/lighthouse.ts"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.14.0",

@@ -7,7 +7,8 @@
 | Мера | Реализация | Проверка |
 |---|---|---|
 | Хранение паролей | argon2id (m=19 МиБ, t=2, p=1), политика сложности | `apps/server/src/auth/passwords.ts`, интеграционные тесты auth |
-| Перебор паролей | блокировка учётной записи после 10 ошибок на 15 мин, rate limit на `/auth/*` | `routes/auth.ts`, `AUTH_RATE_LIMIT_PER_MINUTE` |
+| Перебор паролей | блокировка учётной записи после 10 ошибок на 15 мин, rate limit на `/auth/*` по адресу клиента | `routes/auth.ts`, `AUTH_RATE_LIMIT_PER_MINUTE`; DAST `rate-limit` |
+| Адрес клиента | `TRUST_PROXY` (по умолчанию выключено: `X-Forwarded-For` игнорируется; в `deploy/` — `1`, адрес берётся из записи, добавленной nginx). Раньше доверялись все прокси: подделка `X-Forwarded-For` обходила rate limit входа и искажала IP в аудите | `config.ts` `parseTrustProxy`, `tests/integration/security-dast.test.ts` |
 | Второй фактор | TOTP RFC 6238; организация может требовать MFA | `auth/totp.ts`, `tests/unit/totp.test.ts` (эталонные векторы RFC) |
 | SSO | OIDC (authorization code + PKCE через openid-client) | `auth/oidc.ts`; **с реальным IdP не проверялось** |
 | Сеанс | случайный токен, в БД хранится только хеш; cookie `httpOnly`, `SameSite=Lax`, `Secure` в production; срок жизни `SESSION_TTL_HOURS` | `auth/sessions.ts` |
@@ -44,6 +45,16 @@
 
 Журнал `audit_events` — только добавление (триггер запрещает изменение/удаление), каждая запись содержит хеш предыдущей (канонический JSON). Проверка целостности: `npm run audit-verify` или «Администрирование → Журнал аудита → Проверить». Логируются входы, изменения прав, экспорт/скачивание, администрирование, восстановление, архивы, открытие документов (`page.view`, не чаще раза в 10 мин на пользователя и документ), логические операции правки (`page.edit`), обращения к скрытым ресурсам (`access.not_found`) и отказы (`access.denied`), публичные ссылки и экстренный доступ.
 
+## Проверки безопасности (R-SECURITY-004)
+
+| Проверка | Команда (CI) | Результат 23.10.2026 |
+|---|---|---|
+| SAST: eslint-plugin-security, eslint-plugin-no-unsanitized, `no-eval`/`no-new-func`/`no-script-url`, запрет `dangerouslySetInnerHTML` вне проверенного списка; 200 файлов `apps/server/src`, `apps/web/src`, `packages/shared/src` | `npm run security:sast` (правила также в `npm run lint`); `scripts/security/sast-rules.js` | 0 находок; 12 подавлений в коде, у каждого записана причина (скрипт отклоняет подавление без `-- причина`). Исправлено: инъекция в `RegExp` из id связи DOCX (ReDoS/SyntaxError на импорте), синонимы поиска как регулярные выражения («C++» ронял поиск организации), квадратичные выражения в импорте Markdown (`[[[[…`) и в `<details>`. |
+| Зависимости: `npm audit`, prod high/critical — запрет без исключений, остальное — только с причиной и сроком | `npm run security:deps`; `scripts/security/audit-allowlist.json` | prod: 0 critical, 0 high, 1 moderate (`uuid` в exceljs — путь не используется), 1 low (`katex` 0.16 в HTML-компиляторе micromark — не используется). dev: 2 critical + 2 moderate в vitest 3 (tinypool, @vitest/mocker) — приняты до 31.12.2026, в образ не попадают; исправление — переход на vitest ≥ 4.1.11. |
+| DAST baseline: 14 проб, ~750 проверок по всем 195 операциям OpenAPI — заголовки, CSRF, аутентификация, IDOR, XSS, SSRF, open redirect, path traversal, ошибки, CORS, Origin WebSocket, rate limit, флаги cookie, фиксация сеанса, перечисление пользователей | `npm run security:dast` (отдельный процесс собранного сервера, порт 4390, своя БД); `tests/integration/security-dast.test.ts` | 0 находок после исправлений. Найдено и исправлено: XSS через заголовок страницы в Markdown-экспорте; ответы API кешировались (нет `Cache-Control`) → `no-store`; `frame-ancestors` у вложений; 500 на NUL-байте в поиске и на отказах `@fastify/static` → 4xx; валидация тела до проверки входа в двух админ-маршрутах; подделка `X-Forwarded-For`. |
+| OWASP ASVS 4.0.3 L2 | — | `docs/ASVS.md`: соответствие по главам и список пробелов. |
+| Lighthouse 13.5 (вход, главная, страница; desktop/mobile) | `npm run perf:lighthouse` (в CI — только отчёт) | см. `docs/PERFORMANCE.md`. Включено сжатие br/gzip клиентских ресурсов (было 470 КБ JS без сжатия). |
+
 ## Данные и секреты
 
 * Секреты только через переменные окружения (`deploy/env.example`); в репозитории секретов нет. В production сервер не стартует со слабым `SECRET_KEY`.
@@ -53,6 +64,7 @@
 ## Известные ограничения (честно)
 
 1. Внешние изображения во **вставленном** HTML по-прежнему загружаются браузером напрямую с внешнего адреса (CSP `img-src https:`). При **импорте** (HTML/Markdown/DOCX) внешние изображения копируются сервером через SSRF-защищённый загрузчик `services/remote-fetch.ts` (только http/https, все адреса имени проверяются, внутренние/loopback/link-local/CGNAT/зарезервированные и их IPv6-формы запрещены, соединение закрепляется за проверенным адресом, каждый редирект проверяется заново, лимиты размера и времени; разрешённые внутренние хосты — `REMOTE_FETCH_ALLOW_HOSTS`); изображения с внутренних адресов удаляются из документа с предупреждением в отчёте импорта. Тесты: `tests/integration/acl-p0.test.ts` (R-SECURITY-008, SC-33).
-2. Нет независимого тестирования на проникновение и SCA в CI. Разбор `npm audit --omit=dev` (22.10.2026): react-router обновлён до 7.18.4 (open redirect устранён). Остались (moderate/low, без доступного исправления без смены мажорных версий): `uuid` внутри exceljs (уязвимость только для v3/v5/v6 с внешним буфером — не используется), `sprintf-js`/`argparse` внутри mammoth (CLI-зависимость, на вход не подаются пользовательские форматные строки), `katex` внутри remark-math на сервере (обход `trust` — `trust` не включается). Перед выпуском повторить разбор.
-3. OIDC и ClamAV не проверены с реальными сервисами.
-4. Ограничения rate limit — на экземпляр процесса, а не глобальные.
+2. Нет независимого тестирования на проникновение; DAST — собственный baseline (`tests/support/dast.ts`), OWASP ZAP не запускался. Пробелы ASVS L2 перечислены в `docs/ASVS.md` (пароль ≥ 12 и проверка по утёкшим паролям, тайм-аут бездействия сеанса, секрет TOTP в БД без шифрования приложением). В dev-зависимостях 2 critical (vitest 3) — приняты со сроком, см. выше.
+3. Открытая находка SAST (низкая, только клиент): выражение `NUM` в `apps/web/src/editor/tableOps.ts` квадратично на ячейке из ~50 000 пробелов с буквой в конце (≈2,5 с подвисания вкладки автора); исключение записано в `scripts/security/sast-rules.js`. Lighthouse: у скелета редактора `aria-label` без роли (`aria-prohibited-attr`, `apps/web/src/editor/Editor.tsx`).
+4. OIDC и ClamAV не проверены с реальными сервисами; конфигурация TLS nginx тестами не проверяется.
+5. Ограничения rate limit — на экземпляр процесса, а не глобальные.
