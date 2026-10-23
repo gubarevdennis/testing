@@ -247,7 +247,7 @@ function AppearanceTab() {
 
 function passwordProblem(p: string): string | null {
   if (!p) return null;
-  if (p.length < 10) return 'Не менее 10 символов';
+  if (p.length < 12) return 'Не менее 12 символов';
   if (!/\p{L}/u.test(p) || !/\d/.test(p)) return 'Нужны буквы и цифры';
   return null;
 }
@@ -301,7 +301,7 @@ function SecurityTab() {
           <div className="field">
             <label htmlFor="pw-new">Новый пароль</label>
             <input id="pw-new" className="input" type="password" autoComplete="new-password" value={next} aria-invalid={!!problem} onChange={(e) => setNext(e.target.value)} />
-            {problem ? <div className="field-error">{problem}</div> : <div className="field-hint">Не менее 10 символов, буквы и цифры.</div>}
+            {problem ? <div className="field-error">{problem}</div> : <div className="field-hint">Не менее 12 символов, буквы и цифры.</div>}
           </div>
           <div className="field">
             <label htmlFor="pw-rep">Повторите пароль</label>

@@ -126,7 +126,7 @@ export function SetupPage({ onDone }: { onDone: (m: Me) => void }) {
         <div className="field">
           <label htmlFor="s-pass">Пароль</label>
           <input id="s-pass" className="input" type="password" autoComplete="new-password" value={form.password} onChange={set('password')} required />
-          <span className="field-hint">Не менее 10 символов, буквы и цифры</span>
+          <span className="field-hint">Не менее 12 символов, буквы и цифры</span>
         </div>
         {error && <div className="alert error" role="alert">{error}</div>}
         <button className="btn primary lg" type="submit" disabled={busy}>
@@ -169,7 +169,7 @@ export function InvitePage() {
         <div className="field">
           <label htmlFor="i-pass">Новый пароль</label>
           <input id="i-pass" className="input" type="password" autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} required autoFocus />
-          <span className="field-hint">Не менее 10 символов, буквы и цифры</span>
+          <span className="field-hint">Не менее 12 символов, буквы и цифры</span>
         </div>
         {error && <div className="alert error" role="alert">{error}</div>}
         <button className="btn primary lg" type="submit" disabled={busy || password.length < 10}>

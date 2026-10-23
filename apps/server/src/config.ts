@@ -21,6 +21,7 @@ export interface Config {
   storage: { driver: 'fs' | 's3'; root: string; s3?: { endpoint?: string; region: string; bucket: string; accessKeyId: string; secretAccessKey: string; forcePathStyle: boolean } };
   secretKey: string;
   sessionTtlHours: number;
+  sessionIdleHours: number;
   cookieSecure: boolean;
   maxUploadBytes: number;
   maxImportBytes: number;
@@ -75,6 +76,7 @@ export function loadConfig(overrides: Partial<Config> = {}): Config {
         : { driver: 'fs', root: resolve(env('STORAGE_ROOT', resolve(dataDir, 'objects'))) },
     secretKey: env('SECRET_KEY', nodeEnv === 'production' ? undefined : 'dev-insecure-secret-change-me-0123456789'),
     sessionTtlHours: int('SESSION_TTL_HOURS', 24 * 14),
+    sessionIdleHours: int('SESSION_IDLE_HOURS', 12),
     cookieSecure: bool('COOKIE_SECURE', nodeEnv === 'production'),
     maxUploadBytes: int('MAX_UPLOAD_MB', 512) * 1024 * 1024,
     maxImportBytes: int('MAX_IMPORT_MB', 1024) * 1024 * 1024,
@@ -105,6 +107,8 @@ export function loadConfig(overrides: Partial<Config> = {}): Config {
     tracing: { endpoint: process.env.OTEL_EXPORTER_OTLP_TRACES_ENDPOINT?.replace(/\/v1\/traces\/?$/, '') || process.env.OTEL_EXPORTER_OTLP_ENDPOINT || null, serviceName: env('OTEL_SERVICE_NAME', 'kb'), headers: env('OTEL_EXPORTER_OTLP_HEADERS', '') },
   };
   if (cfg.env === 'production' && cfg.secretKey.length < 32) throw new Error('SECRET_KEY must be at least 32 characters in production');
+  if (cfg.env === 'production' && (/change[_-]?me|example|placeholder|insecure|secret[_-]?key/i.test(cfg.secretKey) || new Set(cfg.secretKey).size < 10))
+    throw new Error('SECRET_KEY looks like a placeholder; generate one with `openssl rand -base64 48`');
   return { ...cfg, ...overrides };
 }
 

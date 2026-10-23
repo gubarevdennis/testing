@@ -150,7 +150,7 @@ export async function buildApp(base: Omit<Services, 'hub' | 'bus' | 'metrics' | 
     }
     const token = req.cookies[SESSION_COOKIE];
     if (token) {
-      const s = await lookupSession(base.db, token);
+      const s = await lookupSession(base.db, token, base.cfg.sessionIdleHours);
       if (s) {
         req.user = s.user;
         req.session = s.session;

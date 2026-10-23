@@ -26,7 +26,7 @@ describe('auth', () => {
   });
 
   it('setup cannot run twice', async () => {
-    await expectStatus(new Api(ts.url).post('/api/v1/setup', { orgName: 'X', ownerEmail: 'x@x.test', ownerName: 'X', password: 'Password-123456' }), 409);
+    await expectStatus(new Api(ts.url).post('/api/v1/setup', { orgName: 'X', ownerEmail: 'x@x.test', ownerName: 'X', password: 'Setup-again-123456' }), 409);
   });
 
   it('suspended user loses access immediately (ACL-157, R-AUTH-002)', async () => {

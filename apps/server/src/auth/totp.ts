@@ -62,6 +62,7 @@ export function currentTotp(secret: string, at = Date.now()): string {
 export function checkTotp(secret: string, code: string, at = Date.now()): boolean {
   if (!/^\d{6}$/.test(code)) return false;
   const key = base32Decode(secret);
+  if (key.length < 10) return false; // missing or undecryptable secret: never verify against an empty key
   const step = Math.floor(at / 30_000);
   for (const d of [-1, 0, 1]) {
     const expected = hotp(key, step + d);

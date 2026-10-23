@@ -5,6 +5,7 @@ import { actorOf, parse, requireUser, SESSION_COOKIE, CSRF_COOKIE, type Services
 import { createSession, toAuthUser } from '../auth/sessions.js';
 import { hashPassword, verifyPassword, passwordProblems } from '../auth/passwords.js';
 import { checkTotp, newTotpSecret, totpUri } from '../auth/totp.js';
+import { openSecret, sealSecret } from '../auth/secretbox.js';
 import { audit, auditStandalone } from '../services/audit.js';
 import { bootstrapOrg, ensurePersonalSpace, orgSettings } from '../services/org.js';
 import { AppError, badRequest, conflict, unauthorized } from '../lib/errors.js';
@@ -63,7 +64,7 @@ export async function authRoutes(app: FastifyInstance, s: Services) {
     if (!(await verifyPassword(user.password_hash, body.password))) return fail('bad_password');
     if (user.mfa_enabled) {
       if (!body.totp) return reply.status(200).send({ mfaRequired: true });
-      if (!checkTotp(user.mfa_secret, body.totp)) return fail('bad_totp', 'Неверный код подтверждения');
+      if (!checkTotp(openSecret(s.cfg.secretKey, 'totp', user.mfa_secret) ?? '', body.totp)) return fail('bad_totp', 'Неверный код подтверждения');
     }
     await s.db.query('update users set failed_logins = 0, locked_until = null, last_login_at = now() where id = $1', [user.id]);
     const mustEnrollMfa = settings.requireMfa && !user.mfa_enabled;
@@ -139,7 +140,7 @@ export async function authRoutes(app: FastifyInstance, s: Services) {
   app.post('/api/v1/auth/mfa/setup', async (req) => {
     const user = requireUser(req);
     const secret = newTotpSecret();
-    await s.db.query('update users set mfa_secret = $2 where id = $1 and not mfa_enabled', [user.id, secret]);
+    await s.db.query('update users set mfa_secret = $2 where id = $1 and not mfa_enabled', [user.id, sealSecret(s.cfg.secretKey, 'totp', secret)]);
     const row = (await s.db.query('select mfa_enabled from users where id = $1', [user.id])).rows[0];
     if (row.mfa_enabled) throw conflict('mfa_enabled', 'Двухфакторная аутентификация уже включена');
     return { secret, uri: totpUri(secret, user.email) };
@@ -149,7 +150,7 @@ export async function authRoutes(app: FastifyInstance, s: Services) {
     const user = requireUser(req);
     const { code } = parse(z.object({ code: z.string() }), req.body);
     const row = (await s.db.query('select mfa_secret from users where id = $1', [user.id])).rows[0];
-    if (!row.mfa_secret || !checkTotp(row.mfa_secret, code)) throw new AppError(400, 'bad_code', 'Неверный код подтверждения');
+    if (!row.mfa_secret || !checkTotp(openSecret(s.cfg.secretKey, 'totp', row.mfa_secret) ?? '', code)) throw new AppError(400, 'bad_code', 'Неверный код подтверждения');
     await tx(s.db, async (q) => {
       await q.query('update users set mfa_enabled = true where id = $1', [user.id]);
       await audit(q, actorOf(req), { action: 'auth.mfa_enable', targetType: 'user', targetId: user.id });
@@ -161,7 +162,7 @@ export async function authRoutes(app: FastifyInstance, s: Services) {
     const user = requireUser(req);
     const { code } = parse(z.object({ code: z.string() }), req.body);
     const row = (await s.db.query('select mfa_secret, mfa_enabled from users where id = $1', [user.id])).rows[0];
-    if (!row.mfa_enabled || !checkTotp(row.mfa_secret, code)) throw new AppError(400, 'bad_code', 'Неверный код подтверждения');
+    if (!row.mfa_enabled || !checkTotp(openSecret(s.cfg.secretKey, 'totp', row.mfa_secret) ?? '', code)) throw new AppError(400, 'bad_code', 'Неверный код подтверждения');
     const settings = await orgSettings(s.db, user.orgId);
     if (settings.requireMfa) throw conflict('mfa_required', 'Политика организации требует двухфакторную аутентификацию');
     await tx(s.db, async (q) => {

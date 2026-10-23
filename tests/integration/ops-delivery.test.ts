@@ -116,7 +116,7 @@ describe('deployment kit without secrets (R-OPS-022)', () => {
     expect(checked).toBeGreaterThan(3);
   });
 
-  it('production refuses to start without a SECRET_KEY or with a short one (R-OPS-022)', () => {
+  it('production refuses to start without a SECRET_KEY, with a short one or with a placeholder (R-OPS-022)', () => {
     const saved = { NODE_ENV: process.env.NODE_ENV, SECRET_KEY: process.env.SECRET_KEY };
     try {
       process.env.NODE_ENV = 'production';
@@ -124,6 +124,10 @@ describe('deployment kit without secrets (R-OPS-022)', () => {
       expect(() => loadConfig()).toThrow(/SECRET_KEY/);
       process.env.SECRET_KEY = 'short';
       expect(() => loadConfig()).toThrow(/SECRET_KEY/);
+      process.env.SECRET_KEY = 'CHANGE_ME_min_32_chars_random_value'; // the env.example placeholder
+      expect(() => loadConfig()).toThrow(/placeholder/);
+      process.env.SECRET_KEY = 'a'.repeat(40);
+      expect(() => loadConfig()).toThrow(/placeholder/);
     } finally {
       for (const [k, v] of Object.entries(saved)) {
         if (v === undefined) delete process.env[k];

@@ -6,12 +6,12 @@
 
 | Мера | Реализация | Проверка |
 |---|---|---|
-| Хранение паролей | argon2id (m=19 МиБ, t=2, p=1), политика сложности | `apps/server/src/auth/passwords.ts`, интеграционные тесты auth |
+| Хранение паролей | argon2id (m=19 МиБ, t=2, p=1); не короче 12 символов, буквы и цифры, офлайн-словарь распространённых паролей | `apps/server/src/auth/passwords.ts`, интеграционные тесты auth |
 | Перебор паролей | блокировка учётной записи после 10 ошибок на 15 мин, rate limit на `/auth/*` по адресу клиента | `routes/auth.ts`, `AUTH_RATE_LIMIT_PER_MINUTE`; DAST `rate-limit` |
 | Адрес клиента | `TRUST_PROXY` (по умолчанию выключено: `X-Forwarded-For` игнорируется; в `deploy/` — `1`, адрес берётся из записи, добавленной nginx). Раньше доверялись все прокси: подделка `X-Forwarded-For` обходила rate limit входа и искажала IP в аудите | `config.ts` `parseTrustProxy`, `tests/integration/security-dast.test.ts` |
-| Второй фактор | TOTP RFC 6238; организация может требовать MFA | `auth/totp.ts`, `tests/unit/totp.test.ts` (эталонные векторы RFC) |
+| Второй фактор | TOTP RFC 6238; секрет в БД зашифрован AES-256-GCM (ключ из `SECRET_KEY` через HKDF); организация может требовать MFA | `auth/totp.ts`, `tests/unit/totp.test.ts` (эталонные векторы RFC) |
 | SSO | OIDC (authorization code + PKCE через openid-client) | `auth/oidc.ts`; **с реальным IdP не проверялось** |
-| Сеанс | случайный токен, в БД хранится только хеш; cookie `httpOnly`, `SameSite=Lax`, `Secure` в production; срок жизни `SESSION_TTL_HOURS` | `auth/sessions.ts` |
+| Сеанс | случайный токен, в БД хранится только хеш; cookie `httpOnly`, `SameSite=Lax`, `Secure` в production; срок жизни `SESSION_TTL_HOURS`, тайм-аут бездействия `SESSION_IDLE_HOURS` (12 ч) | `auth/sessions.ts` |
 | CSRF | double-submit: cookie `kb_csrf` + заголовок `x-csrf-token` (сравнение за постоянное время) для всех изменяющих запросов | `app.ts` |
 | WebSocket | проверка Origin, сессии и прав при подключении и при каждом изменении прав (`acl_epoch`) | `routes/collab.ts`, `collab/hub.ts` |
 | Отзыв доступа | блокировка/увольнение отзывает сеансы и API-токены; открытые документы переходят в режим чтения или закрываются | интеграционные тесты ACL/collab |
@@ -57,7 +57,7 @@
 
 ## Данные и секреты
 
-* Секреты только через переменные окружения (`deploy/env.example`); в репозитории секретов нет. В production сервер не стартует со слабым `SECRET_KEY`.
+* Секреты только через переменные окружения (`deploy/env.example`); в репозитории секретов нет. В production сервер не стартует с коротким `SECRET_KEY` или заглушкой вида `CHANGE_ME…`.
 * Шифрование при хранении обеспечивается инфраструктурой (диск/СУБД/S3 SSE); резервные копии — с шифрованием (см. `BACKUP_RESTORE.md`).
 * Корзина и сроки хранения, legal hold блокирует безвозвратное удаление.
 

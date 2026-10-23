@@ -21,12 +21,14 @@ export async function createSession(q: Queryable, userId: string, ttlHours: numb
   return { token, csrf, id: r.rows[0].id as string, expiresAt: r.rows[0].expires_at as Date };
 }
 
-export async function lookupSession(q: Queryable, token: string): Promise<{ session: SessionInfo; user: AuthUser } | null> {
+/** `idleHours`: a session unused for longer is no longer accepted (re-authentication after inactivity, ASVS V3.3). */
+export async function lookupSession(q: Queryable, token: string, idleHours = 0): Promise<{ session: SessionInfo; user: AuthUser } | null> {
   const r = await q.query(
     `select s.id as sid, s.csrf_token, s.mfa_passed, s.expires_at, s.last_seen_at, u.*
        from sessions s join users u on u.id = s.user_id
-      where s.token_hash = $1 and s.revoked_at is null and s.expires_at > now()`,
-    [sha256(token)],
+      where s.token_hash = $1 and s.revoked_at is null and s.expires_at > now()
+        and ($2::int = 0 or s.last_seen_at > now() - make_interval(hours => $2::int))`,
+    [sha256(token), idleHours],
   );
   const row = r.rows[0];
   if (!row) return null;
