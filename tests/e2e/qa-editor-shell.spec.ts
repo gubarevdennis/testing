@@ -97,7 +97,7 @@ test('R-SEARCH-010: quick switcher commands «Импорт документов�
   await page.goto('/');
   const sw = page.getByRole('dialog', { name: 'Быстрый переход' });
   const input = sw.getByRole('combobox', { name: 'Найти страницу или команду' });
-  const open = () => nav(page).getByRole('button', { name: /Поиск/ }).click();
+  const open = () => nav(page).locator('.sidebar-nav').getByRole('button', { name: /^Поиск/ }).click();
   await open();
   await expect(sw).toBeVisible();
   await expect(sw.getByRole('option', { name: 'Импорт документов' })).toBeVisible(); // empty query: commands
@@ -230,10 +230,13 @@ test('R-SEARCH-008: search filters — «Сбросить автора», «Сб
   await page.unroute(/\/api\/v1\/search\?/);
   await context.setOffline(true);
   await page.getByRole('searchbox', { name: 'Поисковый запрос' }).fill(word + 'y');
-  await expect(page.getByRole('alert')).toBeVisible({ timeout: 15_000 });
+  const retry = page.locator('.alert.error').getByRole('button', { name: 'Повторить' });
+  await expect(retry).toBeVisible({ timeout: 15_000 });
   await context.setOffline(false);
-  await page.getByRole('alert').getByRole('button', { name: 'Повторить' }).click();
-  await expect(page.getByRole('alert')).toHaveCount(0);
+  // back online the query is repeated (automatically on reconnect, or by «Повторить» if it is still shown)
+  await retry.click({ timeout: 2000 }).catch(() => undefined);
+  await expect(retry).toHaveCount(0, { timeout: 15_000 });
+  await expect(results.getByRole('link').first()).toContainText(word, { timeout: 15_000 });
   await api(page, 'DELETE', `/api/v1/pages/${id}`).catch(() => undefined);
 });
 
