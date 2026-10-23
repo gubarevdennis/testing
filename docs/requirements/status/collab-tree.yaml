@@ -97,9 +97,9 @@
   status: done
   evidence: apps/server/src/ocr/ocr.ts
 - id: R-TREE-005
-  status: partial
+  status: done
   evidence: apps/server/src/services/pages.ts#assertDepth (create/move/duplicate), apps/server/src/services/importer.ts (проверка плана); tests/integration/history-tree.test.ts
-  note: Лимит 15 уровней с понятной ошибкой реализован и тестируется; отдельной сущности Workspace нет (организация = рабочее пространство)
+  note: 'Решение заказчика 23.10.2026 (DECISIONS D-35): отдельный уровень Workspace не вводится — организация является рабочим пространством (Organization → Space → Page). Неограниченная вложенность с API-лимитом 15 уровней реализована и протестирована.'
 - id: R-PAGE-001
   status: done
   evidence: 'apps/server/migrations/0021_page_tags_revision_props.sql (tags, slug по триггеру kb_slug), apps/server/src/routes/pages.ts (tags, slug в DTO), apps/web/src/components/page/PageInfoPanel.tsx TagsEditor, маршрут /p/:id/:slug; tests/integration/history-p0.test.ts (page model and search sources)'

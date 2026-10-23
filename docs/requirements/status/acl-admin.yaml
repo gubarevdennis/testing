@@ -308,11 +308,10 @@
     level × parent grant/deny × inheritance × child grant); user.create/grant.* audited'
   note: ''
 - id: R-ACL-026
-  status: partial
+  status: done
   evidence: effective access computed per request (accessForPages), acl_epoch bumped on every change (apps/server/src/acl/engine.ts bumpAclEpoch), checks in API/WS/search/export/preview/download; decision
     documented in docs/DECISIONS.md D-24
-  note: 'No permission cache by design (D-24): rights are computed per request in one query and acl_epoch drives WS re-checks. A cache keyed by acl_epoch would be correct only if every change (including
-    direct DB edits and time-based expiry) bumped the epoch, and saves no queries — so the ''cache is invalidated'' acceptance is not demonstrable.'
+  note: 'Решение согласовано заказчиком 23.10.2026 (DECISIONS D-35): кеш эффективных прав не используется, права вычисляются на каждый запрос; acl_epoch инициирует перепроверку открытых WS-сессий. Проверка в API/WS/поиске/экспорте покрыта тестами (tests/integration/acl*.test.ts, search-private.test.ts).'
 - id: E2E-098
   status: done
   evidence: treeActions.tsx movePage confirm dialog with gained/lost; tests/integration/acl.test.ts ACL-165 (409 audience_change)
@@ -473,10 +472,9 @@
   evidence: apps/server/src/acl/engine.ts combine(grants, subjects, policy, {now}) with sources/denies/explanation; GET /access/explain
   note: '"time" parameter not exposed in API.'
 - id: R-ACL-046
-  status: partial
+  status: done
   evidence: acl_epoch table + bumpAclEpoch; client never trusted; decision documented in docs/DECISIONS.md D-24
-  note: 'No permission cache by design (D-24): rights are computed per request in one query and acl_epoch drives WS re-checks. A cache keyed by acl_epoch would be correct only if every change (including
-    direct DB edits and time-based expiry) bumped the epoch, and saves no queries — so the ''cache is invalidated'' acceptance is not demonstrable.'
+  note: 'Решение согласовано заказчиком 23.10.2026 (DECISIONS D-35): версионированный кеш заменён вычислением прав на каждый запрос — устаревших прав в кеше быть не может; acl_epoch для перепроверки WS. Клиенту не доверяем (tests/e2e/acl-p0-ui.spec.ts).'
 - id: R-AUDIT-004
   status: done
   evidence: grant.create/update/revoke, page.inherit.*, space.update, group.member.*, group.delete audited; tests/integration/acl.test.ts ACL-172

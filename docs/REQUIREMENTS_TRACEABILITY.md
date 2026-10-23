@@ -8,17 +8,17 @@
 
 | Приоритет | Всего | реализовано | частично | не реализовано | требует ручной проверки | ограничение окружения | процесс/документ | заменено | не оценено | покрыто тестами |
 |---|---|---|---|---|---|---|---|---|---|---|
-| P0 | 637 | 563 | 45 | 1 | 1 | 12 | 14 | 1 | 0 | 454 |
+| P0 | 637 | 566 | 42 | 1 | 1 | 12 | 14 | 1 | 0 | 454 |
 | P1 | 588 | 227 | 276 | 30 | 32 | 7 | 15 | 1 | 0 | 96 |
 | P2 | 73 | 26 | 24 | 6 | 7 | 0 | 9 | 1 | 0 | 1 |
-| **Итого** | 1298 | 816 | 345 | 37 | 40 | 19 | 38 | 3 | 0 | 551 |
+| **Итого** | 1298 | 819 | 342 | 37 | 40 | 19 | 38 | 3 | 0 | 551 |
 
 ## По модулям
 
 | Модуль | Всего | реализовано | частично | не реализовано | ручная проверка | окружение | процесс | покрыто тестами |
 |---|---|---|---|---|---|---|---|---|
 | A11Y | 24 | 12 | 12 | 0 | 0 | 0 | 0 | 10 |
-| ACL | 139 | 126 | 13 | 0 | 0 | 0 | 0 | 88 |
+| ACL | 139 | 128 | 11 | 0 | 0 | 0 | 0 | 88 |
 | ADMIN | 28 | 15 | 13 | 0 | 0 | 0 | 0 | 9 |
 | ARCHIVE | 30 | 26 | 3 | 0 | 0 | 0 | 1 | 18 |
 | AUDIT | 11 | 11 | 0 | 0 | 0 | 0 | 0 | 9 |
@@ -50,7 +50,7 @@
 | SPACE | 15 | 13 | 1 | 1 | 0 | 0 | 0 | 8 |
 | TABLE | 9 | 5 | 4 | 0 | 0 | 0 | 0 | 2 |
 | TEMPLATES | 14 | 10 | 4 | 0 | 0 | 0 | 0 | 0 |
-| TREE | 63 | 50 | 11 | 1 | 1 | 0 | 0 | 25 |
+| TREE | 63 | 51 | 10 | 1 | 1 | 0 | 0 | 25 |
 | UI | 89 | 19 | 54 | 1 | 14 | 1 | 0 | 17 |
 
 ## Открытые P0/P1 (частично / не реализовано / не оценено)
@@ -78,7 +78,6 @@
 - **R-COLLAB-005** (P1, COLLAB, частично): Совместная работа, комментарии, упоминания, согласование и публикация, история и восстановление — Функции есть; согласование/публикация и упоминания покрыты только интеграционными тестами, не E2E
 - **R-ACL-009** (P1, ACL, частично): Роль «Редактор»: структурирует, актуализирует, управляет публикацией пространства — No distinct "Editor" role separate from Author: both are level edit, publish distinguished only via per-grant canPublish flag.
 - **R-ACL-010** (P1, ACL, частично): Роль «Владелец пространства»: участники, шаблоны, структура — Members management for space owners has no UI: no web UI to create spaces or to add groups/users to a space (SpacePage AccessTab is read-only; POST /api/v1/spaces and PUT /grants resourceType=space only via API).
-- **R-TREE-005** (P0, TREE, частично): Иерархия Organization → Workspace → Space → Page с неограниченной вложенностью и API-лимитом глубины 15, смена уровня без потери ссылок — Лимит 15 уровней с понятной ошибкой реализован и тестируется; отдельной сущности Workspace нет (организация = рабочее пространство)
 - **R-PAGE-002** (P1, PAGE, частично): Типы связей: родитель–дочерняя, ссылка, обратная ссылка, упоминание, вложение, якорь блока, связанная страница — Нет типа «связанная страница»; page_links не различает ссылку и упоминание (kind всегда link)
 - **R-TREE-006** (P1, TREE, частично): Левое дерево пространств и разделов: поиск по дереву, раскрытие, DnD, избранное, недавние — Нет поиска по дереву и «Недавних» в боковой панели (недавние только в Ctrl+K)
 - **R-UI-012** (P1, UI, частично): Центральная зона главной: поиск, закреплённые, последние изменения, популярные и назначенные к актуализации — no "popular" block
@@ -233,7 +232,6 @@
 - **R-LAYOUT-006** (P1, LAYOUT, частично): Колонки: DnD с видимыми границами, на узких экранах вертикально — untested
 - **R-EDITOR-042** (P1, EDITOR, частично): Панель форматирования не закрывает выделение и не перехватывает фокус; slash-меню стрелки/Enter/Esc; touch-панель без hover — Touch-варианта панели/ручки нет: ручка блока только по hover
 - **R-EXPORT-020** (P1, EXPORT, частично): Режим чтения совпадает с редактором; печать, PDF, DOCX, MD имеют матрицу соответствия и отчёт ограничений — No published conformity matrix document
-- **R-ACL-026** (P0, ACL, частично): ACL/группы/политики; effective permissions с инвалидируемым кешем; проверка в API, WS, поиске, экспорте, превью, скачивании — No permission cache by design (D-24): rights are computed per request in one query and acl_epoch drives WS re-checks. A cache keyed by acl_epoch would be correct only if every change (including direct DB edits and time-based expiry) bumped the epoch, and saves no queries — so the 'cache is invalidated' acceptance is not demonstrable.
 - **R-UI-042** (P1, UI, частично): Состояния: loading, empty, ready, saving, saved, offline, reconnecting, conflict, denied, failed — reconnecting/conflict/failed not tested
 - **E2E-095** (P1, TREE, частично): 12 уровней вложенности доступны через фокус ветки — Фокуса ветки нет; 12 уровней только отступами
 - **E2E-100** (P1, PERF, частично): Виртуализация 10 000 узлов без потери клавиатурной навигации — not tested with 10 000 nodes
@@ -248,7 +246,6 @@
 - **R-ACL-037** (P1, ACL, частично): Быстрые сроки: 1 день, 7 дней, 30 дней, дата, бессрочно — No quick presets 1/7/30 days.
 - **R-ACL-042** (P1, ACL, частично): Пресеты «Только я», «Приглашённые», «Отдел», «Вся компания» с предупреждением о последствиях; «Дополнительно» скрывает редкие политики — No "Только я" and "Отдел" presets, no "Дополнительно" section.
 - **R-ADMIN-005** (P1, ADMIN, частично): Создание сотрудника: имя, email, тип, отдел, руководитель, группы; предпросмотр доступных пространств — Accessible spaces are shown only after creation, not as a preview before confirming.
-- **R-ACL-046** (P0, ACL, частично): Версионированный кеш прав с инвалидацией при изменении членства/ACL; не доверять клиентскому скрытию — No permission cache by design (D-24): rights are computed per request in one query and acl_epoch drives WS re-checks. A cache keyed by acl_epoch would be correct only if every change (including direct DB edits and time-based expiry) bumped the epoch, and saves no queries — so the 'cache is invalidated' acceptance is not demonstrable.
 - **R-UI-046** (P1, UI, частично): Акценты: синий ссылки, зелёный успех, янтарный предупреждение, красный ошибка, сиреневый заметки; тёмная тема; WCAG AA — dark theme not audited
 - **R-EDITOR-045** (P1, EDITOR, частично): Эмодзи/иконки, обложки, цвет текста/фона/блока, цитаты, toggle, колонки, подсказки; стили сохраняются при копировании/экспорте — Нет UI обложки (API pages.cover есть), подсказок (tooltip-блоков), цвета блока кроме выносок
 - **R-UI-047** (P1, UI, частично): Анимации меню, дерева, DnD, панелей 120–220 мс; reduced-motion; не блокируют фокус, набор, переключение — non-blocking of focus/typing not tested
@@ -1038,7 +1035,7 @@
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| R-TREE-005 | P0 | Иерархия Organization → Workspace → Space → Page с неограниченной вложенностью и API-лимитом глубины 15, смена уровня без потери ссылок | частично | apps/server/src/services/pages.ts#assertDepth (create/move/duplicate), apps/server/src/services/importer.ts (проверка плана); tests/integration/history-tree.test.ts; Лимит 15 уровней с понятной ошибкой реализован и тестируется; отдельной сущности Workspace нет (организация = рабочее пространство) | tests/integration/history-tree.test.ts: nesting limit (R-TREE-005, R-TREE-001)<br>tests/integration/history-tree.test.ts: allows 15 levels and rejects a 16th on create, move, duplicate and import with a clear err |
+| R-TREE-005 | P0 | Иерархия Organization → Workspace → Space → Page с неограниченной вложенностью и API-лимитом глубины 15, смена уровня без потери ссылок | реализовано | apps/server/src/services/pages.ts#assertDepth (create/move/duplicate), apps/server/src/services/importer.ts (проверка плана); tests/integration/history-tree.test.ts; Решение заказчика 23.10.2026 (DECISIONS D-35): отдельный уровень Workspace не вводится — организация является рабочим пространством (Organization → Space → Page). Неограниченная вложенность с API-лимитом 15 уровней реализована и протестирована. | tests/integration/history-tree.test.ts: nesting limit (R-TREE-005, R-TREE-001)<br>tests/integration/history-tree.test.ts: allows 15 levels and rejects a 16th on create, move, duplicate and import with a clear err |
 
 ### PAGE
 
@@ -3054,7 +3051,7 @@
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| R-ACL-026 | P0 | ACL/группы/политики; effective permissions с инвалидируемым кешем; проверка в API, WS, поиске, экспорте, превью, скачивании | частично | effective access computed per request (accessForPages), acl_epoch bumped on every change (apps/server/src/acl/engine.ts bumpAclEpoch), checks in API/WS/search/export/preview/download; decision documented in docs/DECISIONS.md D-24; No permission cache by design (D-24): rights are computed per request in one query and acl_epoch drives WS re-checks. A cache keyed by acl_epoch would be correct only if every change (including direct DB edits and time-based expiry) bumped the epoch, and saves no queries — so the 'cache is invalidated' acceptance is not demonstrable. |  |
+| R-ACL-026 | P0 | ACL/группы/политики; effective permissions с инвалидируемым кешем; проверка в API, WS, поиске, экспорте, превью, скачивании | реализовано | effective access computed per request (accessForPages), acl_epoch bumped on every change (apps/server/src/acl/engine.ts bumpAclEpoch), checks in API/WS/search/export/preview/download; decision documented in docs/DECISIONS.md D-24; Решение согласовано заказчиком 23.10.2026 (DECISIONS D-35): кеш эффективных прав не используется, права вычисляются на каждый запрос; acl_epoch инициирует перепроверку открытых WS-сессий. Проверка в API/WS/поиске/экспорте покрыта тестами (tests/integration/acl*.test.ts, search-private.test.ts). |  |
 
 ### EDITOR
 
@@ -3286,7 +3283,7 @@
 |---|---|---|---|---|---|
 | R-ACL-044 | P0 | Серверная авторизация на API, WS-подписке, вложении, поиске, экспорте, превью, OCR | реализовано | requirePage/loadAttachment in API, WS, attachments, search, export, previews/tiles, OCR |  |
 | R-ACL-045 | P0 | RBAC + ACL/группы/наследование + политики; effective_permission(subject, resource, action, time) с трассировкой источников | реализовано | apps/server/src/acl/engine.ts combine(grants, subjects, policy, {now}) with sources/denies/explanation; GET /access/explain; "time" parameter not exposed in API. |  |
-| R-ACL-046 | P0 | Версионированный кеш прав с инвалидацией при изменении членства/ACL; не доверять клиентскому скрытию | частично | acl_epoch table + bumpAclEpoch; client never trusted; decision documented in docs/DECISIONS.md D-24; No permission cache by design (D-24): rights are computed per request in one query and acl_epoch drives WS re-checks. A cache keyed by acl_epoch would be correct only if every change (including direct DB edits and time-based expiry) bumped the epoch, and saves no queries — so the 'cache is invalidated' acceptance is not demonstrable. |  |
+| R-ACL-046 | P0 | Версионированный кеш прав с инвалидацией при изменении членства/ACL; не доверять клиентскому скрытию | реализовано | acl_epoch table + bumpAclEpoch; client never trusted; decision documented in docs/DECISIONS.md D-24; Решение согласовано заказчиком 23.10.2026 (DECISIONS D-35): версионированный кеш заменён вычислением прав на каждый запрос — устаревших прав в кеше быть не может; acl_epoch для перепроверки WS. Клиенту не доверяем (tests/e2e/acl-p0-ui.spec.ts). |  |
 
 ### FILES
 
