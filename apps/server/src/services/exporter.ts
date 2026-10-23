@@ -28,6 +28,14 @@ export interface ExportOptions {
 }
 
 /** Fails closed when a produced DOCX breaks Open XML package/schema rules Word enforces (integrity check). */
+/**
+ * A page title as literal Markdown heading text: raw HTML (`<img onerror=…>`), entities and link syntax in a title
+ * must not become markup in the reader's Markdown viewer (DAST finding: titles were written verbatim).
+ */
+export function mdTitle(title: string): string {
+  return title.replace(/[\r\n]+/g, ' ').replace(/[\\<>&[\]]/g, '\\$&');
+}
+
 async function checkDocx(buf: Buffer, title: string) {
   const v = await validateDocx(buf);
   if (!v.ok) throw Object.assign(new Error(`Файл DOCX «${title}» не прошёл проверку целостности: ${v.errors.slice(0, 3).join('; ')}`), { status: 500 });
@@ -190,7 +198,7 @@ async function exportPagesInner(s: Services, user: AuthUser, rootIds: string[], 
       md.warnings.forEach((w) => warnings.push({ ...w, message: `«${p.title}»: ${w.message}` }));
       // Front matter stays first (for tools that read it), then the page title as H1 for human readers.
       const fm = /^---\n[\s\S]*?\n---\n/.exec(md.markdown)?.[0] ?? '';
-      files.push({ path: here, data: Buffer.from(fm + (fm ? '\n' : '') + `# ${p.title}\n\n` + md.markdown.slice(fm.length).replace(/^\n+/, ''), 'utf8') });
+      files.push({ path: here, data: Buffer.from(fm + (fm ? '\n' : '') + `# ${mdTitle(p.title)}\n\n` + md.markdown.slice(fm.length).replace(/^\n+/, ''), 'utf8') });
     }
     if (pages.length === 1 && !assets.size) return { buffer: files[0].data, filename: slugify(root.title) + '.md', mime: 'text/markdown; charset=utf-8', warnings, pageIds: pages.map((p) => p.id), report: { pages: 1, assets: 0 } };
     const zip = await buildZip(s, files, [...assets.values()], warnings, { title: root.title, pages: pages.length });
@@ -274,7 +282,7 @@ async function renderSingle(s: Services, title: string, content: PMNode, author:
   if (format === 'html') return { buffer: Buffer.from(html, 'utf8'), warnings: [] };
   if (format === 'pdf') return { buffer: await htmlToPdf(s, html, title), warnings: [] };
   const md = docToMarkdown(content, { syncedContent: r.syncedContent });
-  return { buffer: Buffer.from(`# ${title}\n\n` + md.markdown, 'utf8'), warnings: md.warnings };
+  return { buffer: Buffer.from(`# ${mdTitle(title)}\n\n` + md.markdown, 'utf8'), warnings: md.warnings };
 }
 
 /** Child pages are appended after their parent with a heading, producing one printable document. */

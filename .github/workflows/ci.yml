@@ -33,7 +33,9 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - run: sudo apt-get update && sudo apt-get install -y postgresql-client-16 || sudo apt-get install -y postgresql-client
+      # Server binaries (initdb, pg_ctl, pg_verifybackup) and age: the PITR and disaster-recovery drills run on
+      # throw-away clusters (tests/resilience/pitr.test.ts, dr-drill.test.ts); without them those drills are skipped.
+      - run: sudo apt-get update && (sudo apt-get install -y postgresql-16 postgresql-client-16 age || sudo apt-get install -y postgresql-client)
       - run: npm ci
       - name: Type check
         run: npm run typecheck
@@ -43,8 +45,11 @@ jobs:
         run: npm run test:unit
       - name: Integration tests (real PostgreSQL)
         run: npm run test:integration
-      - name: Resilience tests (crash, DB loss, storage failure, backup/restore drill)
+      - name: Resilience tests (crash, DB loss, storage failure, backup/restore, PITR and disaster-recovery drills)
         run: npm run test:resilience
+        env:
+          PG_BIN: /usr/lib/postgresql/16/bin
+          DR_ARCHIVE_TIMEOUT: '60'   # production setting: the measured RPO is meaningful
       - name: Build
         run: npm run build
       - name: Install Chromium for browser tests

@@ -1,0 +1,9 @@
+[Unit]
+Description=Knowledge base: add-only, verified copy of backups, object pool and WAL archive to the second medium / offsite (offsite-sync.sh).
+
+[Timer]
+OnCalendar=*:*:30
+Persistent=true
+
+[Install]
+WantedBy=timers.target

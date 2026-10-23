@@ -13,7 +13,7 @@ if [[ -f "$dir/$name.enc" ]]; then
   [[ -n "${WAL_DECRYPT_CMD:-}" ]] || { echo "wal-restore: $name is encrypted, set WAL_DECRYPT_CMD" >&2; exit 1; }
   bash -c "$WAL_DECRYPT_CMD" <"$dir/$name.enc" >"$dest"
 elif [[ -f "$dir/$name" ]]; then
-  cp -- "$dir/$name" "$dest"
+  cat -- "$dir/$name" >"$dest"   # not cp: a read-only archive copy must not yield a read-only segment
 else
   exit 1
 fi

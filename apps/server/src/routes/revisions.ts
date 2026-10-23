@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { findBlock, type PMNode } from '@kb/shared';
 import { tx } from '../db/pool.js';
 import { actorOf, parse, requireUser, type Services } from '../app.js';
-import { requirePage, type AuthUser } from '../acl/engine.js';
+import { requirePage, pageAccess, type AuthUser } from '../acl/engine.js';
 import { audit } from '../services/audit.js';
 import { createRevision, diffDocs, stateAtSeq } from '../services/revisions.js';
 import { replaceContent, setTitle, titleOf, ydocToJson } from '../collab/ydoc.js';
@@ -212,6 +212,13 @@ export async function revisionRoutes(app: FastifyInstance, s: Services) {
     const { id } = parse(z.object({ id: uuid }), req.params);
     const body = parse(z.object({ reviewerId: uuid.optional(), message: z.string().max(2000).optional() }), req.body ?? {});
     await requirePage(s.db, user, id, 'edit');
+    // R-SEARCH-018: a review request (title + message) is delivered only to people who can see the page.
+    const { toAuthUser } = await import('../auth/sessions.js');
+    const canSee = async (q: Pick<typeof s.db, 'query'>, uid: string) => {
+      const u = (await q.query(`select * from users where id = $1 and org_id = $2 and status = 'active'`, [uid, user.orgId])).rows[0];
+      return !!u && !!(await pageAccess(q as any, toAuthUser(u), id))?.actions.view;
+    };
+    if (body.reviewerId && !(await canSee(s.db, body.reviewerId))) throw badRequest('У выбранного согласующего нет доступа к странице — сначала откройте ему доступ');
     const rev = await s.hub.createRevisionNow(id, 'manual', user.id, 'Отправлено на согласование');
     const approval = await tx(s.db, async (q) => {
       await q.query(`update approvals set status = 'cancelled' where page_id = $1 and status = 'pending'`, [id]);
@@ -220,7 +227,7 @@ export async function revisionRoutes(app: FastifyInstance, s: Services) {
       const reviewers = body.reviewerId
         ? [body.reviewerId]
         : (await q.query(`select g.subject_id from grants g join pages p on p.space_id = g.resource_id where p.id = $1 and g.resource_type = 'space' and g.subject_type = 'user' and g.level = 'full' and g.revoked_at is null`, [id])).rows.map((r) => r.subject_id);
-      for (const r of reviewers.filter((x) => x !== user.id)) await q.query(`insert into notifications (user_id, type, page_id, data) values ($1, 'review_requested', $2, $3)`, [r, id, { from: user.name, approvalId: a.id, message: body.message ?? null }]);
+      for (const r of reviewers.filter((x) => x !== user.id)) if (await canSee(q, r)) await q.query(`insert into notifications (user_id, type, page_id, data) values ($1, 'review_requested', $2, $3)`, [r, id, { from: user.name, approvalId: a.id, message: body.message ?? null }]);
       await q.query(`insert into page_events (org_id, page_id, actor_id, type, data) values ($1, $2, $3, 'review-requested', $4)`, [user.orgId, id, user.id, { approvalId: a.id, reviewerId: body.reviewerId ?? null, revision: rev.number }]);
       await audit(q, actorOf(req), { action: 'page.submit_review', targetType: 'page', targetId: id, details: { approvalId: a.id } });
       return a;

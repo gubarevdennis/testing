@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { createServer, type Server } from 'node:http';
-import { readFileSync, existsSync } from 'node:fs';
+import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import sharp from 'sharp';
 import yaml from 'js-yaml';
@@ -136,7 +136,7 @@ describe('metrics behind the new alerts (R-OPS-003)', () => {
     const rules = yaml.load(readFileSync(join(REPO_ROOT, 'deploy/monitoring/prometheus-alerts.yml'), 'utf8')) as any;
     const exported = new Set((await (await fetch(ts.url + '/metrics')).text()).split('\n').filter((l) => l.startsWith('# TYPE ')).map((l) => l.split(' ')[2]));
     // Written by scripts/backup/* as node_exporter textfile metrics.
-    const scripts = readFileSync(join(REPO_ROOT, 'scripts/backup/lib.sh'), 'utf8') + readFileSync(join(REPO_ROOT, 'scripts/backup/backup.sh'), 'utf8') + readFileSync(join(REPO_ROOT, 'scripts/backup/verify-backup.sh'), 'utf8') + readFileSync(join(REPO_ROOT, 'scripts/backup/wal-archive.sh'), 'utf8');
+    const scripts = readdirSync(join(REPO_ROOT, 'scripts/backup')).filter((f) => f.endsWith('.sh')).map((f) => readFileSync(join(REPO_ROOT, 'scripts/backup', f), 'utf8')).join('\n');
     const ops = readFileSync(join(REPO_ROOT, 'docs/OPERATIONS.md'), 'utf8');
     let n = 0;
     for (const g of rules.groups)
@@ -151,7 +151,7 @@ describe('metrics behind the new alerts (R-OPS-003)', () => {
           expect(exported.has(base) || exported.has(m) || scripts.includes(m), `${r.alert}: metric ${m}`).toBe(true);
         }
       }
-    expect(n).toBeGreaterThanOrEqual(32);
-    for (const a of ['KbCollabReconnectStorm', 'KbImportFailureRateHigh', 'KbOcrSlow', 'KbOcrFailing']) expect(rules.groups.flatMap((g: any) => g.rules.map((r: any) => r.alert))).toContain(a);
+    expect(n).toBeGreaterThanOrEqual(36);
+    for (const a of ['KbCollabReconnectStorm', 'KbImportFailureRateHigh', 'KbOcrSlow', 'KbOcrFailing', 'KbObjectSyncStale', 'KbOffsiteCopyStale', 'KbBaseBackupStale', 'KbPitrVerificationTooOld']) expect(rules.groups.flatMap((g: any) => g.rules.map((r: any) => r.alert))).toContain(a);
   });
 });

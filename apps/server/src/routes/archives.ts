@@ -40,6 +40,7 @@ export async function archiveRoutes(app: FastifyInstance, s: Services) {
 
   /** Full portable archive of the organisation (includes private pages): owner/admin + password confirmation, audited. */
   app.post('/api/v1/admin/archives', async (req) => {
+    requireUser(req); // authenticate before validating the body (DAST: anonymous requests must get 401)
     const body = parse(z.object({ password: z.string(), confirm: z.literal(true), options: z.object({ includeVersions: z.boolean().default(true), includeAcl: z.boolean().default(true), includeComments: z.boolean().default(true), includeAudit: z.boolean().default(false) }).default({ includeVersions: true, includeAcl: true, includeComments: true, includeAudit: false }) }), req.body);
     const user = await requireAdmin(req, body.password);
     const r = await s.db.query(`insert into jobs (org_id, type, created_by, params) values ($1, 'archive-export', $2, $3) returning id`, [user.orgId, user.id, { options: body.options }]);
@@ -140,6 +141,7 @@ export async function archiveRoutes(app: FastifyInstance, s: Services) {
   }
 
   app.post('/api/v1/admin/archives/restore/:id/commit', async (req) => {
+    requireUser(req);
     const { id } = parse(z.object({ id: uuid }), req.params);
     const body = parse(
       z.object({

@@ -1,0 +1,18 @@
+# verified, encrypted physical base backup for PITR (scripts/backup/basebackup.sh). Triggered by kb-basebackup.timer. Settings (BACKUP_DIR, WAL_ARCHIVE_DIR, BACKUP_ENCRYPT_CMD with the PUBLIC key only,
+# OFFSITE_TARGET, credentials of the backup-operator role) come from /etc/kb/backup.env — never from this repository.
+[Unit]
+Description=Knowledge base: verified, encrypted physical base backup for PITR (scripts/backup/basebackup.sh).
+After=network-online.target postgresql.service
+
+[Service]
+Type=oneshot
+User=kb-backup
+Group=kb
+EnvironmentFile=/etc/kb/backup.env
+Environment=BACKUP_METRICS_FILE=/var/lib/node_exporter/textfile/kb_backup.prom
+ExecStart=/opt/kb/scripts/backup/basebackup.sh
+Nice=10
+IOSchedulingClass=idle
+ProtectSystem=strict
+ReadWritePaths=/srv/backups/kb /var/lib/node_exporter/textfile /tmp 
+ReadOnlyPaths=/var/lib/kb

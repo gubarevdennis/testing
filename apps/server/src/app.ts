@@ -5,6 +5,7 @@ import multipart from '@fastify/multipart';
 import rateLimit from '@fastify/rate-limit';
 import helmet from '@fastify/helmet';
 import fstatic from '@fastify/static';
+import compress from '@fastify/compress';
 import swagger from '@fastify/swagger';
 import { randomUUID } from 'node:crypto';
 import { existsSync } from 'node:fs';
@@ -76,7 +77,8 @@ export async function buildApp(base: Omit<Services, 'hub' | 'bus' | 'metrics' | 
 
   const app = Fastify({
     loggerInstance: base.log as any,
-    trustProxy: true,
+    // Never `true`: with every hop trusted the client picks its own address via X-Forwarded-For (DAST finding).
+    trustProxy: typeof base.cfg.trustProxy === 'number' ? ((_addr: string, hop: number) => hop < (base.cfg.trustProxy as number)) : (base.cfg.trustProxy ?? false),
     maxParamLength: 2000,
     bodyLimit: 20 * 1024 * 1024,
     genReqId: (req) => (req.headers['x-correlation-id'] as string)?.slice(0, 64) || randomUUID(),
@@ -123,6 +125,9 @@ export async function buildApp(base: Omit<Services, 'hub' | 'bus' | 'metrics' | 
     crossOriginEmbedderPolicy: false,
   });
   await app.register(cookie);
+  // Compression only for the client bundle and static documents (Lighthouse: 470 KB of JS went uncompressed).
+  // JSON API responses are excluded: they mix secrets (CSRF token, content) with reflected input (BREACH).
+  await app.register(compress, { global: true, threshold: 1024, encodings: ['br', 'gzip'], customTypes: /^(?:text\/(?:css|javascript|html)|application\/(?:javascript|wasm|manifest\+json)|image\/svg\+xml|font\/ttf)(?:;|$)/ });
   await app.register(rateLimit, {
     max: base.cfg.rateLimitPerMinute,
     timeWindow: '1 minute',
@@ -161,6 +166,13 @@ export async function buildApp(base: Omit<Services, 'hub' | 'bus' | 'metrics' | 
     if (req.session && !req.session.mfaPassed && !req.url.startsWith('/api/v1/auth/')) throw unauthorized('Требуется подтверждение второго фактора');
   });
 
+  // API responses carry personal/ACL-filtered data: never store them in shared or browser caches (ASVS 8.2.1, DAST
+  // finding). Routes that set their own policy (attachments with ETag, public pages) keep it.
+  app.addHook('onSend', async (req, reply, payload) => {
+    if (req.url.startsWith('/api/') && !reply.hasHeader('cache-control')) reply.header('cache-control', 'no-store');
+    return payload;
+  });
+
   app.addHook('onResponse', async (req, reply) => {
     const route = req.routeOptions?.url ?? 'unknown';
     metrics.httpDuration.labels(req.method, route, String(reply.statusCode)).observe(reply.elapsedTime / 1000);
@@ -187,6 +199,10 @@ export async function buildApp(base: Omit<Services, 'hub' | 'bus' | 'metrics' | 
     if (err.validation || err.code === 'FST_ERR_CTP_INVALID_MEDIA_TYPE' || err.code === 'FST_ERR_CTP_EMPTY_JSON_BODY' || err.statusCode === 400)
       return reply.status(400).send({ error: { code: 'bad_request', message: err.message }, correlationId: req.correlationId });
     if (err.code === '22P02') return reply.status(400).send({ error: { code: 'bad_request', message: 'Некорректный идентификатор' }, correlationId: req.correlationId });
+    // Other PostgreSQL data exceptions caused by client input (NUL bytes, bad dates, numbers out of range, overlong
+    // values): the request is wrong, not the server (DAST: these used to be 500).
+    if (typeof err.code === 'string' && /^22(P05|021|001|003|007|008|023|01B)$/.test(err.code))
+      return reply.status(400).send({ error: { code: 'bad_request', message: 'Некорректные данные запроса' }, correlationId: req.correlationId });
     if (isConnectionError(err)) {
       req.log.error({ err }, 'database unavailable');
       return reply
@@ -194,6 +210,10 @@ export async function buildApp(base: Omit<Services, 'hub' | 'bus' | 'metrics' | 
         .header('retry-after', '5')
         .send({ error: { code: 'db_unavailable', message: 'База данных временно недоступна. Изменение не сохранено — повторите попытку через несколько секунд.' }, correlationId: req.correlationId });
     }
+    // Client errors raised by plugins (e.g. @fastify/static refusing a traversal path with 403): keep the status,
+    // never the plugin's message or stack (DAST: these used to be 500).
+    if (typeof err.statusCode === 'number' && err.statusCode >= 400 && err.statusCode < 500)
+      return reply.status(err.statusCode).send({ error: { code: err.statusCode === 403 ? 'forbidden' : err.statusCode === 404 ? 'not_found' : 'bad_request', message: 'Запрос отклонён' }, correlationId: req.correlationId });
     req.log.error({ err }, 'unhandled error');
     return reply.status(500).send({ error: { code: 'internal', message: 'Внутренняя ошибка сервера. Данные не изменены, если операция не была подтверждена.' }, correlationId: req.correlationId });
   });

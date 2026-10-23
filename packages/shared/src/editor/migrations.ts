@@ -57,6 +57,7 @@ function normalize(raw: string) {
 export function isDangerousUrl(raw: unknown, kind: 'href' | 'image' = 'href'): boolean {
   if (typeof raw !== 'string') return false;
   const u = normalize(raw);
+  // eslint-disable-next-line no-script-url -- this is the detector that rejects script URLs
   if (u.startsWith('javascript:') || u.startsWith('vbscript:')) return true;
   if (u.startsWith('data:')) return !(kind === 'image' && DATA_IMAGE.test(raw.trim()));
   return false;

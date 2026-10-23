@@ -192,6 +192,30 @@ groups:
         annotations:
           summary: "backup.sh не завершался успешно более 26 ч (данные node_exporter)"
           runbook: "docs/OPERATIONS.md#runbook-backup"
+      - alert: KbObjectSyncStale
+        expr: time() - max(kb_backup_objects_last_sync_timestamp_seconds) > 10 * 60
+        labels: { severity: critical, owner: ops }
+        annotations:
+          summary: "Новые файлы не копируются в пул резервных копий более 10 мин — RPO файлов 5 мин под угрозой"
+          runbook: "docs/OPERATIONS.md#runbook-backup"
+      - alert: KbOffsiteCopyStale
+        expr: time() - max(kb_backup_offsite_last_success_timestamp_seconds) > 15 * 60
+        labels: { severity: critical, owner: ops }
+        annotations:
+          summary: "Копия вне площадки (offsite-sync.sh) не обновлялась {{ $value | humanizeDuration }} — при потере площадки RPO > 5 мин"
+          runbook: "docs/OPERATIONS.md#runbook-backup"
+      - alert: KbBaseBackupStale
+        expr: time() - max(kb_basebackup_last_success_timestamp_seconds) > 26 * 3600
+        labels: { severity: warning, owner: dba }
+        annotations:
+          summary: "Проверенная базовая копия (basebackup.sh) старше 26 ч — растёт время воспроизведения WAL (RTO)"
+          runbook: "docs/OPERATIONS.md#runbook-backup"
+      - alert: KbPitrVerificationTooOld
+        expr: time() - max(kb_pitr_verify_last_success_timestamp_seconds) > 35 * 86400
+        labels: { severity: warning, owner: ops }
+        annotations:
+          summary: "Ежемесячная проверка восстановления PITR (verify-pitr.sh) не проходила более 35 дней"
+          runbook: "docs/OPERATIONS.md#runbook-backup"
       - alert: KbWalArchivingFailing
         expr: increase(pg_stat_archiver_failed_count{job="postgres"}[10m]) > 0
         labels: { severity: critical, owner: dba }

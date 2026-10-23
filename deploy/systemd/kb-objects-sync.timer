@@ -1,0 +1,9 @@
+[Unit]
+Description=Knowledge base: copy of new files into the backup object pool every 2 minutes (backup.sh --objects-only; file RPO).
+
+[Timer]
+OnCalendar=*:0/2
+Persistent=true
+
+[Install]
+WantedBy=timers.target

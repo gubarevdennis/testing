@@ -376,7 +376,9 @@ async function planMarkdownZip(entries: Map<string, Buffer>, plan: ImportPlan, a
     // Pre-scan to upload assets (markdownToDoc is synchronous).
     const text = entries.get(f)!.toString('utf8').replace(/^﻿/, '');
     // CommonMark allows <angle-bracketed destinations> with spaces ("![](<img/схема сети.png>)").
-    const hrefs = [...text.matchAll(/!?\[[^\]]*\]\(\s*(?:<([^>\n]+)>|([^)\s]+))(?:\s+"[^"]*")?\s*\)/g)].map((m) => m[1] ?? m[2]);
+    // Link text allows one level of [nested] brackets; `[^\]]*` here was quadratic on "[[[[…" (SAST/ReDoS finding).
+    // eslint-disable-next-line security/detect-unsafe-regex -- alternatives start with disjoint characters; linear on '[[[[…' and '[a[a…' (measured)
+    const hrefs = [...text.matchAll(/!?\[(?:[^[\]]|\[[^[\]]*\])*\]\(\s*(?:<([^>\n]+)>|([^)\s]+))(?:\s+"[^"]*")?\s*\)/g)].map((m) => m[1] ?? m[2]);
     for (const h of hrefs) {
       const p = resolvePath(h);
       if (p && entries.has(p) && !/\.(md|markdown)$/i.test(p)) assetsInFile.push({ href: h, path: p });

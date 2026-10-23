@@ -72,6 +72,7 @@ export async function inspectDocx(buf: Buffer): Promise<ConversionWarning[]> {
 function partParagraphs(xml: string): string[] {
   const out: string[] = [];
   for (const p of xml.match(/<w:p\b[\s\S]*?<\/w:p>/g) ?? []) {
+    // eslint-disable-next-line security/detect-unsafe-regex -- disjoint classes, linear (measured on 50k-char input)
     const t = (p.match(/<w:t(?:\s[^>]*)?>[^<]*<\/w:t>/g) ?? []).map((x) => x.replace(/<[^>]+>/g, '')).join('');
     const text = t.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&amp;/g, '&').trim();
     if (text) out.push(text);
@@ -103,6 +104,7 @@ async function inspectDocxParts(buf: Buffer): Promise<DocxParts> {
   if (comments && /<w:comment\b/.test(comments)) w.push({ code: 'comments', message: `Комментарии Word (${(comments.match(/<w:comment\b/g) ?? []).length}) не переносятся в обсуждения; они доступны в исходном файле.` });
   const foot = parts.get('word/footnotes.xml');
   // footnotes.xml always holds the separator and continuation-separator pseudo-notes.
+  // eslint-disable-next-line security/detect-non-literal-regexp -- `tag` is a literal ('footnote' | 'endnote') at both call sites
   const realNotes = (xml: string | undefined, tag: string) => (xml?.match(new RegExp(`<w:${tag}\\b(?![^>]*w:type="(?:separator|continuationSeparator|continuationNotice)")`, 'g')) ?? []).length;
   const notes = realNotes(foot, 'footnote') + realNotes(parts.get('word/endnotes.xml'), 'endnote');
   if (notes) w.push({ code: 'footnotes', message: `Сноски (${notes}) перенесены в раздел «Сноски» в конце статьи; в тексте — надстрочные номера [n].` });
@@ -125,6 +127,7 @@ const stripTags = (h: string) => h.replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' 
 export function restructureDocxHtml(html: string, opts: { hasToc: boolean }): string {
   // 1. Bookmarks: <h2><a id="_Toc1"></a><a id="x"></a>Text</h2> → <h2 data-block-id="uuid">Text</h2>; "#x" → "#uuid".
   const anchors = new Map<string, string>();
+  // eslint-disable-next-line security/detect-unsafe-regex -- repeated unit starts with a fixed '<a id="', linear (measured)
   html = html.replace(/<(h[1-6]|p)>((?:<a id="[^"]+"><\/a>)+)/g, (_m, tag: string, as: string) => {
     const id = randomUUID();
     for (const a of as.match(/id="([^"]+)"/g) ?? []) anchors.set(a.slice(4, -1), id);
@@ -134,6 +137,7 @@ export function restructureDocxHtml(html: string, opts: { hasToc: boolean }): st
   // 2. Word TOC field: its cached entries (paragraphs consisting of one link to a bookmark) → one TOC block.
   if (opts.hasToc) {
     let placed = false;
+    // eslint-disable-next-line security/detect-unsafe-regex -- runs on mammoth's well-formed HTML: each lazy scan stops at the paragraph's own </a></p> or </p>
     html = html.replace(/(?:<p><a href="#_Toc[^"]*">(?:(?!<\/p>)[\s\S])*?<\/a><\/p>)+/g, () => (placed ? '' : ((placed = true), '<div data-type="toc"></div>')));
     if (!placed) html = '<div data-type="toc"></div>' + html;
   }
@@ -192,7 +196,10 @@ export async function preprocessDocx(buf: Buffer): Promise<Buffer> {
   xml = xml.replace(/<w:fldSimple\b[^>]*\/>/g, '').replace(/<w:fldSimple\b[^>]*>([\s\S]*?)<\/w:fldSimple>/g, '$1');
   const rels = files.get('word/_rels/document.xml.rels')?.toString('utf8') ?? '';
   xml = xml.replace(/<w:drawing>(?:(?!<\/w:drawing>)[\s\S])*?<dgm:relIds\b[^>]*r:dm="([^"]+)"[\s\S]*?<\/w:drawing>/g, (_m, rid: string) => {
-    const target = new RegExp(`<Relationship\\b[^>]*Id="${rid}"[^>]*Target="([^"]+)"`).exec(rels)?.[1] ?? new RegExp(`<Relationship\\b[^>]*Target="([^"]+)"[^>]*Id="${rid}"`).exec(rels)?.[1];
+    // rid comes from the uploaded file: escape it, or a crafted id becomes a pattern (ReDoS / SyntaxError) — SAST finding.
+    const id = rid.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    // eslint-disable-next-line security/detect-non-literal-regexp -- the only variable part is the escaped id
+    const target = new RegExp(`<Relationship\\b[^>]*Id="${id}"[^>]*Target="([^"]+)"`).exec(rels)?.[1] ?? new RegExp(`<Relationship\\b[^>]*Target="([^"]+)"[^>]*Id="${id}"`).exec(rels)?.[1];
     const data = target ? files.get(('word/' + target).replace(/\/[^/]+\/\.\.\//g, '/'))?.toString('utf8') : undefined;
     const texts = (data?.match(/<a:t>[^<]*<\/a:t>/g) ?? []).map((t) => t.slice(5, -6).trim()).filter(Boolean);
     return `<w:t xml:space="preserve">${texts.length ? xmlEsc('[SmartArt] ' + texts.map((t) => t.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')).join(' → ')) : '[SmartArt]'}</w:t>`;

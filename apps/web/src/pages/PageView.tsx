@@ -232,7 +232,8 @@ function PageLoaded({ page, crumbs, block, justCreated, offline = false }: { pag
                 </button>
               </Tooltip>
             )}
-            <button className="btn sm" onClick={() => setShare(true)}>
+            {/* the text is hidden on phones: the accessible name must not depend on it (Lighthouse button-name) */}
+            <button className="btn sm" aria-label="Поделиться" onClick={() => setShare(true)}>
               <Share2 size={14} /> <span className="hide-mobile">Поделиться</span>
             </button>
             <Tooltip label="Комментарии" shortcut="Mod+Shift+M">

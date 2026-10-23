@@ -102,3 +102,27 @@ count_sql() {
   done
   printf ') x order by t;\n'
 }
+
+# ---------------------------------------------------------------- PostgreSQL server-side helpers (PITR restore)
+# Directory with the server binaries (initdb, pg_ctl, pg_verifybackup). PG_BIN overrides.
+pg_server_bin() {
+  local d
+  for d in "${PG_BIN:-}" "$(pg_config --bindir 2>/dev/null || true)" /usr/lib/postgresql/16/bin /usr/local/pgsql/bin; do
+    [[ -n "$d" && -x "$d/pg_ctl" && -x "$d/pg_verifybackup" ]] && { echo "$d"; return 0; }
+  done
+  return 1
+}
+# PostgreSQL refuses to run as root: when run as root, cluster commands run as PG_OS_USER (default postgres).
+PG_RUNAS=()
+if [[ "$(id -u)" == "0" ]]; then PG_RUNAS=(runuser -u "${PG_OS_USER:-postgres}" --); fi
+pg_as() { "${PG_RUNAS[@]}" "$@"; }
+pg_own() { [[ ${#PG_RUNAS[@]} -eq 0 ]] || chown -R "${PG_OS_USER:-postgres}:" "$@"; }
+
+# write_metric SUFFIX NAME VALUE HELP: node_exporter textfile metric next to BACKUP_METRICS_FILE
+# (<file>-SUFFIX.prom), written atomically. No-op without BACKUP_METRICS_FILE.
+write_metric() {
+  [[ -n "${BACKUP_METRICS_FILE:-}" ]] || return 0
+  local f="${BACKUP_METRICS_FILE%.prom}-$1.prom"
+  mkdir -p "$(dirname "$f")"
+  printf '# HELP %s %s\n# TYPE %s gauge\n%s %s\n' "$2" "$4" "$2" "$2" "$3" >"$f.tmp" && mv -f "$f.tmp" "$f"
+}

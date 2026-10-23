@@ -137,6 +137,7 @@ export function docToMarkdown(doc: PMNode, opts: ToMarkdownOptions = {}): { mark
       case 'link': {
         let href = sanitizeHref(m.attrs?.href) ?? '';
         // Links to other pages go through pageHref too: in a ZIP export they become relative file links (SC-15).
+        // eslint-disable-next-line security/detect-unsafe-regex -- bounded {36} and an anchored single tail, linear
         const internal = /^\/p\/([0-9a-f-]{36})(?:#(.+))?$/i.exec(href);
         if (internal && opts.pageHref) href = opts.pageHref(internal[1], internal[2] ?? null);
         return [{ type: 'link', url: href, title: m.attrs?.title ?? null, children: children() }];
@@ -452,12 +453,14 @@ export function markdownToDoc(markdown: string, opts: FromMarkdownOptions = {}):
     return [n];
   }
 
+  // eslint-disable-next-line security/detect-unsafe-regex -- one optional group over [^>], linear
   const INLINE_OPEN = /^<(u|ins|mark|sub|sup|span|s|del|strike|b|strong|i|em|code)(\s[^>]*)?>$/i;
   const INLINE_CLOSE = /^<\/(u|ins|mark|sub|sup|span|s|del|strike|b|strong|i|em|code)>$/i;
 
   function htmlTagToMark(tag: string, attrs: string): Mk | null {
     const t = tag.toLowerCase();
     const style = /style\s*=\s*"([^"]*)"/i.exec(attrs)?.[1] ?? '';
+    // eslint-disable-next-line security/detect-non-literal-regexp -- `p` is a literal CSS property name at every call site
     const prop = (p: string) => new RegExp(`${p}\\s*:\\s*([^;]+)`, 'i').exec(style)?.[1]?.trim() ?? null;
     switch (t) {
       case 'u':
@@ -853,7 +856,9 @@ export function markdownToDoc(markdown: string, opts: FromMarkdownOptions = {}):
           }
         }
         if (mk) continue;
-        const det = /^<details(\s[^>]*)?>\s*(?:<summary>([\s\S]*?)<\/summary>)?\s*$/i.exec(n.value.trim());
+        // `>\s*(…)?\s*$` was quadratic on "<details>" + many spaces + text (SAST/ReDoS finding): the leading \s* is inside the group now.
+        // eslint-disable-next-line security/detect-unsafe-regex -- linear after the fix above (measured on 200k spaces)
+        const det = /^<details(\s[^>]*)?>(?:\s*<summary>([\s\S]*?)<\/summary>)?\s*$/i.exec(n.value.trim());
         if (det) {
           let j = i + 1;
           let depth = 0;

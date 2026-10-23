@@ -331,6 +331,7 @@ function renderText(text: string, mentions: string[], names: Map<string, string>
   const known = mentions.map((id) => names.get(id)).filter((n): n is string => !!n);
   const alts = [...new Set(known)].sort((a, b) => b.length - a.length).map((n) => '@' + escapeRe(n));
   if (known.length < mentions.length) alts.push('@[\\p{Lu}][\\p{L}-]*(?: [\\p{Lu}][\\p{L}-]*)?');
+  // eslint-disable-next-line security/detect-non-literal-regexp -- user names are escaped with escapeRe; the fallback alternative is a literal
   const re = new RegExp(alts.join('|'), 'gu');
   const out: ReactNode[] = [];
   let last = 0;

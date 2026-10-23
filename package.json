@@ -25,6 +25,10 @@
     "db:seed": "node --import tsx --conditions=development apps/server/src/cli.ts seed",
     "backup": "bash scripts/backup/backup.sh",
     "restore:verify": "bash scripts/backup/verify-backup.sh",
+    "backup:base": "bash scripts/backup/basebackup.sh",
+    "backup:offsite": "bash scripts/backup/offsite-sync.sh",
+    "restore:pitr": "bash scripts/backup/pitr-restore.sh",
+    "restore:drill": "DR_DRILL_REPORT_DIR=docs/drills DR_BULK_MB=${DR_BULK_MB:-256} DR_BULK_PAGES=${DR_BULK_PAGES:-200} vitest run --project resilience tests/resilience/dr-drill.test.ts",
     "audit-verify": "node --import tsx --conditions=development apps/server/src/cli.ts audit-verify",
     "start": "node apps/server/dist/main.js",
     "requirements:trace": "python3 scripts/requirements/trace.py"

@@ -181,7 +181,10 @@ export async function spaceRoutes(app: FastifyInstance, s: Services) {
     const sp = (await s.db.query('select org_id, deleted_at from spaces where id = $1', [id])).rows[0];
     if (!sp || sp.org_id !== user.orgId || sp.deleted_at) throw notFound();
     // The space itself may not be visible (pages shared individually), children are filtered per page.
-    return visibleChildren(s.db, user, id, qs.parentId ?? null, { after: qs.after ?? null, limit: qs.limit });
+    const tree = await visibleChildren(s.db, user, id, qs.parentId ?? null, { after: qs.after ?? null, limit: qs.limit });
+    // Nothing visible in a space the user cannot see: answer exactly like a missing space (DAST/IDOR: no existence oracle).
+    if (!tree.nodes.length && !qs.after && !(await requireSpace(s.db, user, id, 'view').then(() => true, () => false))) throw notFound();
+    return tree;
   });
 
   app.get('/api/v1/spaces/:id/access', async (req) => {

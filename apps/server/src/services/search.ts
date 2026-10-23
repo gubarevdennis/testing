@@ -44,7 +44,11 @@ export function queryVariants(q: string, synonyms: string[][] = []): string[] {
   }
   const lower = base.toLowerCase();
   for (const group of synonyms) {
-    if (group.some((w) => lower.includes(w.toLowerCase()))) for (const w of group) out.add(lower.replace(new RegExp(group.find((x) => lower.includes(x.toLowerCase()))!.toLowerCase(), 'g'), w.toLowerCase()));
+    if (group.some((w) => lower.includes(w.toLowerCase()))) {
+      // Plain substring replacement: synonyms are admin-entered text ("C++", "1С (8.3)"), never patterns — SAST finding.
+      const hit = group.find((x) => lower.includes(x.toLowerCase()))!.toLowerCase();
+      for (const w of group) out.add(lower.split(hit).join(w.toLowerCase()));
+    }
   }
   return [...out].filter(Boolean).slice(0, 8);
 }

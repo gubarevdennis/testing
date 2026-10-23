@@ -37,6 +37,8 @@ export interface Config {
   integrityBatch: number;
   rateLimitPerMinute: number;
   authRateLimitPerMinute: number;
+  /** Which X-Forwarded-For hops to trust for the client address (rate limits, audit IP): false | hop count | address list. */
+  trustProxy: boolean | number | string;
   clamavHost: string | null;
   /** Server-side fetching of remote images (import): SSRF-guarded; private addresses are refused unless the host is allow-listed (R-SECURITY-008). */
   remoteFetch: { enabled: boolean; allowHosts: string[]; timeoutMs: number; maxBytes: number };
@@ -90,6 +92,7 @@ export function loadConfig(overrides: Partial<Config> = {}): Config {
     retention: { trashDays: int('RETENTION_TRASH_DAYS', 90), journalDays: int('RETENTION_JOURNAL_DAYS', 90), revisionDays: int('RETENTION_REVISION_DAYS', 365) },
     rateLimitPerMinute: int('RATE_LIMIT_PER_MINUTE', 600),
     authRateLimitPerMinute: int('AUTH_RATE_LIMIT_PER_MINUTE', 30),
+    trustProxy: parseTrustProxy(process.env.TRUST_PROXY),
     clamavHost: process.env.CLAMAV_HOST || null,
     remoteFetch: {
       enabled: bool('REMOTE_FETCH_ENABLED', true),
@@ -103,4 +106,18 @@ export function loadConfig(overrides: Partial<Config> = {}): Config {
   };
   if (cfg.env === 'production' && cfg.secretKey.length < 32) throw new Error('SECRET_KEY must be at least 32 characters in production');
   return { ...cfg, ...overrides };
+}
+
+/**
+ * TRUST_PROXY: unset/"false" — the socket address is the client (direct exposure; X-Forwarded-For is ignored, so it
+ * cannot be spoofed to dodge per-IP rate limits or forge audit IPs); a number — that many reverse proxies in front
+ * (deploy: 1, nginx appends the real address); otherwise a list of proxy addresses/CIDRs ("10.0.0.5,loopback").
+ * "true" (trust every hop) is accepted only for compatibility and is unsafe: the client controls the address.
+ */
+export function parseTrustProxy(raw: string | undefined): boolean | number | string {
+  const v = (raw ?? '').trim();
+  if (!v || v === 'false' || v === '0') return false;
+  if (v === 'true') return true;
+  if (/^\d+$/.test(v)) return Number(v);
+  return v;
 }

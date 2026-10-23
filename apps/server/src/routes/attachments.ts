@@ -54,7 +54,7 @@ async function sendObject(s: Services, req: FastifyRequest, reply: FastifyReply,
   // sandboxed documents, so they get a script-free policy without the sandbox flag (embeddable only by us).
   reply.header(
     'content-security-policy',
-    mime === 'application/pdf' ? "default-src 'none'; object-src 'self'; img-src 'self' data:; style-src 'unsafe-inline'; frame-ancestors 'self'" : "default-src 'none'; img-src 'self' data:; style-src 'unsafe-inline'; sandbox",
+    mime === 'application/pdf' ? "default-src 'none'; object-src 'self'; img-src 'self' data:; style-src 'unsafe-inline'; frame-ancestors 'self'" : "default-src 'none'; img-src 'self' data:; style-src 'unsafe-inline'; frame-ancestors 'self'; sandbox",
   );
   reply.header('cache-control', 'private, max-age=300');
   reply.header('etag', `"${etag}"`);
