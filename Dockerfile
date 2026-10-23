@@ -13,6 +13,10 @@ ARG NODE_IMAGE=node:22-bookworm-slim
 FROM ${NODE_IMAGE} AS build
 WORKDIR /src
 ENV CI=1 NPM_CONFIG_UPDATE_NOTIFIER=false PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
+# Extra root certificates (a corporate TLS-inspecting proxy): put *.crt files into deploy/certs/ before building.
+COPY deploy/certs/ /tmp/extra-certs/
+RUN if ls /tmp/extra-certs/*.crt >/dev/null 2>&1; then cat /tmp/extra-certs/*.crt > /usr/local/share/extra-ca.crt; fi
+ENV NODE_EXTRA_CA_CERTS=/usr/local/share/extra-ca.crt
 # Manifests first for layer caching.
 COPY package.json package-lock.json ./
 COPY packages/shared/package.json packages/shared/
@@ -36,9 +40,12 @@ ARG PG_MAJOR=16
 # Chromium for PDF export is NOT installed by default (≈400 MB): set CHROMIUM_PATH to a browser available
 # in the image, or build with --build-arg INSTALL_CHROMIUM=1 to add Debian's chromium package.
 ARG INSTALL_CHROMIUM=0
+COPY deploy/certs/ /usr/local/share/ca-certificates/extra/
 RUN set -eux; \
+    find /usr/local/share/ca-certificates/extra -type f ! -name '*.crt' -delete; \
     apt-get update; \
     apt-get install -y --no-install-recommends ca-certificates curl gnupg tini jq tzdata; \
+    update-ca-certificates; \
     install -d /usr/share/postgresql-common/pgdg; \
     curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc; \
     echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt bookworm-pgdg main" > /etc/apt/sources.list.d/pgdg.list; \
@@ -48,6 +55,7 @@ RUN set -eux; \
     apt-get purge -y gnupg; apt-get autoremove -y; rm -rf /var/lib/apt/lists/*
 
 ENV NODE_ENV=production \
+    NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt \
     PORT=8080 \
     HOST=0.0.0.0 \
     KB_DATA_DIR=/var/lib/kb \
@@ -64,6 +72,7 @@ COPY --from=build --chown=root:root /src/apps/server/dist apps/server/dist
 COPY --from=build --chown=root:root /src/apps/server/migrations apps/server/migrations
 COPY --from=build --chown=root:root /src/apps/web/dist apps/web/dist
 COPY --chown=root:root scripts/backup scripts/backup
+COPY --chown=root:root scripts/demo scripts/demo
 # Code is root-owned and read-only for the service user; only the data directory is writable.
 # OCR language data (rus+eng) ships in node_modules and is copied to TESSDATA_DIR on first use (offline).
 RUN chmod 0755 scripts/backup/*.sh scripts/backup/check-docs.mjs \

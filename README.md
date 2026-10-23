@@ -6,6 +6,37 @@
 * Готовность к выпуску: [`docs/RELEASE_READINESS.md`](docs/RELEASE_READINESS.md). **Продукт не объявлен готовым к промышленной эксплуатации** — см. открытые пункты там.
 * Архитектура: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md), решения: [`docs/DECISIONS.md`](docs/DECISIONS.md), безопасность: [`docs/SECURITY.md`](docs/SECURITY.md), эксплуатация: [`docs/OPERATIONS.md`](docs/OPERATIONS.md), резервное копирование: [`docs/BACKUP_RESTORE.md`](docs/BACKUP_RESTORE.md), тесты: [`docs/TEST_MATRIX.md`](docs/TEST_MATRIX.md), UX-приёмка: [`docs/UX_ACCEPTANCE.md`](docs/UX_ACCEPTANCE.md).
 
+## Быстрый старт в Docker (одна команда)
+
+Нужен только Docker (Docker Desktop или Docker Engine с плагином compose).
+
+```bash
+git clone <repo> && cd <repo>
+docker compose up -d --build      # первая сборка ~5–10 минут, дальше — секунды
+```
+
+Откройте **http://localhost:8080**. Демо-данные создаются автоматически: организация «Демо-Склад», закрытое пространство отдела, статьи с таблицами, чек-листами, формулами и сносками. Пароль у всех — `Demo-password-2026`:
+
+| Пользователь | Логин | Что видит |
+|---|---|---|
+| Администратор | `admin@demo.local` | всё, администрирование |
+| Елена Кладовщик | `elena@demo.local` | общее пространство + «Склад» (отдел) |
+| Борис Логист | `boris@demo.local` | общее пространство + «Склад» (отдел) |
+| Пётр Бухгалтер | `petr@demo.local` | только общее пространство |
+
+Совместное редактирование удобно проверять, открыв одну страницу в обычном окне и в окне инкогнито под разными пользователями.
+
+```bash
+docker compose logs -f app        # журнал приложения
+docker compose down               # остановить (данные остаются)
+docker compose down -v            # удалить всё, включая данные
+KB_DEMO=0 docker compose up -d    # без демо-данных: откроется мастер создания организации
+KB_PORT=9090 docker compose up -d # другой порт
+CLAMAV_HOST=clamav docker compose --profile antivirus up -d   # с антивирусом ClamAV
+```
+
+Секреты (ключ приложения, пароль БД) генерируются при первом запуске и хранятся в томе `secrets`. Развёртывание на сервере (HTTPS, резервные копии, обновления, откат) — [`docs/DOCKER.md`](docs/DOCKER.md).
+
 ## Требования к окружению
 
 * Node.js 22+, npm 10+

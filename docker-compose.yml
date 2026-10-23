@@ -1,0 +1,120 @@
+# База знаний — запуск одной командой (локальная проверка и демо).
+#
+#   docker compose up -d --build        # первая сборка ~5–10 минут
+#   открыть http://localhost:8080        # демо-пользователи — в README («Быстрый старт в Docker»)
+#
+#   docker compose logs -f app           # журнал приложения
+#   docker compose down                  # остановить (данные сохраняются в томах)
+#   docker compose down -v               # остановить и удалить ВСЕ данные
+#
+# Секреты (ключ приложения, пароль БД) генерируются при первом запуске в том "secrets" — вписывать ничего не нужно.
+# Демо-данные создаются один раз сервисом "demo"; без них: KB_DEMO=0 docker compose up -d (откроется мастер
+# создания организации). Для эксплуатации на сервере с HTTPS — deploy/docker-compose.yml и docs/DOCKER.md.
+
+name: kb-demo
+
+services:
+  # Генерирует секреты один раз (если их ещё нет) и завершается.
+  secrets:
+    image: ${KB_IMAGE:-kb:local}
+    build:
+      context: .
+      args:
+        INSTALL_CHROMIUM: "1" # экспорт в PDF
+    user: root
+    entrypoint: ["node", "-e"]
+    command:
+      - |
+        const fs = require('fs'), c = require('crypto');
+        const put = (f, v) => { if (!fs.existsSync(f)) fs.writeFileSync(f, v, { mode: 0o440 }); };
+        put('/secrets/secret_key', c.randomBytes(48).toString('base64'));
+        put('/secrets/postgres_password', c.randomBytes(24).toString('hex'));
+        const pw = fs.readFileSync('/secrets/postgres_password', 'utf8').trim();
+        put('/secrets/database_url', 'postgres://kb:' + pw + '@postgres:5432/kb');
+        for (const f of fs.readdirSync('/secrets')) fs.chownSync('/secrets/' + f, 1000, 999);
+        console.log('secrets ready');
+    volumes:
+      - secrets:/secrets
+
+  postgres:
+    image: postgres:16-bookworm
+    restart: unless-stopped
+    depends_on:
+      secrets:
+        condition: service_completed_successfully
+    environment:
+      POSTGRES_USER: kb
+      POSTGRES_DB: kb
+      POSTGRES_PASSWORD_FILE: /secrets/postgres_password
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - secrets:/secrets:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U kb -d kb"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+
+  app:
+    image: ${KB_IMAGE:-kb:local}
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: "8080"
+      PUBLIC_URL: ${PUBLIC_URL:-http://localhost:${KB_PORT:-8080}}
+      # локально без HTTPS: cookie без флага Secure (на сервере за HTTPS — true, см. deploy/)
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      TRUST_PROXY: ${TRUST_PROXY:-0}
+      # локальный стенд без контейнера резервного копирования: не требовать свежую копию перед миграциями
+      MIGRATION_REQUIRE_BACKUP: "false"
+      SECRET_KEY_FILE: /secrets/secret_key
+      DATABASE_URL_FILE: /secrets/database_url
+      KB_DATA_DIR: /var/lib/kb
+      STORAGE_DRIVER: fs
+      STORAGE_ROOT: /var/lib/kb/objects
+      CHROMIUM_PATH: /usr/bin/chromium
+      CLAMAV_HOST: ${CLAMAV_HOST:-}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    volumes:
+      - kb-data:/var/lib/kb
+      - secrets:/secrets:ro
+    ports:
+      - "${KB_PORT:-8080}:8080"
+    stop_grace_period: 40s
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8080/readyz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      start_period: 60s
+      retries: 6
+
+  # Демо-данные (один раз; повторный запуск ничего не меняет). Отключить: KB_DEMO=0.
+  demo:
+    image: ${KB_IMAGE:-kb:local}
+    depends_on:
+      app:
+        condition: service_healthy
+    entrypoint: ["sh", "-c"]
+    command: ['if [ "$${KB_DEMO}" = "0" ]; then echo "demo data disabled"; else node scripts/demo/seed-demo.mjs; fi']
+    environment:
+      KB_URL: http://app:8080
+      KB_PUBLIC_URL: ${PUBLIC_URL:-http://localhost:${KB_PORT:-8080}}
+      KB_DEMO: ${KB_DEMO:-1}
+    restart: "no"
+
+  # Антивирус (по желанию): CLAMAV_HOST=clamav docker compose --profile antivirus up -d
+  clamav:
+    profiles: ["antivirus"]
+    image: clamav/clamav:1.4
+    restart: unless-stopped
+    volumes:
+      - clamav-db:/var/lib/clamav
+
+volumes:
+  pgdata:
+  kb-data:
+  secrets:
+  clamav-db:
