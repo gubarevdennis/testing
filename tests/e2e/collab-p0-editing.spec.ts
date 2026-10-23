@@ -114,10 +114,10 @@ test('a block is moved by one editor while another edits it: the edit is kept as
 
   // the order follows the move; Anna's text is never silently gone: either merged or offered back
   await expect.poll(async () => (await blockTexts(page))[0], { timeout: 15_000 }).toBe('Второй абзац');
-  const notice = page.locator('.toast').filter({ hasText: 'Ваша версия сохранена' });
+  const notice = page.getByTestId('conflict-dialog');
   if (!(await editor(page).innerText()).includes('с правкой Анны')) {
     await expect(notice).toBeVisible({ timeout: 15_000 });
-    await notice.getByRole('button', { name: 'Вернуть мою версию' }).click();
+    await page.getByRole('button', { name: 'Оставить мою' }).click();
     const conflicts = await (await page.request.get(`/api/v1/pages/${id}/conflicts`)).json();
     expect(conflicts.conflicts[0]).toMatchObject({ reason: 'moved', resolution: 'restored' });
   }
@@ -160,12 +160,12 @@ test("undo of a block move never silently drops a colleague's edits (UX13-10, R-
     })
     .toBe(true);
   // Bob's text survives — directly, or via his conflict copy restored in one click
-  const notice = bob.locator('.toast').filter({ hasText: 'Ваша версия сохранена' });
+  const notice = bob.getByTestId('conflict-dialog');
   await expect(async () => {
     const t = await editor(bob).innerText();
     expect(t.includes('правка Бориса') || (await notice.isVisible())).toBe(true);
   }).toPass({ timeout: 15_000 });
-  if (!(await editor(bob).innerText()).includes('правка Бориса')) await notice.getByRole('button', { name: 'Вернуть мою версию' }).click();
+  if (!(await editor(bob).innerText()).includes('правка Бориса')) await bob.getByRole('button', { name: 'Оставить мою' }).click();
   await expect(editor(bob)).toContainText('и правка Бориса');
   await expect(editor(page)).toContainText('и правка Бориса', { timeout: 15_000 });
   await expectSaved(bob);

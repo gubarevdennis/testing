@@ -41,6 +41,7 @@ interface CommitResult {
   rootPageId: string | null;
   inserted?: number;
   updated?: number;
+  removed?: number;
   repeated?: boolean;
 }
 interface ImportJob {
@@ -57,6 +58,9 @@ interface DryRun {
   inserts: number;
   updates: number;
   duplicatesInFile: number;
+  /** replace mode: rows of the collection that are not in the file (moved to the trash on commit). */
+  removes?: number;
+  removeSample?: string[];
   invalid: Array<{ row: number; column: string; value: string }>;
   invalidCount: number;
   types: ColType[];
@@ -162,7 +166,9 @@ export default function ImportPage() {
   const [as, setAs] = useState<'table' | 'collection'>('table');
   // Repeated import into an existing collection (R-COLLECTION-003, AT-50): append rows or update them by a key column.
   const [collTarget, setCollTarget] = useState<string>('');
-  const [collMode, setCollMode] = useState<'upsert' | 'append'>('upsert');
+  const [collMode, setCollMode] = useState<'upsert' | 'append' | 'replace'>('upsert');
+  // replace mode removes rows: the user confirms after seeing the dry run (R-COLLECTION-003)
+  const [replaceOk, setReplaceOk] = useState(false);
   const [keyColumn, setKeyColumn] = useState(0);
   const [colTypes, setColTypes] = useState<ColType[] | null>(null);
   const [title, setTitle] = useState('');
@@ -300,7 +306,7 @@ export default function ImportPage() {
     sheet,
     header,
     as,
-    ...(as === 'collection' ? { keyColumn, ...(collTarget ? { collectionId: collTarget, collectionMode: collMode } : {}) } : {}),
+    ...(as === 'collection' ? { keyColumn, ...(collTarget ? { collectionId: collTarget, collectionMode: collMode, ...(collMode === 'replace' ? { confirmReplace: replaceOk } : {}) } : {}) } : {}),
     title: title.trim() || undefined,
     range: range.trim() || undefined,
     columnTypes: colTypes ?? undefined,
@@ -728,9 +734,10 @@ export default function ImportPage() {
                           {collTarget && (
                             <div className="field">
                               <label htmlFor="imp-coll-mode">Режим</label>
-                              <select id="imp-coll-mode" className="select" value={collMode} onChange={(e) => (setCollMode(e.target.value as 'upsert' | 'append'), setDryRun(null))}>
+                              <select id="imp-coll-mode" className="select" value={collMode} onChange={(e) => (setCollMode(e.target.value as 'upsert' | 'append' | 'replace'), setReplaceOk(false), setDryRun(null))}>
                                 <option value="upsert">Обновить по ключу, новые добавить</option>
                                 <option value="append">Только добавить строки</option>
+                                <option value="replace">Заменить: как в файле (лишние строки — в корзину)</option>
                               </select>
                             </div>
                           )}
@@ -822,8 +829,17 @@ export default function ImportPage() {
                           <span>
                             Строк: {dryRun.rows}. Будет добавлено: {dryRun.inserts}
                             {dryRun.updates ? `, обновлено: ${dryRun.updates}` : ''}
-                            {dryRun.duplicatesInFile ? `, дубликатов в файле: ${dryRun.duplicatesInFile}` : ''}.
+                            {dryRun.removes ? `, будет удалено в корзину: ${dryRun.removes}` : ''}
+                            {dryRun.duplicatesInFile ? `, повторов ключа в файле: ${dryRun.duplicatesInFile} (обновят одну запись, дублей не будет)` : ''}.
                           </span>
+                          {collMode === 'replace' && !!dryRun.removes && (
+                            <div className="col" style={{ gap: 4 }} data-testid="replace-removes">
+                              <span className="small">Строки, которых нет в файле: {dryRun.removeSample?.join(', ')}{(dryRun.removes ?? 0) > (dryRun.removeSample?.length ?? 0) ? ' …' : ''}. Их можно будет восстановить из корзины.</span>
+                              <label className="row small" style={{ gap: 6 }}>
+                                <input type="checkbox" checked={replaceOk} onChange={(e) => setReplaceOk(e.target.checked)} /> Понятно: {dryRun.removes} {dryRun.removes === 1 ? 'строка будет перемещена' : 'строк будут перемещены'} в корзину
+                              </label>
+                            </div>
+                          )}
                           {dryRun.invalidCount > 0 ? (
                             <>
                               <span>Значений, не соответствующих типу: {dryRun.invalidCount} — они будут сохранены как текст.</span>
@@ -873,7 +889,7 @@ export default function ImportPage() {
                       Отменить импорт
                     </button>
                     <span className="grow" />
-                    <button className="btn primary" onClick={commit} disabled={commitBusy || !spaceId || (preview.kind === 'documents' && selectedCount === 0) || (preview.kind === 'tabular' && csvParamsChanged) || (preview.kind === 'tabular' && !!range.trim() && !dryRun) || (preview.kind === 'tabular' && as === 'collection' && !!collTarget && !dryRun)} aria-busy={commitBusy}>
+                    <button className="btn primary" onClick={commit} disabled={commitBusy || !spaceId || (preview.kind === 'documents' && selectedCount === 0) || (preview.kind === 'tabular' && csvParamsChanged) || (preview.kind === 'tabular' && !!range.trim() && !dryRun) || (preview.kind === 'tabular' && as === 'collection' && !!collTarget && !dryRun) || (preview.kind === 'tabular' && as === 'collection' && !!collTarget && collMode === 'replace' && !!dryRun?.removes && !replaceOk)} aria-busy={commitBusy}>
                       {commitBusy && <span className="spinner" />} {commitError ? 'Повторить импорт' : 'Импортировать'}
                     </button>
                   </div>
@@ -892,7 +908,8 @@ export default function ImportPage() {
             <div className="grow">
               Импорт завершён{result.repeated ? ' (ранее)' : ''}. Создано страниц: {result.pages.length}
               {result.inserted !== undefined ? `, строк: ${result.inserted}` : ''}
-              {result.updated ? `, обновлено: ${result.updated}` : ''}.
+              {result.updated ? `, обновлено: ${result.updated}` : ''}
+              {result.removed ? `, перемещено в корзину: ${result.removed}` : ''}.
             </div>
           </div>
           <ul className="imp-files">

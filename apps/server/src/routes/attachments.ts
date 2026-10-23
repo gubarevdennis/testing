@@ -476,10 +476,37 @@ export async function attachmentRoutes(app: FastifyInstance, s: Services) {
   app.get('/api/v1/attachments/:id/ocr', async (req) => {
     const user = requireUser(req);
     const { id } = parse(z.object({ id: uuid }), req.params);
-    await loadAttachment(s, user, id, 'view');
+    const att = await loadAttachment(s, user, id, 'view');
     const r = (await s.db.query(`select o.*, u.name as corrected_by_name from ocr_results o left join users u on u.id = o.corrected_by where o.attachment_id = $1 order by o.created_at desc limit 1`, [id])).rows[0];
     if (!r) return { ocr: null };
-    return { ocr: { id: r.id, status: r.status, text: r.text, correctedText: r.corrected_text, correctedBy: r.corrected_by_name, correctedAt: r.corrected_at, confidence: r.confidence, words: r.words, region: r.region, rotation: r.rotation, error: r.error, updatedAt: r.updated_at, version: r.version } };
+    // Provenance (SC-22): which image version was recognised, by what, when; who corrected it; earlier attempts.
+    const cur = await versionRow(s, id);
+    const history = (await s.db.query(`select o.id, o.status, o.confidence, o.version, o.created_at, o.corrected_at, u.name as corrected_by_name from ocr_results o left join users u on u.id = o.corrected_by where o.attachment_id = $1 order by o.created_at desc limit 10`, [id])).rows;
+    return {
+      ocr: {
+        id: r.id,
+        status: r.status,
+        text: r.text,
+        correctedText: r.corrected_text,
+        correctedBy: r.corrected_by_name,
+        correctedAt: r.corrected_at,
+        confidence: r.confidence,
+        words: r.words,
+        region: r.region,
+        rotation: r.rotation,
+        error: r.error,
+        updatedAt: r.updated_at,
+        createdAt: r.created_at,
+        version: r.version,
+        languages: r.languages,
+        engine: 'Tesseract OCR (на сервере)',
+        imageVersion: cur.version,
+        stale: Number(cur.version) > Number(r.version),
+        originalUrl: `/api/v1/attachments/${id}/content?variant=original&v=${r.version}`,
+        canEdit: att.page_id ? !!(await pageAccess(s.db, user, att.page_id))?.actions.edit : true,
+        history: history.map((h) => ({ id: h.id, status: h.status, confidence: h.confidence, version: h.version, createdAt: h.created_at, correctedAt: h.corrected_at, correctedBy: h.corrected_by_name })),
+      },
+    };
   });
 
   app.post('/api/v1/attachments/:id/ocr', async (req) => {
@@ -502,8 +529,9 @@ export async function attachmentRoutes(app: FastifyInstance, s: Services) {
     await tx(s.db, async (q) => {
       const r = (await q.query(`select id from ocr_results where attachment_id = $1 order by created_at desc limit 1`, [id])).rows[0];
       if (!r) throw notFound('Результат распознавания не найден');
-      await q.query(`update ocr_results set corrected_text = $2, corrected_by = $3, corrected_at = now(), updated_at = now() where id = $1`, [r.id, correctedText, user.id]);
-      await audit(q, actorOf(req), { action: 'ocr.correct', targetType: 'attachment', targetId: id });
+      // null = back to the machine result (the original recognition is never overwritten)
+      await q.query(`update ocr_results set corrected_text = $2, corrected_by = $3, corrected_at = $4, updated_at = now() where id = $1`, [r.id, correctedText, correctedText === null ? null : user.id, correctedText === null ? null : new Date()]);
+      await audit(q, actorOf(req), { action: correctedText === null ? 'ocr.correction_reset' : 'ocr.correct', targetType: 'attachment', targetId: id });
       if (a.page_id) await q.query(`insert into outbox (topic, payload) values ('index-page', $1)`, [{ pageId: a.page_id }]);
     });
     return { ok: true };

@@ -264,9 +264,8 @@
   evidence: tests/integration/content.test.ts:'recognises Russian and English text on a screenshot…'; OcrDialog textarea + «Копировать»
   note: Скриншот с таблицей и выбор фрагмента не проверяются (название теста упоминает SC-21..24, но покрывает только распознавание)
 - id: SC-22
-  status: partial
-  evidence: OcrDialog; search matchedIn image; ошибка OCR не трогает вложение
-  note: Confidence скрыт при нормальном качестве, автор исправления не показывается
+  status: done
+  evidence: 'apps/web/src/components/OcrDialog.tsx (оригинал рядом с текстом, уверенность и сомнительные слова, исправления с автором и временем, сброс исправлений, источник: движок, языки, версия файла, попытки), apps/server/src/routes/attachments.ts GET/PATCH ocr; tests/integration/ocr-view.test.ts, tests/e2e/ocr-view.spec.ts'
 - id: SC-24
   status: partial
   evidence: apps/server/src/routes/attachments.ts region/rotation; OcrDialog «Распознать заново»
@@ -320,9 +319,9 @@
   evidence: apps/web/src/pages/ImportPage.tsx типы столбцов + «не распознано»; importer.ts tabularDryRun
   note: Типы «пользователь» и «файл» в мастере отсутствуют
 - id: R-COLLECTION-003
-  status: partial
-  evidence: importer.ts new/append/upsert + dry-run; ImportPage «В существующую», режим и ключевой столбец; пробный прогон обязателен
-  note: tests/integration/import-export.test.ts:'CSV in Windows-1251… (AT-48, UX13-17, AT-50, R-COLLECTION-003)'. Нет «заменить диапазон»
+  status: done
+  evidence: 'apps/server/src/services/importer.ts (new/append/upsert/replace, dry-run removes, confirmReplace), apps/web/src/pages/ImportPage.tsx (режим «Заменить», список удаляемых, обязательное подтверждение); tests/integration/collection-import-p0.test.ts, tests/e2e/import-collection.spec.ts'
+  note: '«Заменить диапазон»: выбранный диапазон листа (range) заменяет строки коллекции по ключу, отсутствующие — в корзину. Исправлено: повтор ключа в файле в режиме upsert создавал скрытый дубль (D-30)'
 - id: R-CLIPBOARD-017
   status: partial
   evidence: apps/web/src/editor/extensions/paste.ts SmartPaste (вставка TSV/HTML Excel, копирование TSV+HTML)

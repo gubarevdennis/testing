@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, type ReactNode } from 'react';
+import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 
@@ -13,11 +13,28 @@ interface DialogProps {
   persistent?: boolean;
   initialFocus?: string;
   describedBy?: string;
+  /**
+   * The dialog holds input that would be lost (R-UI-062): Esc, × and a click outside ask first instead of closing.
+   * A string replaces the default question.
+   */
+  dirty?: boolean | string;
 }
 
 /** Modal dialog: focus trap, Esc to close, restores focus to the element that opened it. */
-export function Dialog({ open, title, onClose, children, footer, size = 'normal', persistent, initialFocus }: DialogProps) {
+export function Dialog({ open, title, onClose: close, children, footer, size = 'normal', persistent, initialFocus, dirty }: DialogProps) {
   const ref = useRef<HTMLDivElement>(null);
+  const [asking, setAsking] = useState(false);
+  const dirtyRef = useRef(dirty);
+  dirtyRef.current = dirty;
+  useEffect(() => {
+    if (!open || !dirty) setAsking(false);
+  }, [open, dirty]);
+  // accidental closing (Esc, ×, outside click) of a dialog with unsaved input asks first; only the explicit
+  // «Закрыть без сохранения» discards the input
+  const onClose = () => {
+    if (dirtyRef.current) setAsking(true);
+    else close();
+  };
   const titleId = useId();
   const prevFocus = useRef<Element | null>(null);
   const wasOpen = useRef(false);
@@ -65,7 +82,7 @@ export function Dialog({ open, title, onClose, children, footer, size = 'normal'
   wasOpen.current = open;
   if (!open) return null;
   return createPortal(
-    <div className="dialog-backdrop" onMouseDown={(e) => !persistent && e.target === e.currentTarget && onClose()}>
+    <div className="dialog-backdrop" onMouseDown={(e) => (!persistent || dirty) && e.target === e.currentTarget && onClose()}>
       <div ref={ref} className={'dialog' + (size !== 'normal' ? ' ' + size : '')} role="dialog" aria-modal="true" aria-labelledby={titleId}>
         <div className="dialog-header">
           <h2 className="dialog-title" id={titleId}>
@@ -76,6 +93,17 @@ export function Dialog({ open, title, onClose, children, footer, size = 'normal'
           </button>
         </div>
         <div className="dialog-body">{children}</div>
+        {asking && (
+          <div className="dialog-leave alert warning" role="alertdialog" aria-label="Несохранённые данные">
+            <span className="grow">{typeof dirty === 'string' ? dirty : 'Введённые данные не сохранены. Закрыть без сохранения?'}</span>
+            <button className="btn sm" autoFocus onClick={() => setAsking(false)}>
+              Вернуться
+            </button>
+            <button className="btn sm danger" onClick={close}>
+              Закрыть без сохранения
+            </button>
+          </div>
+        )}
         {footer && <div className="dialog-footer">{footer}</div>}
       </div>
     </div>,

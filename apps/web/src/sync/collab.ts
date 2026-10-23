@@ -1,7 +1,7 @@
 import * as Y from 'yjs';
 import { IndexeddbPersistence } from 'y-indexeddb';
 import { create } from 'zustand';
-import { CollabProvider, type SyncStatus, type PresenceUser } from '@kb/shared';
+import { CollabProvider, CONTENT_SCHEMA_VERSION, type SyncStatus, type PresenceUser } from '@kb/shared';
 import { pendingFor, putPending, removePending } from './idb';
 
 export interface SyncInfo {
@@ -77,6 +77,8 @@ export function openCollab(pageId: string, generation: string | null, userId: st
   const provider = new CollabProvider({
     url: wsUrl(pageId),
     doc,
+    // the server refuses edits of an outdated editor to a migrated document instead of mixing formats
+    schemaVersion: CONTENT_SCHEMA_VERSION,
     // WebSocket blocked by a proxy: the same protocol over HTTPS long polling (R-COLLAB-039)
     httpFallback: { headers: () => csrfHeader() },
     pendingStore: {

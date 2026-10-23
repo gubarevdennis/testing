@@ -1,5 +1,6 @@
 import { ApiError, api, upload } from '../api/client';
 import { Sha256 } from './sha256';
+import { createStreamHasher, hashFileInThread } from './streamHash';
 
 export interface AttachmentDto {
   id: string;
@@ -97,12 +98,13 @@ export async function uploadFile(file: File, pageId: string | null, onProgress?:
   start ??= await api<{ uploadId: string; received: number; chunkSize: number }>('POST', '/api/v1/uploads', { pageId, filename: file.name || 'file', size: file.size, mime: file.type || undefined, replaceId });
   rememberSession(key, start.uploadId);
   // The checksum is computed while streaming (in file order) and verified by the server at completion.
-  const hasher = new Sha256();
+  // Hashing runs in a Web Worker: a large upload never blocks typing (R-PERF-019).
+  const hasher = createStreamHasher();
   let hashed = 0;
   const hashUpTo = async (end: number) => {
     while (hashed < end) {
       const next = Math.min(end, hashed + 4 * 1024 * 1024);
-      hasher.update(new Uint8Array(await file.slice(hashed, next).arrayBuffer()));
+      await hasher.update(new Uint8Array(await file.slice(hashed, next).arrayBuffer()));
       hashed = next;
     }
   };
@@ -143,7 +145,8 @@ export async function uploadFile(file: File, pageId: string | null, onProgress?:
   }
   await hashUpTo(file.size);
   try {
-    const done = await api<{ attachment: AttachmentDto }>('POST', `/api/v1/uploads/${start.uploadId}/complete`, { sha256: hasher.digestHex() });
+    const sha256 = await hasher.digestHex().catch(() => hashFileInThread(file));
+    const done = await api<{ attachment: AttachmentDto }>('POST', `/api/v1/uploads/${start.uploadId}/complete`, { sha256 });
     rememberSession(key, null);
     return done.attachment;
   } catch (e) {

@@ -21,7 +21,9 @@ const tabularSchema = z.object({
   header: z.boolean().default(true),
   as: z.enum(['table', 'collection']).default('table'),
   collectionId: uuid.nullable().optional(),
-  collectionMode: z.enum(['append', 'upsert']).optional(),
+  collectionMode: z.enum(['append', 'upsert', 'replace']).optional(),
+  /** replace mode: the user saw the dry run (rows to be removed) and confirmed it (R-COLLECTION-003). */
+  confirmReplace: z.boolean().optional(),
   keyColumn: z.number().int().min(0).nullable().optional(),
   columnTypes: z.array(z.enum(['text', 'number', 'date', 'checkbox', 'select', 'url', 'email'])).optional(),
   title: z.string().max(300).optional(),

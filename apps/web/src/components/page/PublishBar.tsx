@@ -222,6 +222,7 @@ function SubmitReviewDialog({ open, page, onClose, onDone }: { open: boolean; pa
     <Dialog
       open={open}
       onClose={onClose}
+      dirty={!!message.trim() && !busy}
       title="Отправить на согласование"
       footer={
         <>
@@ -285,6 +286,7 @@ function DecideDialog({ decision, page, approval, onClose, onDone }: { decision:
     <Dialog
       open
       onClose={onClose}
+      dirty={!!comment.trim() && !busy}
       title={approve ? 'Согласовать и опубликовать' : 'Вернуть на доработку'}
       footer={
         <>

@@ -8,7 +8,7 @@ import * as encoding from 'lib0/encoding';
 import * as decoding from 'lib0/decoding';
 
 export const MSG = {
-  HELLO: 0, // C→S: clientStateVector
+  HELLO: 0, // C→S: clientStateVector [+ document schema version the client writes]
   SYNC: 1, // S→C: missing update, server state vector, last seq, flags
   UPDATE: 2, // C→S: opId + update
   ACK: 3, // S→C: opId + seq
@@ -23,7 +23,7 @@ export const MSG = {
 } as const;
 
 export type ClientMessage =
-  | { type: typeof MSG.HELLO; stateVector: Uint8Array }
+  | { type: typeof MSG.HELLO; stateVector: Uint8Array; /** content schema version of the client's editor (absent: 1) */ schemaVersion?: number }
   | { type: typeof MSG.UPDATE; opId: string; update: Uint8Array }
   | { type: typeof MSG.AWARENESS; update: Uint8Array }
   | { type: typeof MSG.PING };
@@ -62,6 +62,7 @@ export function encodeClient(m: ClientMessage): Uint8Array {
   switch (m.type) {
     case MSG.HELLO:
       encoding.writeVarUint8Array(e, m.stateVector);
+      if (m.schemaVersion !== undefined) encoding.writeVarUint(e, m.schemaVersion);
       break;
     case MSG.UPDATE:
       encoding.writeVarString(e, m.opId);
@@ -78,8 +79,11 @@ export function decodeClient(buf: Uint8Array): ClientMessage {
   const d = decoding.createDecoder(buf);
   const type = decoding.readVarUint(d);
   switch (type) {
-    case MSG.HELLO:
-      return { type, stateVector: decoding.readVarUint8Array(d) };
+    case MSG.HELLO: {
+      const stateVector = decoding.readVarUint8Array(d);
+      // older clients send no schema version
+      return { type, stateVector, ...(decoding.hasContent(d) ? { schemaVersion: decoding.readVarUint(d) } : {}) };
+    }
     case MSG.UPDATE:
       return { type, opId: decoding.readVarString(d), update: decoding.readVarUint8Array(d) };
     case MSG.AWARENESS:

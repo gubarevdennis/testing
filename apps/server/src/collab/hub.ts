@@ -9,6 +9,9 @@ import { tx } from '../db/pool.js';
 import { FRAGMENT, ydocToJson, validateDoc, titleOf } from './ydoc.js';
 import { pageAccess, type AuthUser } from '../acl/engine.js';
 import { createRevision } from '../services/revisions.js';
+import { schemaRegistry } from './schema-registry.js';
+import { replaceContent } from './ydoc.js';
+import { migrateContent } from '@kb/shared';
 import { enqueue } from '../services/pages.js';
 import { auditStandalone } from '../services/audit.js';
 import type { EventBus } from '../lib/events.js';
@@ -32,6 +35,8 @@ export interface Conn {
   canEdit: boolean;
   level: string;
   alive: boolean;
+  /** Content schema version the client's editor writes (HELLO); 1 for clients that do not say. */
+  schemaVersion: number;
 }
 
 interface LiveDoc {
@@ -55,6 +60,8 @@ interface LiveDoc {
   awarenessClients: Map<string, Set<number>>;
   /** Memory may hold changes the database does not have: never serve, flush or persist from it again. */
   evicted: boolean;
+  /** pages.content_schema_version of the document (R-COLLAB-037). */
+  schemaVersion: number;
 }
 
 /**
@@ -64,6 +71,7 @@ interface LiveDoc {
 export class CollabHub {
   private docs = new Map<string, LiveDoc>();
   private loading = new Map<string, Promise<LiveDoc>>();
+  private migrating = new Map<string, Promise<{ from: number; to: number; applied: string[] } | null>>();
   private stopping = false;
   private heartbeat: NodeJS.Timeout;
   private unsub: () => void;
@@ -101,6 +109,62 @@ export class CollabHub {
     return { docs: this.docs.size, connections: conns };
   }
 
+  /**
+   * Safe migration of a live document to the current content schema (R-COLLAB-037): the state before is saved as a
+   * version, the migration is applied through the durable CRDT path (concurrent edits of up-to-date editors merge),
+   * the page's schema version is bumped, a "migration" version and a journal/audit entry record what was applied.
+   * Editors of the old format are refused from then on (see acceptUpdate). Serialised per page; idempotent.
+   */
+  async migrateSchema(pageId: string, userId: string | null): Promise<{ from: number; to: number; applied: string[] } | null> {
+    const running = this.migrating.get(pageId);
+    if (running) return running;
+    const p = (async () => {
+      const reg = schemaRegistry();
+      const row = (await this.pool.query('select org_id, content_schema_version from pages where id = $1', [pageId])).rows[0];
+      if (!row) return null;
+      const from = Number(row.content_schema_version ?? 1);
+      if (from >= reg.version) return null;
+      // Validate the chain first: nothing is changed when a step is missing or the document is newer.
+      const live = await this.load(pageId);
+      migrateContent(ydocToJson(live.ydoc), from, { to: reg.version, migrations: reg.migrations });
+      const pre = await this.createRevisionNow(pageId, 'pre-restore', userId, `Перед миграцией формата документа ${from} → ${reg.version}`);
+      // Editors of the old format are disconnected BEFORE the migration is broadcast (see HELLO).
+      for (const c of [...live.conns])
+        if (c.schemaVersion < reg.version) {
+          live.conns.delete(c);
+          this.sendError(c.ws, 'schema_outdated', outdatedMessage(reg.version, c.schemaVersion), CLOSE.INVALID);
+        }
+      let applied: string[] = [];
+      const res = await this.applyServerChange(
+        pageId,
+        userId,
+        (doc) => {
+          const r = migrateContent(ydocToJson(doc), from, { to: reg.version, migrations: reg.migrations });
+          applied = r.applied;
+          replaceContent(doc, r.doc, 'migration');
+        },
+        `migrate:${pageId}:${reg.version}`,
+      );
+      const snap = await this.snapshot(pageId);
+      await tx(this.pool, async (c) => {
+        await c.query('update pages set content_schema_version = $2, version = version + 1 where id = $1', [pageId, reg.version]);
+        const title = (await c.query('select title from pages where id = $1', [pageId])).rows[0]?.title ?? '';
+        const rev = await createRevision(c, { pageId, kind: 'migration', title, state: snap.state, content: res.json, seqUpto: res.seq, authors: [], createdBy: userId, label: `Миграция формата документа ${from} → ${reg.version}` });
+        await c.query(`insert into page_events (org_id, page_id, actor_id, type, data) values ($1, $2, $3, 'schema-migrated', $4)`, [row.org_id, pageId, userId, { from, to: reg.version, applied, seq: res.seq, preRevision: pre?.number ?? null, revision: rev.number }]);
+      });
+      live.schemaVersion = reg.version;
+      void auditStandalone(this.pool, { orgId: row.org_id, userId }, { action: 'page.schema_migrate', targetType: 'page', targetId: pageId, details: { from, to: reg.version, applied } }).catch(() => undefined);
+      this.log.info({ pageId, from, to: reg.version, applied }, 'document schema migrated');
+      return { from, to: reg.version, applied };
+    })();
+    this.migrating.set(pageId, p);
+    try {
+      return await p;
+    } finally {
+      this.migrating.delete(pageId);
+    }
+  }
+
   /** People currently connected to a page on this instance (restore preview: "others are editing now"). */
   connectedUsers(pageId: string): Array<{ id: string; name: string; canEdit: boolean }> {
     const live = this.docs.get(pageId);
@@ -118,7 +182,7 @@ export class CollabHub {
     const pending = this.loading.get(pageId);
     if (pending) return pending;
     const p = (async () => {
-      const page = (await this.pool.query('select org_id from pages where id = $1', [pageId])).rows[0];
+      const page = (await this.pool.query('select org_id, content_schema_version from pages where id = $1', [pageId])).rows[0];
       if (!page) throw Object.assign(new Error('page not found'), { code: 'not_found' });
       const ydoc = new Y.Doc({ gc: true });
       const st = (await this.pool.query('select snapshot, snapshot_seq, last_seq, content from doc_state where page_id = $1', [pageId])).rows[0];
@@ -151,6 +215,7 @@ export class CollabHub {
         idleTimer: null,
         awarenessClients: new Map(),
         evicted: false,
+        schemaVersion: Number(page.content_schema_version ?? 1),
       };
       live.awareness.setLocalState(null);
       this.docs.set(pageId, live);
@@ -215,7 +280,7 @@ export class CollabHub {
   // ------------------------------------------------------------------ connections
 
   async connect(ws: WebSocket, user: AuthUser, sessionId: string | null, pageId: string) {
-    const conn: Conn = { id: randomUUID(), ws, user, sessionId, clientId: null, canEdit: false, level: 'none', alive: true };
+    const conn: Conn = { id: randomUUID(), ws, user, sessionId, clientId: null, canEdit: false, level: 'none', alive: true, schemaVersion: 1 };
     // Messages may arrive while access is checked and the document loads: buffer them.
     const early: Uint8Array[] = [];
     const buffer = (data: Buffer, isBinary: boolean) => isBinary && early.push(new Uint8Array(data));
@@ -243,6 +308,16 @@ export class CollabHub {
     if (live.idleTimer) {
       clearTimeout(live.idleTimer);
       live.idleTimer = null;
+    }
+    // A document stored in an older schema is migrated before anyone edits it (pre-migration version kept).
+    if (live.schemaVersion < schemaRegistry().version) {
+      try {
+        await this.migrateSchema(pageId, null);
+      } catch (err) {
+        // Never edit a document whose format could not be brought up to date: read-only, explained.
+        this.log.error({ err, pageId }, 'document schema migration failed');
+        conn.canEdit = false;
+      }
     }
     live.conns.add(conn);
     this.metrics.collabConnections.inc();
@@ -283,6 +358,14 @@ export class CollabHub {
         this.send(conn.ws, { type: MSG.PONG });
         return;
       case MSG.HELLO:
+        conn.schemaVersion = msg.schemaVersion ?? 1;
+        // An editor of an older document format never receives the migrated document: merging it into its local
+        // replica would drop its unsent edits inside restructured blocks. It keeps its local version and is told why.
+        if (conn.schemaVersion < live.schemaVersion) {
+          live.conns.delete(conn);
+          this.sendError(conn.ws, 'schema_outdated', outdatedMessage(live.schemaVersion, conn.schemaVersion), CLOSE.INVALID);
+          return;
+        }
         await this.run(live, async () => {
           const update = Y.encodeStateAsUpdate(live.ydoc, msg.stateVector);
           this.send(conn.ws, { type: MSG.SYNC, update, stateVector: Y.encodeStateVector(live.ydoc), seq: live.lastSeq, canEdit: conn.canEdit });
@@ -325,6 +408,12 @@ export class CollabHub {
     if (live.evicted) return; // connection is being closed; the client re-sends after reconnecting
     if (!conn.canEdit) return nack('forbidden', 'Нет права на редактирование');
     if (!opId || opId.length > 100) return nack('bad_request', 'Некорректный идентификатор операции');
+    // Schema changes (R-COLLAB-009, R-COLLAB-037): edits written by an editor of another format are never merged
+    // into the document. An outdated client gets an explicit conflict (its local copy is kept and offered);
+    // a client newer than this server keeps its operations pending and retries after the server is updated.
+    if (conn.schemaVersion < live.schemaVersion) return nack('schema_outdated', outdatedMessage(live.schemaVersion, conn.schemaVersion));
+    if (conn.schemaVersion > schemaRegistry().version)
+      return nack('schema_newer', 'Сервер ещё не обновлён до версии формата вашего приложения. Изменения сохранены на этом устройстве и будут отправлены автоматически после обновления сервера.');
     if (update.byteLength > MAX_UPDATE_BYTES) return nack('too_large', 'Слишком большое изменение');
     // Fast path for a retried operation that is already durable.
     const dup = await this.pool.query('select seq from doc_updates where page_id = $1 and op_id = $2', [live.pageId, opId]);
@@ -782,3 +871,7 @@ function blockChanges(before: PMNode | null, after: PMNode) {
 }
 
 export { FRAGMENT };
+
+function outdatedMessage(docVersion: number, clientVersion: number) {
+  return `Документ переведён на новую версию формата (${docVersion}), а ваше приложение пишет в старом (${clientVersion}). Изменения с этого устройства не смешиваются с новым форматом: сохраните их копией или файлом и обновите приложение.`;
+}

@@ -442,6 +442,7 @@ function CreateUserDialog({ groups, isAdmin, guestsEnabled, onClose, onCreated }
       open
       size="wide"
       persistent
+      dirty={!!(f.email.trim() || f.name.trim() || f.title.trim() || f.password)}
       title="Новый пользователь"
       onClose={onClose}
       footer={
@@ -823,6 +824,7 @@ function EditUserDialog({ user, groups, isAdmin, isOwner, onClose, onSaved }: { 
     <Dialog
       open
       persistent={dirty}
+      dirty={dirty}
       title={`Изменить: ${user.name}`}
       onClose={onClose}
       footer={

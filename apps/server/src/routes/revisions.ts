@@ -1,6 +1,7 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { z } from 'zod';
-import { docToPlainText, findBlock, type PMNode } from '@kb/shared';
+import { docToPlainText, findBlock, migrateContent, type PMNode } from '@kb/shared';
+import { schemaRegistry } from '../collab/schema-registry.js';
 import { tx } from '../db/pool.js';
 import { actorOf, parse, requireUser, type Services } from '../app.js';
 import { requirePage, pageAccess, type AuthUser } from '../acl/engine.js';
@@ -94,8 +95,9 @@ export async function revisionRoutes(app: FastifyInstance, s: Services) {
     const { id, rid } = parse(z.object({ id: uuid, rid: uuid }), req.params);
     const body = parse(z.object({ restoreTitle: z.boolean().default(true), restoreProps: z.boolean().default(false), dryRun: z.boolean().default(false) }), req.body ?? {});
     await requireRestore(user, id);
-    const rev = (await s.db.query('select id, number, content, title, props, created_at from page_revisions where id = $1 and page_id = $2', [rid, id])).rows[0];
+    const rev = (await s.db.query('select id, number, content, title, props, created_at, content_schema_version from page_revisions where id = $1 and page_id = $2', [rid, id])).rows[0];
     if (!rev) throw notFound('Версия не найдена');
+    rev.content = await upToDate(id, rev.content, rev.content_schema_version);
     const cur = await currentProps(s.db, id);
     const propChanges = diffProps(cur, rev.props);
     const restorable = body.restoreProps ? propChanges.filter((c) => (RESTORABLE_PROPS as readonly string[]).includes(c.field)) : [];
@@ -157,6 +159,9 @@ export async function revisionRoutes(app: FastifyInstance, s: Services) {
     const { restoreTitle } = parse(z.object({ restoreTitle: z.boolean().default(true) }), req.body ?? {});
     await requireRestore(user, id);
     const st = await stateAtSeq(s.db, id, seq);
+    // the format at that moment: the source version of the first migration after it, else the current one
+    const mig = (await s.db.query(`select data from page_events where page_id = $1 and type = 'schema-migrated' and (data->>'seq')::bigint > $2 order by id limit 1`, [id, seq])).rows[0];
+    st.content = await upToDate(id, st.content, mig ? Number(mig.data.from) : null);
     const when = st.at ? new Date(st.at).toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' }) : '';
     return restoreContent(req, user, id, {
       content: st.content,
@@ -172,6 +177,18 @@ export async function revisionRoutes(app: FastifyInstance, s: Services) {
       auditDetails: { seq, base: st.base },
     });
   });
+
+  /**
+   * Content of an older version in the format the document has now (R-COLLAB-037): restoring a version saved before a
+   * schema migration must not bring the old format back into the live document.
+   */
+  async function upToDate(pageId: string, content: PMNode, version: number | null): Promise<PMNode> {
+    const cur = Number((await s.db.query('select content_schema_version from pages where id = $1', [pageId])).rows[0]?.content_schema_version ?? 1);
+    const from = version ?? cur;
+    if (from >= cur) return content;
+    const reg = schemaRegistry();
+    return migrateContent(content, from, { to: cur, migrations: reg.migrations }).doc;
+  }
 
   async function requireRestore(user: AuthUser, id: string, action: 'restore' | 'edit' = 'restore') {
     const acc = await requirePage(s.db, user, id, action, { allowDeleted: true });
@@ -260,8 +277,9 @@ export async function revisionRoutes(app: FastifyInstance, s: Services) {
     const { id, rid } = parse(z.object({ id: uuid, rid: uuid }), req.params);
     const { blockId, dryRun } = parse(z.object({ blockId: z.string().min(1).max(100), dryRun: z.boolean().default(false) }), req.body);
     await requireRestore(user, id, 'edit');
-    const rev = (await s.db.query('select id, number, content from page_revisions where id = $1 and page_id = $2', [rid, id])).rows[0];
+    const rev = (await s.db.query('select id, number, content, content_schema_version from page_revisions where id = $1 and page_id = $2', [rid, id])).rows[0];
     if (!rev) throw notFound('Версия не найдена');
+    rev.content = await upToDate(id, rev.content, rev.content_schema_version);
     const fromRev = findBlock(rev.content, blockId);
     if (!fromRev) throw notFound('Блок не найден в выбранной версии');
     if (dryRun) {

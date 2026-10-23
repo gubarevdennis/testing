@@ -62,6 +62,13 @@ export interface CollabProviderOptions {
   maxInflightOps?: number;
   maxInflightBytes?: number;
   maxBufferedBytes?: number;
+  /**
+   * Content schema version this client's editor writes (CONTENT_SCHEMA_VERSION of its build). The server refuses
+   * edits of an outdated client to a migrated document instead of merging old and new formats (R-COLLAB-037).
+   */
+  schemaVersion?: number;
+  /** Delay before re-sending operations the server could not take yet (server older than the client). */
+  schemaRetryMs?: number;
 }
 
 interface PendingOp {
@@ -324,7 +331,7 @@ export class CollabProvider {
     let gotSync = false;
     this.setStatus();
     ws.onopen = () => {
-      ws.send(encodeClient({ type: MSG.HELLO, stateVector: Y.encodeStateVector(this.doc) }));
+      ws.send(encodeClient({ type: MSG.HELLO, stateVector: Y.encodeStateVector(this.doc), ...(this.opts.schemaVersion !== undefined ? { schemaVersion: this.opts.schemaVersion } : {}) }));
       this.pingTimer = setInterval(() => ws.readyState === 1 && ws.send(encodeClient({ type: MSG.PING })), 25_000);
       // An intermediary may accept the upgrade and then swallow frames: no SYNC in time = broken channel.
       if (this.syncTimer) clearTimeout(this.syncTimer);
@@ -454,6 +461,15 @@ export class CollabProvider {
           this.setStatus(this.serverFailing);
           return;
         }
+        if (m.code === 'schema_newer') {
+          // Rolling update: this client is newer than the server. Nothing is lost — the operations stay pending and
+          // are re-sent until an updated server accepts them.
+          if (p) p.sent = false;
+          setTimeout(() => this.sendPending(), this.opts.schemaRetryMs ?? 15_000);
+          this.serverFailing = m.message;
+          this.setStatus(m.message);
+          return;
+        }
         if (m.code === 'forbidden') {
           this.canEdit = false;
           this.setStatus('Нет права на редактирование: изменения сохранены только на этом устройстве');
@@ -483,7 +499,7 @@ export class CollabProvider {
         return;
       case MSG.ERROR:
         this.message = m.message;
-        if (['access_revoked', 'not_found', 'deleted', 'published_only'].includes(m.code)) {
+        if (['access_revoked', 'not_found', 'deleted', 'published_only', 'schema_outdated'].includes(m.code)) {
           this.fatal = true;
           this.setStatus(m.message);
           this.opts.onFatal?.(m.code, m.message);

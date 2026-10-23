@@ -673,6 +673,11 @@ function RestoreDialog({ pageId, rev, onClose, onDone }: { pageId: string; rev: 
 function SaveVersionDialog({ open, pageId, onClose, onSaved }: { open: boolean; pageId: string; onClose(): void; onSaved(): void }) {
   const [label, setLabel] = useState('');
   const [busy, setBusy] = useState(false);
+  // closing discards the typed name (the dialog asks first when something was typed)
+  const close = () => {
+    setLabel('');
+    onClose();
+  };
   const save = async () => {
     setBusy(true);
     try {
@@ -691,10 +696,11 @@ function SaveVersionDialog({ open, pageId, onClose, onSaved }: { open: boolean; 
     <Dialog
       open={open}
       title="Сохранить версию"
-      onClose={onClose}
+      onClose={close}
+      dirty={!!label.trim() && !busy}
       footer={
         <>
-          <button className="btn" onClick={onClose}>
+          <button className="btn" onClick={close}>
             Отмена
           </button>
           <button className="btn primary" onClick={save} disabled={busy} aria-busy={busy}>

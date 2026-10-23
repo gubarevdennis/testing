@@ -227,7 +227,7 @@ function PageLoaded({ page, crumbs, block, justCreated, offline = false }: { pag
     { id: 'template', label: 'Сохранить как шаблон', icon: <LayoutTemplate size={15} />, disabled: !canEdit, disabledReason: 'Нужно право на редактирование страницы — запросите его в «Поделиться»', onSelect: () => saveAsTemplate(page.id, liveTitle) },
     { separator: true as const },
     { id: 'dup', label: 'Дублировать', icon: <Copy size={15} />, disabled: !a.create && !canEdit, disabledReason: 'Нет права создавать страницы в этом пространстве', onSelect: async () => { const p = await duplicatePage(page.id); if (p) navigate('/p/' + p.id); } },
-    { id: 'move', label: 'Переместить в…', icon: <FolderInput size={15} />, disabled: !a.move, disabledReason: 'Перемещать страницу может только её редактор с правом на родительский раздел', onSelect: () => setMove(true) },
+    { id: 'move', label: 'Переместить в…', icon: <FolderInput size={15} />, disabled: !a.manage_structure, disabledReason: 'Перемещать страницу может только тот, у кого есть право изменять структуру (полный доступ к разделу)', onSelect: () => setMove(true) },
     { id: 'delete', label: 'Удалить', icon: <Trash2 size={15} />, danger: true, disabled: !a.delete, disabledReason: 'Удалять страницу может только пользователь с полным доступом (или включено юридическое удержание)', onSelect: () => trashPage(page.id, liveTitle, () => navigate(page.parentId ? '/p/' + page.parentId : '/s/' + page.spaceId)) },
   ];
 

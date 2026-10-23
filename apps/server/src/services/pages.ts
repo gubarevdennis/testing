@@ -156,13 +156,15 @@ export async function createPage(q: Tx, user: AuthUser, actor: AuditActor, input
   }
   let spaceId = input.spaceId;
   const parentId = input.parentId ?? null;
+  // The tree lock is taken BEFORE the parent is checked: a parent trashed concurrently must not receive a live child
+  // (an orphan hidden under a deleted page) — found by tests/integration/coordination-p0.test.ts.
+  await lockTree(q, user.orgId);
   if (parentId) {
     const acc = await requirePage(q, user, parentId, 'create');
     spaceId = acc.spaceId;
   } else {
     await requireSpace(q, user, spaceId, 'create');
   }
-  await lockTree(q, user.orgId);
   await assertDepth(q, parentId);
   const sortKey = await placementKey(q, spaceId, parentId, { beforeId: input.beforeId, afterId: input.afterId, position: input.position });
   const title = (input.title ?? '').slice(0, 500);

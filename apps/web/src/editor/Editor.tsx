@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import type { Editor as TEditor } from '@tiptap/core';
 import * as Y from 'yjs';
 import { ChevronDown, ChevronUp, X, Download } from 'lucide-react';
-import { TITLE_NAME, colorForUser, type PresenceUser } from '@kb/shared';
+import { TITLE_NAME, CONTENT_SCHEMA_VERSION, colorForUser, type PresenceUser } from '@kb/shared';
 import { loadMarkdown } from '../lib/markdown';
 import { yXmlFragmentToProsemirrorJSON } from '@tiptap/y-tiptap';
 import { openCollab, useSyncState, type CollabSession } from '../sync/collab';
@@ -130,10 +130,13 @@ export function PageEditor(p: Props) {
           localDoc={() => yXmlFragmentToProsemirrorJSON(session.doc.getXmlFragment('default')) as Record<string, any>}
           localTitle={() => session.doc.getText(TITLE_NAME).toString()}
           localMarkdown={async () => (await loadMarkdown()).docToMarkdown(yXmlFragmentToProsemirrorJSON(session.doc.getXmlFragment('default')) as any, { markers: true }).markdown}
+          schemaVersion={CONTENT_SCHEMA_VERSION}
           download={() => downloadLocalCopy(session)}
           acceptServer={async () => {
             await session.provider.discardUnsynced();
             await session.local.clearData().catch(() => undefined);
+            // an editor of an outdated document format must be replaced by the current application
+            if (fatal?.code === 'schema_outdated') return location.reload();
             setFatal(null);
             setServerCanEdit(null);
             setEpoch((e) => e + 1);
@@ -156,7 +159,7 @@ export function PageEditor(p: Props) {
 }
 
 /** Server refusals that are a conflict between this device's version and the server's (not a lost right). */
-const DOC_CONFLICT_CODES = ['invalid_update', 'too_large', 'deleted'];
+const DOC_CONFLICT_CODES = ['invalid_update', 'too_large', 'deleted', 'schema_outdated'];
 
 export function EditorSkeleton() {
   return (

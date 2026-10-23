@@ -1,6 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import { getKbSchema, markdownToDoc, sanitizeDocUrls, findUnsafeUrls, type PMNode } from '@kb/shared';
+import { getKbSchema, markdownToDoc, sanitizeDocUrls, findUnsafeUrls, migrateContent, type PMNode } from '@kb/shared';
+import { schemaRegistry } from '../collab/schema-registry.js';
 import { actorOf, parse, requireUser, type Services } from '../app.js';
 import { requirePage } from '../acl/engine.js';
 import { badRequest, notFound } from '../lib/errors.js';
@@ -75,7 +76,7 @@ export async function conflictRoutes(app: FastifyInstance, s: Services) {
   app.post('/api/v1/pages/:id/conflict-copy', async (req) => {
     const user = requireUser(req);
     const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
-    const body = parse(z.object({ content: z.record(z.string(), z.unknown()).optional(), markdown: z.string().max(5_000_000).optional(), title: z.string().max(500).optional() }), req.body);
+    const body = parse(z.object({ content: z.record(z.string(), z.unknown()).optional(), schemaVersion: z.number().int().min(1).optional(), markdown: z.string().max(5_000_000).optional(), title: z.string().max(500).optional() }), req.body);
     if (!body.content && body.markdown === undefined) throw badRequest('Нет содержимого для копии');
     await requirePage(s.db, user, id, 'view', { allowDeleted: true });
     const page = (await getPage(s.db, id))!;
@@ -83,7 +84,10 @@ export async function conflictRoutes(app: FastifyInstance, s: Services) {
     let source: 'json' | 'markdown' = 'json';
     if (body.content && JSON.stringify(body.content).length < 5_000_000) {
       try {
-        const clean = sanitizeDocUrls(body.content as unknown as PMNode).doc;
+        // A copy written by an editor of an older document format is migrated first (R-COLLAB-009).
+        const reg = schemaRegistry();
+        const migrated = migrateContent(body.content as unknown as PMNode, body.schemaVersion ?? reg.version, { to: reg.version, migrations: reg.migrations }).doc;
+        const clean = sanitizeDocUrls(migrated).doc;
         getKbSchema().nodeFromJSON(clean).check();
         if (!findUnsafeUrls(clean).length) content = clean;
       } catch {

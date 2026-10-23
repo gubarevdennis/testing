@@ -8,10 +8,10 @@
 
 | Приоритет | Всего | реализовано | частично | не реализовано | требует ручной проверки | ограничение окружения | процесс/документ | заменено | не оценено | покрыто тестами |
 |---|---|---|---|---|---|---|---|---|---|---|
-| P0 | 637 | 534 | 64 | 11 | 1 | 12 | 14 | 1 | 0 | 445 |
+| P0 | 637 | 550 | 48 | 11 | 1 | 12 | 14 | 1 | 0 | 454 |
 | P1 | 588 | 227 | 276 | 30 | 32 | 7 | 15 | 1 | 0 | 95 |
 | P2 | 73 | 26 | 24 | 6 | 7 | 0 | 9 | 1 | 0 | 1 |
-| **Итого** | 1298 | 787 | 364 | 47 | 40 | 19 | 38 | 3 | 0 | 541 |
+| **Итого** | 1298 | 803 | 348 | 47 | 40 | 19 | 38 | 3 | 0 | 550 |
 
 ## По модулям
 
@@ -25,33 +25,33 @@
 | AUTH | 5 | 5 | 0 | 0 | 0 | 0 | 0 | 3 |
 | BACKUP | 29 | 22 | 0 | 0 | 0 | 4 | 2 | 22 |
 | CLIPBOARD | 45 | 24 | 16 | 1 | 0 | 4 | 0 | 21 |
-| COLLAB | 80 | 70 | 8 | 0 | 2 | 0 | 0 | 60 |
-| COLLECTION | 10 | 3 | 7 | 0 | 0 | 0 | 0 | 3 |
+| COLLAB | 80 | 75 | 3 | 0 | 2 | 0 | 0 | 61 |
+| COLLECTION | 10 | 4 | 6 | 0 | 0 | 0 | 0 | 3 |
 | COMMENTS | 3 | 0 | 2 | 1 | 0 | 0 | 0 | 1 |
-| EDITOR | 105 | 64 | 34 | 2 | 4 | 1 | 0 | 26 |
+| EDITOR | 105 | 64 | 34 | 2 | 4 | 1 | 0 | 30 |
 | EXPORT | 37 | 23 | 10 | 0 | 2 | 1 | 0 | 21 |
 | FILES | 17 | 12 | 5 | 0 | 0 | 0 | 0 | 7 |
 | HELP | 11 | 5 | 2 | 0 | 3 | 0 | 1 | 0 |
-| HISTORY | 63 | 51 | 9 | 3 | 0 | 0 | 0 | 41 |
+| HISTORY | 63 | 55 | 5 | 3 | 0 | 0 | 0 | 41 |
 | IMPORT | 63 | 48 | 14 | 0 | 0 | 1 | 0 | 44 |
 | LAYOUT | 19 | 1 | 16 | 2 | 0 | 0 | 0 | 1 |
 | MEDIA | 43 | 31 | 10 | 0 | 0 | 1 | 0 | 13 |
-| OCR | 15 | 5 | 9 | 1 | 0 | 0 | 0 | 4 |
-| OFFLINE | 28 | 26 | 2 | 0 | 0 | 0 | 0 | 25 |
+| OCR | 15 | 6 | 8 | 1 | 0 | 0 | 0 | 4 |
+| OFFLINE | 28 | 27 | 1 | 0 | 0 | 0 | 0 | 26 |
 | OPS | 29 | 9 | 14 | 0 | 1 | 3 | 2 | 10 |
 | ORG | 7 | 6 | 1 | 0 | 0 | 0 | 0 | 5 |
-| PAGE | 50 | 30 | 15 | 4 | 1 | 0 | 0 | 8 |
-| PERF | 44 | 6 | 26 | 12 | 0 | 0 | 0 | 6 |
+| PAGE | 50 | 31 | 14 | 4 | 1 | 0 | 0 | 8 |
+| PERF | 44 | 7 | 25 | 12 | 0 | 0 | 0 | 7 |
 | PROCESS | 57 | 9 | 11 | 7 | 2 | 0 | 28 | 0 |
 | PUBLISH | 15 | 9 | 5 | 1 | 0 | 0 | 0 | 4 |
-| QA | 56 | 6 | 25 | 9 | 10 | 3 | 3 | 6 |
-| SEARCH | 30 | 23 | 7 | 0 | 0 | 0 | 0 | 15 |
+| QA | 56 | 6 | 25 | 9 | 10 | 3 | 3 | 8 |
+| SEARCH | 30 | 24 | 6 | 0 | 0 | 0 | 0 | 15 |
 | SECURITY | 15 | 13 | 1 | 0 | 0 | 0 | 1 | 10 |
 | SPACE | 15 | 13 | 1 | 1 | 0 | 0 | 0 | 8 |
 | TABLE | 9 | 5 | 4 | 0 | 0 | 0 | 0 | 2 |
 | TEMPLATES | 14 | 10 | 4 | 0 | 0 | 0 | 0 | 0 |
 | TREE | 63 | 50 | 11 | 1 | 1 | 0 | 0 | 24 |
-| UI | 89 | 18 | 54 | 2 | 14 | 1 | 0 | 17 |
+| UI | 89 | 19 | 53 | 2 | 14 | 1 | 0 | 17 |
 
 ## Открытые P0/P1 (частично / не реализовано / не оценено)
 
@@ -62,9 +62,7 @@
 - **R-UI-003** (P1, UI, частично): Минимизировать обязательные диалоги и клики; умные контекстные действия, наследование настроек и понятные значения по умолчанию — no audit of all key tasks for mandatory dialogs
 - **R-UI-004** (P1, UI, частично): Меню остаётся в пределах экрана — no test of menus at viewport edges
 - **R-UI-005** (P1, UI, частично): Последний контекст навигации восстанавливается — last route/page/space not restored after restart
-- **R-HISTORY-002** (P0, HISTORY, частично): Все операции обратимы где возможно; опасные действия — точный предпросмотр последствий без бесконечных подтверждений — Не все операции обратимы: смена иконки/свойств/заголовка через API без отмены (только запись before в page_events)
 - **R-A11Y-001** (P1, A11Y, частично): Действия мышью, клавиатурой и на телефоне одинаково доступны — no mouse/keyboard/touch input matrix; touch never exercised in tests
-- **ROUTE-02** (P0, OFFLINE, частично): Автор: личный черновик → офлайн → синхронизация → перенос в отдел с предпросмотром видимости → согласование → публикация → обновление и … — Отдельные шаги покрыты, но сквозного E2E «черновик → офлайн → перенос в отдел с предпросмотром → согласование → публикация → откат» нет
 - **R-QA-003** (P1, QA, не реализовано): Для каждого компонента перечислить состояния: default, hover, focus, active, disabled, loading, error, empty, overflow, mobile … — no component state catalogue
 - **R-QA-004** (P0, QA, не реализовано): Для каждого действия проверить нормальный путь, отмену, повтор, двойной клик, медленную сеть, офлайн, конфликт, недостаток прав … — no actions × conditions matrix
 - **R-UI-007** (P1, UI, частично): Кнопки/иконки: семантика, tooltip, hit target, доступность, реакция, идемпотентность — no per-button checks
@@ -75,14 +73,13 @@
 - **R-QA-007** (P1, QA, частично): Браузерная матрица 320/375/768/1024/1440/1920px, zoom 200%, мышь/клавиатура/сенсор; WebKit, Chromium, Firefox — only Chromium is installed (playwright.config.ts, DECISIONS D-18); touch input not exercised
 - **R-OPS-003** (P0, OPS, частично): Инфраструктура эксплуатации: health checks, метрики, логи, трассировки, алерты, backup/restore, миграции, CI/CD, секреты, runbooks — No CD/deploy pipeline (needs target infrastructure); no secrets manager integration (env/EnvironmentFile only)
 - **R-PROCESS-013** (P1, PROCESS, частично): Документация: REQUIREMENTS_TRACEABILITY, ARCHITECTURE, DECISIONS, TEST_MATRIX, UX_ACCEPTANCE, SECURITY, OPERATIONS, BACKUP_RESTORE … — RELEASE_READINESS.md not yet present at re-assessment (written by the lead)
-- **R-UI-011** (P0, UI, частично): Система сохраняет работу, объясняет состояние и позволяет исправить ошибку — cancel/status not verified for every operation
+- **R-UI-011** (P0, UI, частично): Система сохраняет работу, объясняет состояние и позволяет исправить ошибку — Добавлены отмена изменений свойств, предпросмотр восстановления, диалог конфликтов; отмена/статус не проверены для каждой операции
 - **R-ADMIN-001** (P1, ADMIN, частично): Администратор управляет подразделениями и пространствами, а не сотнями разрозненных ACL — Departments managed in UI, spaces are not: no web UI to create spaces or to add groups/users to a space (SpacePage AccessTab is read-only; POST /api/v1/spaces and PUT /grants resourceType=space only via API).
 - **R-PROCESS-018** (P0, PROCESS, частично): Продукт завершён только после доказанных проверок каждого критичного сценария — many critical scenarios lack passing tests
 - **R-COLLAB-005** (P1, COLLAB, частично): Совместная работа, комментарии, упоминания, согласование и публикация, история и восстановление — Функции есть; согласование/публикация и упоминания покрыты только интеграционными тестами, не E2E
 - **R-ACL-009** (P1, ACL, частично): Роль «Редактор»: структурирует, актуализирует, управляет публикацией пространства — No distinct "Editor" role separate from Author: both are level edit, publish distinguished only via per-grant canPublish flag.
 - **R-ACL-010** (P1, ACL, частично): Роль «Владелец пространства»: участники, шаблоны, структура — Members management for space owners has no UI: no web UI to create spaces or to add groups/users to a space (SpacePage AccessTab is read-only; POST /api/v1/spaces and PUT /grants resourceType=space only via API).
 - **R-TREE-005** (P0, TREE, частично): Иерархия Organization → Workspace → Space → Page с неограниченной вложенностью и API-лимитом глубины 15, смена уровня без потери ссылок — Лимит 15 уровней с понятной ошибкой реализован и тестируется; отдельной сущности Workspace нет (организация = рабочее пространство)
-- **R-PAGE-001** (P0, PAGE, частично): Страница: неизменный UUID, название, slug, обложка, иконка, блоки, статус, владелец, автор, время, теги, версия, права, публикация … — Нет slug и тегов; остальное есть
 - **R-PAGE-002** (P1, PAGE, частично): Типы связей: родитель–дочерняя, ссылка, обратная ссылка, упоминание, вложение, якорь блока, связанная страница — Нет типа «связанная страница»; page_links не различает ссылку и упоминание (kind всегда link)
 - **R-TREE-006** (P1, TREE, частично): Левое дерево пространств и разделов: поиск по дереву, раскрытие, DnD, избранное, недавние — Нет поиска по дереву и «Недавних» в боковой панели (недавние только в Ctrl+K)
 - **R-UI-012** (P1, UI, частично): Центральная зона главной: поиск, закреплённые, последние изменения, популярные и назначенные к актуализации — no "popular" block
@@ -109,10 +106,8 @@
 - **R-OCR-003** (P1, OCR, частично): Источники OCR: системный буфер, DnD, медиа в DOCX, PNG/JPEG/WebP, скриншоты — Изображения из DOCX-импорта OCR не проходят (importer.ts не создаёт ocr job)
 - **R-OCR-004** (P1, OCR, частично): Языки: русский, английский, смешанный, цифры; проверка инженерных обозначений, таблиц, кода — Тест — 3 строки RU/EN; таблицы/код/инженерные обозначения не проверяются
 - **R-OCR-005** (P1, OCR, частично): Результат: текст, уверенность, координаты; подсветка на картинке; ручная правка с фиксацией — Подсветки на изображении нет; confidence показывается только при низком качестве
-- **R-SEARCH-003** (P0, SEARCH, частично): Глобальный поиск по названиям, содержимому, заголовкам, тегам, комментариям (по праву), подписям, файлам, OCR — Комментарии и DOCX/TXT индексируются; текст PDF не извлекается (PDF-парсер не установлен), тегов нет
 - **R-PAGE-006** (P1, PAGE, частично): Оглавление, breadcrumbs, обратные ссылки, «связанные материалы», ссылки на блоки — Нет «связанных материалов»
 - **R-COMMENTS-001** (P1, COMMENTS, частично): Комментарии к выделению и блоку, ветки, @mention, разрешить/переоткрыть, привязка к версии и ID блока — revision_number = latest saved revision (may lag live content by up to the auto-revision interval).
-- **R-COLLAB-009** (P0, COLLAB, частично): Интеграционные тесты конфликтов при смене схемы, копировании блока, отключённой сети — Нет тестов конфликтов при смене схемы содержимого (миграции content_schema_version не реализованы)
 - **R-PROCESS-022** (P1, PROCESS, не реализовано): Внешние зависимости, особенно платные, лицензируются и фиксируются до разработки — no licence register
 - **R-UI-021** (P1, UI, частично): 8-пиксельная сетка, последовательные отступы, ≥3 уровня текстовой иерархии, контролируемая ширина чтения и таблиц — many hard-coded 6/10/14 px paddings off the 8px grid; no token check
 - **R-UI-022** (P1, UI, частично): Анимации: меню 100–160 мс, панели 160–240 мс, перетаскивание 120–200 мс; индикатор сохранения без постоянного движения; без блокировки ввода — values in range but not tested; save spinner rotates while saving
@@ -136,7 +131,6 @@
 - **SC-06** (P0, CLIPBOARD, частично): Вставка из Word и веб-страницы с заголовками, таблицами, ссылками, картинками; предпросмотр без мусорной HTML-разметки — tests/e2e/clipboard.spec.ts. Предпросмотра вставки нет; Картинки из Word (file://, VML) браузер не передаёт — пользователь получает уведомление с числом непереданных изображений; RTF не разбирается
 - **SC-18** (P1, IMPORT, частично): Массовый импорт 100 документов — список успешных/ошибочных, повтор только неудачных — No "retry only failed" action; no 100-document test
 - **SC-21** (P1, OCR, частично): Русский скриншот с таблицей, английским и артикулом → OCR → выбор фрагмента → копирование → вставка текстом — Скриншот с таблицей и выбор фрагмента не проверяются (название теста упоминает SC-21..24, но покрывает только распознавание)
-- **SC-22** (P0, OCR, частично): Видны оригинал, confidence, исправления, происхождение; ошибка OCR не удаляет изображение — Confidence скрыт при нормальном качестве, автор исправления не показывается
 - **SC-24** (P1, OCR, частично): Поворот, низкое качество, смешанный язык, область — сервис не ломается; ошибку можно повторить — Поворот/область только через API; тестов плохих изображений нет
 - **SC-34** (P1, A11Y, частично): Весь интерфейс без мыши; читаются метки кнопок и ошибок; контраст и reduced motion — keyboard pass covers switcher/help/tree only, not every screen
 - **SC-36** (P1, PERF, частично): На медленной сети анимация и автосохранение не блокируют текст; видно реальное состояние — slow-network throttling not tested
@@ -153,13 +147,12 @@
 - **R-EDITOR-025** (P1, EDITOR, частично): Не писать rich-text редактор с нуля; взять зрелую платформу и проверить ограничения до фиксации архитектуры — В docs/DECISIONS.md нет решения о выборе редактора и проверке его ограничений
 - **R-UI-026** (P0, UI, частично): Не создавать UI-элементы без работающих действий, ошибок, состояний и автотестов — most UI (admin, ShareDialog, trash, templates, import UI, export, OCR dialog) has no browser test
 - **R-EDITOR-026** (P1, EDITOR, не реализовано): Для сложного блока описать представление во внутренней модели, DOCX, MD, clipboard и индексе — Нет документа с таблицей представлений сложных блоков (модель/DOCX/MD/clipboard/индекс)
-- **R-UI-027** (P0, UI, частично): Неподдерживаемая операция обязана иметь честное объяснение; молчаливая потеря данных запрещена — not systematically verified for all operations
+- **R-UI-027** (P0, UI, частично): Неподдерживаемая операция обязана иметь честное объяснение; молчаливая потеря данных запрещена — Добавлены честные отказы: page_deleted при восстановлении, replace_not_confirmed, schema_outdated/schema_newer; систематической проверки всех операций нет
 - **R-IMPORT-021** (P0, IMPORT, частично): Единый конвейер: DOCX, MD, CSV, XLSX, буфер (text/html, text/plain, text/markdown, изображения, файлы); пакетно … — Clipboard paste uses a separate client-side pipeline
 - **R-IMPORT-022** (P1, IMPORT, частично): Точки входа: кнопка «Импорт», /import, DnD на страницу/раздел, Ctrl/Cmd+V, меню таблицы «Импортировать данные», «Вставить как…» — No DnD onto page/tree section, no table menu "Импортировать данные", no "Вставить как…"
 - **R-IMPORT-023** (P1, IMPORT, частично): Предпросмотр до подтверждения: цель, количество страниц/строк/изображений, типы столбцов, предупреждения … — Implemented; no browser (e2e) test
 - **R-CLIPBOARD-016** (P1, CLIPBOARD, частично): Вставка Markdown: «распознать разметку» / «вставить исходный текст»; HTML сохраняет заголовки, списки, ссылки, таблицы, картинки — Выбора режима нет (только эвристика/горячая клавиша); картинки из HTML не загружаются
 - **R-COLLECTION-002** (P1, COLLECTION, частично): Мастер сопоставления: текст, число, дата, checkbox, select, URL, email, пользователь, файл; подсветка несовместимых … — Типы «пользователь» и «файл» в мастере отсутствуют
-- **R-COLLECTION-003** (P0, COLLECTION, частично): Режимы: новая таблица, добавить строки, обновить по ключу (dry-run + подтверждение), заменить диапазон; нет скрытых дублей при повторе — tests/integration/import-export.test.ts:'CSV in Windows-1251… (AT-48, UX13-17, AT-50, R-COLLECTION-003)'. Нет «заменить диапазон»
 - **R-CLIPBOARD-017** (P1, CLIPBOARD, частично): Вставка диапазона Excel/Sheets создаёт корректную сетку; табличный буфер TSV + HTML; экспорт выделения в CSV — Экспорта выделения в CSV нет; HTML Excel 20×10 не проверялся
 - **R-TABLE-004** (P1, TABLE, частично): Простая таблица: строки/столбцы, перемещение, ширина, выравнивание, диапазон, копирование, закрепление заголовка, клавиатура — Нет перемещения строк/столбцов и закрепления заголовка
 - **R-COLLECTION-004** (P1, COLLECTION, частично): Коллекция: типы полей, строки-страницы, фильтры AND/OR, мультисортировка, группировка, колонки, массовая правка, поиск, итоги … — Веб-интерфейса коллекции нет (нет страницы/таблицы реестра с фильтрами, сортировкой, массовой правкой, экспортом)
@@ -225,7 +218,6 @@
 - **R-QA-022** (P1, QA, частично): Скриншотные эталоны для всех ключевых состояний; статья выглядит законченной в чтении и редактировании — baselines only for 2 states; article reading/editing not baselined
 - **R-UI-039** (P1, UI, частично): Функциональные анимации: дерево, меню, drag-preview, создание блока, загрузка, панель, подтверждение; 120–220 мс — untested
 - **R-UI-040** (P1, UI, частично): reduced-motion; skeleton без мигания; спокойные ошибки; нет внезапных смещений layout — home screen CLS ≈ 0.03 (skeleton/list height mismatch, PERF-D3)
-- **R-COLLAB-024** (P0, COLLAB, частично): Параллельные изменения на одном блоке, таблице, вложении, при перемещении страницы; предсказуемые правила конфликтов удаления и прав — Блок, таблица, перемещение страницы и удаление/правка покрыты; одновременная загрузка новой версии одного вложения двумя пользователями не тестируется
 - **R-PERF-014** (P1, PERF, не реализовано): p50/p95/p99 на реальных устройствах: 1/100/1000 блоков, 20 таблиц, 100 изображений, несколько редакторов … — no device/throttling report
 - **R-PERF-015** (P1, PERF, частично): Ввод p95 ≤50 мс; кэшированная статья p95 ≤300 мс; синхронизация p95 ≤500 мс; нет long tasks >100 мс при наборе — budgets not met in this environment (PERF-D1); cached open not measured
 - **R-PERF-016** (P1, PERF, частично): Виртуализация больших таблиц с клавиатурой и копированием; конвертации/OCR в фоне — tables not virtualised
@@ -278,12 +270,10 @@
 - **R-SEARCH-016** (P1, SEARCH, частично): Быстрые результаты при вводе, клавиатура, недавние, избранное, пустые состояния, переход к абзацу, сохранение фильтров — Избранное в быстром поиске отсутствует; фильтры сохраняются только в URL
 - **R-SEARCH-017** (P1, SEARCH, частично): p95 подсказки ≤300 мс, p95 полные результаты ≤800 мс при 100 тыс. страниц; права в выдаче ≤5 с, прямой доступ блокируется немедленно — Права применяются немедленно; p95 ≤300/≤800 мс на 100 тыс. страниц не измерялись (нагрузочного теста поиска нет)
 - **R-PUBLISH-008** (P1, PUBLISH, частично): Публикация в компании, пространстве, отделам/людям; внешняя только по политике; предпросмотр аудитории, вложений, дочерних, индексации … — No choice of publication audience (company/departments/people), no preview of audience/attachments/children/indexing.
-- **R-HISTORY-013** (P0, HISTORY, частично): Сравнение двух версий с подсветкой; восстановление статьи или блока как новая версия — Восстановление блока не создаёт новую версию сразу (только событие restored-block)
 - **R-ADMIN-009** (P1, ADMIN, частично): Админ-центр: обзор, люди, отделы, группы, пространства, роли, гости, приглашения, публикации, аудит; поиск, фильтры, массовые операции … — Missing sections: overview, spaces, roles, guests/invitations dashboard, publications; no bulk operations.
 - **R-ADMIN-011** (P1, ADMIN, частично): Мастер сотрудника: приглашение, роль, отделы, группы, пространства, срок, предпросмотр; отзыв/перевод пересчитывает права — No spaces step and no pre-confirmation preview in the wizard.
 - **R-ADMIN-012** (P1, ADMIN, частично): Панель контроля: внешние ссылки, истекающие приглашения, открытые пространства, сиротские страницы, владельцы, массовые экспорты … — No control panel for external links, expiring invitations, open spaces, orphan pages, ownerless pages, mass exports.
 - **V16-S06** (P1, PUBLISH, не реализовано): Внешняя публикация предупреждает о дочерних и вложениях, поддерживает отзыв — External publication (public links) not implemented.
-- **V16-S11** (P0, HISTORY, частично): Сравнение версий текста и свойств; восстановление не стирает историю — Сравнение свойств между версиями отсутствует (ревизия хранит только заголовок и содержимое) — по свойствам только журнал updated
 - **V16-S16** (P1, ADMIN, частично): Массовая смена прав: подтверждение, лог, отчёт результата — No UI; preview only echoes grants (no audience); no result report beyond count.
 - **V16-S17** (P1, UI, частично): Мобильный и десктопный интерфейс без перекрытий названий, меню, фильтров — overlaps not detected
 - **V16-S18** (P1, PERF, не реализовано): Нагрузочные тесты поиска, импорта, экспорта, публикации с p95/p99 и ошибками — no load tests for search/import/export/publish
@@ -309,7 +299,6 @@
 - **R-A11Y-007** (P1, A11Y, частично): Панели не перекрывают текст; IME, экранные читалки, touch, zoom 200%; палитра с проверкой контраста — IME, screen readers, real touch not available
 - **R-QA-029** (P0, QA, не реализовано): Для каждого действия: исходное состояние, happy path, пусто, медленная сеть, офлайн, потеря прав, конфликт, квота, неверный файл … — no per-action condition matrix
 - **R-QA-030** (P1, QA, не реализовано): Реестр состояний каждого компонента: idle/hover/focus/loading/empty/success/error/offline/permission denied/conflict … — no component state registry
-- **R-PERF-019** (P0, PERF, частично): Тяжёлые операции в фоне; ввод не блокируется OCR, загрузкой, экспортом — typing during upload/OCR/export not measured
 - **V18-A09** (P1, LAYOUT, частично): Выравнивание изображения не ломается на телефоне — untested at 375px
 - **V18-A15** (P1, PERF, частично): Медленная сеть не тормозит набор — no slow-network typing measurement
 - **V18-A19** (P1, A11Y, частично): Все основные действия доступны с клавиатуры — no keyboard pass test
@@ -325,7 +314,6 @@
 - **R-UI-058** (P1, UI, частично): Без hover на touch: доступные кнопки и меню, безопасные размеры касания; клавиатура не перекрывает редактор — no visualViewport handling for the on-screen keyboard
 - **R-TREE-021** (P1, TREE, частично): Дочерние страницы в sidebar и в теле родителя на одной модели данных — Дочерние в теле родителя — отдельные узлы pageLink, не синхронизированы с деревом (созданная в дереве не появляется в теле)
 - **R-UI-061** (P0, UI, не реализовано): Для каждой операции документировать: пусто, успех, загрузка, отмена, ошибка, нет прав, потеря сети, конфликт, назад, перезагрузка … — no per-operation state documentation (no TEST_MATRIX/UX_ACCEPTANCE)
-- **R-UI-062** (P0, UI, частично): Нельзя создавать страницу «в никуда», терять черновик, закрывать диалог с критичными данными без предупреждения, прятать возврат — warning before closing a dialog with critical unsaved input is not tested
 - **UX-127** (P1, PAGE, не реализовано): Открыть в предпросмотре и закрыть Esc — Peek-предпросмотра нет
 - **UX-128** (P1, PAGE, не реализовано): Открыть страницу полностью из предпросмотра — Peek-предпросмотра нет
 - **UX-135** (P1, EDITOR, частично): Раскрытие toggle heading — Toggle раскрывается; создать раскрывающийся заголовок из UI нельзя
@@ -368,9 +356,6 @@
 - **R-PERF-022** (P1, PERF, частично): Zoom/pan через transform+rAF без layout thrashing; отклик на жест <50 мс, ~60 fps на типовом устройстве — no requestAnimationFrame batching; gesture latency/fps not measured
 - **R-HISTORY-029** (P1, HISTORY, частично): Гарантия — восстановление после каждой подтверждённой смысловой операции/группы набора, не каждого нажатия; границы гарантии видны — Граница гарантии не отображается пользователю
 - **R-HISTORY-031** (P1, HISTORY, частично): UX: Ctrl/Cmd+Z, Ctrl/Cmd+Shift+Z, Ctrl+Y; список последних операций; панель «История» с фильтрами автор/дата/блок/тип; visual diff … — Фильтр только по типу версии; фильтров автор/дата/блок в UI нет; списка последних операций нет
-- **R-COLLAB-031** (P0, COLLAB, частично): Серверная валидация схемы, прав, инвариантов; транзакционная координация поверх CRDT для таблиц, колонок, удаления/перемещения страниц, ACL — Нет транзакционной координации поверх CRDT для таблиц/колонок; только валидация схемы с откатом
-- **R-COLLAB-036** (P0, COLLAB, частично): Неслиемая операция — диалог сравнения: сохранить обе, принять серверную, сохранить локальную копию; не скрывать конфликт — Конфликт не скрывается: копия сохраняется на сервере, уведомление с восстановлением; полноценного диалога сравнения с тремя вариантами нет
-- **R-COLLAB-037** (P0, COLLAB, частично): Журнал с ack, retry/backoff, идемпотентность, sequence/vector clocks, проверка согласованности, контроль orphan-блоков и циклов … — Проверка согласованности сделана и тестируется; безопасная миграция схемы содержимого (content_schema_version) по-прежнему не реализована
 - **R-QA-034** (P0, QA, частично): Property-based/fuzz, partition/latency/reorder/duplicate, 2–20 редакторов, нагрузка, восстановление из snapshot+log … — no partition/reorder/duplicate injection; 20-editor run is manual
 - **UX22-183** (P1, MEDIA, частично): iOS/Android pinch, pan, double tap, инерция, смена ориентации, safe areas — Нет инерции, safe-area; проверка на iOS/Android невозможна здесь (env)
 - **HIST-190** (P1, HISTORY, частично): История: автор, время, diff, фильтры; доступна на телефоне — Фильтров автора/даты нет
@@ -388,7 +373,7 @@
 - **UX23-212** (P1, PERF, частично): Раскрытие дерева на 10 000 страниц не блокирует интерфейс — not tested with 10 000 pages
 - **UX23-221** (P1, SEARCH, частично): Поиск с десятками тысяч результатов подгружается плавно — Кандидатов не более 3000, offset ≤5000 — десятки тысяч результатов недоступны
 - **UX23-223** (P1, UI, частично): Мобильное создание и перенос без hover — move without hover untested
-- **R-UI-068** (P0, UI, частично): Никакие функции не ведут в тупик, нет нерабочих кнопок и незавершённых состояний — no inventory of every button/state; other screens (admin, import) not covered by dead-end E2E
+- **R-UI-068** (P0, UI, частично): Никакие функции не ведут в тупик, нет нерабочих кнопок и незавершённых состояний — Исправлен «мёртвый» пункт «Переместить в…» в меню страницы (всегда disabled). Полной инвентаризации всех кнопок нет
 - **R-PROCESS-049** (P1, PROCESS, частично): При неоднозначности — варианты и выбор по приоритету: данные/права, корректность, простота, скорость/доступность, визуал, сопровождение … — not every decision has an ADR
 - **R-PROCESS-051** (P0, PROCESS, не реализовано): Реестр открытых вопросов и дефектов с владельцем и тестом; 0 критических/высоких; средние/низкие исправлены или письменно приняты — no open-issues/defects registry
 - **R-PERF-028** (P1, PERF, частично): Локальный отклик набора и действий p95 ≤100 мс в типовом документе; честная индикация тяжёлых операций — typing only; other local actions unmeasured
@@ -424,7 +409,6 @@
 - **QA26-11** (P1, TREE, частично): Проверить «+» у страницы, раскрытие/сворачивание, breadcrumbs, back/forward, поиск, избранное, пагинацию/виртуализацию, сохранение положения — Из плана проверок автоматизировано только «+»; раскрытие, breadcrumbs, back/forward, избранное, виртуализация не проверяются
 - **QA26-12** (P1, MEDIA, частично): Просмотрщик: открытие/закрытие, колесо по курсору, pan, pinch, pan пальцем, double tap, reset, ориентация, экстремальные пропорции … — Покрыты только открытие/кнопка +/0/Esc; жесты/ориентация не автоматизированы
 - **QA26-13** (P1, FILES, частично): Файлы: иконка, просмотр, скачивание, прогресс, ошибки, повтор, длинные имена, права, мобильное сохранение, недоступный файл … — UI-аспекты (иконки, длинные имена, мобильное сохранение) не проверяются
-- **QA26-15** (P0, HISTORY, частично): Восстановление не уничтожает последующие версии, аудит не подменяется; документ и блоки, после удаления/архивации … — Нет проверок после удаления/архивации, при совместной работе, очистки по сроку
 - **QA26-20** (P0, COLLAB, частично): Сбои: сеть, высокий RTT, потери, Wi-Fi/LTE, закрытие вкладки, обновление, рестарт сервера, истечение сессии, повторная доставка … — Не проверены смена ведущего узла БД/экземпляра под нагрузкой и реальная смена Wi-Fi/LTE (ограничение окружения)
 - **QA26-22** (P1, PERF, частично): SLO (калибруемые): локальный отклик p95 ≤100 мс; контекстная панель p95 ≤150 мс; загруженная страница p95 ≤500 мс; ~60 fps … — panel/page-load/fps not measured
 - **QA26-23** (P1, QA, частично): 320–1920 px, zoom 100/125/150/200%, темы, Safari/Chrome/Firefox/Edge, iOS/Android, длинные строки, переполнение, меню у границ … — zoom only 200% (no 125/150); only Chromium is installed (playwright.config.ts, DECISIONS D-18)
@@ -563,7 +547,7 @@
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| R-HISTORY-002 | P0 | Все операции обратимы где возможно; опасные действия — точный предпросмотр последствий без бесконечных подтверждений | частично | apps/web/src/layout/treeActions.tsx (undo перемещения, восстановление из корзины), apps/server/src/routes/revisions.ts pre-restore; Не все операции обратимы: смена иконки/свойств/заголовка через API без отмены (только запись before в page_events) | tests/integration/history-p0.test.ts: version comparison and restore (R-HISTORY-013, V16-S11, QA26-15, R-HISTORY-002)<br>tests/integration/history-p0.test.ts: undo of property changes (R-HISTORY-002) |
+| R-HISTORY-002 | P0 | Все операции обратимы где возможно; опасные действия — точный предпросмотр последствий без бесконечных подтверждений | реализовано | apps/server/src/routes/pages.ts (PATCH журналирует before/after, POST /pages/:id/events/:eid/undo), apps/web/src/lib/undoChange.ts (тосты «Отменить» для значка, обложки, ширины, тегов, свойств), apps/server/src/routes/revisions.ts (dryRun восстановления версии и блока), apps/web/src/components/page/HistoryPanel.tsx RestoreDialog, apps/web/src/layout/treeActions.tsx (предпросмотр аудитории и undo перемещения), корзина; tests/integration/history-p0.test.ts (undo of property changes), tests/e2e/history-p0.spec.ts; Отмена изменения свойства применяется только к полям, которые никто не менял позже (иначе 409). Необратимое удаление из корзины — только с вводом подтверждения (D-26) | tests/integration/history-p0.test.ts: version comparison and restore (R-HISTORY-013, V16-S11, QA26-15, R-HISTORY-002)<br>tests/integration/history-p0.test.ts: undo of property changes (R-HISTORY-002)<br>tests/e2e/history-p0.spec.ts: R-HISTORY-002: a property change (icon, tag) offers «Отменить» right away; tags are editab |
 
 ### A11Y
 
@@ -587,7 +571,7 @@
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| ROUTE-02 | P0 | Автор: личный черновик → офлайн → синхронизация → перенос в отдел с предпросмотром видимости → согласование → публикация → обновление и … | частично | tests/e2e/editor.spec.ts, tests/e2e/collab.spec.ts, tests/integration/content.test.ts (publishing workflow), tests/integration/acl.test.ts (moving changes audience); Отдельные шаги покрыты, но сквозного E2E «черновик → офлайн → перенос в отдел с предпросмотром → согласование → публикация → откат» нет |  |
+| ROUTE-02 | P0 | Автор: личный черновик → офлайн → синхронизация → перенос в отдел с предпросмотром видимости → согласование → публикация → обновление и … | реализовано | tests/e2e/route-author.spec.ts (личный черновик → офлайн → синхронизация → перенос в отдел с предпросмотром аудитории → согласование → публикация → обновление и откат версии); Найдено и исправлено: пункт меню страницы «Переместить в…» всегда был неактивен (проверял несуществующее право move) | tests/e2e/route-author.spec.ts: ROUTE-02: draft → offline → sync → move to a department with visibility preview → approval |
 
 ### SPACE
 
@@ -692,7 +676,7 @@
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
 | R-QA-003 | P1 | Для каждого компонента перечислить состояния: default, hover, focus, active, disabled, loading, error, empty, overflow, mobile … | не реализовано | n/a; no component state catalogue |  |
-| R-QA-004 | P0 | Для каждого действия проверить нормальный путь, отмену, повтор, двойной клик, медленную сеть, офлайн, конфликт, недостаток прав … | не реализовано | n/a; no actions × conditions matrix |  |
+| R-QA-004 | P0 | Для каждого действия проверить нормальный путь, отмену, повтор, двойной клик, медленную сеть, офлайн, конфликт, недостаток прав … | не реализовано | n/a; no actions × conditions matrix | tests/e2e/qa-actions.spec.ts: R-QA-004 API tokens: empty name disables «Создать токен»; slow network shows progress and <br>tests/e2e/qa-actions.spec.ts: R-QA-004 password change (separate account): empty form is disabled, mismatch and wrong cu<br>tests/e2e/qa-actions.spec.ts: R-QA-004 sessions: «Завершить остальные» — cancel keeps the other device signed in, confir<br>… ещё 7 |
 
 ### UI
 
@@ -909,7 +893,7 @@
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| R-UI-011 | P0 | Система сохраняет работу, объясняет состояние и позволяет исправить ошибку | частично | sync-status, offline banner, undo toasts, version restore; error template (R-UI-052) says whether data was saved; boot timeout screen with retry; cancel/status not verified for every operation |  |
+| R-UI-011 | P0 | Система сохраняет работу, объясняет состояние и позволяет исправить ошибку | частично | sync-status, offline banner, undo toasts, version restore; error template (R-UI-052) says whether data was saved; boot timeout screen with retry; Добавлены отмена изменений свойств, предпросмотр восстановления, диалог конфликтов; отмена/статус не проверены для каждой операции |  |
 
 ### ADMIN
 
@@ -1073,7 +1057,7 @@
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| R-PAGE-001 | P0 | Страница: неизменный UUID, название, slug, обложка, иконка, блоки, статус, владелец, автор, время, теги, версия, права, публикация … | частично | apps/server/migrations/0001_core.sql (pages); Нет slug и тегов; остальное есть | tests/integration/history-p0.test.ts: page model and search sources (R-PAGE-001, R-SEARCH-003) |
+| R-PAGE-001 | P0 | Страница: неизменный UUID, название, slug, обложка, иконка, блоки, статус, владелец, автор, время, теги, версия, права, публикация … | реализовано | apps/server/migrations/0021_page_tags_revision_props.sql (tags, slug по триггеру kb_slug), apps/server/src/routes/pages.ts (tags, slug в DTO), apps/web/src/components/page/PageInfoPanel.tsx TagsEditor, маршрут /p/:id/:slug; tests/integration/history-p0.test.ts (page model and search sources); Slug косметичен, идентичность — UUID (D-29) | tests/integration/history-p0.test.ts: page model and search sources (R-PAGE-001, R-SEARCH-003) |
 
 ### PUBLISH
 
@@ -1310,7 +1294,7 @@
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| R-SEARCH-003 | P0 | Глобальный поиск по названиям, содержимому, заголовкам, тегам, комментариям (по праву), подписям, файлам, OCR | частично | apps/server/src/jobs/worker.ts#indexPage (комментарии, текст DOCX/TXT вложений), apps/server/src/services/file-text.ts, migrations/0006; tests/integration/history-tree.test.ts; Комментарии и DOCX/TXT индексируются; текст PDF не извлекается (PDF-парсер не установлен), тегов нет | tests/integration/history-p0.test.ts: page model and search sources (R-PAGE-001, R-SEARCH-003)<br>tests/integration/history-tree.test.ts: search covers comments and attached documents (R-SEARCH-003, R-SEARCH-013)<br>tests/integration/history-tree.test.ts: finds a page by comment text and by text inside an attached DOCX/TXT, respecting access (R |
+| R-SEARCH-003 | P0 | Глобальный поиск по названиям, содержимому, заголовкам, тегам, комментариям (по праву), подписям, файлам, OCR | реализовано | apps/server/src/jobs/worker.ts#indexPage (теги и заголовки — отдельные поля веса A, комментарии, подписи изображений, имена и текст DOCX/TXT файлов, OCR), apps/server/src/services/search.ts (matchedIn heading/tag, фильтр tag), apps/web/src/pages/SearchPage.tsx; tests/integration/history-p0.test.ts, tests/integration/history-tree.test.ts, tests/e2e/history-p0.spec.ts; Текст PDF не извлекается (в ТЗ — имена файлов); права применяются до подсчёта | tests/integration/history-p0.test.ts: page model and search sources (R-PAGE-001, R-SEARCH-003)<br>tests/integration/history-tree.test.ts: search covers comments and attached documents (R-SEARCH-003, R-SEARCH-013)<br>tests/integration/history-tree.test.ts: finds a page by comment text and by text inside an attached DOCX/TXT, respecting access (R |
 | R-SEARCH-004 | P1 | Полнотекстовый RU/EN, лемматизация, опечатки, подсветка, варианты слов, фильтры пространство/автор/дата/тип/статус | реализовано | apps/server/src/services/search.ts; tests/integration/content.test.ts (morphology, typo, wrong layout), tests/integration/gaps.test.ts; Отдельного фильтра «тип» нет — есть «in» (текст/изображения/файлы) | tests/integration/content.test.ts: finds by morphology, typo, wrong layout, applies ACL before results and jumps to block (R-<br>tests/integration/gaps.test.ts: suggests a corrected query when nothing is found (R-SEARCH-004) |
 | R-SEARCH-005 | P1 | Ctrl/Cmd+K, клавиатурная навигация, переход к совпадению внутри страницы | реализовано | apps/web/src/layout/QuickSwitcher.tsx, apps/web/src/layout/AppShell.tsx, apps/web/src/pages/SearchPage.tsx; tests/e2e/collab.spec.ts (jumps to the block) | tests/integration/content.test.ts: finds by morphology, typo, wrong layout, applies ACL before results and jumps to block (R-<br>tests/e2e/collab.spec.ts: search finds a page by a word from its body and jumps to the block (V16-S01, R-SEARCH-005) |
 
@@ -1352,7 +1336,7 @@
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| R-COLLAB-009 | P0 | Интеграционные тесты конфликтов при смене схемы, копировании блока, отключённой сети | частично | tests/integration/collab.test.ts (отключённая сеть, невалидная схема), tests/integration/collab-p0.test.ts (копирование блока + правка); Нет тестов конфликтов при смене схемы содержимого (миграции content_schema_version не реализованы) | tests/integration/collab-p0.test.ts: format + delete, block copy + edit and concurrent block moves converge without duplicates  |
+| R-COLLAB-009 | P0 | Интеграционные тесты конфликтов при смене схемы, копировании блока, отключённой сети | реализовано | tests/integration/collab-schema.test.ts (смена схемы при онлайн/офлайн редакторах, клиент новее сервера, разрыв цепочки миграций), tests/integration/collab-p0.test.ts (копирование блока + правка), tests/integration/collab.test.ts (отключённая сеть) | tests/integration/collab-schema.test.ts: document schema change vs concurrent editing (R-COLLAB-009, R-COLLAB-037)<br>tests/integration/collab-p0.test.ts: format + delete, block copy + edit and concurrent block moves converge without duplicates  |
 
 ### PUBLISH
 
@@ -1647,7 +1631,7 @@
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| SC-06 | P0 | Вставка из Word и веб-страницы с заголовками, таблицами, ссылками, картинками; предпросмотр без мусорной HTML-разметки | частично | apps/web/src/editor/clipboard/html.ts; apps/web/src/editor/extensions/paste.ts SmartPaste; tests/e2e/clipboard.spec.ts. Предпросмотра вставки нет; Картинки из Word (file://, VML) браузер не передаёт — пользователь получает уведомление с числом непереданных изображений; RTF не разбирается | tests/unit/clipboard-html.test.ts: images in pasted HTML (R-CLIPBOARD-020, SC-06)<br>tests/unit/clipboard-html.test.ts: SC-06: embedded images are extracted for upload, local Word file paths are reported, track<br>tests/e2e/clipboard.spec.ts: web HTML paste: scripts removed, embedded image uploaded as an attachment (E210, SC-06, R- |
+| SC-06 | P0 | Вставка из Word и веб-страницы с заголовками, таблицами, ссылками, картинками; предпросмотр без мусорной HTML-разметки | частично | apps/web/src/editor/clipboard/html.ts; apps/web/src/editor/extensions/paste.ts SmartPaste; tests/e2e/clipboard.spec.ts. Предпросмотра вставки нет; Картинки из Word (file://, VML) браузер не передаёт — пользователь получает уведомление с числом непереданных изображений; RTF не разбирается | tests/unit/clipboard-html.test.ts: images in pasted HTML (R-CLIPBOARD-020, SC-06)<br>tests/unit/clipboard-html.test.ts: SC-06: embedded images are extracted for upload, local Word file paths are reported, track<br>tests/unit/clipboard-fidelity.test.ts: Google Docs, mail, web pages (R-CLIPBOARD-020, R-CLIPBOARD-024, SC-06)<br>… ещё 1 |
 | SC-07 | P0 | Копировать из базы в Word, почту, Google Docs и обратно — списки, ссылки, таблицы сохраняются | ограничение окружения | PM copy html/plain; парсинг HTML; Нужны реальные Word/почта/Google Docs; кроме того см. пробелы R-CLIPBOARD-004/020 |  |
 | SC-08 | P1 | «Копировать Markdown» страницы → текстовый редактор: корректный MD, UTF-8, code fences, таблицы | реализовано | packages/shared/src/editor/markdown.ts docToMarkdown; apps/web/src/editor/clipboard/copy.tsx copyPage(markdown); tests/e2e/clipboard.spec.ts:'page menu copies the page…'; tests/unit/markdown.test.ts | tests/e2e/clipboard.spec.ts: page menu copies the page with formatting, as text and as Markdown (R-CLIPBOARD-002, R-CLI |
 | SC-09 | P1 | Копировать таблицу в Excel/Sheets — значения в правильных ячейках; код без UI-надписей | ограничение окружения | apps/web/src/editor/menus/TableToolbar.tsx TSV; CodeBlockView; Проверка ячеек в реальном Excel/Sheets невозможна здесь; unit-теста rowsToTsv нет | tests/e2e/clipboard.spec.ts: table copy for Excel puts TSV and an HTML table on the clipboard (R-CLIPBOARD-006, R-CLIPB |
@@ -1703,7 +1687,7 @@
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
 | SC-21 | P1 | Русский скриншот с таблицей, английским и артикулом → OCR → выбор фрагмента → копирование → вставка текстом | частично | tests/integration/content.test.ts:'recognises Russian and English text on a screenshot…'; OcrDialog textarea + «Копировать»; Скриншот с таблицей и выбор фрагмента не проверяются (название теста упоминает SC-21..24, но покрывает только распознавание) |  |
-| SC-22 | P0 | Видны оригинал, confidence, исправления, происхождение; ошибка OCR не удаляет изображение | частично | OcrDialog; search matchedIn image; ошибка OCR не трогает вложение; Confidence скрыт при нормальном качестве, автор исправления не показывается | tests/integration/content.test.ts: OCR (R-OCR-001, R-OCR-007, R-OCR-011, SC-22, §8) |
+| SC-22 | P0 | Видны оригинал, confidence, исправления, происхождение; ошибка OCR не удаляет изображение | реализовано | apps/web/src/components/OcrDialog.tsx (оригинал рядом с текстом, уверенность и сомнительные слова, исправления с автором и временем, сброс исправлений, источник: движок, языки, версия файла, попытки), apps/server/src/routes/attachments.ts GET/PATCH ocr; tests/integration/ocr-view.test.ts, tests/e2e/ocr-view.spec.ts | tests/integration/content.test.ts: OCR (R-OCR-001, R-OCR-007, R-OCR-011, SC-22, §8)<br>tests/integration/ocr-view.test.ts: OCR view: original, confidence, corrections, provenance (SC-22)<br>tests/e2e/ocr-view.spec.ts: SC-22: the OCR view shows the original image, confidence with uncertain words, corrections |
 
 ### SEARCH
 
@@ -1951,7 +1935,7 @@
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| R-UI-027 | P0 | Неподдерживаемая операция обязана иметь честное объяснение; молчаливая потеря данных запрещена | частично | Menu disabledReason now on every disabled page/tree action (tested for a view-only user in tests/e2e/ui-p0-interaction.spec.ts), import/export fidelity reports; not systematically verified for all operations |  |
+| R-UI-027 | P0 | Неподдерживаемая операция обязана иметь честное объяснение; молчаливая потеря данных запрещена | частично | Menu disabledReason now on every disabled page/tree action (tested for a view-only user in tests/e2e/ui-p0-interaction.spec.ts), import/export fidelity reports; Добавлены честные отказы: page_deleted при восстановлении, replace_not_confirmed, schema_outdated/schema_newer; систематической проверки всех операций нет |  |
 
 ### PROCESS
 
@@ -2057,7 +2041,7 @@
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
 | R-COLLECTION-002 | P1 | Мастер сопоставления: текст, число, дата, checkbox, select, URL, email, пользователь, файл; подсветка несовместимых … | частично | apps/web/src/pages/ImportPage.tsx типы столбцов + «не распознано»; importer.ts tabularDryRun; Типы «пользователь» и «файл» в мастере отсутствуют |  |
-| R-COLLECTION-003 | P0 | Режимы: новая таблица, добавить строки, обновить по ключу (dry-run + подтверждение), заменить диапазон; нет скрытых дублей при повторе | частично | importer.ts new/append/upsert + dry-run; ImportPage «В существующую», режим и ключевой столбец; пробный прогон обязателен; tests/integration/import-export.test.ts:'CSV in Windows-1251… (AT-48, UX13-17, AT-50, R-COLLECTION-003)'. Нет «заменить диапазон» | tests/integration/import-export.test.ts: CSV in Windows-1251 with ";" and decimal comma, quotes and leading zeros; repeated upsert  |
+| R-COLLECTION-003 | P0 | Режимы: новая таблица, добавить строки, обновить по ключу (dry-run + подтверждение), заменить диапазон; нет скрытых дублей при повторе | реализовано | apps/server/src/services/importer.ts (new/append/upsert/replace, dry-run removes, confirmReplace), apps/web/src/pages/ImportPage.tsx (режим «Заменить», список удаляемых, обязательное подтверждение); tests/integration/collection-import-p0.test.ts, tests/e2e/import-collection.spec.ts; «Заменить диапазон»: выбранный диапазон листа (range) заменяет строки коллекции по ключу, отсутствующие — в корзину. Исправлено: повтор ключа в файле в режиме upsert создавал скрытый дубль (D-30) | tests/integration/import-export.test.ts: CSV in Windows-1251 with ";" and decimal comma, quotes and leading zeros; repeated upsert <br>tests/integration/collection-import-p0.test.ts: collection import modes (R-COLLECTION-003)<br>tests/e2e/import-collection.spec.ts: R-COLLECTION-003: import into an existing collection in «replace» mode — dry run lists the |
 
 ### CLIPBOARD
 
@@ -2683,7 +2667,7 @@
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| R-CLIPBOARD-020 | P0 | Вставка HTML/RTF/plain из Word, Google Docs, браузера, почты сохраняет H1–H6, абзацы, списки, таблицы, ссылки, изображения, подписи … | частично | apps/web/src/editor/clipboard/html.ts (H1–H6, списки Word, таблицы, ссылки, data:-изображения → вложения); tests/e2e/clipboard.spec.ts. Картинки из Word (file://, VML) браузер не передаёт — пользователь получает уведомление с числом непереданных изображений; RTF не разбирается | tests/unit/clipboard-html.test.ts: Word lists (AT-44, UX13-02, R-CLIPBOARD-020)<br>tests/unit/clipboard-html.test.ts: images in pasted HTML (R-CLIPBOARD-020, SC-06)<br>tests/e2e/clipboard.spec.ts: Word paste keeps headings, nested and numbered lists, links and tables without Office styl |
+| R-CLIPBOARD-020 | P0 | Вставка HTML/RTF/plain из Word, Google Docs, браузера, почты сохраняет H1–H6, абзацы, списки, таблицы, ссылки, изображения, подписи … | частично | apps/web/src/editor/clipboard/html.ts (H1–H6, списки Word, таблицы, ссылки, data:-изображения → вложения); tests/e2e/clipboard.spec.ts. Картинки из Word (file://, VML) браузер не передаёт — пользователь получает уведомление с числом непереданных изображений; RTF не разбирается | tests/unit/clipboard-html.test.ts: Word lists (AT-44, UX13-02, R-CLIPBOARD-020)<br>tests/unit/clipboard-html.test.ts: images in pasted HTML (R-CLIPBOARD-020, SC-06)<br>tests/unit/clipboard-fidelity.test.ts: Word 365 (R-CLIPBOARD-020, UX13-02)<br>… ещё 2 |
 | R-CLIPBOARD-021 | P1 | Без диалога при обычной вставке; при неоднозначности ненавязчиво «Вставить как текст / как таблицу / отменить» | частично | apps/web/src/editor/extensions/paste.ts SmartPaste (без диалогов); Ненавязчивого «как текст / как таблицу / отменить» нет |  |
 
 ### IMPORT
@@ -2814,7 +2798,7 @@
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| R-COLLAB-024 | P0 | Параллельные изменения на одном блоке, таблице, вложении, при перемещении страницы; предсказуемые правила конфликтов удаления и прав | частично | tests/integration/collab-p0.test.ts (таблица, удаление таблицы+строка, перемещения), tests/e2e/collab-p0-editing.spec.ts, tests/integration/core.test.ts (COLLAB-194), tests/integration/content.test.ts (attachment versions), tests/e2e/conflict.spec.ts; Блок, таблица, перемещение страницы и удаление/правка покрыты; одновременная загрузка новой версии одного вложения двумя пользователями не тестируется | tests/integration/collab-p0.test.ts: many editors, tables, moves (QA26-19, AT-56, SC-25, R-COLLAB-024, R-COLLAB-032)<br>tests/integration/collab-p0.test.ts: two editors change one table cell and neighbouring rows while a third adds a row; the merg<br>tests/integration/collab-p0.test.ts: table deleted while another editor adds a row: the result is a valid document, never an or<br>… ещё 2 |
+| R-COLLAB-024 | P0 | Параллельные изменения на одном блоке, таблице, вложении, при перемещении страницы; предсказуемые правила конфликтов удаления и прав | реализовано | tests/integration/coordination-p0.test.ts (две одновременные новые версии одного вложения: обе сохранены, нумерация по коммиту; ячейка/колонка; перемещения; удаление ↔ правка/создание), tests/integration/collab-p0.test.ts, tests/e2e/collab-p0-editing.spec.ts, tests/e2e/conflict.spec.ts | tests/integration/coordination-p0.test.ts: transactional coordination over the CRDT (R-COLLAB-031, R-COLLAB-024)<br>tests/integration/collab-p0.test.ts: many editors, tables, moves (QA26-19, AT-56, SC-25, R-COLLAB-024, R-COLLAB-032)<br>tests/integration/collab-p0.test.ts: two editors change one table cell and neighbouring rows while a third adds a row; the merg<br>… ещё 3 |
 | R-COLLAB-025 | P0 | Серверная фиксация отделена от локального optimistic UI | реализовано | packages/shared/src/collab-client.ts, apps/web/src/components/page/SyncStatus.tsx | tests/integration/collab.test.ts: "saved" is reported only after the update is committed to the journal (E-13, D-10, R-COLLA |
 
 ### PERF
@@ -2871,7 +2855,7 @@
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| UX13-02 | P0 | Вставка из Word 5 уровней заголовков, списков, таблиц, картинок; сравнение структуры | частично | apps/web/src/editor/clipboard/html.ts; tests/e2e/clipboard.spec.ts (заголовки, вложенные списки, таблица). Картинки из Word (file://, VML) браузер не передаёт — пользователь получает уведомление с числом непереданных изображений; RTF не разбирается | tests/unit/clipboard-html.test.ts: Word lists (AT-44, UX13-02, R-CLIPBOARD-020)<br>tests/e2e/clipboard.spec.ts: Word paste keeps headings, nested and numbered lists, links and tables without Office styl |
+| UX13-02 | P0 | Вставка из Word 5 уровней заголовков, списков, таблиц, картинок; сравнение структуры | частично | apps/web/src/editor/clipboard/html.ts; tests/e2e/clipboard.spec.ts (заголовки, вложенные списки, таблица). Картинки из Word (file://, VML) браузер не передаёт — пользователь получает уведомление с числом непереданных изображений; RTF не разбирается | tests/unit/clipboard-html.test.ts: Word lists (AT-44, UX13-02, R-CLIPBOARD-020)<br>tests/unit/clipboard-fidelity.test.ts: Word 365 (R-CLIPBOARD-020, UX13-02)<br>tests/e2e/clipboard.spec.ts: Word paste keeps headings, nested and numbered lists, links and tables without Office styl |
 
 ### MEDIA
 
@@ -3519,7 +3503,7 @@
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
 | R-HISTORY-012 | P0 | Журнал и снимки: автор, время, блоки, свойства, таблицы, права, публикации; история не заменяет бэкапы | реализовано | apps/server/src/collab/hub.ts#flushNow (page_events edit), apps/server/src/routes/pages.ts (updated/moved), apps/server/src/routes/revisions.ts |  |
-| R-HISTORY-013 | P0 | Сравнение двух версий с подсветкой; восстановление статьи или блока как новая версия | частично | apps/server/src/routes/revisions.ts#restore-block, apps/web/src/components/page/HistoryPanel.tsx; Восстановление блока не создаёт новую версию сразу (только событие restored-block) | tests/integration/history-p0.test.ts: version comparison and restore (R-HISTORY-013, V16-S11, QA26-15, R-HISTORY-002)<br>tests/integration/collab.test.ts: restores a single deleted block from a revision (R-HISTORY-003, R-HISTORY-013) |
+| R-HISTORY-013 | P0 | Сравнение двух версий с подсветкой; восстановление статьи или блока как новая версия | реализовано | apps/server/src/routes/revisions.ts (diff текста и свойств, restore и restore-block как новые версии с pre-restore, dryRun), apps/web/src/components/page/HistoryPanel.tsx (PropsDiff, RestoreDialog, предпросмотр блока); tests/integration/history-p0.test.ts, tests/e2e/history-p0.spec.ts | tests/integration/history-p0.test.ts: version comparison and restore (R-HISTORY-013, V16-S11, QA26-15, R-HISTORY-002)<br>tests/integration/collab.test.ts: restores a single deleted block from a revision (R-HISTORY-003, R-HISTORY-013)<br>tests/e2e/history-p0.spec.ts: R-HISTORY-013, V16-S11: compare shows text and property changes highlighted; restore shows<br>… ещё 1 |
 | R-HISTORY-014 | P0 | Восстановление при совместной работе согласует текущие изменения, предупреждает редакторов, не теряет неподтверждённые операции | реализовано | apps/server/src/routes/revisions.ts#restoreContent (pre-restore + CRDT), событие page-restored (apps/server/src/routes/collab.ts /api/v1/events), apps/web/src/hooks/useEvents.ts (toast со ссылкой на версию до восстановления); tests/integration/history-tree.test.ts | tests/integration/history-tree.test.ts: restore notifies co-editors (R-HISTORY-014, COLLAB-197)<br>tests/integration/history-tree.test.ts: everyone else on the page gets a page-restored event with a link to the pre-restore versio |
 | R-HISTORY-015 | P1 | Раздельные версии черновика и публикаций; хранение, юридическое удержание, политики удаления | реализовано | apps/server/src/routes/retention.ts (PUT /api/v1/admin/legal-hold, аудит), apps/web/src/components/page/PageInfoPanel.tsx#LegalHold, apps/server/src/jobs/worker.ts#maintenance; tests/integration/history-tree.test.ts | tests/integration/history-tree.test.ts: legal hold (R-HISTORY-015, R-HISTORY-028)<br>tests/integration/history-tree.test.ts: only org admins set or release a hold; it is audited, shown on the page and blocks permane |
 
@@ -3595,7 +3579,7 @@
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| V16-S11 | P0 | Сравнение версий текста и свойств; восстановление не стирает историю | частично | apps/server/src/services/revisions.ts#diffDocs (текст), apps/server/src/routes/revisions.ts#restore; tests/integration/collab.test.ts; Сравнение свойств между версиями отсутствует (ревизия хранит только заголовок и содержимое) — по свойствам только журнал updated | tests/integration/history-p0.test.ts: version comparison and restore (R-HISTORY-013, V16-S11, QA26-15, R-HISTORY-002) |
+| V16-S11 | P0 | Сравнение версий текста и свойств; восстановление не стирает историю | реализовано | apps/server/migrations/0021_page_tags_revision_props.sql (page_revisions.props), apps/server/src/services/revisions.ts#diffProps, HistoryPanel PropsDiff; tests/integration/history-p0.test.ts (compares text AND properties…), tests/e2e/history-p0.spec.ts; Ревизии до миграции 0021 не содержат снимка свойств — UI сообщает об этом | tests/integration/history-p0.test.ts: version comparison and restore (R-HISTORY-013, V16-S11, QA26-15, R-HISTORY-002)<br>tests/e2e/history-p0.spec.ts: R-HISTORY-013, V16-S11: compare shows text and property changes highlighted; restore shows |
 
 ### COLLAB
 
@@ -3972,7 +3956,7 @@
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| R-QA-029 | P0 | Для каждого действия: исходное состояние, happy path, пусто, медленная сеть, офлайн, потеря прав, конфликт, квота, неверный файл … | не реализовано | n/a; no per-action condition matrix |  |
+| R-QA-029 | P0 | Для каждого действия: исходное состояние, happy path, пусто, медленная сеть, офлайн, потеря прав, конфликт, квота, неверный файл … | не реализовано | n/a; no per-action condition matrix | tests/e2e/qa-actions.spec.ts: R-QA-029 offline: «Создать токен» without a network explains the failure and works after r<br>tests/e2e/qa-actions.spec.ts: R-QA-029 no permission: a viewer sees page and tree actions disabled with the reason, and  |
 
 ### UI
 
@@ -3997,7 +3981,7 @@
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| R-PERF-019 | P0 | Тяжёлые операции в фоне; ввод не блокируется OCR, загрузкой, экспортом | частично | OCR/import/export server jobs; uploads via XHR; typing during upload/OCR/export not measured |  |
+| R-PERF-019 | P0 | Тяжёлые операции в фоне; ввод не блокируется OCR, загрузкой, экспортом | реализовано | apps/web/src/lib/streamHash.ts + sha256.worker.ts (SHA-256 загрузки в Web Worker), экспорт/OCR — фоновые задания сервера; tests/e2e/perf-background.spec.ts (CPU ×4, 48 МБ: main thread p99 605 мс / 11 long tasks >100 мс → worker p99 92 мс / 0); D-30; цифры в test-results/perf/results.jsonl | tests/e2e/perf-background.spec.ts: R-PERF-019: typing stays responsive while a large file uploads and an export runs (checksu |
 
 ### ARCHIVE
 
@@ -4204,7 +4188,7 @@
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
 | R-UI-061 | P0 | Для каждой операции документировать: пусто, успех, загрузка, отмена, ошибка, нет прав, потеря сети, конфликт, назад, перезагрузка … | не реализовано | n/a; no per-operation state documentation (no TEST_MATRIX/UX_ACCEPTANCE) |  |
-| R-UI-062 | P0 | Нельзя создавать страницу «в никуда», терять черновик, закрывать диалог с критичными данными без предупреждения, прятать возврат | частично | tests/e2e/ui-p0-interaction.spec.ts "R-UI-062: a new page is never created "nowhere" and a draft survives an immediate reload" (breadcrumbs + tree entry; reload without waiting keeps the text); warning before closing a dialog with critical unsaved input is not tested | tests/e2e/ui-p0-interaction.spec.ts: R-UI-062: a new page is never created "nowhere" and a draft survives an immediate reload |
+| R-UI-062 | P0 | Нельзя создавать страницу «в никуда», терять черновик, закрывать диалог с критичными данными без предупреждения, прятать возврат | реализовано | apps/web/src/components/ui/Dialog.tsx (dirty: Esc/×/клик снаружи спрашивают), применено к «Сохранить версию», согласованию, OCR, созданию/редактированию пользователя; tests/e2e/ocr-view.spec.ts (R-UI-062), tests/e2e/ui-p0-interaction.spec.ts (страница не «в никуда», черновик переживает перезагрузку) | tests/e2e/ocr-view.spec.ts: R-UI-062: a dialog with typed critical input warns before closing; closing without saving <br>tests/e2e/ui-p0-interaction.spec.ts: R-UI-062: a new page is never created "nowhere" and a draft survives an immediate reload |
 
 ### COLLAB
 
@@ -4365,7 +4349,7 @@
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| R-EDITOR-052 | P0 | v2.0 — статус P0, применяется совместно с ранее определёнными; все команды мышью и клавиатурой, критические — touch | частично | Клавиатура: BlockOps (Esc, Shift+↑/↓, Alt+Shift+стрелки, Ctrl+A), меню; мышь: всё; touch: «+» (TouchInsertButton); Touch: нет DnD/ручки блока; resize изображения без клавиатуры (только пресеты 25–100 % мышью/касанием) |  |
+| R-EDITOR-052 | P0 | v2.0 — статус P0, применяется совместно с ранее определёнными; все команды мышью и клавиатурой, критические — touch | частично | Клавиатура: BlockOps (Esc, Shift+↑/↓, Alt+Shift+стрелки, Ctrl+A), меню; мышь: всё; touch: «+» (TouchInsertButton); Touch: нет DnD/ручки блока; resize изображения без клавиатуры (только пресеты 25–100 % мышью/касанием) | tests/e2e/editor-p0-dnd.spec.ts: keyboard alternatives: Alt+Shift+↑/↓ move (also out of a callout / column), Esc twice sele |
 | R-EDITOR-053 | P0 | Блочный редактор с выделением и копированием как в текстовом процессоре; согласованы курсор, выделение, IME, автосохранение, Undo/Redo … | реализовано | Tiptap+Yjs; StableSelection; Undo только своих правок; tests/e2e/editor-p0-core.spec.ts:'IME composition… (E221, R-EDITOR-021, R-EDITOR-053)', 'caret and selection stay in place…'; tests/e2e/undo.spec.ts | tests/e2e/editor-p0-core.spec.ts: IME composition commits once, coexists with a colleague typing and autosave, and undo reve |
 | R-EDITOR-054 | P1 | Три способа команд: палитра при выделении, /-меню, ⋮⋮-меню и «+»; без дублирования постоянно видимых панелей | реализовано | apps/web/src/editor/menus/BubbleToolbar.tsx; apps/web/src/editor/commands.tsx SLASH_COMMANDS; apps/web/src/editor/menus/BlockHandle.tsx |  |
 | R-EDITOR-055 | P1 | Hover — только неопасные кнопки; палитра у выделения с flip вверх/вниз, в пределах viewport, не закрывает текст, без скачков | реализовано | apps/web/src/editor/menus/BubbleToolbar.tsx BUBBLE_OPTIONS flip/shift; hover-ручка без опасных действий |  |
@@ -4387,14 +4371,14 @@
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| R-CLIPBOARD-024 | P0 | Copy/Cut/Paste между статьями сохраняет стили, вложенность, таблицы, ссылки, изображения по правам; во внешние — text/html и text/plain … | частично | clipboard/html.ts stripTracking/isTrackingImage (utm_*, fbclid, gclid, yclid…, пиксели счётчиков); portable HTML; Ctrl+Shift+V; Трекеры удаляются: tests/unit/editor-p0-clipboard.test.ts:'tracker cleanup in pasted HTML (R-CLIPBOARD-024)', tests/e2e/editor-p0-clipboard.spec.ts:'paste options… (R-CLIPBOARD-009, R-CLIPBOARD-024)'. Открыто: права на вложения при переносе между статьями — см. R-CLIPBOARD-018 | tests/unit/editor-p0-clipboard.test.ts: tracker cleanup in pasted HTML (R-CLIPBOARD-024)<br>tests/unit/editor-p0-clipboard.test.ts: R-CLIPBOARD-024: removes utm_*/fbclid/gclid/yclid parameters, keeps others and the fragmen<br>tests/unit/editor-p0-clipboard.test.ts: R-CLIPBOARD-024: tracking pixels and analytics counters are dropped from pasted HTML, link<br>… ещё 1 |
+| R-CLIPBOARD-024 | P0 | Copy/Cut/Paste между статьями сохраняет стили, вложенность, таблицы, ссылки, изображения по правам; во внешние — text/html и text/plain … | частично | clipboard/html.ts stripTracking/isTrackingImage (utm_*, fbclid, gclid, yclid…, пиксели счётчиков); portable HTML; Ctrl+Shift+V; Трекеры удаляются: tests/unit/editor-p0-clipboard.test.ts:'tracker cleanup in pasted HTML (R-CLIPBOARD-024)', tests/e2e/editor-p0-clipboard.spec.ts:'paste options… (R-CLIPBOARD-009, R-CLIPBOARD-024)'. Открыто: права на вложения при переносе между статьями — см. R-CLIPBOARD-018 | tests/unit/editor-p0-clipboard.test.ts: tracker cleanup in pasted HTML (R-CLIPBOARD-024)<br>tests/unit/editor-p0-clipboard.test.ts: R-CLIPBOARD-024: removes utm_*/fbclid/gclid/yclid parameters, keeps others and the fragmen<br>tests/unit/editor-p0-clipboard.test.ts: R-CLIPBOARD-024: tracking pixels and analytics counters are dropped from pasted HTML, link<br>… ещё 2 |
 | R-CLIPBOARD-025 | P1 | Вставка Excel/CSV распознаёт таблицу, многострочные ячейки и табуляцию; большие файлы с прогрессом, отменой, повтором без блокировки набора | частично | json.ts parseTsv (кавычки, многострочные ячейки), looksLikeTsv; Больших вставок с прогрессом/отменой нет (синхронно) |  |
 
 ### EDITOR
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| R-EDITOR-069 | P0 | Drag handle ⋮⋮ предсказуем; порог начала; линия до/после/внутрь; автопрокрутка, вложенность, колонки, Ctrl/Alt-копирование, клавиатура … | частично | @tiptap/extension-drag-handle-react 3.32; Dropcursor; Нет копирования Ctrl/Alt-перетаскиванием, нет «внутрь», нет запрета недопустимых целей; без тестов |  |
+| R-EDITOR-069 | P0 | Drag handle ⋮⋮ предсказуем; порог начала; линия до/после/внутрь; автопрокрутка, вложенность, колонки, Ctrl/Alt-копирование, клавиатура … | частично | @tiptap/extension-drag-handle-react 3.32; Dropcursor; Нет копирования Ctrl/Alt-перетаскиванием, нет «внутрь», нет запрета недопустимых целей; без тестов | tests/unit/editor-block-drop.test.ts: block drag-and-drop model (R-EDITOR-069/075/076)<br>tests/e2e/editor-p0-dnd.spec.ts: drag threshold, preview, line before/after, one atomic drop, one Undo; ids kept on the ser<br>tests/e2e/editor-p0-dnd.spec.ts: keyboard alternatives: Alt+Shift+↑/↓ move (also out of a callout / column), Esc twice sele |
 
 ### ACL
 
@@ -4562,8 +4546,8 @@
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
 | R-EDITOR-074 | P1 | Единый DnD: «+» и ⋮⋮ на hover без сдвига контента; на touch — долгое нажатие или меню «Переместить» | частично | apps/web/src/editor/menus/BlockHandle.tsx (absolute, без сдвига); На touch нет долгого нажатия/меню «Переместить» (ручка только hover) |  |
-| R-EDITOR-075 | P0 | Drag preview, линия вставки, подсветка колонки/контейнера, автопрокрутка, недопустимые цели; отпускание — одна атомарная операция | частично | DragHandle (preview), Dropcursor (линия), одна PM-транзакция; Нет подсветки колонки/контейнера и недопустимых целей |  |
-| R-EDITOR-076 | P0 | Перемещение нескольких блоков, между колонками и страницами (изображения, таблицы, вложенные) с сохранением порядка, ссылок и ID | частично | blockOps.ts moveBlockRange (набор блоков), moveToPage.ts (между страницами, id и порядок сохраняются); tests/e2e/editor-p0-nav.spec.ts:'blocks move to another page… (E215, R-EDITOR-076)'; editor-p0-blocks.spec.ts (набор блоков). Нет теста перетаскивания между колонками; вложения изображений при переносе остаются привязаны к исходной странице (R-CLIPBOARD-018) | tests/e2e/editor-p0-nav.spec.ts: blocks move to another page: removed here only after the target saved them, order, content |
+| R-EDITOR-075 | P0 | Drag preview, линия вставки, подсветка колонки/контейнера, автопрокрутка, недопустимые цели; отпускание — одна атомарная операция | частично | DragHandle (preview), Dropcursor (линия), одна PM-транзакция; Нет подсветки колонки/контейнера и недопустимых целей | tests/e2e/editor-p0-dnd.spec.ts: drag threshold, preview, line before/after, one atomic drop, one Undo; ids kept on the ser<br>tests/e2e/editor-p0-dnd.spec.ts: inside a callout, between columns with the column highlighted, invalid target explained (R |
+| R-EDITOR-076 | P0 | Перемещение нескольких блоков, между колонками и страницами (изображения, таблицы, вложенные) с сохранением порядка, ссылок и ID | частично | blockOps.ts moveBlockRange (набор блоков), moveToPage.ts (между страницами, id и порядок сохраняются); tests/e2e/editor-p0-nav.spec.ts:'blocks move to another page… (E215, R-EDITOR-076)'; editor-p0-blocks.spec.ts (набор блоков). Нет теста перетаскивания между колонками; вложения изображений при переносе остаются привязаны к исходной странице (R-CLIPBOARD-018) | tests/e2e/editor-p0-nav.spec.ts: blocks move to another page: removed here only after the target saved them, order, content<br>tests/e2e/editor-p0-dnd.spec.ts: inside a callout, between columns with the column highlighted, invalid target explained (R<br>tests/e2e/editor-p0-dnd.spec.ts: several selected blocks; images, tables and nested lists move whole; Alt-drag copies (R-ED<br>… ещё 1 |
 
 ### TREE
 
@@ -4590,7 +4574,7 @@
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| R-HISTORY-017 | P0 | Ctrl/Cmd+Z, Ctrl/Cmd+Shift+Z, Ctrl+Y по платформе; атомарные операции: ввод, формат, вставка, удаление, перенос, resize, преобразование … | частично | apps/web/src/editor/clientExtensions.ts; tests/e2e/undo.spec.ts, tests/e2e/collab-p0-editing.spec.ts (sequences: преобразование в заголовок, удаление); Ctrl+Z / Ctrl+Shift+Z / Ctrl+Y: ввод, формат, вставка, удаление, перенос, преобразование отменяются (тесты); отмена изменения размера (resize изображения/колонки) не тестируется | tests/e2e/collab-p0-editing.spec.ts: undo/redo sequences of 100 and 1000 steps, transform and delete are reversible; history do<br>tests/e2e/undo.spec.ts: undo/redo of typing: 1 and 10 steps, Ctrl+Shift+Z and Ctrl+Y; result is saved (QA26-14, UX<br>tests/e2e/undo.spec.ts: undo/redo of formatting keeps the text and the selection (QA26-14, SC-11, R-HISTORY-011, R<br>… ещё 1 |
+| R-HISTORY-017 | P0 | Ctrl/Cmd+Z, Ctrl/Cmd+Shift+Z, Ctrl+Y по платформе; атомарные операции: ввод, формат, вставка, удаление, перенос, resize, преобразование … | частично | apps/web/src/editor/clientExtensions.ts; tests/e2e/undo.spec.ts, tests/e2e/collab-p0-editing.spec.ts (sequences: преобразование в заголовок, удаление); Ctrl+Z / Ctrl+Shift+Z / Ctrl+Y: ввод, формат, вставка, удаление, перенос, преобразование отменяются (тесты); отмена изменения размера (resize изображения/колонки) не тестируется | tests/e2e/collab-p0-editing.spec.ts: undo/redo sequences of 100 and 1000 steps, transform and delete are reversible; history do<br>tests/e2e/editor-p0-dnd.spec.ts: drag threshold, preview, line before/after, one atomic drop, one Undo; ids kept on the ser<br>tests/e2e/undo.spec.ts: undo/redo of typing: 1 and 10 steps, Ctrl+Shift+Z and Ctrl+Y; result is saved (QA26-14, UX<br>… ещё 2 |
 | R-HISTORY-018 | P1 | Группировка непрерывного набора без склейки несвязанных действий | реализовано | apps/web/src/editor/clientExtensions.ts (Tiptap Collaboration → y-tiptap yUndoPlugin, own origin only; undoRedo disabled in packages/shared/src/editor/extensions.ts); tests/e2e/undo.spec.ts (10 шагов) | tests/e2e/undo.spec.ts: undo/redo of typing: 1 and 10 steps, Ctrl+Shift+Z and Ctrl+Y; result is saved (QA26-14, UX |
 | R-HISTORY-019 | P1 | Меню истории у кнопок отмены: время, тип, объект, автор; переход к состоянию с предпросмотром и подтверждением при массовом откате | не реализовано | Меню истории операций с предпросмотром нет |  |
 | R-HISTORY-020 | P0 | Undo/redo не путать с версионной историей (снимки, diff, автор, время, восстановление как новая ревизия) | реализовано | apps/web/src/components/page/HistoryPanel.tsx, apps/web/src/help/HelpCenter.tsx |  |
@@ -4753,13 +4737,13 @@
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
 | R-COLLAB-030 | P0 | Rich-text/block CRDT (Yjs/Automerge или доказанный эквивалент): детерминированное слияние, уникальные ID блоков, порядок … | реализовано | apps/server/src/collab/hub.ts, apps/web/src/editor/extensions/blockIds.ts; tests/integration/collab.test.ts fuzz | tests/integration/collab.test.ts: randomised convergence (COLLAB-198, R-COLLAB-008, R-COLLAB-030, R-COLLAB-044, property-bas |
-| R-COLLAB-031 | P0 | Серверная валидация схемы, прав, инвариантов; транзакционная координация поверх CRDT для таблиц, колонок, удаления/перемещения страниц, ACL | частично | apps/server/src/collab/hub.ts#acceptUpdate (права, схема), apps/server/src/services/pages.ts (tx дерева); Нет транзакционной координации поверх CRDT для таблиц/колонок; только валидация схемы с откатом | tests/integration/collab.test.ts: rejects schema-invalid updates and keeps the document valid (R-COLLAB-020, R-COLLAB-031) |
+| R-COLLAB-031 | P0 | Серверная валидация схемы, прав, инвариантов; транзакционная координация поверх CRDT для таблиц, колонок, удаления/перемещения страниц, ACL | реализовано | apps/server/src/collab/hub.ts#acceptUpdate (права, схема, версия схемы), apps/server/src/routes/collections.ts (version_conflict, cell_conflict в транзакциях), apps/server/src/services/pages.ts (lockTree до проверки родителя); tests/integration/coordination-p0.test.ts; Найдено и исправлено: создание дочерней страницы одновременно с удалением родителя давало живую страницу под удалённым родителем | tests/integration/coordination-p0.test.ts: transactional coordination over the CRDT (R-COLLAB-031, R-COLLAB-024)<br>tests/integration/collab.test.ts: rejects schema-invalid updates and keeps the document valid (R-COLLAB-020, R-COLLAB-031) |
 | R-COLLAB-032 | P0 | Сценарии: разные блоки; один абзац и позиция; формат+удаление; перенос+правка; удаление таблицы+строка; двойной перенос страницы … | реализовано | tests/integration/collab-p0.test.ts (формат+удаление, копирование+правка, перемещения, удаление таблицы+строка, два устройства), tests/e2e/collab-p0-editing.spec.ts (перенос+правка), tests/integration/core.test.ts (двойной перенос страницы, COLLAB-194), tests/integration/collab.test.ts (restore во время работы других) | tests/integration/collab-p0.test.ts: many editors, tables, moves (QA26-19, AT-56, SC-25, R-COLLAB-024, R-COLLAB-032)<br>tests/integration/collab-p0.test.ts: table deleted while another editor adds a row: the result is a valid document, never an or<br>tests/integration/collab-p0.test.ts: format + delete, block copy + edit and concurrent block moves converge without duplicates <br>… ещё 1 |
 | R-COLLAB-033 | P0 | Предсказуемый результат, сохранение допустимых изменений, уведомление при невозможности слияния, отвергнутые правки в черновик/экспорт … | реализовано | apps/web/src/editor/extensions/conflictGuard.ts, apps/server/src/routes/conflicts.ts, apps/web/src/editor/Editor.tsx#FatalBanner; tests/e2e/conflict.spec.ts, tests/e2e/collab-p0-editing.spec.ts, tests/e2e/collab-p0-storage.spec.ts; Невозможность слияния (удаление/перенос блока с правкой) — уведомление и конфликтная копия; отвергнутые правки доступны для скачивания | tests/e2e/collab-p0-editing.spec.ts: a block is moved by one editor while another edits it: the edit is kept as a conflict copy |
 | R-COLLAB-034 | P2 | Presence: аватары, цветные курсоры/выделения, имя по hover; не закрывают текст; скрытие при плотном присутствии | требует ручной проверки | apps/web/src/components/page/Presence.tsx (4 аватара + «+N»), apps/web/src/editor/clientExtensions.ts#caret; Визуальная проверка |  |
 | R-COLLAB-035 | P0 | Статусы «Сохранено», «Синхронизация», «Офлайн — изменения на устройстве», «Требуется внимание» по реальному подтверждению … | реализовано | apps/web/src/components/page/SyncStatus.tsx, packages/shared/src/collab-client.ts; Сохранение курсора/прокрутки при reconnect обеспечивается тем, что редактор не перемонтируется; браузерного теста нет |  |
-| R-COLLAB-036 | P0 | Неслиемая операция — диалог сравнения: сохранить обе, принять серверную, сохранить локальную копию; не скрывать конфликт | частично | apps/web/src/editor/Editor.tsx (уведомление о конфликте «Вернуть мою версию»), apps/server/src/routes/conflicts.ts (копия в истории, resolve restored/dismissed); tests/e2e/conflict.spec.ts; Конфликт не скрывается: копия сохраняется на сервере, уведомление с восстановлением; полноценного диалога сравнения с тремя вариантами нет |  |
-| R-COLLAB-037 | P0 | Журнал с ack, retry/backoff, идемпотентность, sequence/vector clocks, проверка согласованности, контроль orphan-блоков и циклов … | частично | apps/server/src/services/consistency.ts (циклы/сироты/closure/разрывы журнала/снимки), apps/server/src/jobs/worker.ts#consistencyCheck → kb_integrity_errors, GET /api/v1/admin/consistency; tests/integration/history-tree.test.ts; Проверка согласованности сделана и тестируется; безопасная миграция схемы содержимого (content_schema_version) по-прежнему не реализована | tests/integration/history-tree.test.ts: data consistency check (R-COLLAB-037)<br>tests/integration/history-tree.test.ts: maintenance check reports tree and journal inconsistencies and exports kb_integrity_errors |
+| R-COLLAB-036 | P0 | Неслиемая операция — диалог сравнения: сохранить обе, принять серверную, сохранить локальную копию; не скрывать конфликт | реализовано | apps/web/src/editor/ConflictDialog.tsx (BlockConflictHost, DocConflictDialog), apps/web/src/editor/Editor.tsx (conflictGuard и NACK invalid_update/too_large/deleted/schema_outdated), apps/server/src/routes/conflicts.ts (resolution both, POST /pages/:id/conflict-copy), packages/shared/src/collab-client.ts#discardUnsynced; tests/e2e/conflict.spec.ts (R-COLLAB-036 ×3), tests/e2e/collab-p0-editing.spec.ts; D-27 | tests/e2e/conflict.spec.ts: R-COLLAB-036: conflict dialog — «keep both» keeps the deletion result and adds my version <br>tests/e2e/conflict.spec.ts: R-COLLAB-036: conflict dialog — «accept the server version» keeps the deletion, my version<br>tests/e2e/conflict.spec.ts: R-COLLAB-036: a change the server refuses opens the comparison dialog; «keep both» saves m |
+| R-COLLAB-037 | P0 | Журнал с ack, retry/backoff, идемпотентность, sequence/vector clocks, проверка согласованности, контроль orphan-блоков и циклов … | реализовано | apps/server/src/collab/hub.ts#migrateSchema (pre-migration версия, CRDT, content_schema_version, ревизия migration), HELLO schemaVersion (packages/shared/src/collab-protocol.ts), schema_outdated/schema_newer, apps/server/src/services/consistency.ts; tests/integration/collab-schema.test.ts, tests/integration/history-tree.test.ts, tests/integration/coordination-p0.test.ts (checkConsistency); D-28 | tests/integration/collab-schema.test.ts: document schema change vs concurrent editing (R-COLLAB-009, R-COLLAB-037)<br>tests/integration/history-tree.test.ts: data consistency check (R-COLLAB-037)<br>tests/integration/history-tree.test.ts: maintenance check reports tree and journal inconsistencies and exports kb_integrity_errors |
 
 ### QA
 
@@ -5075,7 +5059,7 @@
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| R-UI-068 | P0 | Никакие функции не ведут в тупик, нет нерабочих кнопок и незавершённых состояний | частично | tests/e2e/ui-p0-interaction.spec.ts dead-end tests (endless spinner, dialogs exit/Esc, disabled actions with reasons — disabledReason added to page and tree menus, Menu falls back to hint); no inventory of every button/state; other screens (admin, import) not covered by dead-end E2E | tests/e2e/ui-p0-interaction.spec.ts: R-UI-053, R-UI-068: disabled actions always say why (view-only user) |
+| R-UI-068 | P0 | Никакие функции не ведут в тупик, нет нерабочих кнопок и незавершённых состояний | частично | tests/e2e/ui-p0-interaction.spec.ts dead-end tests (endless spinner, dialogs exit/Esc, disabled actions with reasons — disabledReason added to page and tree menus, Menu falls back to hint); Исправлен «мёртвый» пункт «Переместить в…» в меню страницы (всегда disabled). Полной инвентаризации всех кнопок нет | tests/e2e/ui-p0-interaction.spec.ts: R-UI-053, R-UI-068: disabled actions always say why (view-only user) |
 
 ### PROCESS
 
@@ -5460,7 +5444,7 @@
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| QA26-09 | P0 | DnD блоков, изображений, таблиц, вложенных страниц и ветвей: соседние блоки, колонки, статьи, разделы по правам, края с автопрокруткой … | частично | —; Автотестов DnD нет |  |
+| QA26-09 | P0 | DnD блоков, изображений, таблиц, вложенных страниц и ветвей: соседние блоки, колонки, статьи, разделы по правам, края с автопрокруткой … | частично | —; Автотестов DnD нет | tests/e2e/editor-p0-dnd.spec.ts: Esc cancels a drag; a fast drag lands exactly; dropping in place changes nothing (QA26-09)<br>tests/e2e/editor-p0-dnd.spec.ts: several selected blocks; images, tables and nested lists move whole; Alt-drag copies (R-ED<br>tests/e2e/editor-p0-dnd.spec.ts: autoscroll near the bottom edge while dragging, drop far below (QA26-09) |
 
 ### TREE
 
@@ -5486,7 +5470,7 @@
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
 | QA26-14 | P0 | Каждая редактирующая операция на обратимость и повтор; последовательности 1/10/100/1000; объединение ввода; границы после перезагрузки … | реализовано | tests/e2e/undo.spec.ts (1 и 10 шагов, форматирование, вставка, структура, совместная работа), tests/e2e/collab-p0-editing.spec.ts (последовательности 100 и 1000, граница после перезагрузки) | tests/e2e/collab-p0-editing.spec.ts: undo/redo sequences of 100 and 1000 steps, transform and delete are reversible; history do<br>tests/e2e/undo.spec.ts: undo/redo of typing: 1 and 10 steps, Ctrl+Shift+Z and Ctrl+Y; result is saved (QA26-14, UX<br>tests/e2e/undo.spec.ts: undo/redo of formatting keeps the text and the selection (QA26-14, SC-11, R-HISTORY-011, R<br>… ещё 3 |
-| QA26-15 | P0 | Восстановление не уничтожает последующие версии, аудит не подменяется; документ и блоки, после удаления/архивации … | частично | tests/integration/collab.test.ts, tests/integration/gaps.test.ts (pre-restore); Нет проверок после удаления/архивации, при совместной работе, очистки по сроку | tests/integration/history-p0.test.ts: version comparison and restore (R-HISTORY-013, V16-S11, QA26-15, R-HISTORY-002)<br>tests/integration/history-p0.test.ts: QA26-15: after deletion the history stays readable and restore says why it waits; after ar<br>tests/integration/gaps.test.ts: restore saves the current state as a "pre-restore" revision (QA26-15) |
+| QA26-15 | P0 | Восстановление не уничтожает последующие версии, аудит не подменяется; документ и блоки, после удаления/архивации … | реализовано | tests/integration/history-p0.test.ts (поздние версии и аудит неизменны + verifyAuditChain; восстановление блока при параллельной правке соавтора; после удаления — 409 page_deleted, после восстановления из корзины и архивации работает; retention не удаляет точки восстановления; читатель/посторонний не может восстановить), tests/integration/collab-schema.test.ts (восстановление версии до миграции схемы) | tests/integration/history-p0.test.ts: version comparison and restore (R-HISTORY-013, V16-S11, QA26-15, R-HISTORY-002)<br>tests/integration/history-p0.test.ts: QA26-15: after deletion the history stays readable and restore says why it waits; after ar<br>tests/integration/gaps.test.ts: restore saves the current state as a "pre-restore" revision (QA26-15) |
 
 ### ARCHIVE
 

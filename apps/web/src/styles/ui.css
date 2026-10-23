@@ -146,3 +146,4 @@
 .table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--r-lg); background: var(--surface); }
 .progress { height: 4px; background: var(--surface-3); border-radius: 4px; overflow: hidden; }
 .progress > div { height: 100%; background: var(--accent); transition: width var(--t-med) var(--ease); }
+.dialog-leave { display: flex; align-items: center; gap: 8px; margin: 0 16px 8px; flex-wrap: wrap; }

@@ -14,13 +14,13 @@
   status: done
   evidence: apps/web/src/layout/SidebarTree.tsx#newChild, apps/web/src/editor/Editor.tsx autoFocusTitle; tests/e2e/content.spec.ts (sidebar tree)
 - id: R-HISTORY-002
-  status: partial
-  evidence: apps/web/src/layout/treeActions.tsx (undo перемещения, восстановление из корзины), apps/server/src/routes/revisions.ts pre-restore
-  note: 'Не все операции обратимы: смена иконки/свойств/заголовка через API без отмены (только запись before в page_events)'
+  status: done
+  evidence: 'apps/server/src/routes/pages.ts (PATCH журналирует before/after, POST /pages/:id/events/:eid/undo), apps/web/src/lib/undoChange.ts (тосты «Отменить» для значка, обложки, ширины, тегов, свойств), apps/server/src/routes/revisions.ts (dryRun восстановления версии и блока), apps/web/src/components/page/HistoryPanel.tsx RestoreDialog, apps/web/src/layout/treeActions.tsx (предпросмотр аудитории и undo перемещения), корзина; tests/integration/history-p0.test.ts (undo of property changes), tests/e2e/history-p0.spec.ts'
+  note: 'Отмена изменения свойства применяется только к полям, которые никто не менял позже (иначе 409). Необратимое удаление из корзины — только с вводом подтверждения (D-26)'
 - id: ROUTE-02
-  status: partial
-  evidence: tests/e2e/editor.spec.ts, tests/e2e/collab.spec.ts, tests/integration/content.test.ts (publishing workflow), tests/integration/acl.test.ts (moving changes audience)
-  note: Отдельные шаги покрыты, но сквозного E2E «черновик → офлайн → перенос в отдел с предпросмотром → согласование → публикация → откат» нет
+  status: done
+  evidence: 'tests/e2e/route-author.spec.ts (личный черновик → офлайн → синхронизация → перенос в отдел с предпросмотром аудитории → согласование → публикация → обновление и откат версии)'
+  note: 'Найдено и исправлено: пункт меню страницы «Переместить в…» всегда был неактивен (проверял несуществующее право move)'
 - id: ROUTE-05
   status: done
   evidence: tests/e2e/collab-p0-editing.spec.ts (two editors change a paragraph, one table and the structure while one loses the connection …), tests/integration/collab-p0.test.ts
@@ -101,9 +101,9 @@
   evidence: apps/server/src/services/pages.ts#assertDepth (create/move/duplicate), apps/server/src/services/importer.ts (проверка плана); tests/integration/history-tree.test.ts
   note: Лимит 15 уровней с понятной ошибкой реализован и тестируется; отдельной сущности Workspace нет (организация = рабочее пространство)
 - id: R-PAGE-001
-  status: partial
-  evidence: apps/server/migrations/0001_core.sql (pages)
-  note: Нет slug и тегов; остальное есть
+  status: done
+  evidence: 'apps/server/migrations/0021_page_tags_revision_props.sql (tags, slug по триггеру kb_slug), apps/server/src/routes/pages.ts (tags, slug в DTO), apps/web/src/components/page/PageInfoPanel.tsx TagsEditor, маршрут /p/:id/:slug; tests/integration/history-p0.test.ts (page model and search sources)'
+  note: 'Slug косметичен, идентичность — UUID (D-29)'
 - id: R-PAGE-002
   status: partial
   evidence: apps/server/src/jobs/worker.ts#indexPage (page_links), apps/server/src/routes/pages.ts backlinks
@@ -127,9 +127,9 @@
   status: done
   evidence: apps/server/src/services/search.ts (matchedIn image), apps/web/src/pages/SearchPage.tsx; tests/integration/content.test.ts (OCR)
 - id: R-SEARCH-003
-  status: partial
-  evidence: apps/server/src/jobs/worker.ts#indexPage (комментарии, текст DOCX/TXT вложений), apps/server/src/services/file-text.ts, migrations/0006; tests/integration/history-tree.test.ts
-  note: Комментарии и DOCX/TXT индексируются; текст PDF не извлекается (PDF-парсер не установлен), тегов нет
+  status: done
+  evidence: 'apps/server/src/jobs/worker.ts#indexPage (теги и заголовки — отдельные поля веса A, комментарии, подписи изображений, имена и текст DOCX/TXT файлов, OCR), apps/server/src/services/search.ts (matchedIn heading/tag, фильтр tag), apps/web/src/pages/SearchPage.tsx; tests/integration/history-p0.test.ts, tests/integration/history-tree.test.ts, tests/e2e/history-p0.spec.ts'
+  note: 'Текст PDF не извлекается (в ТЗ — имена файлов); права применяются до подсчёта'
 - id: R-SEARCH-004
   status: done
   evidence: apps/server/src/services/search.ts; tests/integration/content.test.ts (morphology, typo, wrong layout), tests/integration/gaps.test.ts
@@ -161,9 +161,8 @@
   status: done
   evidence: apps/server/src/routes/revisions.ts#restore; tests/integration/collab.test.ts, tests/e2e/collab.spec.ts
 - id: R-COLLAB-009
-  status: partial
-  evidence: tests/integration/collab.test.ts (отключённая сеть, невалидная схема), tests/integration/collab-p0.test.ts (копирование блока + правка)
-  note: Нет тестов конфликтов при смене схемы содержимого (миграции content_schema_version не реализованы)
+  status: done
+  evidence: 'tests/integration/collab-schema.test.ts (смена схемы при онлайн/офлайн редакторах, клиент новее сервера, разрыв цепочки миграций), tests/integration/collab-p0.test.ts (копирование блока + правка), tests/integration/collab.test.ts (отключённая сеть)'
 - id: R-HISTORY-005
   status: done
   evidence: apps/server/src/routes/revisions.ts (authors, summary, published), apps/web/src/components/page/HistoryPanel.tsx
@@ -407,10 +406,8 @@
   evidence: packages/shared/src/collab-client.ts#persist (QuotaExceeded → статус «Ошибка сохранения», onStorageError), apps/web/src/editor/Editor.tsx (предупреждение, баннер со скачиванием); tests/e2e/collab-p0-storage.spec.ts
     (device storage is full …), tests/unit/collab-p0.test.ts
 - id: R-COLLAB-024
-  status: partial
-  evidence: tests/integration/collab-p0.test.ts (таблица, удаление таблицы+строка, перемещения), tests/e2e/collab-p0-editing.spec.ts, tests/integration/core.test.ts (COLLAB-194), tests/integration/content.test.ts
-    (attachment versions), tests/e2e/conflict.spec.ts
-  note: Блок, таблица, перемещение страницы и удаление/правка покрыты; одновременная загрузка новой версии одного вложения двумя пользователями не тестируется
+  status: done
+  evidence: 'tests/integration/coordination-p0.test.ts (две одновременные новые версии одного вложения: обе сохранены, нумерация по коммиту; ячейка/колонка; перемещения; удаление ↔ правка/создание), tests/integration/collab-p0.test.ts, tests/e2e/collab-p0-editing.spec.ts, tests/e2e/conflict.spec.ts'
 - id: R-COLLAB-025
   status: done
   evidence: packages/shared/src/collab-client.ts, apps/web/src/components/page/SyncStatus.tsx
@@ -550,9 +547,8 @@
   status: done
   evidence: apps/server/src/collab/hub.ts#flushNow (page_events edit), apps/server/src/routes/pages.ts (updated/moved), apps/server/src/routes/revisions.ts
 - id: R-HISTORY-013
-  status: partial
-  evidence: apps/server/src/routes/revisions.ts#restore-block, apps/web/src/components/page/HistoryPanel.tsx
-  note: Восстановление блока не создаёт новую версию сразу (только событие restored-block)
+  status: done
+  evidence: 'apps/server/src/routes/revisions.ts (diff текста и свойств, restore и restore-block как новые версии с pre-restore, dryRun), apps/web/src/components/page/HistoryPanel.tsx (PropsDiff, RestoreDialog, предпросмотр блока); tests/integration/history-p0.test.ts, tests/e2e/history-p0.spec.ts'
 - id: R-HISTORY-014
   status: done
   evidence: apps/server/src/routes/revisions.ts#restoreContent (pre-restore + CRDT), событие page-restored (apps/server/src/routes/collab.ts /api/v1/events), apps/web/src/hooks/useEvents.ts (toast со ссылкой
@@ -589,9 +585,9 @@
   evidence: apps/server/src/services/pages.ts#duplicatePage
   note: Исключение недоступных вложений не тестируется
 - id: V16-S11
-  status: partial
-  evidence: apps/server/src/services/revisions.ts#diffDocs (текст), apps/server/src/routes/revisions.ts#restore; tests/integration/collab.test.ts
-  note: Сравнение свойств между версиями отсутствует (ревизия хранит только заголовок и содержимое) — по свойствам только журнал updated
+  status: done
+  evidence: 'apps/server/migrations/0021_page_tags_revision_props.sql (page_revisions.props), apps/server/src/services/revisions.ts#diffProps, HistoryPanel PropsDiff; tests/integration/history-p0.test.ts (compares text AND properties…), tests/e2e/history-p0.spec.ts'
+  note: 'Ревизии до миграции 0021 не содержат снимка свойств — UI сообщает об этом'
 - id: V16-S12
   status: done
   evidence: tests/integration/collab.test.ts, tests/resilience/crash-restart.test.ts
@@ -836,9 +832,9 @@
   status: done
   evidence: apps/server/src/collab/hub.ts, apps/web/src/editor/extensions/blockIds.ts; tests/integration/collab.test.ts fuzz
 - id: R-COLLAB-031
-  status: partial
-  evidence: apps/server/src/collab/hub.ts#acceptUpdate (права, схема), apps/server/src/services/pages.ts (tx дерева)
-  note: Нет транзакционной координации поверх CRDT для таблиц/колонок; только валидация схемы с откатом
+  status: done
+  evidence: 'apps/server/src/collab/hub.ts#acceptUpdate (права, схема, версия схемы), apps/server/src/routes/collections.ts (version_conflict, cell_conflict в транзакциях), apps/server/src/services/pages.ts (lockTree до проверки родителя); tests/integration/coordination-p0.test.ts'
+  note: 'Найдено и исправлено: создание дочерней страницы одновременно с удалением родителя давало живую страницу под удалённым родителем'
 - id: R-COLLAB-032
   status: done
   evidence: tests/integration/collab-p0.test.ts (формат+удаление, копирование+правка, перемещения, удаление таблицы+строка, два устройства), tests/e2e/collab-p0-editing.spec.ts (перенос+правка), tests/integration/core.test.ts
@@ -857,13 +853,13 @@
   evidence: apps/web/src/components/page/SyncStatus.tsx, packages/shared/src/collab-client.ts
   note: Сохранение курсора/прокрутки при reconnect обеспечивается тем, что редактор не перемонтируется; браузерного теста нет
 - id: R-COLLAB-036
-  status: partial
-  evidence: apps/web/src/editor/Editor.tsx (уведомление о конфликте «Вернуть мою версию»), apps/server/src/routes/conflicts.ts (копия в истории, resolve restored/dismissed); tests/e2e/conflict.spec.ts
-  note: 'Конфликт не скрывается: копия сохраняется на сервере, уведомление с восстановлением; полноценного диалога сравнения с тремя вариантами нет'
+  status: done
+  evidence: 'apps/web/src/editor/ConflictDialog.tsx (BlockConflictHost, DocConflictDialog), apps/web/src/editor/Editor.tsx (conflictGuard и NACK invalid_update/too_large/deleted/schema_outdated), apps/server/src/routes/conflicts.ts (resolution both, POST /pages/:id/conflict-copy), packages/shared/src/collab-client.ts#discardUnsynced; tests/e2e/conflict.spec.ts (R-COLLAB-036 ×3), tests/e2e/collab-p0-editing.spec.ts'
+  note: 'D-27'
 - id: R-COLLAB-037
-  status: partial
-  evidence: apps/server/src/services/consistency.ts (циклы/сироты/closure/разрывы журнала/снимки), apps/server/src/jobs/worker.ts#consistencyCheck → kb_integrity_errors, GET /api/v1/admin/consistency; tests/integration/history-tree.test.ts
-  note: Проверка согласованности сделана и тестируется; безопасная миграция схемы содержимого (content_schema_version) по-прежнему не реализована
+  status: done
+  evidence: 'apps/server/src/collab/hub.ts#migrateSchema (pre-migration версия, CRDT, content_schema_version, ревизия migration), HELLO schemaVersion (packages/shared/src/collab-protocol.ts), schema_outdated/schema_newer, apps/server/src/services/consistency.ts; tests/integration/collab-schema.test.ts, tests/integration/history-tree.test.ts, tests/integration/coordination-p0.test.ts (checkConsistency)'
+  note: 'D-28'
 - id: HIST-187
   status: done
   evidence: apps/server/src/collab/hub.ts (page_events edit с seq), apps/server/src/services/revisions.ts#stateAtSeq; tests/integration/collab.test.ts, tests/integration/history-tree.test.ts
@@ -1079,9 +1075,8 @@
   status: done
   evidence: tests/e2e/undo.spec.ts (1 и 10 шагов, форматирование, вставка, структура, совместная работа), tests/e2e/collab-p0-editing.spec.ts (последовательности 100 и 1000, граница после перезагрузки)
 - id: QA26-15
-  status: partial
-  evidence: tests/integration/collab.test.ts, tests/integration/gaps.test.ts (pre-restore)
-  note: Нет проверок после удаления/архивации, при совместной работе, очистки по сроку
+  status: done
+  evidence: 'tests/integration/history-p0.test.ts (поздние версии и аудит неизменны + verifyAuditChain; восстановление блока при параллельной правке соавтора; после удаления — 409 page_deleted, после восстановления из корзины и архивации работает; retention не удаляет точки восстановления; читатель/посторонний не может восстановить), tests/integration/collab-schema.test.ts (восстановление версии до миграции схемы)'
 - id: QA26-19
   status: done
   evidence: tests/integration/collab-p0.test.ts (2, 5 and 20 editors …; одна ячейка; перемещения/удаление), tests/integration/collab.test.ts (restore, изменение прав в сессии)

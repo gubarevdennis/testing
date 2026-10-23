@@ -175,6 +175,8 @@ export function DocConflictDialog(p: {
   localDoc(): Record<string, any>;
   localTitle(): string;
   localMarkdown(): Promise<string>;
+  /** Format version of the local document: the server migrates an older one before saving the copy. */
+  schemaVersion: number;
   download(): Promise<void>;
   acceptServer(): Promise<void>;
   onClose(): void;
@@ -186,7 +188,7 @@ export function DocConflictDialog(p: {
   const keepBoth = async () => {
     setBusy('both');
     try {
-      const r = await post<{ page: { id: string; title: string }; source: 'json' | 'markdown' }>(`/api/v1/pages/${p.pageId}/conflict-copy`, { content: p.localDoc(), markdown: await p.localMarkdown(), title: `${p.localTitle() || 'Без названия'} — моя версия (конфликт)` });
+      const r = await post<{ page: { id: string; title: string }; source: 'json' | 'markdown' }>(`/api/v1/pages/${p.pageId}/conflict-copy`, { content: p.localDoc(), schemaVersion: p.schemaVersion, markdown: await p.localMarkdown(), title: `${p.localTitle() || 'Без названия'} — моя версия (конфликт)` });
       toast.success(`Ваша версия сохранена как страница «${r.page.title}»` + (r.source === 'markdown' ? ' (через Markdown: часть оформления, недопустимого на сервере, упрощена)' : ''), {
         label: 'Открыть',
         run: () => window.open(`/p/${r.page.id}`, '_self'),
@@ -213,7 +215,7 @@ export function DocConflictDialog(p: {
       open
       size="wide"
       persistent
-      title={deleted ? 'Страница удалена, пока вы её редактировали' : 'Сервер не принял ваши изменения'}
+      title={deleted ? 'Страница удалена, пока вы её редактировали' : p.code === 'schema_outdated' ? 'Документ переведён на новый формат' : 'Сервер не принял ваши изменения'}
       onClose={p.onClose}
       footer={
         <>
@@ -223,7 +225,7 @@ export function DocConflictDialog(p: {
           <span className="spacer grow" />
           {!deleted && (
             <button className={'btn' + (confirmDrop ? ' danger solid' : '')} onClick={() => void accept()} disabled={!!busy} aria-busy={busy === 'server'}>
-              {busy === 'server' && <span className="spinner" />} {confirmDrop ? 'Да, отбросить мои изменения' : 'Принять версию сервера'}
+              {busy === 'server' && <span className="spinner" />} {confirmDrop ? 'Да, отбросить мои изменения' : p.code === 'schema_outdated' ? 'Принять версию сервера и обновить приложение' : 'Принять версию сервера'}
             </button>
           )}
           <button className="btn primary" onClick={() => void keepBoth()} disabled={!!busy} aria-busy={busy === 'both'}>

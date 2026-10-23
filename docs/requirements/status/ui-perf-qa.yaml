@@ -166,7 +166,7 @@
 - id: R-UI-011
   status: partial
   evidence: sync-status, offline banner, undo toasts, version restore; error template (R-UI-052) says whether data was saved; boot timeout screen with retry
-  note: cancel/status not verified for every operation
+  note: 'Добавлены отмена изменений свойств, предпросмотр восстановления, диалог конфликтов; отмена/статус не проверены для каждой операции'
 - id: R-PROCESS-018
   status: partial
   evidence: see QA gaps
@@ -360,7 +360,7 @@
 - id: R-UI-027
   status: partial
   evidence: Menu disabledReason now on every disabled page/tree action (tested for a view-only user in tests/e2e/ui-p0-interaction.spec.ts), import/export fidelity reports
-  note: not systematically verified for all operations
+  note: 'Добавлены честные отказы: page_deleted при восстановлении, replace_not_confirmed, schema_outdated/schema_newer; систематической проверки всех операций нет'
 - id: R-PROCESS-034
   status: partial
   evidence: ARCHITECTURE.md mentions mammoth/remark
@@ -787,9 +787,9 @@
   evidence: n/a
   note: settings review not done
 - id: R-PERF-019
-  status: partial
-  evidence: OCR/import/export server jobs; uploads via XHR
-  note: typing during upload/OCR/export not measured
+  status: done
+  evidence: 'apps/web/src/lib/streamHash.ts + sha256.worker.ts (SHA-256 загрузки в Web Worker), экспорт/OCR — фоновые задания сервера; tests/e2e/perf-background.spec.ts (CPU ×4, 48 МБ: main thread p99 605 мс / 11 long tasks >100 мс → worker p99 92 мс / 0)'
+  note: 'D-30; цифры в test-results/perf/results.jsonl'
 - id: V18-A09
   status: partial
   evidence: image alignment CSS
@@ -847,9 +847,8 @@
   evidence: n/a
   note: no per-operation state documentation (no TEST_MATRIX/UX_ACCEPTANCE)
 - id: R-UI-062
-  status: partial
-  evidence: 'tests/e2e/ui-p0-interaction.spec.ts "R-UI-062: a new page is never created "nowhere" and a draft survives an immediate reload" (breadcrumbs + tree entry; reload without waiting keeps the text)'
-  note: warning before closing a dialog with critical unsaved input is not tested
+  status: done
+  evidence: 'apps/web/src/components/ui/Dialog.tsx (dirty: Esc/×/клик снаружи спрашивают), применено к «Сохранить версию», согласованию, OCR, созданию/редактированию пользователя; tests/e2e/ocr-view.spec.ts (R-UI-062), tests/e2e/ui-p0-interaction.spec.ts (страница не «в никуда», черновик переживает перезагрузку)'
 - id: UX-131
   status: done
   evidence: 'tests/e2e/ui-p0-touch.spec.ts "UX-131: Back restores the reading position of a long page" (±50 px; a new navigation starts at the top)'
@@ -1015,7 +1014,7 @@
 - id: R-UI-068
   status: partial
   evidence: tests/e2e/ui-p0-interaction.spec.ts dead-end tests (endless spinner, dialogs exit/Esc, disabled actions with reasons — disabledReason added to page and tree menus, Menu falls back to hint)
-  note: no inventory of every button/state; other screens (admin, import) not covered by dead-end E2E
+  note: 'Исправлен «мёртвый» пункт «Переместить в…» в меню страницы (всегда disabled). Полной инвентаризации всех кнопок нет'
 - id: R-PROCESS-049
   status: partial
   evidence: docs/DECISIONS.md 18 entries

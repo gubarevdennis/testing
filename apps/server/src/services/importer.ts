@@ -10,7 +10,7 @@ import { inspectFile, registerBlob, makeImageDerivatives, sanitizeSvgFile, safeF
 import { docxToDoc } from '../convert/docx-import.js';
 import { htmlToDoc, htmlToNodes } from '../convert/html.js';
 import { parseCsv, parseXlsx, sheetPreview, normalizeDate, normalizeNumber, inferTypes, applyRange, type Sheet } from '../convert/tabular.js';
-import { createPage, assertDepth } from './pages.js';
+import { createPage, assertDepth, trashPage } from './pages.js';
 import { requirePage, requireSpace, type AuthUser } from '../acl/engine.js';
 import { audit, type AuditActor } from './audit.js';
 import { unprocessable } from '../lib/errors.js';
@@ -557,7 +557,12 @@ export interface TabularOptions {
   /** table: a table block (new page or appended to a page); collection: a typed collection (new, append, upsert). */
   as: 'table' | 'collection';
   collectionId?: string | null;
-  collectionMode?: 'append' | 'upsert';
+  /**
+   * append: add every row; upsert: update rows with the same key, add the others; replace: make the collection match the
+   * file — update by key, add new rows, move rows whose key is not in the file to the trash (restorable, one batch).
+   */
+  collectionMode?: 'append' | 'upsert' | 'replace';
+  confirmReplace?: boolean;
   keyColumn?: number | null;
   columnTypes?: Array<'text' | 'number' | 'date' | 'checkbox' | 'select' | 'url' | 'email'>;
   title?: string;
@@ -620,15 +625,27 @@ export async function tabularDryRun(s: Services, plan: ImportPlan, opts: Tabular
   let updates = 0;
   let inserts = data.length;
   let duplicatesInFile = 0;
-  if (opts.as === 'collection' && opts.collectionId && opts.collectionMode === 'upsert' && opts.keyColumn !== null && opts.keyColumn !== undefined) {
-    const keys = data.map((r) => (r[opts.keyColumn!] ?? '').trim());
-    duplicatesInFile = keys.length - new Set(keys).size;
-    const existing = new Set((await s.db.query(`select title from pages where collection_id = $1 and deleted_at is null`, [opts.collectionId])).rows.map((r) => String(r.title).trim()));
-    updates = keys.filter((k) => existing.has(k)).length;
-    inserts = data.length - updates;
+  let removes = 0;
+  let removeSample: string[] = [];
+  const keyed = opts.collectionMode === 'upsert' || opts.collectionMode === 'replace';
+  if (opts.as === 'collection' && opts.collectionId && keyed) {
+    const keyCol = opts.keyColumn ?? 0;
+    const keys = data.map((r) => (r[keyCol] ?? '').trim());
+    const unique = new Set(keys);
+    duplicatesInFile = keys.length - unique.size;
+    const existingRows = (await s.db.query(`select title from pages where collection_id = $1 and deleted_at is null order by sort_key collate "C"`, [opts.collectionId])).rows.map((r) => String(r.title).trim());
+    const existing = new Set(existingRows);
+    // a key repeated in the file updates one row (the last value wins), it never creates a hidden duplicate
+    updates = [...unique].filter((k) => existing.has(k)).length;
+    inserts = [...unique].filter((k) => !existing.has(k)).length;
+    if (opts.collectionMode === 'replace') {
+      const gone = existingRows.filter((t) => !unique.has(t));
+      removes = gone.length;
+      removeSample = gone.slice(0, 50);
+    }
   }
   // Preview of the selected sheet/range (first 100 rows) so the user sees exactly what will be imported.
-  return { rows: data.length, inserts, updates, duplicatesInFile, invalid: invalid.slice(0, 200), invalidCount: invalid.length, types, header, preview: sheetPreview(sh) };
+  return { rows: data.length, inserts, updates, removes, removeSample, duplicatesInFile, invalid: invalid.slice(0, 200), invalidCount: invalid.length, types, header, preview: sheetPreview(sh) };
 }
 
 export async function commitTabular(s: Services, q: Tx, user: AuthUser, actor: AuditActor, plan: ImportPlan, target: ImportTarget, opts: TabularOptions, jobId: string) {
@@ -671,7 +688,16 @@ export async function commitTabular(s: Services, q: Tx, user: AuthUser, actor: A
   let inserted = 0;
   let updated = 0;
   const existing = new Map<string, string>();
-  if (opts.collectionMode === 'upsert') for (const r of (await q.query(`select id, title from pages where collection_id = $1 and deleted_at is null`, [collectionId])).rows) existing.set(String(r.title).trim(), r.id);
+  const keyed = opts.collectionMode === 'upsert' || opts.collectionMode === 'replace';
+  if (opts.collectionMode === 'replace') {
+    if (!opts.collectionId) throw unprocessable('replace_needs_collection', 'Заменить можно только строки существующей коллекции');
+  }
+  if (keyed) for (const r of (await q.query(`select id, title from pages where collection_id = $1 and deleted_at is null`, [collectionId])).rows) existing.set(String(r.title).trim(), r.id);
+  if (opts.collectionMode === 'replace' && !opts.confirmReplace) {
+    const fileKeys = new Set(data.map((r) => (r[keyCol] ?? '').trim()));
+    if ([...existing.keys()].some((k) => !fileKeys.has(k))) throw unprocessable('replace_not_confirmed', 'Замена удалит строки, которых нет в файле: сначала выполните пробный прогон и подтвердите');
+  }
+  const seen = new Set<string>();
   for (const r of data) {
     const props: Record<string, unknown> = {};
     header.forEach((h, i) => {
@@ -688,11 +714,23 @@ export async function commitTabular(s: Services, q: Tx, user: AuthUser, actor: A
       await q.query(`insert into page_events (org_id, page_id, actor_id, type, data) values ($1, $2, $3, 'properties', $4)`, [user.orgId, ex, user.id, { importJob: jobId, after: props }]);
       updated++;
     } else {
-      await createPage(q, user, actor, { spaceId, parentId: containerId, title: key || 'Без названия', properties: props, collectionId, revisionKind: 'import' });
+      const { page: row } = await createPage(q, user, actor, { spaceId, parentId: containerId, title: key || 'Без названия', properties: props, collectionId, revisionKind: 'import' });
+      // a key repeated within the file updates the row just created instead of adding a hidden duplicate
+      if (keyed) existing.set(key, row.id);
       inserted++;
+    }
+    seen.add(key);
+  }
+  let removed = 0;
+  if (opts.collectionMode === 'replace') {
+    // Rows absent from the file go to the trash as one restorable batch (never deleted outright).
+    for (const [key, rowId] of existing) {
+      if (seen.has(key)) continue;
+      await trashPage(q, user, actor, rowId);
+      removed++;
     }
   }
   await attachSources(q, user, plan, () => containerId);
-  await audit(q, actor, { action: 'import.commit', targetType: 'collection', targetId: collectionId, details: { jobId, inserted, updated } });
-  return { pages: [{ id: containerId, title }], rootPageId: containerId, collectionId, inserted, updated };
+  await audit(q, actor, { action: 'import.commit', targetType: 'collection', targetId: collectionId, details: { jobId, inserted, updated, removed, mode: opts.collectionMode ?? 'new' } });
+  return { pages: [{ id: containerId, title }], rootPageId: containerId, collectionId, inserted, updated, removed };
 }
