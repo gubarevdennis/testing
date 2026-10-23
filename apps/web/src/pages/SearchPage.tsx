@@ -459,16 +459,6 @@ export default function SearchPage() {
         </div>
       ) : (
         <>
-          {results.length === 0 && (
-            <div className="empty-state compact">
-              <p>Среди загруженных результатов нет совпадений выбранного типа.</p>
-              {search.hasNextPage && (
-                <button className="btn sm" onClick={() => search.fetchNextPage()}>
-                  Загрузить ещё
-                </button>
-              )}
-            </div>
-          )}
           <ul className="search-results" onKeyDown={onListKey} aria-label="Результаты поиска">
             {results.map((r, i) => (
               <li key={r.pageId} className={'search-result' + (i === active ? ' active' : '')}>

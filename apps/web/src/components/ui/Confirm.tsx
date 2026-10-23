@@ -5,7 +5,8 @@ import { Dialog } from './Dialog';
 interface ConfirmReq {
   title: string;
   body: ReactNode;
-  confirmLabel?: string;
+  /** The button names the action («Удалить», «Переместить»): a generic «OK» hides what happens (R-UI-027). */
+  confirmLabel: string;
   danger?: boolean;
   /** Text the user must type to confirm (dangerous irreversible operations). */
   typeToConfirm?: string;
@@ -39,7 +40,7 @@ export function ConfirmHost() {
             Отмена
           </button>
           <button className={'btn ' + (req.danger ? 'danger solid' : 'primary')} disabled={!ok} onClick={() => close(true)}>
-            {req.confirmLabel ?? 'Подтвердить'}
+            {req.confirmLabel}
           </button>
         </>
       }

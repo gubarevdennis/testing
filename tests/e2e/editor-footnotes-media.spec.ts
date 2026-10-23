@@ -167,7 +167,11 @@ test('R-MEDIA-007: a picture in a line of text — pasted inline, uploaded as an
   expect(img.attrs).toMatchObject({ width: 48, valign: 'middle', alt: 'Кнопка «Сохранить»' });
 
   // keyboard resize (R-MEDIA-012): Alt+Shift+→ grows it by a quarter
-  await inl.click();
+  // the click must select the picture (node selection) before the shortcut applies to it
+  await expect(async () => {
+    await inl.click();
+    await expect(inl.locator('xpath=ancestor-or-self::*[contains(@class,"ProseMirror-selectednode")][1]')).toHaveCount(1, { timeout: 1000 });
+  }).toPass({ timeout: 10_000 });
   await page.keyboard.press('Alt+Shift+ArrowRight');
   await expect(inl).toHaveAttribute('style', /width: 60px/);
   await page.keyboard.press(`${mod}+z`);
@@ -197,6 +201,18 @@ test('R-MEDIA-007: a picture in a line of text — pasted inline, uploaded as an
   img = nodesOf((await apiContent(page.request, id)).content, 'inlineImage')[0];
   expect(img.attrs.attachmentId).toBe(att); // the same attachment all along
   expect(img.attrs.alt).toBe('Кнопка «Сохранить»');
+  // «Удалить» on the inline toolbar removes only the picture (text around it stays); one Undo brings it back
+  const textBefore = await ed.locator('p', { has: page.locator('img.kb-inline-image') }).first().innerText();
+  await ed.locator('img.kb-inline-image').click();
+  await page.getByRole('toolbar', { name: 'Изображение в строке' }).getByRole('button', { name: 'Удалить' }).click();
+  await expect(ed.locator('img.kb-inline-image')).toHaveCount(0);
+  await expectSaved(page);
+  expect(nodesOf((await apiContent(page.request, id)).content, 'inlineImage')).toHaveLength(0);
+  expect(JSON.stringify((await apiContent(page.request, id)).content)).toContain(textBefore.trim().slice(0, 10));
+  await page.keyboard.press(`${mod}+z`);
+  await expect(ed.locator('img.kb-inline-image')).toHaveCount(1);
+  await expectSaved(page);
+  expect(nodesOf((await apiContent(page.request, id)).content, 'inlineImage')[0].attrs.attachmentId).toBe(att);
 });
 
 test('R-MEDIA-007: a picture copied from another page as HTML (no internal clipboard format) becomes an attachment of the target page', async ({ page }) => {
