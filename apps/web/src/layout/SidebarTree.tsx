@@ -122,6 +122,15 @@ export function SidebarTree({ personal, spaces, shared, onNavigate }: Props) {
   const virtualizer = useVirtualizer({ count: rows.length, getScrollElement: () => scrollRef.current, estimateSize: () => ROW_H, overscan: 12 });
   useTreeScrollMemory(scrollRef, rows.length);
   useRevealCurrentPage(currentPage);
+  // scroll the open page into view once its row exists (ancestors may expand and load after navigation)
+  const revealed = useRef<string | null>(null);
+  useEffect(() => {
+    if (!currentPage || revealed.current === currentPage) return;
+    const idx = rows.findIndex((r) => r.kind === 'node' && r.node.id === currentPage);
+    if (idx < 0) return;
+    revealed.current = currentPage;
+    virtualizer.scrollToIndex(idx, { align: 'auto' });
+  }, [currentPage, rows, virtualizer]);
 
   // ---------------- keyboard navigation (roving tabindex)
   const [focusIdx, setFocusIdx] = useState(0);
