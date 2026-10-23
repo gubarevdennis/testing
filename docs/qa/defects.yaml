@@ -8,7 +8,7 @@
 # scripts/release-gate.py fails while any blocker/critical/high defect is open (OPS-018).
 defects:
   - id: PERF-D1
-    title: Ввод при замедлении CPU 4× не укладывается в бюджет (p95 ≈ 0,5–0,8 с вместо 50 мс; p99 0,8–1,2 с вместо 100 мс)
+    title: Ввод при замедлении CPU 4× не укладывается в бюджет (статья 11 тыс. слов — p95 73 мс вместо 50, p99 104 мс вместо 100; было 0,5–0,8 с)
     severity: high
     status: open
     owner: команда «Редактор»
@@ -16,7 +16,7 @@ defects:
     requirements: [R-PERF-008, AT-84]
     source: docs/PERFORMANCE.md «Открытые дефекты производительности» п. 1
   - id: PERF-D2
-    title: Документ 5 000 блоков — p50 ввода ≈ 190 мс; вставка 5 000 блоков одной транзакцией квадратична (y-prosemirror mapPositionMigration)
+    title: Документ 5 000 блоков — p95 ввода ≈ 62 мс при 1× (было ≈ 600 мс); вставка 5 000 блоков одной транзакцией квадратична (y-prosemirror mapPositionMigration)
     severity: high
     status: open
     owner: команда «Редактор»
