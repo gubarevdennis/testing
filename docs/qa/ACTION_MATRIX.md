@@ -6,15 +6,15 @@
 
 | Показатель | Значение |
 |---|---|
-| Действий в инвентаризации | **1030** |
-| Покрыто хотя бы одним автотестом | **367** (35.6%) |
+| Действий в инвентаризации | **1032** |
+| Покрыто хотя бы одним автотестом | **369** (35.8%) |
 | Критичных действий | 293; покрыто 171 (58.4%) |
-| Критичных с пройденным тестом в последнем запуске | 169 |
-| Ячеек «действие × состояние» (без N/A) | 6512; покрыто 605 (9.3%) |
-| Неоднозначных ссылок тестов, не засчитанных | 197 |
-| Сборка последнего запуска | `30e43fc22ef3` (рабочая копия с изменениями), 2026-10-23T06:02:04.584Z |
+| Критичных с пройденным тестом в последнем запуске | 171 |
+| Ячеек «действие × состояние» (без N/A) | 6523; покрыто 614 (9.4%) |
+| Неоднозначных ссылок тестов, не засчитанных | 199 |
+| Сборка последнего запуска | `dcce5d0b7f7b` (рабочая копия с изменениями), 2026-10-23T09:55:03.978Z |
 
-Состояния: success: покрыто 367, N/A 0, пробел 663; empty: покрыто 50, N/A 240, пробел 740; loading: покрыто 19, N/A 378, пробел 633; cancel: покрыто 96, N/A 324, пробел 610; error: покрыто 32, N/A 129, пробел 869; offline: покрыто 12, N/A 97, пробел 921; no-permission: покрыто 9, N/A 67, пробел 954; double-click: покрыто 20, N/A 493, пробел 517.
+Состояния: success: покрыто 369, N/A 0, пробел 663; empty: покрыто 55, N/A 241, пробел 736; loading: покрыто 19, N/A 379, пробел 634; cancel: покрыто 98, N/A 324, пробел 610; error: покрыто 32, N/A 130, пробел 870; offline: покрыто 12, N/A 98, пробел 922; no-permission: покрыто 9, N/A 67, пробел 956; double-click: покрыто 20, N/A 494, пробел 518.
 
 ## Не покрытые критичные действия (блокируют релиз)
 
@@ -112,9 +112,9 @@
 | `shell/Sidebar/confirm.est-neotpravlennye-izmeneniya.vyyti` | button | Выйти | `apps/web/src/layout/Sidebar.tsx:94` |
 | `shell/Sidebar/import` | link | Импорт | `apps/web/src/layout/Sidebar.tsx:177` |
 | `shell/Sidebar/korzina` | link | Корзина | `apps/web/src/layout/Sidebar.tsx:180` |
-| `shell/SidebarTree/spacemenu.new` | menu-item | Новая страница | `apps/web/src/layout/SidebarTree.tsx:384` |
-| `shell/TreeRow/sozdat-pervuyu-stranicu` | button | Создать первую страницу | `apps/web/src/layout/SidebarTree.tsx:509` |
-| `shell/TreeRow/novaya-stranica-v` | button | Новая страница в «{…}» | `apps/web/src/layout/SidebarTree.tsx:532` |
+| `shell/SidebarTree/spacemenu.new` | menu-item | Новая страница | `apps/web/src/layout/SidebarTree.tsx:412` |
+| `shell/TreeRow/sozdat-pervuyu-stranicu` | button | Создать первую страницу | `apps/web/src/layout/SidebarTree.tsx:537` |
+| `shell/TreeRow/novaya-stranica-v` | button | Новая страница в «{…}» | `apps/web/src/layout/SidebarTree.tsx:560` |
 | `home/Home/novaya-stranica-v-lichnom-prostranstve` | button | Новая страница В личном пространстве | `apps/web/src/pages/Home.tsx:128` |
 | `home/Home/import-docx-markdown-csv-xlsx` | link | Импорт DOCX, Markdown, CSV, XLSX | `apps/web/src/pages/Home.tsx:144` |
 | `home/Home/sozdat-pervuyu-stranicu` | button | Создать первую страницу | `apps/web/src/pages/Home.tsx:169` |
@@ -135,7 +135,7 @@
 | `space/SettingsTab/confirm.arhivirovat-prostranstvo.arhivirovat` | button | Архивировать | `apps/web/src/pages/SpacePage.tsx:265` |
 | `space/SettingsTab/sbrosit` | button | Сбросить | `apps/web/src/pages/SpacePage.tsx:364` |
 | `space/SettingsTab/vernut-iz-arhiva` | button | Вернуть из архива | `apps/web/src/pages/SpacePage.tsx:387` |
-| `space/SpacePage/import` | link | Импорт | `apps/web/src/pages/SpacePage.tsx:507` |
+| `space/SpacePage/import` | link | Импорт | `apps/web/src/pages/SpacePage.tsx:511` |
 | `templates/PreviewDialog/sozdat-stranicu-iz-shablona` | button | Создать страницу из шаблона | `apps/web/src/pages/TemplatesPage.tsx:197` |
 | `templates/NewTemplateDialog/gde-dostupen` | select | Где доступен | `apps/web/src/pages/TemplatesPage.tsx:382` |
 | `trash/TrashPage/confirm.udalit-prostranstvo-navsegda` | dialog | Удалить пространство навсегда? | `apps/web/src/pages/TrashPage.tsx:129` |
@@ -347,9 +347,9 @@
 | `space/SpaceMembersEditor/confirm.otkryt-prostranstvo-vsey-organizacii.otkryt-vsem` | button | Открыть всем | `apps/web/src/components/space/SpaceAccess.tsx:259` |
 | `space/SpaceMembersEditor/confirm.ponizit-sobstvennyy-dostup.ponizit` | button | Понизить | `apps/web/src/components/space/SpaceAccess.tsx:291` |
 | `space/SpaceMembersEditor/confirm.ubrat-iz-prostranstva` | dialog | Убрать из пространства: {…}? | `apps/web/src/components/space/SpaceAccess.tsx:303` |
-| `ui/Menu/x` | menu-item | {…} {…} ✓ | `apps/web/src/components/ui/Menu.tsx:80` |
-| `ui/SubMenu/menu-item-data` | menu-item | {…} | `apps/web/src/components/ui/Menu.tsx:126` |
-| `ui/SubMenu/x` | menu-item | {…} {…} ✓ | `apps/web/src/components/ui/Menu.tsx:172` |
+| `ui/Menu/x` | menu-item | {…} {…} ✓ | `apps/web/src/components/ui/Menu.tsx:82` |
+| `ui/SubMenu/menu-item-data` | menu-item | {…} | `apps/web/src/components/ui/Menu.tsx:147` |
+| `ui/SubMenu/x` | menu-item | {…} {…} ✓ | `apps/web/src/components/ui/Menu.tsx:193` |
 | `ui/Toasts/link-data` | link | {…} | `apps/web/src/components/ui/Toast.tsx:51` |
 | `ui/Toasts/button-data` | button | {…} | `apps/web/src/components/ui/Toast.tsx:65` |
 | `ui/Toasts/zakryt-uvedomlenie` | button | Закрыть уведомление | `apps/web/src/components/ui/Toast.tsx:75` |
@@ -358,16 +358,16 @@
 | `editor/PageEditor/razreshit` | button | Разрешить | `apps/web/src/editor/Editor.tsx:150` |
 | `editor/FatalBanner/skachat-lokalnuyu-kopiyu-markdown` | button | Скачать локальную копию (Markdown) | `apps/web/src/editor/Editor.tsx:218` |
 | `editor/EditorInner/otkryt` | toast-action | Открыть | `apps/web/src/editor/Editor.tsx:504` |
-| `editor/EditorInner/button-data` | button | {…} | `apps/web/src/editor/Editor.tsx:514` |
-| `editor/EditorInner/otkryt~2` | toast-action | Открыть | `apps/web/src/editor/Editor.tsx:547` |
-| `editor/ReadOnlyCommentButton/kommentirovat` | button | Комментировать | `apps/web/src/editor/Editor.tsx:601` |
-| `editor/FindBar/nayti-na-stranice` | input | Найти на странице | `apps/web/src/editor/Editor.tsx:623` |
-| `editor/FindBar/predyduschee` | button | Предыдущее | `apps/web/src/editor/Editor.tsx:647` |
-| `editor/FindBar/sleduyuschee` | button | Следующее | `apps/web/src/editor/Editor.tsx:650` |
-| `editor/FindBar/zakryt-poisk` | button | Закрыть поиск | `apps/web/src/editor/Editor.tsx:653` |
-| `editor/MathDialog/formula` | dialog | Формула | `apps/web/src/editor/Editor.tsx:701` |
-| `editor/MathDialog/gotovo` | button | Готово | `apps/web/src/editor/Editor.tsx:710` |
-| `editor/MathDialog/formula-latex` | input | Формула LaTeX | `apps/web/src/editor/Editor.tsx:717` |
+| `editor/EditorInner/button-data` | button | {…} | `apps/web/src/editor/Editor.tsx:525` |
+| `editor/EditorInner/otkryt~2` | toast-action | Открыть | `apps/web/src/editor/Editor.tsx:558` |
+| `editor/ReadOnlyCommentButton/kommentirovat` | button | Комментировать | `apps/web/src/editor/Editor.tsx:612` |
+| `editor/FindBar/nayti-na-stranice` | input | Найти на странице | `apps/web/src/editor/Editor.tsx:634` |
+| `editor/FindBar/predyduschee` | button | Предыдущее | `apps/web/src/editor/Editor.tsx:658` |
+| `editor/FindBar/sleduyuschee` | button | Следующее | `apps/web/src/editor/Editor.tsx:661` |
+| `editor/FindBar/zakryt-poisk` | button | Закрыть поиск | `apps/web/src/editor/Editor.tsx:664` |
+| `editor/MathDialog/formula` | dialog | Формула | `apps/web/src/editor/Editor.tsx:712` |
+| `editor/MathDialog/gotovo` | button | Готово | `apps/web/src/editor/Editor.tsx:721` |
+| `editor/MathDialog/formula-latex` | input | Формула LaTeX | `apps/web/src/editor/Editor.tsx:728` |
 | `editor/ImageUrlDialog/otmena` | button | Отмена | `apps/web/src/editor/ImageUrlDialog.tsx:43` |
 | `editor/ImageUrlDialog/zagruzka` | button | Загрузка… | `apps/web/src/editor/ImageUrlDialog.tsx:46` |
 | `editor/PagePicker/poisk-stranicy` | input | Поиск страницы | `apps/web/src/editor/PagePicker.tsx:52` |
@@ -390,13 +390,13 @@
 | `editor/commands/mermaid` | command | Схема (Mermaid) | `apps/web/src/editor/commands.tsx:62` |
 | `editor/suggest/items.bez-nazvaniya` | toast-action | Без названия | `apps/web/src/editor/extensions/suggest.tsx:113` |
 | `editor/suggest/items.bez-nazvaniya~2` | toast-action | Без названия | `apps/web/src/editor/extensions/suggest.tsx:130` |
-| `editor/BlockHandle/turn` | option | Превратить в | `apps/web/src/editor/menus/BlockHandle.tsx:50` |
-| `editor/BlockHandle/none` | menu-item | По умолчанию | `apps/web/src/editor/menus/BlockHandle.tsx:61` |
-| `editor/BlockHandle/link` | menu-item | Копировать ссылку на блок | `apps/web/src/editor/menus/BlockHandle.tsx:88` |
-| `editor/BlockHandle/md` | menu-item | Копировать как Markdown | `apps/web/src/editor/menus/BlockHandle.tsx:97` |
-| `editor/BlockHandle/comment` | menu-item | Комментировать | `apps/web/src/editor/menus/BlockHandle.tsx:108` |
-| `editor/BlockHandle/dobavit-blok-nizhe` | button | Добавить блок ниже | `apps/web/src/editor/menus/BlockHandle.tsx:177` |
-| `editor/BlockHandle/peretaschite-ili-nazhmite-dlya-deystviy` | button | Перетащите или нажмите для действий | `apps/web/src/editor/menus/BlockHandle.tsx:188` |
+| `editor/BlockHandle/turn` | option | Превратить в | `apps/web/src/editor/menus/BlockHandle.tsx:49` |
+| `editor/BlockHandle/none` | menu-item | По умолчанию | `apps/web/src/editor/menus/BlockHandle.tsx:60` |
+| `editor/BlockHandle/link` | menu-item | Копировать ссылку на блок | `apps/web/src/editor/menus/BlockHandle.tsx:87` |
+| `editor/BlockHandle/md` | menu-item | Копировать как Markdown | `apps/web/src/editor/menus/BlockHandle.tsx:96` |
+| `editor/BlockHandle/comment` | menu-item | Комментировать | `apps/web/src/editor/menus/BlockHandle.tsx:107` |
+| `editor/BlockHandle/dobavit-blok-nizhe` | button | Добавить блок ниже | `apps/web/src/editor/menus/BlockHandle.tsx:185` |
+| `editor/BlockHandle/peretaschite-ili-nazhmite-dlya-deystviy` | button | Перетащите или нажмите для действий | `apps/web/src/editor/menus/BlockHandle.tsx:198` |
 | `editor/BubbleToolbar/p` | menu-item | Текст | `apps/web/src/editor/menus/BubbleToolbar.tsx:71` |
 | `editor/BubbleToolbar/h1` | menu-item | Заголовок 1 | `apps/web/src/editor/menus/BubbleToolbar.tsx:72` |
 | `editor/BubbleToolbar/h2` | menu-item | Заголовок 2 | `apps/web/src/editor/menus/BubbleToolbar.tsx:73` |
@@ -495,9 +495,9 @@
 | `editor/palette/highlights.pink` | option | Розовый фон | `apps/web/src/editor/palette.ts:26` |
 | `editor/palette/highlights.red` | option | Красный фон | `apps/web/src/editor/palette.ts:27` |
 | `editor/palette/highlights.teal` | option | Бирюзовый фон | `apps/web/src/editor/palette.ts:28` |
-| `help/HelpCenter/poisk-po-spravke` | input | Поиск по справке | `apps/web/src/help/HelpCenter.tsx:83` |
-| `help/HelpCenter/button-data` | button | {…} | `apps/web/src/help/HelpCenter.tsx:88` |
-| `help/HelpCenter/pokazyvat-podskazki-dlya-novichkov` | toggle | Показывать подсказки для новичков | `apps/web/src/help/HelpCenter.tsx:114` |
+| `help/HelpCenter/poisk-po-spravke` | input | Поиск по справке | `apps/web/src/help/HelpCenter.tsx:85` |
+| `help/HelpCenter/button-data` | button | {…} | `apps/web/src/help/HelpCenter.tsx:90` |
+| `help/HelpCenter/pokazyvat-podskazki-dlya-novichkov` | toggle | Показывать подсказки для новичков | `apps/web/src/help/HelpCenter.tsx:116` |
 | `help/Onboarding/slash` | option | Команды через «/» | `apps/web/src/help/Onboarding.tsx:7` |
 | `help/Onboarding/drag` | option | Перемещение блоков | `apps/web/src/help/Onboarding.tsx:8` |
 | `help/Onboarding/tree` | option | Структура базы знаний | `apps/web/src/help/Onboarding.tsx:9` |
@@ -529,19 +529,19 @@
 | `shell/Sidebar/bez-nazvaniya` | link | Без названия | `apps/web/src/layout/Sidebar.tsx:152` |
 | `shell/Sidebar/povtorit` | button | Повторить | `apps/web/src/layout/Sidebar.tsx:161` |
 | `shell/Sidebar/administrirovanie` | link | Администрирование | `apps/web/src/layout/Sidebar.tsx:184` |
-| `shell/SidebarTree/personal` | option | Моё пространство | `apps/web/src/layout/SidebarTree.tsx:104` |
-| `shell/SidebarTree/spaces` | option | Пространства | `apps/web/src/layout/SidebarTree.tsx:108` |
-| `shell/SidebarTree/shared` | option | Доступные мне | `apps/web/src/layout/SidebarTree.tsx:117` |
-| `shell/SidebarTree/icon` | menu-item | Изменить иконку | `apps/web/src/layout/SidebarTree.tsx:373` |
-| `shell/SidebarTree/link` | menu-item | Копировать ссылку | `apps/web/src/layout/SidebarTree.tsx:377` |
-| `shell/SidebarTree/fav` | menu-item | В избранное | `apps/web/src/layout/SidebarTree.tsx:378` |
-| `shell/SidebarTree/open` | menu-item | Обзор пространства | `apps/web/src/layout/SidebarTree.tsx:385` |
-| `shell/TreeRow/button-data` | button | {…} | `apps/web/src/layout/SidebarTree.tsx:484` |
-| `shell/TreeRow/povtorit-zagruzku` | button | Повторить загрузку | `apps/web/src/layout/SidebarTree.tsx:500` |
-| `shell/TreeRow/button-data~2` | button | {…} | `apps/web/src/layout/SidebarTree.tsx:526` |
-| `shell/TreeRow/deystviya` | button | Действия | `apps/web/src/layout/SidebarTree.tsx:541` |
-| `shell/TreeRow/bez-nazvaniya` | link | Без названия | `apps/web/src/layout/SidebarTree.tsx:580` |
-| `shell/TreeRow/deystviya~2` | button | Действия | `apps/web/src/layout/SidebarTree.tsx:610` |
+| `shell/SidebarTree/personal` | option | Моё пространство | `apps/web/src/layout/SidebarTree.tsx:105` |
+| `shell/SidebarTree/spaces` | option | Пространства | `apps/web/src/layout/SidebarTree.tsx:109` |
+| `shell/SidebarTree/shared` | option | Доступные мне | `apps/web/src/layout/SidebarTree.tsx:118` |
+| `shell/SidebarTree/icon` | menu-item | Изменить иконку | `apps/web/src/layout/SidebarTree.tsx:401` |
+| `shell/SidebarTree/link` | menu-item | Копировать ссылку | `apps/web/src/layout/SidebarTree.tsx:405` |
+| `shell/SidebarTree/fav` | menu-item | В избранное | `apps/web/src/layout/SidebarTree.tsx:406` |
+| `shell/SidebarTree/open` | menu-item | Обзор пространства | `apps/web/src/layout/SidebarTree.tsx:413` |
+| `shell/TreeRow/button-data` | button | {…} | `apps/web/src/layout/SidebarTree.tsx:512` |
+| `shell/TreeRow/povtorit-zagruzku` | button | Повторить загрузку | `apps/web/src/layout/SidebarTree.tsx:528` |
+| `shell/TreeRow/button-data~2` | button | {…} | `apps/web/src/layout/SidebarTree.tsx:554` |
+| `shell/TreeRow/deystviya` | button | Действия | `apps/web/src/layout/SidebarTree.tsx:569` |
+| `shell/TreeRow/bez-nazvaniya` | link | Без названия | `apps/web/src/layout/SidebarTree.tsx:608` |
+| `shell/TreeRow/deystviya~2` | button | Действия | `apps/web/src/layout/SidebarTree.tsx:638` |
 | `shell/treeActions/otkryt` | toast-action | Открыть | `apps/web/src/layout/treeActions.tsx:128` |
 | `shell/treeActions/otmenit` | toast-action | Отменить | `apps/web/src/layout/treeActions.tsx:129` |
 | `shell/treeActions/confirm.skopiruyte-ssylku` | dialog | Скопируйте ссылку | `apps/web/src/layout/treeActions.tsx:174` |
@@ -631,7 +631,7 @@
 | `settings/MfaCard/ssylka-otpauth` | input | Ссылка otpauth:// | `apps/web/src/pages/SettingsPage.tsx:417` |
 | `settings/MfaCard/vklyuchit` | button | Включить | `apps/web/src/pages/SettingsPage.tsx:423` |
 | `settings/MfaCard/nastroit` | button | Настроить | `apps/web/src/pages/SettingsPage.tsx:431` |
-| `settings/TokensTab/srok-deystviya-dney` | input | Срок действия, дней | `apps/web/src/pages/SettingsPage.tsx:616` |
+| `settings/TokensTab/srok-deystviya-dney` | input | Срок действия, дней | `apps/web/src/pages/SettingsPage.tsx:620` |
 | `space/ErrorState/povtorit` | button | Повторить | `apps/web/src/pages/SpacePage.tsx:54` |
 | `space/Toggle/toggle-data` | toggle | {…} | `apps/web/src/pages/SpacePage.tsx:71` |
 | `space/PagesTab/bez-nazvaniya` | link | Без названия | `apps/web/src/pages/SpacePage.tsx:133` |
@@ -643,9 +643,9 @@
 | `space/SettingsTab/soglasovanie-pered-publikaciey` | toggle | Согласование перед публикацией | `apps/web/src/pages/SpacePage.tsx:350` |
 | `space/SettingsTab/razreshit-eksport` | toggle | Разрешить экспорт | `apps/web/src/pages/SpacePage.tsx:354` |
 | `space/SettingsTab/razreshit-skachivanie-vlozheniy` | toggle | Разрешить скачивание вложений | `apps/web/src/pages/SpacePage.tsx:355` |
-| `space/SpacePage/na-glavnuyu` | link | На главную | `apps/web/src/pages/SpacePage.tsx:433` |
-| `space/SpacePage/pages` | option | Страницы | `apps/web/src/pages/SpacePage.tsx:448` |
-| `space/SpacePage/tab-data` | tab | {…} | `apps/web/src/pages/SpacePage.tsx:517` |
+| `space/SpacePage/na-glavnuyu` | link | На главную | `apps/web/src/pages/SpacePage.tsx:437` |
+| `space/SpacePage/pages` | option | Страницы | `apps/web/src/pages/SpacePage.tsx:452` |
+| `space/SpacePage/tab-data` | tab | {…} | `apps/web/src/pages/SpacePage.tsx:521` |
 | `templates/ErrorState/povtorit` | button | Повторить | `apps/web/src/pages/TemplatesPage.tsx:57` |
 | `templates/LocationPicker/select-data` | select | {…} | `apps/web/src/pages/TemplatesPage.tsx:76` |
 | `templates/LocationPicker/select-data~2` | select | {…} | `apps/web/src/pages/TemplatesPage.tsx:89` |
@@ -726,7 +726,7 @@
 | `admin/AdminPage/route.admin-groups` | /admin/groups | **да** | ✔ | ✗ | ✗ | · | ✗ | ✗ | ✗ | · | PASS | `e2e/acl-p0-routes.spec.ts` ROUTE-04: administrator route — department → employee → automatic space access → guest … |
 | `admin/AdminPage/route.admin-settings` | /admin/settings | **да** | ✔ | ✔ | ✗ | · | ✔ | ✗ | ✗ | · | PASS | `e2e/qa-actions.spec.ts` R-QA-004 organisation name: «Переименовать» is unavailable without a change and a serve…<br>`e2e/qa-crawl.spec.ts` QA26-01, QA26-04, R-UI-026: every route rendered as owner exposes only named controls; … |
 | `admin/AdminPage/route.admin-audit` | /admin/audit | **да** | ✔ | ✗ | ✗ | · | ✗ | ✗ | ✗ | · | PASS | `e2e/acl-p0-admin.spec.ts` ROUTE-06: the auditor reads who changed what in the journal but does not see titles or …<br>`e2e/acl-p0-routes.spec.ts` ROUTE-04: administrator route — department → employee → automatic space access → guest … |
-| `admin/AdminPage/route.admin-archives` | /admin/archives | **да** | ✔ | ✗ | ✗ | · | ✗ | ✗ | ✗ | · | PASS (with failing tests) | `e2e/acl-p0-routes.spec.ts` ROUTE-04: administrator route — department → employee → automatic space access → guest …<br>`e2e/io-p0-roundtrip.spec.ts` archive restore dialog: the administrator chooses a new isolated space as the target (R… |
+| `admin/AdminPage/route.admin-archives` | /admin/archives | **да** | ✔ | ✗ | ✗ | · | ✗ | ✗ | ✗ | · | PASS | `e2e/acl-p0-routes.spec.ts` ROUTE-04: administrator route — department → employee → automatic space access → guest …<br>`e2e/io-p0-roundtrip.spec.ts` archive restore dialog: the administrator chooses a new isolated space as the target (R… |
 | `admin/AdminPage/route.admin-health` | /admin/health | **да** | ✔ | ✗ | ✗ | · | ✗ | ✗ | ✗ | · | PASS | `e2e/qa-crawl.spec.ts` QA26-01, QA26-04, R-UI-026: every route rendered as owner exposes only named controls; … |
 | `admin/AdminPage/route.admin-expiring` | /admin/expiring | **да** | ✔ | ✗ | ✗ | · | ✗ | ✗ | ✗ | · | PASS | `e2e/qa-crawl.spec.ts` QA26-01, QA26-04, R-UI-026: every route rendered as owner exposes only named controls; … |
 | `admin/AdminPage/route.admin-access` | /admin/access | **да** | ✔ | ✗ | ✗ | · | ✗ | ✗ | ✗ | · | PASS | `e2e/acl-p0-admin.spec.ts` R-ACL-056: emergency access is requested with a reason, approved by a second administra…<br>`e2e/acl-p0-admin.spec.ts` R-ADMIN-018 V16-S15: the administrator checks a user's access to a document — decision,…<br>`e2e/acl-p0-routes.spec.ts` ROUTE-04: administrator route — department → employee → automatic space access → guest … |
@@ -734,27 +734,27 @@
 | `admin/ArchivesSection/vosstanovit-iz-arhiva` | Восстановить из архива | **да** | ✔ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | PASS | `e2e/acl-p0-routes.spec.ts` ROUTE-04: administrator route — department → employee → automatic space access → guest … |
 | `admin/ArchivesSection/sozdat-arhiv` | Создать архив | **да** | ✔ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | PASS | `e2e/acl-p0-routes.spec.ts` ROUTE-04: administrator route — department → employee → automatic space access → guest … |
 | `admin/ArchivesSection/skachat` | Скачать |  | ✔ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | PASS | `e2e/acl-p0-routes.spec.ts` ROUTE-04: administrator route — department → employee → automatic space access → guest … |
-| `admin/ArchivesSection/prodolzhit` | Продолжить |  | ✔ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | FAIL | `e2e/io-p0-roundtrip.spec.ts` archive restore dialog: the administrator chooses a new isolated space as the target (R… |
+| `admin/ArchivesSection/prodolzhit` | Продолжить |  | ✔ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | PASS | `e2e/io-p0-roundtrip.spec.ts` archive restore dialog: the administrator chooses a new isolated space as the target (R… |
 | `admin/ArchivesSection/otchet` | Отчёт |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | — | **нет теста** |
 | `admin/ExportDialog/x` | {…} — {…} |  | ✔ | · | ✗ | ✗ | ✗ | ✔ | ✗ | · | PASS | `e2e/collab-p0-editing.spec.ts` two editors change a paragraph, one table and the structure while one loses the connect… |
 | `admin/ExportDialog/arhiv-organizacii` | Архив организации | **да** | ✔ | ✗ | · | ✗ | ✗ | ✗ | ✗ | · | PASS | `e2e/acl-p0-routes.spec.ts` ROUTE-04: administrator route — department → employee → automatic space access → guest … |
 | `admin/ExportDialog/otmena` | Отмена |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | — | **нет теста** |
 | `admin/ExportDialog/sozdat-arhiv` | Создать архив | **да** | ✔ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | PASS | `e2e/acl-p0-routes.spec.ts` ROUTE-04: administrator route — department → employee → automatic space access → guest … |
 | `admin/ExportDialog/stranicy-prostranstva-i-fayly` | Страницы, пространства и файлы |  | ✗ | · | ✗ | ✗ | ✗ | ✗ | ✗ | · | — | **нет теста** |
-| `admin/ExportDialog/vash-parol` | Ваш пароль | **да** | ✔ | ✗ | · | · | ✗ | ✗ | ✗ | · | PASS (with failing tests) | `e2e/acl-p0-routes.spec.ts` ROUTE-04: administrator route — department → employee → automatic space access → guest …<br>`e2e/io-p0-roundtrip.spec.ts` archive restore dialog: the administrator chooses a new isolated space as the target (R… |
+| `admin/ExportDialog/vash-parol` | Ваш пароль | **да** | ✔ | ✗ | · | · | ✗ | ✗ | ✗ | · | PASS | `e2e/acl-p0-routes.spec.ts` ROUTE-04: administrator route — department → employee → automatic space access → guest …<br>`e2e/io-p0-roundtrip.spec.ts` archive restore dialog: the administrator chooses a new isolated space as the target (R… |
 | `admin/ExportDialog/ya-podtverzhdayu-vygruzku-vseh-dannyh-organizaci` | Я подтверждаю выгрузку всех данных организации |  | ✔ | · | ✗ | ✗ | ✗ | ✗ | ✗ | · | PASS | `e2e/acl-p0-routes.spec.ts` ROUTE-04: administrator route — department → employee → automatic space access → guest … |
 | `admin/ExportDialog/button-data` | {…} |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | — | **нет теста** |
 | `admin/AnalysisReport/polzovateli-v-arhive-naydeno-v-sisteme-ne-nayden` | Пользователи в архиве: {…} (найдено в системе: , не найдено: {…} ) | **да** | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | — | **нет теста** |
-| `admin/RestoreDialog/gotovo` | Готово |  | ✔ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | PASS (with failing tests) | `e2e/acl-p0-routes.spec.ts` ROUTE-04: administrator route — department → employee → automatic space access → guest …<br>`e2e/io-p0-roundtrip.spec.ts` archive restore dialog: the administrator chooses a new isolated space as the target (R… |
+| `admin/RestoreDialog/gotovo` | Готово |  | ✔ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | PASS | `e2e/acl-p0-routes.spec.ts` ROUTE-04: administrator route — department → employee → automatic space access → guest …<br>`e2e/io-p0-roundtrip.spec.ts` archive restore dialog: the administrator chooses a new isolated space as the target (R… |
 | `admin/RestoreDialog/obedinit-s-organizaciey-prostranstva-arhiva` | Объединить с организацией (пространства архива) |  | ✔ | · | ✗ | ✔ | ✗ | ✗ | ✗ | · | PASS | `e2e/editor-p0-clipboard.spec.ts` paste options: «Сохранить форматирование», «Объединить», «Только текст»; scripts and tr… |
-| `admin/RestoreDialog/v-novoe-izolirovannoe-prostranstvo-vidno-tolko-v` | В новое изолированное пространство (видно только вам) |  | ✔ | · | ✗ | ✗ | ✗ | ✗ | ✗ | · | PASS (with failing tests) | `e2e/acl-p0-routes.spec.ts` ROUTE-04: administrator route — department → employee → automatic space access → guest …<br>`e2e/io-p0-roundtrip.spec.ts` archive restore dialog: the administrator chooses a new isolated space as the target (R… |
-| `admin/RestoreDialog/nazvanie-novogo-prostranstva` | Название нового пространства |  | ✔ | ✗ | · | · | ✗ | ✗ | ✗ | · | PASS (with failing tests) | `e2e/acl-p0-routes.spec.ts` ROUTE-04: administrator route — department → employee → automatic space access → guest …<br>`e2e/io-p0-roundtrip.spec.ts` archive restore dialog: the administrator chooses a new isolated space as the target (R… |
+| `admin/RestoreDialog/v-novoe-izolirovannoe-prostranstvo-vidno-tolko-v` | В новое изолированное пространство (видно только вам) |  | ✔ | · | ✗ | ✗ | ✗ | ✗ | ✗ | · | PASS | `e2e/acl-p0-routes.spec.ts` ROUTE-04: administrator route — department → employee → automatic space access → guest …<br>`e2e/io-p0-roundtrip.spec.ts` archive restore dialog: the administrator chooses a new isolated space as the target (R… |
+| `admin/RestoreDialog/nazvanie-novogo-prostranstva` | Название нового пространства |  | ✔ | ✗ | · | · | ✗ | ✗ | ✗ | · | PASS | `e2e/acl-p0-routes.spec.ts` ROUTE-04: administrator route — department → employee → automatic space access → guest …<br>`e2e/io-p0-roundtrip.spec.ts` archive restore dialog: the administrator chooses a new isolated space as the target (R… |
 | `admin/RestoreDialog/v-suschestvuyuschee-prostranstvo` | В существующее пространство |  | ✗ | · | ✗ | ✗ | ✗ | ✗ | ✗ | · | — | **нет теста** |
 | `admin/RestoreDialog/prostranstvo-dlya-vosstanovleniya` | Пространство для восстановления |  | ✗ | ✗ | · | · | ✗ | ✗ | ✗ | · | — | **нет теста** |
-| `admin/RestoreDialog/vash-parol` | Ваш пароль | **да** | ✔ | ✗ | · | · | ✗ | ✗ | ✗ | · | PASS (with failing tests) | `e2e/acl-p0-routes.spec.ts` ROUTE-04: administrator route — department → employee → automatic space access → guest …<br>`e2e/io-p0-roundtrip.spec.ts` archive restore dialog: the administrator chooses a new isolated space as the target (R… |
-| `admin/RestoreDialog/ya-proveril-otchet-i-podtverzhdayu-vosstanovleni` | Я проверил отчёт и подтверждаю восстановление |  | ✔ | · | ✗ | ✗ | ✗ | ✗ | ✗ | · | PASS (with failing tests) | `e2e/acl-p0-routes.spec.ts` ROUTE-04: administrator route — department → employee → automatic space access → guest …<br>`e2e/io-p0-roundtrip.spec.ts` archive restore dialog: the administrator chooses a new isolated space as the target (R… |
+| `admin/RestoreDialog/vash-parol` | Ваш пароль | **да** | ✔ | ✗ | · | · | ✗ | ✗ | ✗ | · | PASS | `e2e/acl-p0-routes.spec.ts` ROUTE-04: administrator route — department → employee → automatic space access → guest …<br>`e2e/io-p0-roundtrip.spec.ts` archive restore dialog: the administrator chooses a new isolated space as the target (R… |
+| `admin/RestoreDialog/ya-proveril-otchet-i-podtverzhdayu-vosstanovleni` | Я проверил отчёт и подтверждаю восстановление |  | ✔ | · | ✗ | ✗ | ✗ | ✗ | ✗ | · | PASS | `e2e/acl-p0-routes.spec.ts` ROUTE-04: administrator route — department → employee → automatic space access → guest …<br>`e2e/io-p0-roundtrip.spec.ts` archive restore dialog: the administrator chooses a new isolated space as the target (R… |
 | `admin/RestoreDialog/otmena` | Отмена |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | — | **нет теста** |
-| `admin/RestoreDialog/vosstanovit` | Восстановить | **да** | ✔ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | PASS (with failing tests) | `e2e/acl-p0-routes.spec.ts` ROUTE-04: administrator route — department → employee → automatic space access → guest …<br>`e2e/io-p0-roundtrip.spec.ts` archive restore dialog: the administrator chooses a new isolated space as the target (R… |
+| `admin/RestoreDialog/vosstanovit` | Восстановить | **да** | ✔ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | PASS | `e2e/acl-p0-routes.spec.ts` ROUTE-04: administrator route — department → employee → automatic space access → guest …<br>`e2e/io-p0-roundtrip.spec.ts` archive restore dialog: the administrator chooses a new isolated space as the target (R… |
 | `admin/RestoreDialog/button-data` | {…} |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | — | **нет теста** |
 | `admin/RestoreDialog/otmena~2` | Отмена |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | — | **нет теста** |
 | `admin/RestoreDialog/proverit-arhiv` | Проверить архив | **да** | ✔ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | PASS | `e2e/acl-p0-routes.spec.ts` ROUTE-04: administrator route — department → employee → automatic space access → guest … |
@@ -916,16 +916,16 @@
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 | `app/Authenticated/povtorit` | Повторить |  | ✔ | ✔ | ✔ | ✗ | ✔ | ✗ | ✗ | ✗ | PASS | `e2e/editor-p0-dnd.spec.ts` autoscroll near the bottom edge while dragging, drop far below (QA26-09)<br>`e2e/editor-p0-dnd.spec.ts` drag threshold, preview, line before/after, one atomic drop, one Undo; ids kept on the …<br>`e2e/editor-p0-dnd.spec.ts` drop on another page in the sidebar tree moves the blocks there (ids kept); the page it…<br>… ещё 6 |
 | `app/Authenticated/povtorit~2` | Повторить |  | ✔ | ✔ | ✔ | ✗ | ✔ | ✗ | ✗ | ✗ | PASS | `e2e/editor-p0-dnd.spec.ts` autoscroll near the bottom edge while dragging, drop far below (QA26-09)<br>`e2e/editor-p0-dnd.spec.ts` drag threshold, preview, line before/after, one atomic drop, one Undo; ids kept on the …<br>`e2e/editor-p0-dnd.spec.ts` drop on another page in the sidebar tree moves the blocks there (ids kept); the page it…<br>… ещё 6 |
-| `app/Authenticated/route.root` | / | **да** | ✔ | ✗ | ✔ | ✔ | ✔ | ✗ | ✗ | · | PASS (with failing tests) | `e2e/a11y.spec.ts` keyboard only: quick switcher, help, dialogs close with Esc and return focus (UX-136, S…<br>`e2e/a11y.spec.ts` pixel baselines for stable screens (R-QA-008, AT-89)<br>`e2e/a11y.spec.ts` real 200% browser zoom (1280x800 at 2x = 640x400 CSS px) keeps every key screen usable …<br>… ещё 164 |
-| `app/Authenticated/route.p-pageid` | /p/:pageId | **да** | ✔ | ✗ | ✗ | ✔ | ✔ | ✔ | ✔ | · | PASS (with failing tests) | `e2e/a11y.spec.ts` keyboard only: quick switcher, help, dialogs close with Esc and return focus (UX-136, S…<br>`e2e/a11y.spec.ts` real 200% browser zoom (1280x800 at 2x = 640x400 CSS px) keeps every key screen usable …<br>`e2e/a11y.spec.ts` reduced motion: animations and transitions are effectively disabled (R-A11Y-002, AT-82)<br>… ещё 45 |
+| `app/Authenticated/route.root` | / | **да** | ✔ | ✔ | ✔ | ✔ | ✔ | ✗ | ✗ | · | PASS | `e2e/a11y.spec.ts` keyboard only: quick switcher, help, dialogs close with Esc and return focus (UX-136, S…<br>`e2e/a11y.spec.ts` pixel baselines for stable screens (R-QA-008, AT-89)<br>`e2e/a11y.spec.ts` real 200% browser zoom (1280x800 at 2x = 640x400 CSS px) keeps every key screen usable …<br>… ещё 165 |
+| `app/Authenticated/route.p-pageid` | /p/:pageId | **да** | ✔ | ✔ | ✗ | ✔ | ✔ | ✔ | ✔ | · | PASS | `e2e/a11y.spec.ts` keyboard only: quick switcher, help, dialogs close with Esc and return focus (UX-136, S…<br>`e2e/a11y.spec.ts` real 200% browser zoom (1280x800 at 2x = 640x400 CSS px) keeps every key screen usable …<br>`e2e/a11y.spec.ts` reduced motion: animations and transitions are effectively disabled (R-A11Y-002, AT-82)<br>… ещё 46 |
 | `app/Authenticated/route.p-pageid-slug` | /p/:pageId/:slug | **да** | ✔ | ✗ | ✗ | · | ✗ | ✗ | ✗ | · | PASS | `e2e/qa-crawl.spec.ts` QA26-01, QA26-04, R-UI-026: every route rendered as owner exposes only named controls; … |
-| `app/Authenticated/route.s-spaceid` | /s/:spaceId | **да** | ✔ | ✗ | ✗ | ✔ | ✗ | ✗ | ✗ | · | PASS | `e2e/acl-p0-routes.spec.ts` ROUTE-01: employee route — login → own spaces → regulation → search → one-click article…<br>`e2e/acl-p0-routes.spec.ts` ROUTE-03: space manager route — members and group access → template → tree drag-and-dro…<br>`e2e/acl-p0-spaces.spec.ts` R-SPACE-001 R-SPACE-010 R-ADMIN-020: a space is created in the UI and a department gets…<br>… ещё 1 |
-| `app/Authenticated/route.search` | /search | **да** | ✔ | ✔ | ✗ | · | ✔ | ✗ | ✗ | · | PASS (with failing tests) | `e2e/a11y.spec.ts` real 200% browser zoom (1280x800 at 2x = 640x400 CSS px) keeps every key screen usable …<br>`e2e/a11y.spec.ts` WCAG 2.1 AA automated audit of key screens (R-A11Y-003, AT-80, E2E-112)<br>`e2e/acl-p0-routes.spec.ts` ROUTE-01: employee route — login → own spaces → regulation → search → one-click article…<br>… ещё 5 |
-| `app/Authenticated/route.trash` | /trash | **да** | ✔ | ✗ | ✗ | · | ✗ | ✗ | ✗ | · | PASS (with failing tests) | `e2e/a11y.spec.ts` WCAG 2.1 AA automated audit of key screens (R-A11Y-003, AT-80, E2E-112)<br>`e2e/acl-p0-routes.spec.ts` ROUTE-03: space manager route — members and group access → template → tree drag-and-dro…<br>`e2e/qa-actions.spec.ts` R-QA-004 navigation: sidebar «Шаблоны», «Импорт», «Корзина» and the quick switcher comm…<br>… ещё 3 |
-| `app/Authenticated/route.templates` | /templates | **да** | ✔ | ✗ | ✗ | · | ✗ | ✗ | ✗ | · | PASS (with failing tests) | `e2e/a11y.spec.ts` WCAG 2.1 AA automated audit of key screens (R-A11Y-003, AT-80, E2E-112)<br>`e2e/qa-actions.spec.ts` R-QA-004 navigation: sidebar «Шаблоны», «Импорт», «Корзина» and the quick switcher comm…<br>`e2e/qa-actions.spec.ts` R-QA-004 templates: «Новый шаблон» — empty name disables «Создать шаблон», «Отмена» cre…<br>… ещё 3 |
-| `app/Authenticated/route.import` | /import | **да** | ✔ | ✗ | ✗ | · | ✗ | ✗ | ✗ | · | PASS (with failing tests) | `e2e/a11y.spec.ts` WCAG 2.1 AA automated audit of key screens (R-A11Y-003, AT-80, E2E-112)<br>`e2e/import-collection.spec.ts` R-COLLECTION-003: import into an existing collection in «replace» mode — dry run lists …<br>`e2e/io-p0-roundtrip.spec.ts` DOCX import → edit in the editor → DOCX and Markdown export from the page menu keep the…<br>… ещё 2 |
-| `app/Authenticated/route.settings` | /settings | **да** | ✔ | ✗ | ✗ | · | ✗ | ✗ | ✗ | · | PASS (with failing tests) | `e2e/a11y.spec.ts` real 200% browser zoom (1280x800 at 2x = 640x400 CSS px) keeps every key screen usable …<br>`e2e/a11y.spec.ts` WCAG 2.1 AA automated audit of key screens (R-A11Y-003, AT-80, E2E-112)<br>`e2e/ui-p0-layout.spec.ts` R-UI-006, V17-F09: no overlapping, clipped or off-screen controls at 320–1920 px ({…})<br>… ещё 2 |
-| `app/Authenticated/route.admin` | /admin | **да** | ✔ | ✗ | ✗ | · | ✗ | ✗ | ✗ | · | PASS (with failing tests) | `e2e/a11y.spec.ts` real 200% browser zoom (1280x800 at 2x = 640x400 CSS px) keeps every key screen usable …<br>`e2e/a11y.spec.ts` WCAG 2.1 AA automated audit of key screens (R-A11Y-003, AT-80, E2E-112)<br>`e2e/acl-p0-admin.spec.ts` ROUTE-06: the auditor reads who changed what in the journal but does not see titles or … |
+| `app/Authenticated/route.s-spaceid` | /s/:spaceId | **да** | ✔ | ✔ | ✗ | ✔ | ✗ | ✗ | ✗ | · | PASS | `e2e/acl-p0-routes.spec.ts` ROUTE-01: employee route — login → own spaces → regulation → search → one-click article…<br>`e2e/acl-p0-routes.spec.ts` ROUTE-03: space manager route — members and group access → template → tree drag-and-dro…<br>`e2e/acl-p0-spaces.spec.ts` R-SPACE-001 R-SPACE-010 R-ADMIN-020: a space is created in the UI and a department gets…<br>… ещё 1 |
+| `app/Authenticated/route.search` | /search | **да** | ✔ | ✔ | ✗ | · | ✔ | ✗ | ✗ | · | PASS | `e2e/a11y.spec.ts` real 200% browser zoom (1280x800 at 2x = 640x400 CSS px) keeps every key screen usable …<br>`e2e/a11y.spec.ts` WCAG 2.1 AA automated audit of key screens (R-A11Y-003, AT-80, E2E-112)<br>`e2e/acl-p0-routes.spec.ts` ROUTE-01: employee route — login → own spaces → regulation → search → one-click article…<br>… ещё 5 |
+| `app/Authenticated/route.trash` | /trash | **да** | ✔ | ✗ | ✗ | · | ✗ | ✗ | ✗ | · | PASS | `e2e/a11y.spec.ts` WCAG 2.1 AA automated audit of key screens (R-A11Y-003, AT-80, E2E-112)<br>`e2e/acl-p0-routes.spec.ts` ROUTE-03: space manager route — members and group access → template → tree drag-and-dro…<br>`e2e/qa-actions.spec.ts` R-QA-004 navigation: sidebar «Шаблоны», «Импорт», «Корзина» and the quick switcher comm…<br>… ещё 3 |
+| `app/Authenticated/route.templates` | /templates | **да** | ✔ | ✗ | ✗ | · | ✗ | ✗ | ✗ | · | PASS | `e2e/a11y.spec.ts` WCAG 2.1 AA automated audit of key screens (R-A11Y-003, AT-80, E2E-112)<br>`e2e/qa-actions.spec.ts` R-QA-004 navigation: sidebar «Шаблоны», «Импорт», «Корзина» and the quick switcher comm…<br>`e2e/qa-actions.spec.ts` R-QA-004 templates: «Новый шаблон» — empty name disables «Создать шаблон», «Отмена» cre…<br>… ещё 3 |
+| `app/Authenticated/route.import` | /import | **да** | ✔ | ✗ | ✗ | · | ✗ | ✗ | ✗ | · | PASS | `e2e/a11y.spec.ts` WCAG 2.1 AA automated audit of key screens (R-A11Y-003, AT-80, E2E-112)<br>`e2e/import-collection.spec.ts` R-COLLECTION-003: import into an existing collection in «replace» mode — dry run lists …<br>`e2e/io-p0-roundtrip.spec.ts` DOCX import → edit in the editor → DOCX and Markdown export from the page menu keep the…<br>… ещё 2 |
+| `app/Authenticated/route.settings` | /settings | **да** | ✔ | ✗ | ✗ | · | ✗ | ✗ | ✗ | · | PASS | `e2e/a11y.spec.ts` real 200% browser zoom (1280x800 at 2x = 640x400 CSS px) keeps every key screen usable …<br>`e2e/a11y.spec.ts` WCAG 2.1 AA automated audit of key screens (R-A11Y-003, AT-80, E2E-112)<br>`e2e/ui-p0-layout.spec.ts` R-UI-006, V17-F09: no overlapping, clipped or off-screen controls at 320–1920 px ({…})<br>… ещё 2 |
+| `app/Authenticated/route.admin` | /admin | **да** | ✔ | ✗ | ✗ | · | ✗ | ✗ | ✗ | · | PASS | `e2e/a11y.spec.ts` real 200% browser zoom (1280x800 at 2x = 640x400 CSS px) keeps every key screen usable …<br>`e2e/a11y.spec.ts` WCAG 2.1 AA automated audit of key screens (R-A11Y-003, AT-80, E2E-112)<br>`e2e/acl-p0-admin.spec.ts` ROUTE-06: the auditor reads who changed what in the journal but does not see titles or … |
 | `app/App/pereyti-k-soderzhimomu` | Перейти к содержимому |  | ✔ | · | ✗ | · | ✗ | ✗ | ✗ | · | PASS | `e2e/editor-p0-dnd.spec.ts` autoscroll near the bottom edge while dragging, drop far below (QA26-09)<br>`e2e/editor-p0-dnd.spec.ts` drag threshold, preview, line before/after, one atomic drop, one Undo; ids kept on the …<br>`e2e/editor-p0-dnd.spec.ts` drop on another page in the sidebar tree moves the blocks there (ids kept); the page it…<br>… ещё 3 |
 | `app/App/route.invite-token` | /invite/:token | **да** | ✔ | ✔ | ✗ | · | ✗ | ✗ | ✗ | · | PASS | `e2e/qa-actions.spec.ts` R-QA-004 invitation link /invite/:token: empty password disables «Продолжить», an inval… |
 
@@ -933,19 +933,19 @@
 
 | ID | Название | Крит. | ok | пусто | загр | отм | ошиб | офл | прав | 2× | Факт | Тесты |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| `auth/LoginPage/elektronnaya-pochta` | Электронная почта |  | ✔ | ✗ | · | · | ✗ | ✗ | ✗ | · | PASS (with failing tests) | `e2e/a11y.spec.ts` keyboard only: quick switcher, help, dialogs close with Esc and return focus (UX-136, S…<br>`e2e/a11y.spec.ts` pixel baselines for stable screens (R-QA-008, AT-89)<br>`e2e/a11y.spec.ts` real 200% browser zoom (1280x800 at 2x = 640x400 CSS px) keeps every key screen usable …<br>… ещё 164 |
-| `auth/LoginPage/parol` | Пароль | **да** | ✔ | ✗ | · | ✔ | ✗ | ✗ | ✗ | · | PASS (with failing tests) | `e2e/a11y.spec.ts` keyboard only: quick switcher, help, dialogs close with Esc and return focus (UX-136, S…<br>`e2e/a11y.spec.ts` pixel baselines for stable screens (R-QA-008, AT-89)<br>`e2e/a11y.spec.ts` real 200% browser zoom (1280x800 at 2x = 640x400 CSS px) keeps every key screen usable …<br>… ещё 164 |
+| `auth/LoginPage/elektronnaya-pochta` | Электронная почта |  | ✔ | ✗ | · | · | ✗ | ✗ | ✗ | · | PASS | `e2e/a11y.spec.ts` keyboard only: quick switcher, help, dialogs close with Esc and return focus (UX-136, S…<br>`e2e/a11y.spec.ts` pixel baselines for stable screens (R-QA-008, AT-89)<br>`e2e/a11y.spec.ts` real 200% browser zoom (1280x800 at 2x = 640x400 CSS px) keeps every key screen usable …<br>… ещё 165 |
+| `auth/LoginPage/parol` | Пароль | **да** | ✔ | ✗ | · | ✔ | ✗ | ✗ | ✗ | · | PASS | `e2e/a11y.spec.ts` keyboard only: quick switcher, help, dialogs close with Esc and return focus (UX-136, S…<br>`e2e/a11y.spec.ts` pixel baselines for stable screens (R-QA-008, AT-89)<br>`e2e/a11y.spec.ts` real 200% browser zoom (1280x800 at 2x = 640x400 CSS px) keeps every key screen usable …<br>… ещё 165 |
 | `auth/LoginPage/kod-iz-prilozheniya-autentifikatora` | Код из приложения-аутентификатора |  | ✔ | ✗ | · | · | ✗ | ✗ | ✗ | · | PASS | `e2e/editor-p0-dnd.spec.ts` autoscroll near the bottom edge while dragging, drop far below (QA26-09)<br>`e2e/editor-p0-dnd.spec.ts` drag threshold, preview, line before/after, one atomic drop, one Undo; ids kept on the …<br>`e2e/editor-p0-dnd.spec.ts` drop on another page in the sidebar tree moves the blocks there (ids kept); the page it…<br>… ещё 3 |
 | `auth/LoginPage/podtverdit` | Подтвердить | **да** | ✔ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | PASS | `e2e/editor-p0-dnd.spec.ts` autoscroll near the bottom edge while dragging, drop far below (QA26-09)<br>`e2e/editor-p0-dnd.spec.ts` drag threshold, preview, line before/after, one atomic drop, one Undo; ids kept on the …<br>`e2e/editor-p0-dnd.spec.ts` drop on another page in the sidebar tree moves the blocks there (ids kept); the page it…<br>… ещё 3 |
 | `auth/LoginPage/voyti-cherez-korporativnyy-sso` | Войти через корпоративный SSO | **да** | ✔ | · | ✗ | · | ✗ | ✗ | ✗ | · | PASS | `e2e/editor-p0-dnd.spec.ts` autoscroll near the bottom edge while dragging, drop far below (QA26-09)<br>`e2e/editor-p0-dnd.spec.ts` drag threshold, preview, line before/after, one atomic drop, one Undo; ids kept on the …<br>`e2e/editor-p0-dnd.spec.ts` drop on another page in the sidebar tree moves the blocks there (ids kept); the page it…<br>… ещё 3 |
-| `auth/SetupPage/nazvanie-organizacii` | Название организации |  | ✔ | ✔ | · | · | ✔ | ✗ | ✗ | · | PASS (with failing tests) | `e2e/a11y.spec.ts` keyboard only: quick switcher, help, dialogs close with Esc and return focus (UX-136, S…<br>`e2e/a11y.spec.ts` pixel baselines for stable screens (R-QA-008, AT-89)<br>`e2e/a11y.spec.ts` real 200% browser zoom (1280x800 at 2x = 640x400 CSS px) keeps every key screen usable …<br>… ещё 164 |
-| `auth/SetupPage/vashe-imya` | Ваше имя |  | ✔ | ✗ | · | · | ✗ | ✗ | ✗ | · | PASS (with failing tests) | `e2e/a11y.spec.ts` keyboard only: quick switcher, help, dialogs close with Esc and return focus (UX-136, S…<br>`e2e/a11y.spec.ts` pixel baselines for stable screens (R-QA-008, AT-89)<br>`e2e/a11y.spec.ts` real 200% browser zoom (1280x800 at 2x = 640x400 CSS px) keeps every key screen usable …<br>… ещё 164 |
-| `auth/SetupPage/elektronnaya-pochta` | Электронная почта |  | ✔ | ✗ | · | · | ✗ | ✗ | ✗ | · | PASS (with failing tests) | `e2e/a11y.spec.ts` keyboard only: quick switcher, help, dialogs close with Esc and return focus (UX-136, S…<br>`e2e/a11y.spec.ts` pixel baselines for stable screens (R-QA-008, AT-89)<br>`e2e/a11y.spec.ts` real 200% browser zoom (1280x800 at 2x = 640x400 CSS px) keeps every key screen usable …<br>… ещё 164 |
-| `auth/SetupPage/parol` | Пароль | **да** | ✔ | ✗ | · | ✔ | ✗ | ✗ | ✗ | · | PASS (with failing tests) | `e2e/a11y.spec.ts` keyboard only: quick switcher, help, dialogs close with Esc and return focus (UX-136, S…<br>`e2e/a11y.spec.ts` pixel baselines for stable screens (R-QA-008, AT-89)<br>`e2e/a11y.spec.ts` real 200% browser zoom (1280x800 at 2x = 640x400 CSS px) keeps every key screen usable …<br>… ещё 164 |
-| `auth/SetupPage/sozdat-organizaciyu` | Создать организацию | **да** | ✔ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | PASS (with failing tests) | `e2e/a11y.spec.ts` keyboard only: quick switcher, help, dialogs close with Esc and return focus (UX-136, S…<br>`e2e/a11y.spec.ts` pixel baselines for stable screens (R-QA-008, AT-89)<br>`e2e/a11y.spec.ts` real 200% browser zoom (1280x800 at 2x = 640x400 CSS px) keeps every key screen usable …<br>… ещё 164 |
+| `auth/SetupPage/nazvanie-organizacii` | Название организации |  | ✔ | ✔ | · | · | ✔ | ✗ | ✗ | · | PASS | `e2e/a11y.spec.ts` keyboard only: quick switcher, help, dialogs close with Esc and return focus (UX-136, S…<br>`e2e/a11y.spec.ts` pixel baselines for stable screens (R-QA-008, AT-89)<br>`e2e/a11y.spec.ts` real 200% browser zoom (1280x800 at 2x = 640x400 CSS px) keeps every key screen usable …<br>… ещё 165 |
+| `auth/SetupPage/vashe-imya` | Ваше имя |  | ✔ | ✗ | · | · | ✗ | ✗ | ✗ | · | PASS | `e2e/a11y.spec.ts` keyboard only: quick switcher, help, dialogs close with Esc and return focus (UX-136, S…<br>`e2e/a11y.spec.ts` pixel baselines for stable screens (R-QA-008, AT-89)<br>`e2e/a11y.spec.ts` real 200% browser zoom (1280x800 at 2x = 640x400 CSS px) keeps every key screen usable …<br>… ещё 165 |
+| `auth/SetupPage/elektronnaya-pochta` | Электронная почта |  | ✔ | ✗ | · | · | ✗ | ✗ | ✗ | · | PASS | `e2e/a11y.spec.ts` keyboard only: quick switcher, help, dialogs close with Esc and return focus (UX-136, S…<br>`e2e/a11y.spec.ts` pixel baselines for stable screens (R-QA-008, AT-89)<br>`e2e/a11y.spec.ts` real 200% browser zoom (1280x800 at 2x = 640x400 CSS px) keeps every key screen usable …<br>… ещё 165 |
+| `auth/SetupPage/parol` | Пароль | **да** | ✔ | ✗ | · | ✔ | ✗ | ✗ | ✗ | · | PASS | `e2e/a11y.spec.ts` keyboard only: quick switcher, help, dialogs close with Esc and return focus (UX-136, S…<br>`e2e/a11y.spec.ts` pixel baselines for stable screens (R-QA-008, AT-89)<br>`e2e/a11y.spec.ts` real 200% browser zoom (1280x800 at 2x = 640x400 CSS px) keeps every key screen usable …<br>… ещё 165 |
+| `auth/SetupPage/sozdat-organizaciyu` | Создать организацию | **да** | ✔ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | PASS | `e2e/a11y.spec.ts` keyboard only: quick switcher, help, dialogs close with Esc and return focus (UX-136, S…<br>`e2e/a11y.spec.ts` pixel baselines for stable screens (R-QA-008, AT-89)<br>`e2e/a11y.spec.ts` real 200% browser zoom (1280x800 at 2x = 640x400 CSS px) keeps every key screen usable …<br>… ещё 165 |
 | `auth/InvitePage/kak-k-vam-obraschatsya-neobyazatelno` | Как к вам обращаться (необязательно) |  | ✔ | ✔ | · | · | ✗ | ✗ | ✗ | · | PASS | `e2e/editor-p0-dnd.spec.ts` autoscroll near the bottom edge while dragging, drop far below (QA26-09)<br>`e2e/editor-p0-dnd.spec.ts` drag threshold, preview, line before/after, one atomic drop, one Undo; ids kept on the …<br>`e2e/editor-p0-dnd.spec.ts` drop on another page in the sidebar tree moves the blocks there (ids kept); the page it…<br>… ещё 4 |
 | `auth/InvitePage/novyy-parol` | Новый пароль | **да** | ✔ | ✔ | ✔ | · | ✗ | ✗ | ✗ | ✔ | PASS | `e2e/editor-p0-dnd.spec.ts` autoscroll near the bottom edge while dragging, drop far below (QA26-09)<br>`e2e/editor-p0-dnd.spec.ts` drag threshold, preview, line before/after, one atomic drop, one Undo; ids kept on the …<br>`e2e/editor-p0-dnd.spec.ts` drop on another page in the sidebar tree moves the blocks there (ids kept); the page it…<br>… ещё 5 |
-| `auth/InvitePage/prodolzhit` | Продолжить |  | ✔ | ✔ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | PASS (with failing tests) | `e2e/editor-p0-dnd.spec.ts` autoscroll near the bottom edge while dragging, drop far below (QA26-09)<br>`e2e/editor-p0-dnd.spec.ts` drag threshold, preview, line before/after, one atomic drop, one Undo; ids kept on the …<br>`e2e/editor-p0-dnd.spec.ts` drop on another page in the sidebar tree moves the blocks there (ids kept); the page it…<br>… ещё 5 |
+| `auth/InvitePage/prodolzhit` | Продолжить |  | ✔ | ✔ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | PASS | `e2e/editor-p0-dnd.spec.ts` autoscroll near the bottom edge while dragging, drop far below (QA26-09)<br>`e2e/editor-p0-dnd.spec.ts` drag threshold, preview, line before/after, one atomic drop, one Undo; ids kept on the …<br>`e2e/editor-p0-dnd.spec.ts` drop on another page in the sidebar tree moves the blocks there (ids kept); the page it…<br>… ещё 5 |
 
 ### common (8/40 покрыто)
 
@@ -992,7 +992,7 @@
 | `common/OcrDialog/raspoznannyy-tekst` | Распознанный текст |  | ✔ | ✗ | · | ✔ | ✗ | ✗ | ✗ | · | PASS | `e2e/ocr-view.spec.ts` SC-22: the OCR view shows the original image, confidence with uncertain words, correcti… |
 | `common/useEvents/otkryt-versiyu` | Открыть версию {…} | **да** | ✗ | · | · | ✗ | ✗ | ✗ | ✗ | ✗ | — | **нет теста** |
 
-### editor (63/217 покрыто)
+### editor (65/219 покрыто)
 
 | ID | Название | Крит. | ok | пусто | загр | отм | ошиб | офл | прав | 2× | Факт | Тесты |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
@@ -1001,7 +1001,7 @@
 | `editor/BlockConflictHost/reshit-pozzhe` | Решить позже |  | ✔ | ✗ | ✗ | ✔ | ✗ | ✔ | ✗ | ✗ | PASS | `e2e/conflict.spec.ts` R-COLLAB-036: conflict dialog — «keep both» keeps the deletion result and adds my versi… |
 | `editor/BlockConflictHost/prinyat-versiyu-servera` | Принять версию сервера | **да** | ✔ | ✗ | ✗ | ✔ | ✗ | ✔ | ✗ | ✗ | PASS | `e2e/conflict.spec.ts` R-COLLAB-036: conflict dialog — «accept the server version» keeps the deletion, my vers… |
 | `editor/BlockConflictHost/sohranit-obe` | Сохранить обе | **да** | ✔ | ✗ | ✗ | ✔ | ✗ | ✔ | ✗ | ✗ | PASS | `e2e/conflict.spec.ts` R-COLLAB-036: a change the server refuses opens the comparison dialog; «keep both» save…<br>`e2e/conflict.spec.ts` R-COLLAB-036: conflict dialog — «keep both» keeps the deletion result and adds my versi… |
-| `editor/BlockConflictHost/ostavit-moyu` | Оставить мою |  | ✔ | ✗ | ✗ | ✔ | ✗ | ✔ | ✗ | ✗ | PASS (with failing tests) | `e2e/collab-p0-editing.spec.ts` a block is moved by one editor while another edits it: the edit is kept as a conflict c…<br>`e2e/collab-p0-editing.spec.ts` undo of a block move never silently drops a colleague's edits (UX13-10, R-HISTORY-011)<br>`e2e/conflict.spec.ts` edit vs concurrent delete: the editor keeps a conflict copy and can put the block back … |
+| `editor/BlockConflictHost/ostavit-moyu` | Оставить мою |  | ✔ | ✗ | ✗ | ✔ | ✗ | ✔ | ✗ | ✗ | PASS | `e2e/collab-p0-editing.spec.ts` a block is moved by one editor while another edits it: the edit is kept as a conflict c…<br>`e2e/collab-p0-editing.spec.ts` undo of a block move never silently drops a colleague's edits (UX13-10, R-HISTORY-011)<br>`e2e/conflict.spec.ts` edit vs concurrent delete: the editor keeps a conflict copy and can put the block back … |
 | `editor/DocConflictDialog/otkryt` | Открыть |  | ✗ | · | · | ✗ | ✗ | ✗ | ✗ | ✗ | — | **нет теста** |
 | `editor/DocConflictDialog/stranica-udalena-poka-vy-ee-redaktirovali` | Страница удалена, пока вы её редактировали | **да** | ✗ | ✗ | · | ✗ | ✗ | ✗ | ✗ | · | — | **нет теста** |
 | `editor/DocConflictDialog/sohranit-lokalnuyu-kopiyu` | Сохранить локальную копию | **да** | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | — | **нет теста** |
@@ -1051,7 +1051,7 @@
 | `editor/commands/todo` | Чек-лист |  | ✗ | · | · | ✗ | · | ✗ | ✗ | · | — | **нет теста** |
 | `editor/commands/toggle` | Раскрывающийся блок |  | ✗ | · | · | ✗ | · | ✗ | ✗ | · | — | **нет теста** |
 | `editor/commands/table` | Таблица |  | ✔ | ✔ | · | ✗ | · | ✔ | ✗ | · | PASS | `e2e/collab-p0-editing.spec.ts` two editors change a paragraph, one table and the structure while one loses the connect…<br>`e2e/editor-p0-table.spec.ts` table structure: insert/delete rows and columns, header row/column, merge and split, al…<br>`e2e/editor.spec.ts` slash menu inserts a table and a callout; "> " creates a toggle<br>… ещё 1 |
-| `editor/commands/callout` | Выделенный блок |  | ✔ | · | · | ✗ | · | ✗ | ✗ | · | BLOCKED | `e2e/editor.spec.ts` slash menu inserts a table and a callout; "> " creates a toggle |
+| `editor/commands/callout` | Выделенный блок |  | ✔ | · | · | ✗ | · | ✗ | ✗ | · | PASS | `e2e/editor.spec.ts` slash menu inserts a table and a callout; "> " creates a toggle |
 | `editor/commands/quote` | Цитата |  | ✔ | · | · | ✗ | · | ✗ | ✗ | · | PASS | `e2e/editor-p0-blocks.spec.ts` text blocks: paragraph, H1–H6, lead, quote and divider are created from the "/" menu; b… |
 | `editor/commands/code` | Блок кода |  | ✗ | · | · | ✗ | · | ✗ | ✗ | · | — | **нет теста** |
 | `editor/commands/divider` | Разделитель |  | ✔ | · | · | ✗ | · | ✗ | ✗ | · | PASS | `e2e/editor-p0-blocks.spec.ts` text blocks: paragraph, H1–H6, lead, quote and divider are created from the "/" menu; b… |
@@ -1089,6 +1089,8 @@
 | `editor/BlockHandle/dobavit-blok-nizhe` | Добавить блок ниже |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | — | **нет теста** |
 | `editor/BlockHandle/deystviya-s-blokom` | Действия с блоком |  | ✔ | · | · | ✔ | · | · | ✗ | · | PASS | `e2e/editor-p0-blocks.spec.ts` moving blocks: one block by keyboard and block menu, several selected blocks together —…<br>`e2e/editor-p0-clipboard.spec.ts` copy: a text selection, a block and a section of a heading go to the clipboard as text/…<br>`e2e/editor-p0-dnd.spec.ts` touch: the block menu (no hover handle) moves and deletes the block at the caret; one U…<br>… ещё 4 |
 | `editor/BlockHandle/peretaschite-ili-nazhmite-dlya-deystviy` | Перетащите или нажмите для действий |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | — | **нет теста** |
+| `editor/TouchBlockActions/deystviya-s-blokom` | Действия с блоком |  | ✔ | · | · | ✔ | · | · | ✗ | · | PASS | `e2e/editor-p0-blocks.spec.ts` moving blocks: one block by keyboard and block menu, several selected blocks together —…<br>`e2e/editor-p0-clipboard.spec.ts` copy: a text selection, a block and a section of a heading go to the clipboard as text/…<br>`e2e/editor-p0-dnd.spec.ts` touch: the block menu (no hover handle) moves and deletes the block at the caret; one U…<br>… ещё 4 |
+| `editor/TouchBlockActions/deystviya-s-blokom~2` | Действия с блоком |  | ✔ | ✗ | ✗ | ✔ | ✗ | ✗ | ✗ | ✗ | PASS | `e2e/editor-p0-blocks.spec.ts` moving blocks: one block by keyboard and block menu, several selected blocks together —…<br>`e2e/editor-p0-clipboard.spec.ts` copy: a text selection, a block and a section of a heading go to the clipboard as text/…<br>`e2e/editor-p0-dnd.spec.ts` touch: the block menu (no hover handle) moves and deletes the block at the caret; one U…<br>… ещё 4 |
 | `editor/BubbleToolbar/confirm.preobrazovat-v-blok-koda` | Преобразовать в блок кода? |  | ✔ | ✗ | · | ✗ | ✗ | ✗ | ✗ | · | PASS | `e2e/clipboard.spec.ts` converting formatted text to a code block asks first and keeps the text (R-EDITOR-067, … |
 | `editor/BubbleToolbar/confirm.preobrazovat-v-blok-koda.preobrazovat` | Преобразовать |  | ✔ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | PASS | `e2e/clipboard.spec.ts` converting formatted text to a code block asks first and keeps the text (R-EDITOR-067, … |
 | `editor/BubbleToolbar/p` | Текст |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | — | **нет теста** |
@@ -1587,7 +1589,7 @@
 
 | ID | Название | Крит. | ok | пусто | загр | отм | ошиб | офл | прав | 2× | Факт | Тесты |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| `shell/AppShell/pokazat-bokovuyu-panel` | Показать боковую панель |  | ✔ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | PASS (with failing tests) | `e2e/a11y.spec.ts` real 200% browser zoom (1280x800 at 2x = 640x400 CSS px) keeps every key screen usable …<br>`e2e/a11y.spec.ts` WCAG 2.1 AA automated audit of key screens (R-A11Y-003, AT-80, E2E-112)<br>`e2e/acl-p0-spaces.spec.ts` E2E-109 R-PUBLISH-009: public links are off by policy; once enabled a link opens withou…<br>… ещё 75 |
+| `shell/AppShell/pokazat-bokovuyu-panel` | Показать боковую панель |  | ✔ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | PASS | `e2e/a11y.spec.ts` real 200% browser zoom (1280x800 at 2x = 640x400 CSS px) keeps every key screen usable …<br>`e2e/a11y.spec.ts` WCAG 2.1 AA automated audit of key screens (R-A11Y-003, AT-80, E2E-112)<br>`e2e/acl-p0-spaces.spec.ts` E2E-109 R-PUBLISH-009: public links are off by policy; once enabled a link opens withou…<br>… ещё 76 |
 | `shell/QuickSwitcher/c-search` | Расширенный поиск |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | — | **нет теста** |
 | `shell/QuickSwitcher/c-home` | Главная |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | — | **нет теста** |
 | `shell/QuickSwitcher/c-templates` | Шаблоны |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | — | **нет теста** |
@@ -1608,7 +1610,7 @@
 | `shell/Sidebar/dark` | Тёмная |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | — | **нет теста** |
 | `shell/Sidebar/reset` | Сбросить панель по умолчанию | **да** | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | — | **нет теста** |
 | `shell/Sidebar/help` | Справка и горячие клавиши |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | — | **нет теста** |
-| `shell/Sidebar/logout` | Выйти | **да** | ✔ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | PASS | `e2e/acl-p0-routes.spec.ts` ROUTE-01: employee route — login → own spaces → regulation → search → one-click article… |
+| `shell/Sidebar/logout` | Выйти | **да** | ✔ | ✔ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | PASS | `e2e/acl-p0-routes.spec.ts` ROUTE-01: employee route — login → own spaces → regulation → search → one-click article… |
 | `shell/Sidebar/confirm.est-neotpravlennye-izmeneniya` | Есть неотправленные изменения | **да** | ✗ | ✗ | · | ✗ | ✗ | ✗ | ✗ | · | — | **нет теста** |
 | `shell/Sidebar/confirm.est-neotpravlennye-izmeneniya.vyyti` | Выйти | **да** | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | — | **нет теста** |
 | `shell/Sidebar/button-data` | {…} |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | — | **нет теста** |
@@ -1616,7 +1618,7 @@
 | `shell/Sidebar/poisk-k` | Поиск ⌘K |  | ✔ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | PASS | `e2e/a11y.spec.ts` reduced motion: animations and transitions are effectively disabled (R-A11Y-002, AT-82)<br>`e2e/qa-actions.spec.ts` R-QA-004 navigation: sidebar «Шаблоны», «Импорт», «Корзина» and the quick switcher comm… |
 | `shell/Sidebar/glavnaya` | Главная |  | ✗ | · | ✗ | · | ✗ | ✗ | ✗ | · | — | **нет теста** |
 | `shell/Sidebar/vhodyaschie` | Входящие {…} |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | — | **нет теста** |
-| `shell/Sidebar/novaya-stranica` | Новая страница | **да** | ✔ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | PASS | `e2e/acl-p0-routes.spec.ts` ROUTE-01: employee route — login → own spaces → regulation → search → one-click article…<br>`e2e/acl-p0-routes.spec.ts` ROUTE-04: administrator route — department → employee → automatic space access → guest …<br>`e2e/acl-p0-spaces.spec.ts` R-SPACE-001 R-SPACE-010 R-ADMIN-020: a space is created in the UI and a department gets… |
+| `shell/Sidebar/novaya-stranica` | Новая страница | **да** | ✔ | ✔ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | PASS | `e2e/acl-p0-routes.spec.ts` ROUTE-01: employee route — login → own spaces → regulation → search → one-click article…<br>`e2e/acl-p0-routes.spec.ts` ROUTE-04: administrator route — department → employee → automatic space access → guest …<br>`e2e/acl-p0-spaces.spec.ts` R-SPACE-001 R-SPACE-010 R-ADMIN-020: a space is created in the UI and a department gets… |
 | `shell/Sidebar/novoe-prostranstvo` | Новое пространство |  | ✔ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | PASS | `e2e/acl-p0-routes.spec.ts` ROUTE-03: space manager route — members and group access → template → tree drag-and-dro…<br>`e2e/acl-p0-routes.spec.ts` ROUTE-04: administrator route — department → employee → automatic space access → guest …<br>`e2e/acl-p0-spaces.spec.ts` R-SPACE-001 R-SPACE-010 R-ADMIN-020: a space is created in the UI and a department gets… |
 | `shell/Sidebar/izbrannoe` | Избранное |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | — | **нет теста** |
 | `shell/Sidebar/bez-nazvaniya` | Без названия |  | ✗ | · | ✗ | · | ✗ | ✗ | ✗ | · | — | **нет теста** |
@@ -1628,8 +1630,8 @@
 | `shell/SidebarTree/personal` | Моё пространство |  | ✗ | · | · | · | · | · | · | · | — | **нет теста** |
 | `shell/SidebarTree/spaces` | Пространства |  | ✗ | · | · | · | · | · | · | · | — | **нет теста** |
 | `shell/SidebarTree/shared` | Доступные мне |  | ✗ | · | · | · | · | · | · | · | — | **нет теста** |
-| `shell/SidebarTree/nodemenu.new` | Новая вложенная страница |  | ✔ | ✗ | ✗ | ✔ | ✗ | ✗ | ✗ | ✗ | FAIL | `e2e/ui-p0-interaction.spec.ts` R-UI-060, UX-141: hovering controls performs no action; hover-only tree actions have a … |
-| `shell/SidebarTree/rename` | Переименовать | **да** | ✔ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | BLOCKED | `e2e/qa-actions.spec.ts` QA-D4 (fixed): «Переименовать» in the tree row menu opens the inline title editor |
+| `shell/SidebarTree/nodemenu.new` | Новая вложенная страница |  | ✔ | ✗ | ✗ | ✔ | ✗ | ✗ | ✗ | ✗ | PASS | `e2e/ui-p0-interaction.spec.ts` R-UI-060, UX-141: hovering controls performs no action; hover-only tree actions have a … |
+| `shell/SidebarTree/rename` | Переименовать | **да** | ✔ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | PASS | `e2e/qa-actions.spec.ts` QA-D4 (fixed): «Переименовать» in the tree row menu opens the inline title editor |
 | `shell/SidebarTree/icon` | Изменить иконку |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | — | **нет теста** |
 | `shell/SidebarTree/move` | Переместить в… | **да** | ✔ | ✗ | ✗ | ✔ | ✔ | ✗ | ✗ | ✗ | PASS | `e2e/qa-actions.spec.ts` R-QA-004 tree row: rename (F2) — Esc cancels, Enter saves, server error keeps the old t… |
 | `shell/SidebarTree/dup` | Дублировать | **да** | ✔ | ✗ | ✗ | ✔ | ✔ | ✗ | ✗ | ✗ | PASS | `e2e/qa-actions.spec.ts` R-QA-004 tree row: rename (F2) — Esc cancels, Enter saves, server error keeps the old t… |
@@ -1638,18 +1640,18 @@
 | `shell/SidebarTree/trash` | Удалить в корзину | **да** | ✔ | ✗ | ✔ | ✔ | ✔ | ✗ | ✗ | ✔ | PASS | `e2e/acl-p0-routes.spec.ts` ROUTE-03: space manager route — members and group access → template → tree drag-and-dro…<br>`e2e/qa-actions.spec.ts` R-QA-004 trash: «Удалить в корзину» from the tree → toast «Восстановить» undoes it; tra… |
 | `shell/SidebarTree/spacemenu.new` | Новая страница | **да** | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | — | **нет теста** |
 | `shell/SidebarTree/open` | Обзор пространства |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | — | **нет теста** |
-| `shell/SidebarTree/settings` | Настройки и участники | **да** | ✔ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | BLOCKED | `e2e/qa-actions.spec.ts` QA-D5 (fixed): «Настройки и участники» in the sidebar space menu opens the space settings |
+| `shell/SidebarTree/settings` | Настройки и участники | **да** | ✔ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | PASS | `e2e/qa-actions.spec.ts` QA-D5 (fixed): «Настройки и участники» in the sidebar space menu opens the space settings |
 | `shell/TreeRow/button-data` | {…} |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | — | **нет теста** |
 | `shell/TreeRow/povtorit-zagruzku` | Повторить загрузку |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | — | **нет теста** |
 | `shell/TreeRow/sozdat-pervuyu-stranicu` | Создать первую страницу | **да** | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | — | **нет теста** |
 | `shell/TreeRow/svernut` | Свернуть |  | ✔ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | PASS | `e2e/acl-p0-routes.spec.ts` ROUTE-03: space manager route — members and group access → template → tree drag-and-dro… |
 | `shell/TreeRow/button-data~2` | {…} |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | — | **нет теста** |
 | `shell/TreeRow/novaya-stranica-v` | Новая страница в «{…}» | **да** | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | — | **нет теста** |
-| `shell/TreeRow/deystviya-prostranstva` | Действия пространства «{…}» |  | ✔ | · | · | · | · | · | ✗ | · | BLOCKED | `e2e/qa-actions.spec.ts` QA-D5 (fixed): «Настройки и участники» in the sidebar space menu opens the space settings |
+| `shell/TreeRow/deystviya-prostranstva` | Действия пространства «{…}» |  | ✔ | · | · | · | · | · | ✗ | · | PASS | `e2e/qa-actions.spec.ts` QA-D5 (fixed): «Настройки и участники» in the sidebar space menu opens the space settings |
 | `shell/TreeRow/deystviya` | Действия |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | — | **нет теста** |
 | `shell/TreeRow/svernut~2` | Свернуть |  | ✔ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | PASS | `e2e/acl-p0-routes.spec.ts` ROUTE-03: space manager route — members and group access → template → tree drag-and-dro… |
 | `shell/TreeRow/bez-nazvaniya` | Без названия |  | ✗ | · | ✗ | · | ✗ | ✗ | ✗ | · | — | **нет теста** |
-| `shell/TreeRow/dobavit-stranicu-vnutr` | Добавить страницу внутрь «{…}» |  | ✔ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | FAIL | `e2e/content.spec.ts` sidebar tree: "+" creates a child page under the selected parent with focus in the titl… |
+| `shell/TreeRow/dobavit-stranicu-vnutr` | Добавить страницу внутрь «{…}» |  | ✔ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | PASS | `e2e/content.spec.ts` sidebar tree: "+" creates a child page under the selected parent with focus in the titl… |
 | `shell/TreeRow/deystviya-so-stranicey` | Действия со страницей «{…}» |  | ✔ | · | · | · | · | · | ✗ | · | PASS | `e2e/acl-p0-routes.spec.ts` ROUTE-03: space manager route — members and group access → template → tree drag-and-dro… |
 | `shell/TreeRow/deystviya~2` | Действия |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | — | **нет теста** |
 | `shell/RenameInput/novoe-nazvanie` | Новое название |  | ✔ | ✗ | · | ✔ | ✔ | ✗ | ✗ | · | PASS | `e2e/qa-actions.spec.ts` QA-D4 (fixed): «Переименовать» in the tree row menu opens the inline title editor<br>`e2e/qa-actions.spec.ts` R-QA-004 tree row: rename (F2) — Esc cancels, Enter saves, server error keeps the old t… |

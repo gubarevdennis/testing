@@ -12,7 +12,7 @@
 | medium | 3 | 3 | 0 |
 | low | 1 | 1 | 0 |
 
-Открытых blocker/critical/high: **5**; открытых P0-требований (каждое — открытый вопрос высокой серьёзности): **46**; падающих тестов в последнем запуске: **13**.
+Открытых blocker/critical/high: **5**; открытых P0-требований (каждое — открытый вопрос высокой серьёзности): **46**; падающих тестов в последнем запуске: **0**.
 
 ## Зарегистрированные дефекты
 
@@ -37,23 +37,7 @@
 
 ## Падающие тесты последнего запуска
 
-Каждый падающий тест — дефект продукта или теста до разбора; владелец — владелец экрана в `docs/qa/action-tests.yaml`.
-
-| Тест | Причина | Запуск |
-|---|---|---|
-| tests/e2e/a11y.spec.ts › WCAG 2.1 AA automated audit of key screens (R-A11Y-003, AT-80, E2E-112) | Error: page: serious/critical WCAG 2.1 AA violations | e2e@2026-10-23T05:33:31.910Z |
-| tests/e2e/collab-p0-editing.spec.ts › a block is moved by one editor while another edits it: the edit is kept as a conflict copy and restored in one click (OPS-006, R-COLLAB-049, R-COLLAB-045, R-COLLAB-041, R-COLLAB-033, E-04, COLLAB-193, AT-90) | Error: expect(received).toMatchObject(expected) | e2e@2026-10-23T05:33:31.910Z |
-| tests/e2e/content.spec.ts › sidebar tree: "+" creates a child page under the selected parent with focus in the title (R-TREE-002, UX-121, UX23-201) | Test timeout of 60000ms exceeded. | e2e@2026-10-23T05:33:31.910Z |
-| tests/e2e/editor-p0-dnd.spec.ts › drop on another page in the sidebar tree moves the blocks there (ids kept), no-rights target refused (R-EDITOR-076) | Error: expect(locator).toHaveClass(expected) failed | e2e@2026-10-23T05:33:31.910Z |
-| tests/e2e/editor.spec.ts › create page, type with Markdown shortcuts, "Сохранено" only after server ack, survives reload (R-PAGE-018, R-PAGE-033, AT-61, UX13-01, UX-144) | Error: expect(locator).toBeVisible() failed | e2e@2026-10-23T05:33:31.910Z |
-| tests/e2e/io-p0-roundtrip.spec.ts › archive restore dialog: the administrator chooses a new isolated space as the target (R-ARCHIVE-006, R-ARCHIVE-016) | Test timeout of 60000ms exceeded. | e2e@2026-10-23T05:33:31.910Z |
-| tests/e2e/qa-actions.spec.ts › QA-D3 (known defect): an instantaneous double activation of «Создать токен» sends one request | known defect: QA-D3: two presses within the same few milliseconds create two tokens — the busy state renders only after react-query notifies, and the request has no idempotency key | e2e@2026-10-23T05:56:28.264Z |
-| tests/e2e/qa-actions.spec.ts › QA-D4 (known defect): «Переименовать» in the tree row menu opens the inline title editor | known defect: QA-D4: choosing «Переименовать» in the row menu mounts the editor, then the menu returns focus to its trigger, the editor blurs and closes at once (F2 works) | e2e@2026-10-23T05:56:28.264Z |
-| tests/e2e/qa-actions.spec.ts › QA-D5 (known defect): «Настройки и участники» in the sidebar space menu opens the space settings | known defect: QA-D5: the menu navigates to /s/:id?tab=settings, but SpacePage keeps its tab in local state and opens «Страницы» | e2e@2026-10-23T05:56:28.264Z |
-| tests/e2e/qa-actions.spec.ts › QA-D6 (known defect): inserting column blocks from the "/" menu raises no uncaught editor error | known defect: QA-D6: the placeholder callback (editor/clientExtensions.ts) resolves a decoration position against editor.state and throws RangeError «Position N out of range» after a columns block is inserted | e2e@2026-10-23T05:56:28.264Z |
-| tests/e2e/qa-actions.spec.ts › QA-D7 (known defect): the block menu acts on the block it is opened next to, also after it was opened for another block | known defect: QA-D7: once the block menu was opened for one block (and closed with Esc or after an action), opening it next to another block still applies «Переместить вверх» to the first block | e2e@2026-10-23T05:56:28.264Z |
-| tests/e2e/qa-actions.spec.ts › QA-D8 (known defect): the «Цвет текста» submenu of the block menu opens inside the window and can be clicked | known defect: QA-D8: for a block next to the sidebar the submenu is positioned off-screen (x < 0, under the sidebar) — its items cannot be clicked | e2e@2026-10-23T05:56:28.264Z |
-| tests/e2e/ui-p0-interaction.spec.ts › R-UI-060, UX-141: hovering controls performs no action; hover-only tree actions have a keyboard equivalent | Test timeout of 60000ms exceeded. | e2e@2026-10-23T05:33:31.910Z |
+Нет.
 
 ## Открытые P0-требования (из реестра требований)
 

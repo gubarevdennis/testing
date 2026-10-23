@@ -33,20 +33,19 @@
 * Только Chromium: Firefox, Safari/WebKit и реальные мобильные устройства недоступны в окружении (ручной чек-лист в `UX_ACCEPTANCE.md`).
 * Буфер обмена в E2E эмулируется событием `paste` с синтетическим `DataTransfer`; вставка из реальных Word/Excel/Google Docs проверяется фикстурами, а не живыми приложениями.
 * Нагрузка 100 читателей + 20 редакторов — скрипт `scripts/load/collab-load.mjs` (запуск вручную, не в CI); прогон на общем контейнере: 0 потерь, но p95 синхронизации ≈ 1,4 с (`PERFORMANCE.md`). 100 тыс. страниц не проверялось — нужен стенд.
-* Задержка ввода: `tests/e2e/perf-typing.spec.ts` (11 тыс. слов, CPU 4×, 240 замеров, p95/p99) — бюджет 50/100 мс в этом окружении **не выполнен**, проверяется только при `KB_PERF_ENFORCE=1`; целостность (0 потерянных символов, курсор) проверяется всегда. Подробно — `PERFORMANCE.md`.
-* Неполные E2E: окно «Поделиться», корзина, шаблоны, импорт, экспорт и администрирование проверены интеграционно и axe-аудитом, но без сквозных пользовательских сценариев.
-* Конфликт «правка блока ↔ удаление блока другим автором» сейчас не создаёт копию конфликта (тест фиксирует текущее поведение) — открытый P0.
+* Задержка ввода: `tests/e2e/perf-typing.spec.ts` (11 тыс. слов, 240 замеров, p95/p99) — при CPU 1× бюджет 50/100 мс выполнен, при CPU 4× и на документах 5 000 блоков — **нет** (PERF-D1/D2); бюджет проверяется только при `KB_PERF_ENFORCE=1`, целостность (0 потерянных символов, курсор) — всегда. Подробно — `PERFORMANCE.md`.
+* Покрытие действий интерфейса — `docs/qa/ACTION_MATRIX.md` (сейчас 35,6 % действий, 9,3 % ячеек «действие × состояние»); непокрытые критичные действия перечислены там же и блокируют выпуск.
 
 ## Каталог автоматических тестов (сгенерировано)
 
-Всего автоматических тестов: **506** (без учёта параметризованных повторов и 12 комбинаций раскладок).
+Всего автоматических тестов: **509** (без учёта параметризованных повторов и 12 комбинаций раскладок).
 
 
 Сгенерировано `python3 scripts/requirements/test_matrix.py`. ID требований в названиях связывают тест с реестром (см. `REQUIREMENTS_TRACEABILITY.md`).
 
-Результаты (QA26-27): сборка `30e43fc22ef3` (рабочая копия с изменениями), сведены 2026-10-23T06:02:04.584Z; запуски: e2e 2026-10-23T05:33:31.910Z (local:test-results/qa/playwright.json@2026-10-23T05:33:31.910Z); e2e 2026-10-23T05:56:28.264Z (local:test-results/qa/playwright-qa-actions.json@2026-10-23T05:56:28.264Z); vitest 2026-10-23T05:59:03.771Z (local:test-results/qa/vitest.json@2026-10-23T05:59:03.771Z). Итог по тестам: BLOCKED 18, FAIL 13, N/A 1, PASS 495. Тест, которого нет в запусках, — BLOCKED.
+Результаты (QA26-27): сборка `dcce5d0b7f7b` (рабочая копия с изменениями), сведены 2026-10-23T09:55:03.978Z; запуски: e2e 2026-10-23T09:31:04.198Z (local:test-results/qa/playwright.json@2026-10-23T09:31:04.198Z); vitest 2026-10-23T09:50:59.840Z (local:test-results/qa/vitest.json@2026-10-23T09:50:59.840Z). Итог по тестам: BLOCKED 2, N/A 1, PASS 535. Тест, которого нет в запусках, — BLOCKED.
 
-Покрытие действий (QA26-03, R-QA-006): 367 из 1030 действий (35.6%), критичных 171 из 293; матрица действие × тест × состояние — `docs/qa/ACTION_MATRIX.md`, контракт состояний операций — `docs/qa/OPERATION_CONTRACT.md`, дефекты — `docs/qa/DEFECTS.md`.
+Покрытие действий (QA26-03, R-QA-006): 369 из 1032 действий (35.8%), критичных 171 из 293; матрица действие × тест × состояние — `docs/qa/ACTION_MATRIX.md`, контракт состояний операций — `docs/qa/OPERATION_CONTRACT.md`, дефекты — `docs/qa/DEFECTS.md`.
 
 ### Юнит-тесты (vitest)
 
@@ -147,7 +146,7 @@
 
 ### Интеграционные тесты API на реальном PostgreSQL (vitest)
 
-Запуск: `npm run test:integration`. Тестов: **223**.
+Запуск: `npm run test:integration`. Тестов: **224**.
 
 | Файл | Группа | Тест | Результат |
 |---|---|---|---|
@@ -209,6 +208,7 @@
 | `tests/integration/acl.test.ts` | concurrency and audit of ACL (ACL-169, ACL-172, A13) | transfer preview shows spaces gained and lost (V15-A16, R-ADMIN-006, R-ADMIN-023) | PASS |
 | `tests/integration/acl.test.ts` | space policy | export/download flags are reflected in actions (R-ACL-031) | PASS |
 | `tests/integration/archive.test.ts` | organisation archive round trip (F06, V18-A01, V18-A02, V18-A03, V18-A04, V18-A24, SC-38, S20) | export → readable without the app → restore into a clean installation → verified (V18-A05, R-ACL-049, R-SECURITY-010, E-10, V17-F06, QA26-16, R-ARCHIVE-004, R-ARCHIVE-006, R-ARCHIVE-007, R-ARCHIVE-008, R-ARCHIVE-011, R-ARCHIVE-013, R-ARCHIVE-016, R-BACKUP-005, R-EXPORT-002, R-EXPORT-024, R-EXPORT-026) | PASS |
+| `tests/integration/archive.test.ts` | organisation archive round trip (F06, V18-A01, V18-A02, V18-A03, V18-A04, V18-A24, SC-38, S20) | files and comments of a page in the trash do not break the archive: it restores and verifies (regression) | PASS |
 | `tests/integration/attachment-copy.test.ts` | POST /api/v1/attachments/:id/copy | copies to the target page: new attachment of that page, same bytes; same page → no copy | PASS |
 | `tests/integration/attachment-copy.test.ts` | POST /api/v1/attachments/:id/copy | needs the download right on the source and the edit right on the target | PASS |
 | `tests/integration/auth-hardening.test.ts` | authentication hardening (ASVS V2/V3) | a session idle longer than SESSION_IDLE_HOURS is refused; an active one keeps working | PASS |
@@ -393,7 +393,7 @@
 | `tests/resilience/db-connection-loss.test.ts` | database connection loss during editing (SC-30, E-13, D-10) | database lost between applying and committing an operation: no "saved", and it is not silently dropped (E-01, E-13, D-01) | PASS |
 | `tests/resilience/db-connection-loss.test.ts` | database connection loss during editing (SC-30, E-13, D-10) | a transaction whose connection is killed before COMMIT is retried transparently (E-01, R-OPS-002) | PASS |
 | `tests/resilience/db-connection-loss.test.ts` | database connection loss during editing (SC-30, E-13, D-10) | requests during a database outage get 503 with a Russian message instead of 500 (R-OPS-006, D-10) | PASS |
-| `tests/resilience/dr-drill.test.ts` |  | PostgreSQL server binaries (initdb, pg_verifybackup) or age are not installed: install postgresql-16 and age to run the drill (V18-A25) | BLOCKED (не запускался) |
+| `tests/resilience/dr-drill.test.ts` |  | PostgreSQL server binaries (initdb, pg_verifybackup) or age are not installed: install postgresql-16 and age to run the drill (V18-A25) | BLOCKED (skipped (skipped)) |
 | `tests/resilience/io-p0-partial-restore.test.ts` | partial restore from a backup (R-BACKUP-015) | space restore from a backup restored into a temporary database: impact preview with per-page diff, then pages come back as new versions or recreated pages with their files, without overwriting live data (R-BACKUP-015, R-BACKUP-019) | PASS |
 | `tests/resilience/migrations-fresh.test.ts` | migrations on a fresh database: up → down → up (R-OPS-022, E-14) | the CLI applies all migrations to an empty database, rolls every one back without leftovers and re-applies them to an identical schema (R-OPS-022, E-14, R-OPS-003) | PASS |
 | `tests/resilience/migrations.test.ts` | schema migrations: rollback and re-apply (E-14, OPS-002, R-OPS-001) | every migration rolls back and re-applies step by step with data present; the application keeps working (E-14, OPS-002, R-OPS-001, R-OPS-004, R-OPS-007) | PASS |
@@ -410,15 +410,15 @@
 
 ### Браузерные E2E (Playwright, Chromium)
 
-Запуск: `npm run test:e2e`. Тестов: **167**.
+Запуск: `npm run test:e2e`. Тестов: **169**.
 
 | Файл | Группа | Тест | Результат |
 |---|---|---|---|
-| `tests/e2e/a11y.spec.ts` |  | WCAG 2.1 AA automated audit of key screens (R-A11Y-003, AT-80, E2E-112) | FAIL (Error: page: serious/critical WCAG 2.1 AA violations) |
-| `tests/e2e/a11y.spec.ts` |  | keyboard only: quick switcher, help, dialogs close with Esc and return focus (UX-136, SC-34) | BLOCKED (skipped (not executed: serial group stopped earlier or skipped without reason)) |
-| `tests/e2e/a11y.spec.ts` |  | reduced motion: animations and transitions are effectively disabled (R-A11Y-002, AT-82) | BLOCKED (skipped (not executed: serial group stopped earlier or skipped without reason)) |
-| `tests/e2e/a11y.spec.ts` |  | real 200% browser zoom (1280x800 at 2x = 640x400 CSS px) keeps every key screen usable (AT-81, UX-147, V18-A18) | BLOCKED (skipped (not executed: serial group stopped earlier or skipped without reason)) |
-| `tests/e2e/a11y.spec.ts` |  | pixel baselines for stable screens (R-QA-008, AT-89) | BLOCKED (skipped (not executed: serial group stopped earlier or skipped without reason)) |
+| `tests/e2e/a11y.spec.ts` |  | WCAG 2.1 AA automated audit of key screens (R-A11Y-003, AT-80, E2E-112) | PASS |
+| `tests/e2e/a11y.spec.ts` |  | keyboard only: quick switcher, help, dialogs close with Esc and return focus (UX-136, SC-34) | PASS |
+| `tests/e2e/a11y.spec.ts` |  | reduced motion: animations and transitions are effectively disabled (R-A11Y-002, AT-82) | PASS |
+| `tests/e2e/a11y.spec.ts` |  | real 200% browser zoom (1280x800 at 2x = 640x400 CSS px) keeps every key screen usable (AT-81, UX-147, V18-A18) | PASS |
+| `tests/e2e/a11y.spec.ts` |  | pixel baselines for stable screens (R-QA-008, AT-89) | PASS |
 | `tests/e2e/acl-p0-admin.spec.ts` |  | R-ADMIN-018 V16-S15: the administrator checks a user\'s access to a document — decision, actions, sources — without impersonation and without seeing private titles | BLOCKED (не запускался) |
 | `tests/e2e/acl-p0-admin.spec.ts` |  | R-ACL-056: emergency access is requested with a reason, approved by a second administrator and appears in the audit log | PASS |
 | `tests/e2e/acl-p0-admin.spec.ts` |  | ROUTE-06: the auditor reads who changed what in the journal but does not see titles or content of documents without access | PASS |
@@ -442,10 +442,10 @@
 | `tests/e2e/clipboard.spec.ts` |  | registry block from the slash menu shows the new collection (R-COLLECTION-001) | PASS |
 | `tests/e2e/clipboard.spec.ts` |  | image viewer: click on a selected image opens it; zoom is limited to 10–800 % (R-MEDIA-015, R-MEDIA-019, R-MEDIA-021) | PASS |
 | `tests/e2e/collab-p0-editing.spec.ts` |  | two editors change a paragraph, one table and the structure while one loses the connection: no confirmed text is lost (ROUTE-05, SC-25, AT-56, R-COLLAB-024) | PASS |
-| `tests/e2e/collab-p0-editing.spec.ts` |  | a block is moved by one editor while another edits it: the edit is kept as a conflict copy and restored in one click (OPS-006, R-COLLAB-049, R-COLLAB-045, R-COLLAB-041, R-COLLAB-033, E-04, COLLAB-193, AT-90) | FAIL (Error: expect(received).toMatchObject(expected)) |
-| `tests/e2e/collab-p0-editing.spec.ts` |  | undo of a block move never silently drops a colleague's edits (UX13-10, R-HISTORY-011) | BLOCKED (skipped (not executed: serial group stopped earlier or skipped without reason)) |
-| `tests/e2e/collab-p0-editing.spec.ts` |  | undo/redo sequences of 100 and 1000 steps, transform and delete are reversible; history does not cross a reload (QA26-14, R-HISTORY-017, R-HISTORY-011) | BLOCKED (skipped (not executed: serial group stopped earlier or skipped without reason)) |
-| `tests/e2e/collab-p0-editing.spec.ts` |  | Esc in the empty title of a new page cancels it; a double "+" on a slow network creates exactly one page (R-TREE-025, UX23-203) | BLOCKED (skipped (not executed: serial group stopped earlier or skipped without reason)) |
+| `tests/e2e/collab-p0-editing.spec.ts` |  | a block is moved by one editor while another edits it: the edit is kept as a conflict copy and restored in one click (OPS-006, R-COLLAB-049, R-COLLAB-045, R-COLLAB-041, R-COLLAB-033, E-04, COLLAB-193, AT-90) | PASS |
+| `tests/e2e/collab-p0-editing.spec.ts` |  | undo of a block move never silently drops a colleague's edits (UX13-10, R-HISTORY-011) | PASS |
+| `tests/e2e/collab-p0-editing.spec.ts` |  | undo/redo sequences of 100 and 1000 steps, transform and delete are reversible; history does not cross a reload (QA26-14, R-HISTORY-017, R-HISTORY-011) | PASS |
+| `tests/e2e/collab-p0-editing.spec.ts` |  | Esc in the empty title of a new page cancels it; a double "+" on a slow network creates exactly one page (R-TREE-025, UX23-203) | PASS |
 | `tests/e2e/collab-p0-offline.spec.ts` |  | reload without network reopens the local copy with an honest status; the queue is delivered after reconnect (E-02, AT-75, R-OFFLINE-010, R-OFFLINE-003, R-OFFLINE-005, AT-90) | PASS |
 | `tests/e2e/collab-p0-offline.spec.ts` |  | two tabs of the same user edit one page online and offline: no loss, no duplicates (UX23-216, R-OFFLINE-010) | PASS |
 | `tests/e2e/collab-p0-offline.spec.ts` |  | one browser, two accounts: a user's unsent changes are never sent or shown under another account (R-OFFLINE-007) | PASS |
@@ -462,8 +462,9 @@
 | `tests/e2e/conflict.spec.ts` |  | R-COLLAB-036: conflict dialog — «accept the server version» keeps the deletion, my version stays in the page history | PASS |
 | `tests/e2e/conflict.spec.ts` |  | R-COLLAB-036: a change the server refuses opens the comparison dialog; «keep both» saves my version as a new page, the editor continues on the server version | PASS |
 | `tests/e2e/content.spec.ts` |  | image: upload via file chooser, resize presets, caption, full-screen viewer with zoom | PASS |
-| `tests/e2e/content.spec.ts` |  | sidebar tree: "+" creates a child page under the selected parent with focus in the title (R-TREE-002, UX-121, UX23-201) | FAIL (Test timeout of 60000ms exceeded.) |
-| `tests/e2e/content.spec.ts` |  | comment on a selection appears in the comments panel | BLOCKED (skipped (not executed: serial group stopped earlier or skipped without reason)) |
+| `tests/e2e/content.spec.ts` |  | sidebar tree: "+" creates a child page under the selected parent with focus in the title (R-TREE-002, UX-121, UX23-201) | PASS |
+| `tests/e2e/content.spec.ts` |  | comment on a selection appears in the comments panel | PASS |
+| `tests/e2e/content.spec.ts` |  | the open page is revealed in the tree: ancestors expanded, row scrolled into view and selected (R-TREE-013) | PASS |
 | `tests/e2e/editor-p0-blocks.spec.ts` |  | text blocks: paragraph, H1–H6, lead, quote and divider are created from the "/" menu; body text is hyphenated (R-EDITOR-007) | PASS |
 | `tests/e2e/editor-p0-blocks.spec.ts` |  | selection modes: word, paragraph, Shift+arrows, across blocks, Ctrl+A block → article, Esc → block, several blocks (R-EDITOR-068, E201) | PASS |
 | `tests/e2e/editor-p0-blocks.spec.ts` |  | formatting keeps the selection: bold, italic and toolbar underline apply to the same range (E202) | PASS |
@@ -487,11 +488,12 @@
 | `tests/e2e/editor-p0-dnd.spec.ts` |  | inside a callout, between columns with the column highlighted, invalid target explained (R-EDITOR-075, R-EDITOR-076) | PASS |
 | `tests/e2e/editor-p0-dnd.spec.ts` |  | several selected blocks; images, tables and nested lists move whole; Alt-drag copies (R-EDITOR-076, QA26-09) | PASS |
 | `tests/e2e/editor-p0-dnd.spec.ts` |  | autoscroll near the bottom edge while dragging, drop far below (QA26-09) | PASS |
-| `tests/e2e/editor-p0-dnd.spec.ts` |  | drop on another page in the sidebar tree moves the blocks there (ids kept); the page itself and a page without edit rights are refused (R-EDITOR-076) | BLOCKED (не запускался) |
-| `tests/e2e/editor-p0-dnd.spec.ts` |  | keyboard alternatives: Alt+Shift+↑/↓ move (also out of a callout / column), Esc twice selects the column set (R-EDITOR-069, R-EDITOR-052) | BLOCKED (skipped (not executed: serial group stopped earlier or skipped without reason)) |
-| `tests/e2e/editor-p0-dnd.spec.ts` |  | pages and whole branches in the tree: into a collapsed node (auto-expand), not into their own descendant, Esc cancels (QA26-09) | BLOCKED (не запускался) |
-| `tests/e2e/editor-p0-dnd.spec.ts` |  | tree: dragging a page to the bottom edge scrolls the tree, the drop lands under the pointer (QA26-09) | BLOCKED (не запускался) |
-| `tests/e2e/editor-p0-dnd.spec.ts` |  | tree: a section (space) the user may only read is an explicit invalid target — on the space and between its pages (QA26-09) | BLOCKED (не запускался) |
+| `tests/e2e/editor-p0-dnd.spec.ts` |  | drop on another page in the sidebar tree moves the blocks there (ids kept); the page itself and a page without edit rights are refused (R-EDITOR-076) | PASS |
+| `tests/e2e/editor-p0-dnd.spec.ts` |  | keyboard alternatives: Alt+Shift+↑/↓ move (also out of a callout / column), Esc twice selects the column set (R-EDITOR-069, R-EDITOR-052) | PASS |
+| `tests/e2e/editor-p0-dnd.spec.ts` |  | pages and whole branches in the tree: into a collapsed node (auto-expand), not into their own descendant, Esc cancels (QA26-09) | PASS |
+| `tests/e2e/editor-p0-dnd.spec.ts` |  | tree: dragging a page to the bottom edge scrolls the tree, the drop lands under the pointer (QA26-09) | PASS |
+| `tests/e2e/editor-p0-dnd.spec.ts` |  | tree: a section (space) the user may only read is an explicit invalid target — on the space and between its pages (QA26-09) | PASS |
+| `tests/e2e/editor-p0-dnd.spec.ts` |  | touch: the block menu (no hover handle) moves and deletes the block at the caret; one Undo each (R-EDITOR-052, R-EDITOR-069) | PASS |
 | `tests/e2e/editor-p0-media.spec.ts` |  | pasted image: instant local preview, upload error keeps the block, retry completes it with alt (R-MEDIA-006, R-MEDIA-008) | PASS |
 | `tests/e2e/editor-p0-media.spec.ts` |  | closing the tab during an image upload: the block and the file are restored and the upload finishes on next open (UX13-03, R-MEDIA-006) | PASS |
 | `tests/e2e/editor-p0-media.spec.ts` |  | cancelling an upload removes only that block (R-MEDIA-006) | PASS |
@@ -502,14 +504,14 @@
 | `tests/e2e/editor-p0-table.spec.ts` |  | table structure: insert/delete rows and columns, header row/column, merge and split, alignment, column width (R-TABLE-003) | PASS |
 | `tests/e2e/editor-p0-table.spec.ts` |  | table data: copy a cell range as TSV, paste a range from Excel, move rows and columns, sort by a column (R-TABLE-003) | PASS |
 | `tests/e2e/editor-p0-table.spec.ts` |  | concurrent table operations of two people (row added offline vs column added offline) converge to the same rectangular table (OPS-007) | PASS |
-| `tests/e2e/editor-p0-undo-ops.spec.ts` |  | typing, formatting, conversion and typing again are separate undo steps without pauses (R-HISTORY-017) | BLOCKED (не запускался) |
-| `tests/e2e/editor-p0-undo-ops.spec.ts` |  | image resize by the handle and by a preset, table column resize: each is one undo step (R-HISTORY-017, R-EDITOR-052) | BLOCKED (не запускался) |
-| `tests/e2e/editor-p0-undo-ops.spec.ts` |  | macOS keys: ⌘Z undoes, ⌘⇧Z redoes (R-HISTORY-017) | BLOCKED (не запускался) |
+| `tests/e2e/editor-p0-undo-ops.spec.ts` |  | typing, formatting, conversion and typing again are separate undo steps without pauses (R-HISTORY-017) | PASS |
+| `tests/e2e/editor-p0-undo-ops.spec.ts` |  | image resize by the handle and by a preset, table column resize: each is one undo step (R-HISTORY-017, R-EDITOR-052) | PASS |
+| `tests/e2e/editor-p0-undo-ops.spec.ts` |  | macOS keys: ⌘Z undoes, ⌘⇧Z redoes (R-HISTORY-017) | PASS |
 | `tests/e2e/editor.spec.ts` |  | first run: organisation setup, personal space and empty states | PASS |
-| `tests/e2e/editor.spec.ts` |  | create page, type with Markdown shortcuts, "Сохранено" only after server ack, survives reload (R-PAGE-018, R-PAGE-033, AT-61, UX13-01, UX-144) | FAIL (Error: expect(locator).toBeVisible() failed) |
-| `tests/e2e/editor.spec.ts` |  | offline edits are kept locally and delivered after reconnect (E220, AT-57) | BLOCKED (skipped (not executed: serial group stopped earlier or skipped without reason)) |
-| `tests/e2e/editor.spec.ts` |  | slash menu inserts a table and a callout; "> " creates a toggle | BLOCKED (skipped (not executed: serial group stopped earlier or skipped without reason)) |
-| `tests/e2e/editor.spec.ts` |  | an empty page created by mistake disappears when left; a double click creates one page (R-TREE-025, UX23-203, UX23-202) | BLOCKED (skipped (not executed: serial group stopped earlier or skipped without reason)) |
+| `tests/e2e/editor.spec.ts` |  | create page, type with Markdown shortcuts, "Сохранено" only after server ack, survives reload (R-PAGE-018, R-PAGE-033, AT-61, UX13-01, UX-144) | PASS |
+| `tests/e2e/editor.spec.ts` |  | offline edits are kept locally and delivered after reconnect (E220, AT-57) | PASS |
+| `tests/e2e/editor.spec.ts` |  | slash menu inserts a table and a callout; "> " creates a toggle | PASS |
+| `tests/e2e/editor.spec.ts` |  | an empty page created by mistake disappears when left; a double click creates one page (R-TREE-025, UX23-203, UX23-202) | PASS |
 | `tests/e2e/history-p0.spec.ts` |  | R-HISTORY-013, V16-S11: compare shows text and property changes highlighted; restore shows an exact preview and brings back properties as a new version | PASS |
 | `tests/e2e/history-p0.spec.ts` |  | R-HISTORY-013: one block is restored from a version after a preview, as a new version | PASS |
 | `tests/e2e/history-p0.spec.ts` |  | R-HISTORY-002: a property change (icon, tag) offers «Отменить» right away; tags are editable and searchable | PASS |
@@ -517,7 +519,7 @@
 | `tests/e2e/io-p0-roundtrip.spec.ts` |  | DOCX import → edit in the editor → DOCX and Markdown export from the page menu keep the structure and the edit (E225, SC-13, R-EXPORT-006, R-EXPORT-012) | PASS |
 | `tests/e2e/io-p0-roundtrip.spec.ts` |  | Markdown file import → edit → Markdown export round trip (E225, R-EXPORT-012) | PASS |
 | `tests/e2e/io-p0-roundtrip.spec.ts` |  | background export of a branch can be cancelled from the dialog; separate-files ZIP option (R-EXPORT-022) | PASS |
-| `tests/e2e/io-p0-roundtrip.spec.ts` |  | archive restore dialog: the administrator chooses a new isolated space as the target (R-ARCHIVE-006, R-ARCHIVE-016) | FAIL (Test timeout of 60000ms exceeded.) |
+| `tests/e2e/io-p0-roundtrip.spec.ts` |  | archive restore dialog: the administrator chooses a new isolated space as the target (R-ARCHIVE-006, R-ARCHIVE-016) | PASS |
 | `tests/e2e/mobile.layout.spec.ts` |  | mobile: drawer navigation, editor usable, no horizontal scroll | PASS |
 | `tests/e2e/ocr-view.spec.ts` |  | SC-22: the OCR view shows the original image, confidence with uncertain words, corrections and provenance | PASS |
 | `tests/e2e/ocr-view.spec.ts` |  | R-UI-062: a dialog with typed critical input warns before closing; closing without saving is an explicit choice | PASS |
@@ -529,23 +531,23 @@
 | `tests/e2e/perf-typing.spec.ts` |  | R-PERF-013: typing starts no animations on document content (input latency journaled) | PASS |
 | `tests/e2e/qa-actions.spec.ts` |  | QA actions setup: owner, a project space | PASS |
 | `tests/e2e/qa-actions.spec.ts` |  | R-QA-004 API tokens: empty name disables «Создать токен»; slow network shows progress and a double click creates one token; «Я сохранил токен»; revoke: cancel keeps it, confirm removes it and shows the empty state; server error keeps the input | PASS |
-| `tests/e2e/qa-actions.spec.ts` |  | QA-D3 (known defect): an instantaneous double activation of «Создать токен» sends one request | FAIL (known defect: QA-D3: two presses within the same few milliseconds create two tok) |
+| `tests/e2e/qa-actions.spec.ts` |  | QA-D3 (fixed): an instantaneous double activation of «Создать токен» sends one request | PASS |
 | `tests/e2e/qa-actions.spec.ts` |  | R-QA-029 offline: «Создать токен» without a network explains the failure and works after reconnecting | PASS |
 | `tests/e2e/qa-actions.spec.ts` |  | R-QA-004 password change (separate account): empty form is disabled, mismatch and wrong current password are explained without losing input, success needs one click | PASS |
 | `tests/e2e/qa-actions.spec.ts` |  | R-QA-004 sessions: «Завершить остальные» — cancel keeps the other device signed in, confirm signs it out | PASS |
 | `tests/e2e/qa-actions.spec.ts` |  | R-QA-004 trash: «Удалить в корзину» from the tree → toast «Восстановить» undoes it; trash «Восстановить» (double click restores once); «Удалить навсегда» — cancel keeps it, typed confirmation purges; server error on restore keeps the item | PASS |
-| `tests/e2e/qa-actions.spec.ts` |  | QA-D4 (known defect): «Переименовать» in the tree row menu opens the inline title editor | FAIL (known defect: QA-D4: choosing «Переименовать» in the row menu mounts the editor,) |
+| `tests/e2e/qa-actions.spec.ts` |  | QA-D4 (fixed): «Переименовать» in the tree row menu opens the inline title editor | PASS |
 | `tests/e2e/qa-actions.spec.ts` |  | R-QA-004 tree row: rename (F2) — Esc cancels, Enter saves, server error keeps the old title; «Дублировать» opens the copy; «Переместить в…» closes with Esc without moving | PASS |
 | `tests/e2e/qa-actions.spec.ts` |  | R-QA-004 page menu: «Сохранить как шаблон», «Дублировать», «Удалить» with «Восстановить» from the toast | PASS |
 | `tests/e2e/qa-actions.spec.ts` |  | R-QA-029 no permission: a viewer sees page and tree actions disabled with the reason, and the server refuses them | PASS |
 | `tests/e2e/qa-actions.spec.ts` |  | R-QA-004 search: empty result explains itself, «Очистить» resets the query, a server error offers «Повторить» | PASS |
-| `tests/e2e/qa-actions.spec.ts` |  | QA-D5 (known defect): «Настройки и участники» in the sidebar space menu opens the space settings | FAIL (known defect: QA-D5: the menu navigates to /s/:id?tab=settings, but SpacePage ke) |
+| `tests/e2e/qa-actions.spec.ts` |  | QA-D5 (fixed): «Настройки и участники» in the sidebar space menu opens the space settings | PASS |
 | `tests/e2e/qa-actions.spec.ts` |  | R-QA-004 space settings: «Удалить пространство» — cancel keeps it, typed confirmation moves it to the trash, the trash restores it | PASS |
 | `tests/e2e/qa-actions.spec.ts` |  | R-QA-004 editor "/" menu: every block command inserts its block; dialog commands close with «Отмена»/Esc without inserting | PASS |
-| `tests/e2e/qa-actions.spec.ts` |  | QA-D6 (known defect): inserting column blocks from the "/" menu raises no uncaught editor error | FAIL (known defect: QA-D6: the placeholder callback (editor/clientExtensions.ts) resol) |
+| `tests/e2e/qa-actions.spec.ts` |  | QA-D6 (fixed): inserting column blocks from the "/" menu raises no uncaught editor error | PASS |
 | `tests/e2e/qa-actions.spec.ts` |  | R-QA-004 block menu «Действия с блоком»: «Дублировать», «Переместить вверх», «Цвет текста», «Удалить» and Ctrl+Z; Esc closes the menu without changes | PASS |
-| `tests/e2e/qa-actions.spec.ts` |  | QA-D7 (known defect): the block menu acts on the block it is opened next to, also after it was opened for another block | FAIL (known defect: QA-D7: once the block menu was opened for one block (and closed wi) |
-| `tests/e2e/qa-actions.spec.ts` |  | QA-D8 (known defect): the «Цвет текста» submenu of the block menu opens inside the window and can be clicked | FAIL (known defect: QA-D8: for a block next to the sidebar the submenu is positioned o) |
+| `tests/e2e/qa-actions.spec.ts` |  | QA-D7 (fixed): the block menu acts on the block it is opened next to, also after it was opened for another block | PASS |
+| `tests/e2e/qa-actions.spec.ts` |  | QA-D8 (fixed): the «Цвет текста» submenu of the block menu opens inside the window and can be clicked | PASS |
 | `tests/e2e/qa-actions.spec.ts` |  | R-QA-004 admin users menu: «Сбросить пароль» (cancel, then link), «Изменить профиль и роль» (nothing to save until changed), «Деактивировать (увольнение)…» needs acknowledgement and cancels, «Приостановить доступ…» → «Восстановить доступ»; own row cannot be disabled | PASS |
 | `tests/e2e/qa-actions.spec.ts` |  | R-QA-004 templates: «Новый шаблон» — empty name disables «Создать шаблон», «Отмена» creates nothing, create; «Удалить шаблон «…»» — cancel keeps it, confirm removes it | PASS |
 | `tests/e2e/qa-actions.spec.ts` |  | R-QA-004 invitation link /invite/:token: empty password disables «Продолжить», an invalid link and a short password are explained, a valid one signs the employee in | PASS |
@@ -558,12 +560,12 @@
 | `tests/e2e/ui-p0-interaction.spec.ts` |  | prepare pages | PASS |
 | `tests/e2e/ui-p0-interaction.spec.ts` |  | R-UI-059, R-UI-008, E224: menus at viewport edges flip/shift inside the window, keep keyboard focus, close with Esc or outside click and return focus | PASS |
 | `tests/e2e/ui-p0-interaction.spec.ts` |  | R-UI-059, R-UI-053: dialogs trap focus, always have a visible exit and Esc, and return focus to the opener | PASS |
-| `tests/e2e/ui-p0-interaction.spec.ts` |  | R-UI-060, UX-141: hovering controls performs no action; hover-only tree actions have a keyboard equivalent | FAIL (Test timeout of 60000ms exceeded.) |
-| `tests/e2e/ui-p0-interaction.spec.ts` |  | R-UI-053: a server that does not answer gives an explanation and a retry instead of an endless spinner | BLOCKED (skipped (not executed: serial group stopped earlier or skipped without reason)) |
-| `tests/e2e/ui-p0-interaction.spec.ts` |  | R-UI-053, R-UI-068: disabled actions always say why (view-only user) | BLOCKED (skipped (not executed: serial group stopped earlier or skipped without reason)) |
-| `tests/e2e/ui-p0-interaction.spec.ts` |  | R-UI-062: a new page is never created "nowhere" and a draft survives an immediate reload | BLOCKED (skipped (not executed: serial group stopped earlier or skipped without reason)) |
-| `tests/e2e/ui-p0-interaction.spec.ts` |  | R-UI-009, R-UI-052: failed actions are shown with what happened, that nothing was saved, and what to do | BLOCKED (skipped (not executed: serial group stopped earlier or skipped without reason)) |
-| `tests/e2e/ui-p0-interaction.spec.ts` |  | R-UI-009: no uncaught script errors occurred in any scenario above | BLOCKED (skipped (not executed: serial group stopped earlier or skipped without reason)) |
+| `tests/e2e/ui-p0-interaction.spec.ts` |  | R-UI-060, UX-141: hovering controls performs no action; hover-only tree actions have a keyboard equivalent | PASS |
+| `tests/e2e/ui-p0-interaction.spec.ts` |  | R-UI-053: a server that does not answer gives an explanation and a retry instead of an endless spinner | PASS |
+| `tests/e2e/ui-p0-interaction.spec.ts` |  | R-UI-053, R-UI-068: disabled actions always say why (view-only user) | PASS |
+| `tests/e2e/ui-p0-interaction.spec.ts` |  | R-UI-062: a new page is never created "nowhere" and a draft survives an immediate reload | PASS |
+| `tests/e2e/ui-p0-interaction.spec.ts` |  | R-UI-009, R-UI-052: failed actions are shown with what happened, that nothing was saved, and what to do | PASS |
+| `tests/e2e/ui-p0-interaction.spec.ts` |  | R-UI-009: no uncaught script errors occurred in any scenario above | PASS |
 | `tests/e2e/ui-p0-layout.spec.ts` |  | prepare a page with headings, long words, a list and a table | PASS |
 | `tests/e2e/ui-p0-layout.spec.ts` |  | R-UI-006, R-UI-040: opening a page and typing cause no layout shift (CLS < 0.02) | PASS |
 | `tests/e2e/ui-p0-layout.spec.ts` |  | R-UI-006: switching pages, opening and closing the side panel cause no layout shift | PASS |
