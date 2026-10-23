@@ -78,7 +78,8 @@ export function toFootnoteContent(nodes: PMNode[]): PMNode[] {
 
 const SECTION_TITLES = new Set(['сноски', 'концевые сноски', 'примечания', 'footnotes', 'notes']);
 const MARKER = /\[(\d{1,4})\]/g;
-const ONLY_MARKERS = /^(?:\s*\[\d{1,4}\]\s*)+$/;
+/** «[1]», «[1][2]», « [3] » — nothing but markers. */
+const onlyMarkers = (t: string) => /\[\d{1,4}\]/.test(t) && t.replace(/\[\d{1,4}\]/g, '').trim() === '';
 
 const textOf = (n: PMNode) => inlineText(n).trim();
 const isSup = (n: PMNode) => n.type === 'text' && !!n.marks?.some((m) => m.type === 'superscript');
@@ -108,7 +109,7 @@ export function migrateLegacyFootnotes(doc: PMNode): PMNode {
   let foreign = false;
   const scan = (n: PMNode) => {
     if (isSup(n)) {
-      if (ONLY_MARKERS.test(n.text ?? '')) for (const m of (n.text ?? '').matchAll(MARKER)) used.add(Number(m[1]));
+      if (onlyMarkers(n.text ?? '')) for (const m of (n.text ?? '').matchAll(MARKER)) used.add(Number(m[1]));
       else if (/\[\d+\]/.test(n.text ?? '')) foreign = true;
     }
     n.content?.forEach(scan);
@@ -118,7 +119,7 @@ export function migrateLegacyFootnotes(doc: PMNode): PMNode {
   const replaceInline = (nodes: PMNode[]): PMNode[] => {
     const out: PMNode[] = [];
     for (const n of nodes) {
-      if (isSup(n) && ONLY_MARKERS.test(n.text ?? '')) {
+      if (isSup(n) && onlyMarkers(n.text ?? '')) {
         for (const m of (n.text ?? '').matchAll(MARKER)) {
           const content = structuredClone(notes[Number(m[1]) - 1]);
           out.push(content.length ? { type: 'footnote', content } : { type: 'footnote' });

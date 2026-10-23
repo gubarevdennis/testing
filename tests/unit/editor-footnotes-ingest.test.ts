@@ -29,6 +29,7 @@ import {
 import * as md from '@kb/shared/markdown';
 import { htmlToDoc, importMarkdown, importText, importRows, docToHtml } from '../../apps/server/src/convert/html';
 import { jsonToUpdate, updateToJson } from '../../apps/server/src/collab/ydoc';
+import { diffDocs } from '../../apps/server/src/services/revisions';
 
 const env = () => ({ parser: new DOMParser(), markdown: md, origin: 'https://kb.example' });
 const valid = (doc: PMNode) => getKbSchema().nodeFromJSON(doc).check();
@@ -109,6 +110,19 @@ describe('R-EDITOR-038 footnotes: schema, migration 1 → 2 (D-36)', () => {
       p({ type: 'inlineMath', attrs: { latex: 'E=mc^2' } }),
     ]);
     expect(c).toEqual([t('a@Иван'), { type: 'hardBreak' }, t('b'), { type: 'hardBreak' }, t('E=mc^2', [{ type: 'code' }])]);
+  });
+
+  it('history compare shows a change of a note as a change of its paragraph, word by word', () => {
+    const before: PMNode = { type: 'doc', content: [{ type: 'paragraph', attrs: { id: 'p1' }, content: [t('Норма'), { type: 'footnote', content: [t('СП 52 редакция 2016')] }] }] };
+    const after = structuredClone(before);
+    after.content![0].content![1].content![0].text = 'СП 52 редакция 2024';
+    const d = diffDocs(before, after);
+    expect(d.blocks).toHaveLength(1);
+    expect(d.blocks[0]).toMatchObject({ id: 'p1', status: 'changed' });
+    const parts = (d.blocks[0] as any).parts as Array<{ value: string; added?: boolean; removed?: boolean }>;
+    expect(parts.filter((x) => x.removed).map((x) => x.value).join('')).toContain('2016');
+    expect(parts.filter((x) => x.added).map((x) => x.value).join('')).toContain('2024');
+    expect(parts.filter((x) => !x.added && !x.removed).map((x) => x.value).join('')).toContain('Норма [СП 52 редакция');
   });
 
   it('search / history text contains the note; Yjs round trip keeps it', () => {

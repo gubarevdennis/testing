@@ -614,7 +614,7 @@ export function markdownToDoc(markdown: string, opts: FromMarkdownOptions = {}):
           let src = asset?.src ?? null;
           if (!asset) {
             // http(s) pictures and pictures of this instance (our own exports, conflict copies) keep their source
-            const safe = /^https?:/i.test(url) || /^\/api\/v1\/attachments\/[0-9a-f-]{36}\/content(\?[^\s]*)?$/i.test(url) ? sanitizeHref(url) : null;
+            const safe = /^https?:/i.test(url) || /^\/api\/v1\/attachments\/[0-9a-f-]{36}\/content(?:$|\?)/i.test(url) ? sanitizeHref(url) : null;
             if (safe) src = safe;
             else warn('image-missing', `Изображение не найдено: ${url.slice(0, 120)} — вставлен текстовый заполнитель`);
           }
