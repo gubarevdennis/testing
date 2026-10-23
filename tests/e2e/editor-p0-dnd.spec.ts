@@ -63,6 +63,16 @@ async function rect(l: Locator) {
   return (await l.boundingBox())!;
 }
 
+/** Pages and spaces created through the API by the tree tests: removed afterwards (the shared e2e database keeps the tree short). */
+const apiCreated: Array<{ kind: 'pages' | 'spaces'; id: string }> = [];
+test.afterEach(async ({ page }) => {
+  const csrf = (await page.context().storageState()).cookies.find((c) => c.name === 'kb_csrf')?.value ?? '';
+  while (apiCreated.length) {
+    const x = apiCreated.pop()!;
+    await page.context().request.delete(`/api/v1/${x.kind}/${x.id}`, { headers: { 'x-csrf-token': csrf } }).catch(() => undefined);
+  }
+});
+
 const undoKey = `${mod}+z`;
 const redoKey = `${mod}+Shift+z`;
 
@@ -102,7 +112,8 @@ test('drag threshold, preview, line before/after, one atomic drop, one Undo; ids
   await expect(page.getByRole('menu')).toHaveCount(0);
 
   // typing right after the drop is a separate Undo step: Undo removes the typing, the next Undo the whole drop
-  await ed.locator('p', { hasText: 'Четвёртый' }).click();
+  // (the caret must really be in the paragraph: typing over the still-selected moved block would replace it)
+  await caretIn(page, 'Четвёртый');
   await page.keyboard.press('End');
   await page.keyboard.type(' дописано');
   await page.keyboard.press(undoKey);
@@ -355,6 +366,7 @@ test('drop on another page in the sidebar tree moves the blocks there (ids kept)
   const p2 = await ctx.newPage();
   await p2.goto('/');
   await login_(p2, u.email, u.password);
+  await expect(p2.locator('.app-shell')).toBeVisible();
   await p2.goto('/p/' + source);
   await expect(editor(p2).locator('p', { hasText: 'Останется' })).toBeVisible();
   const tr2 = (await treeLink(p2, 'DnD цель переноса')).locator('xpath=ancestor::div[contains(concat(" ",@class," ")," tree-row ")][1]');
@@ -397,7 +409,9 @@ test('pages and whole branches in the tree: into a collapsed node (auto-expand),
   const mk = async (title: string, parentId: string | null) => {
     const r = await page.request.post('/api/v1/pages', { data: { spaceId: space, parentId, title, requestId: crypto.randomUUID() }, headers: { 'x-csrf-token': csrf } });
     expect(r.ok(), await r.text()).toBeTruthy();
-    return (await r.json()).page.id as string;
+    const id = (await r.json()).page.id as string;
+    apiCreated.push({ kind: 'pages', id });
+    return id;
   };
   const folder = await mk('DnD-дерево: папка', null);
   await mk('DnD-дерево: старый ребёнок', folder);
@@ -439,7 +453,9 @@ test('tree: dragging a page to the bottom edge scrolls the tree, the drop lands 
   const space = (await (await page.request.get('/api/v1/auth/me')).json()).personalSpaceId as string;
   const mk = async (title: string) => {
     const r = await page.request.post('/api/v1/pages', { data: { spaceId: space, parentId: null, title, requestId: crypto.randomUUID() }, headers: { 'x-csrf-token': csrf } });
-    return (await r.json()).page.id as string;
+    const id = (await r.json()).page.id as string;
+    apiCreated.push({ kind: 'pages', id });
+    return id;
   };
   const moving = await mk('АА прокрутка: переносимая');
   for (let i = 0; i < 45; i++) await mk(`АА прокрутка: страница ${String(i).padStart(2, '0')}`);
@@ -480,8 +496,10 @@ test('tree: a section (space) the user may only read is an explicit invalid targ
   const sp = await page.request.post('/api/v1/spaces', { data: { name: 'DnD-раздел для чтения', kind: 'project', visibility: 'closed', users: [{ userId: u.id, level: 'view' }] }, headers: { 'x-csrf-token': csrf } });
   expect(sp.ok(), await sp.text()).toBeTruthy();
   const space = (await sp.json()).space;
+  apiCreated.push({ kind: 'spaces', id: space.id });
   const r = await page.request.post('/api/v1/pages', { data: { spaceId: space.id, parentId: null, title: 'DnD-раздел: страница', requestId: crypto.randomUUID() }, headers: { 'x-csrf-token': csrf } });
   expect(r.ok()).toBeTruthy();
+  apiCreated.push({ kind: 'pages', id: (await r.json()).page.id });
   const ctx = await browser.newContext();
   const p2 = await ctx.newPage();
   await p2.goto('/');
