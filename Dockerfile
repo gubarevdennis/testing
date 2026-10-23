@@ -40,18 +40,26 @@ ARG PG_MAJOR=16
 # Chromium for PDF export is NOT installed by default (≈400 MB): set CHROMIUM_PATH to a browser available
 # in the image, or build with --build-arg INSTALL_CHROMIUM=1 to add Debian's chromium package.
 ARG INSTALL_CHROMIUM=0
+# Debian mirror (e.g. --build-arg DEBIAN_MIRROR=mirror.yandex.ru when deb.debian.org is slow or unreachable).
+ARG DEBIAN_MIRROR=deb.debian.org
 COPY deploy/certs/ /usr/local/share/ca-certificates/extra/
 RUN set -eux; \
     find /usr/local/share/ca-certificates/extra -type f ! -name '*.crt' -delete; \
+    sed -i "s#deb.debian.org#${DEBIAN_MIRROR}#g" /etc/apt/sources.list.d/debian.sources; \
+    printf 'Acquire::Retries "5";\nAcquire::http::Timeout "30";\nAcquire::https::Timeout "30";\n' > /etc/apt/apt.conf.d/80-retries; \
     apt-get update; \
     apt-get install -y --no-install-recommends ca-certificates curl gnupg tini jq tzdata; \
     update-ca-certificates; \
     install -d /usr/share/postgresql-common/pgdg; \
-    curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc; \
+    curl -fsSL --retry 5 https://www.postgresql.org/media/keys/ACCC4CF8.asc -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc; \
     echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt bookworm-pgdg main" > /etc/apt/sources.list.d/pgdg.list; \
     apt-get update; \
     apt-get install -y --no-install-recommends postgresql-client-${PG_MAJOR}; \
-    if [ "$INSTALL_CHROMIUM" = "1" ]; then apt-get install -y --no-install-recommends chromium fonts-dejavu-core fonts-liberation; fi; \
+    # Chromium is only needed for PDF export: a failed download must not break the image (export then reports it).
+    if [ "$INSTALL_CHROMIUM" = "1" ]; then \
+      apt-get install -y --no-install-recommends chromium fonts-dejavu-core fonts-liberation \
+      || echo "WARNING: chromium could not be installed — PDF export will be unavailable (rebuild later or use DEBIAN_MIRROR)"; \
+    fi; \
     apt-get purge -y gnupg; apt-get autoremove -y; rm -rf /var/lib/apt/lists/*
 
 ENV NODE_ENV=production \

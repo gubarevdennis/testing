@@ -21,7 +21,8 @@ services:
     build:
       context: .
       args:
-        INSTALL_CHROMIUM: "1" # экспорт в PDF
+        INSTALL_CHROMIUM: "1" # экспорт в PDF (если не скачается — образ соберётся без него)
+        DEBIAN_MIRROR: ${DEBIAN_MIRROR:-deb.debian.org} # при проблемах сети: DEBIAN_MIRROR=mirror.yandex.ru
     user: root
     entrypoint: ["node", "-e"]
     command:

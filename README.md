@@ -33,6 +33,7 @@ docker compose down -v            # удалить всё, включая дан
 KB_DEMO=0 docker compose up -d    # без демо-данных: откроется мастер создания организации
 KB_PORT=9090 docker compose up -d # другой порт
 CLAMAV_HOST=clamav docker compose --profile antivirus up -d   # с антивирусом ClamAV
+DEBIAN_MIRROR=mirror.yandex.ru docker compose up -d --build   # если сборка падает на загрузке пакетов Debian
 ```
 
 Секреты (ключ приложения, пароль БД) генерируются при первом запуске и хранятся в томе `secrets`. Развёртывание на сервере (HTTPS, резервные копии, обновления, откат) — [`docs/DOCKER.md`](docs/DOCKER.md).
