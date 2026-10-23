@@ -53,6 +53,50 @@ groups:
         annotations:
           summary: "RSS процесса {{ $value | humanize1024 }}B на {{ $labels.instance }}"
           runbook: "docs/OPERATIONS.md#runbook-slow"
+      # Resource leaks (soak test, QA26-25: scripts/load/soak.mjs measures the same slopes; docs/PERFORMANCE.md «Soak»).
+      # Under a steady load RSS/heap plateau within the first hour; a sustained climb is a leak, not load.
+      - alert: KbMemoryLeakSuspected
+        expr: deriv(kb_process_resident_memory_bytes{job="kb"}[6h]) * 3600 > 15 * 1024 * 1024
+        for: 2h
+        labels: { severity: warning, owner: dev }
+        annotations:
+          summary: "RSS {{ $labels.instance }} растёт на {{ $value | humanize1024 }}B/ч 6 часов подряд — подозрение на утечку"
+          runbook: "docs/OPERATIONS.md#runbook-leak"
+      - alert: KbHeapLeakSuspected
+        expr: deriv(kb_nodejs_heap_size_used_bytes{job="kb"}[6h]) * 3600 > 10 * 1024 * 1024
+        for: 2h
+        labels: { severity: warning, owner: dev }
+        annotations:
+          summary: "Куча V8 {{ $labels.instance }} растёт на {{ $value | humanize1024 }}B/ч — подозрение на утечку"
+          runbook: "docs/OPERATIONS.md#runbook-leak"
+      - alert: KbFileDescriptorsHigh
+        expr: max by (instance) (kb_process_open_fds{job="kb"} / kb_process_max_fds{job="kb"}) > 0.8
+        for: 10m
+        labels: { severity: critical, owner: ops }
+        annotations:
+          summary: "Открыто {{ $value | humanizePercentage }} от лимита файловых дескрипторов на {{ $labels.instance }}"
+          runbook: "docs/OPERATIONS.md#runbook-leak"
+      - alert: KbFileDescriptorLeak
+        expr: deriv(kb_process_open_fds{job="kb"}[6h]) * 3600 > 20
+        for: 2h
+        labels: { severity: warning, owner: dev }
+        annotations:
+          summary: "Число дескрипторов {{ $labels.instance }} растёт на {{ $value | humanize }}/ч — утечка сокетов или файлов"
+          runbook: "docs/OPERATIONS.md#runbook-leak"
+      - alert: KbDbPoolExhausted
+        expr: max by (instance) (kb_db_pool_connections{job="kb", state="waiting"}) > 0
+        for: 5m
+        labels: { severity: critical, owner: ops }
+        annotations:
+          summary: "{{ $value }} запросов ждут соединения с БД на {{ $labels.instance }} (пул DB_POOL_SIZE исчерпан)"
+          runbook: "docs/OPERATIONS.md#runbook-leak"
+      - alert: KbDbPoolSaturated
+        expr: max by (instance) (kb_db_pool_connections{job="kb", state="total"} - kb_db_pool_connections{job="kb", state="idle"}) >= max by (instance) (kb_db_pool_max{job="kb"})
+        for: 15m
+        labels: { severity: warning, owner: ops }
+        annotations:
+          summary: "Все соединения пула БД заняты 15 минут на {{ $labels.instance }} — утечка соединений или долгие запросы"
+          runbook: "docs/OPERATIONS.md#runbook-leak"
       - alert: KbRestartLoop
         expr: changes(kb_process_start_time_seconds{job="kb"}[15m]) > 3
         labels: { severity: critical, owner: ops }
@@ -162,6 +206,29 @@ groups:
         annotations:
           summary: "Проверка целостности нашла {{ $value }} проблем(ы) (файлы/ссылки)"
           runbook: "docs/OPERATIONS.md#runbook-storage"
+
+  - name: kb-security
+    rules:
+      # SEC-L3: uploads, imports and restores fail closed while clamd is unreachable (users see "Антивирусная проверка недоступна").
+      - alert: KbAntivirusDown
+        expr: min(kb_antivirus_up{job="kb"}) == 0
+        for: 2m
+        labels: { severity: critical, owner: ops }
+        annotations:
+          summary: "ClamAV (clamd) недоступен — загрузка файлов, импорт и восстановление архивов отклоняются"
+          runbook: "docs/OPERATIONS.md#runbook-antivirus"
+      - alert: KbAntivirusScanErrors
+        expr: sum(increase(kb_antivirus_scans_total{job="kb",result="error"}[10m])) > 0
+        labels: { severity: warning, owner: ops }
+        annotations:
+          summary: "Антивирус не дал вердикт для {{ $value }} файлов за 10 мин (файлы не приняты): тайм-аут, обрыв или лимит StreamMaxLength"
+          runbook: "docs/OPERATIONS.md#runbook-antivirus"
+      - alert: KbMalwareRejected
+        expr: sum(increase(kb_antivirus_scans_total{job="kb",result="infected"}[1h])) > 0
+        labels: { severity: warning, owner: ops }
+        annotations:
+          summary: "Антивирус отклонил {{ $value }} заражённых файлов за час — см. журнал аудита (attachment.rejected, import.rejected)"
+          runbook: "docs/OPERATIONS.md#runbook-antivirus"
 
   - name: kb-backup
     rules:

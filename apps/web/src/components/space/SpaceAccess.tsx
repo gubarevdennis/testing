@@ -1,13 +1,13 @@
 import '../../styles/panels.css';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQueries, useQueryClient } from '@tanstack/react-query';
 import { Trash2, X, Clock } from 'lucide-react';
 import { post, put, del, ApiError } from '../../api/client';
 import { Dialog } from '../ui/Dialog';
 import { confirm } from '../ui/Confirm';
 import { toast } from '../ui/Toast';
-import { DirectoryPicker, SubjectIcon, errMsg, type DirEntry } from '../page/directory';
+import { DirectoryPicker, SubjectIcon, dirEntryId, dirEntryName, errMsg, type DirEntry } from '../page/directory';
 import { LEVEL_LABEL } from '../../lib/format';
 import { useMe } from '../../state/session';
 
@@ -64,8 +64,8 @@ export function ExpiryPresets({ value, onChange }: { value: string; onChange(v: 
   );
 }
 
-const entryId = (e: DirEntry) => (e.type === 'user' ? e.user.id : e.group.id);
-const entryName = (e: DirEntry) => (e.type === 'user' ? e.user.name : e.group.name);
+const entryId = dirEntryId;
+const entryName = dirEntryName;
 
 /** Creating a space from the interface: type, visibility, organisation-wide level and initial members (R-SPACE-001, R-SPACE-010, R-ADMIN-020). */
 export function CreateSpaceDialog({ open, onClose }: { open: boolean; onClose(): void }) {
@@ -227,7 +227,7 @@ export function CreateSpaceDialog({ open, onClose }: { open: boolean; onClose():
 
 export interface SpaceGrant {
   id: string;
-  subject_type: 'user' | 'group' | 'org';
+  subject_type: 'user' | 'group' | 'org' | 'space';
   subject_id: string | null;
   level: string;
   user_name: string | null;
@@ -235,6 +235,8 @@ export interface SpaceGrant {
   user_kind: string | null;
   group_name: string | null;
   group_kind: string | null;
+  /** Name of the space whose members are the subject (subject_type 'space'). */
+  space_name?: string | null;
   expires_at?: string | null;
   starts_at?: string | null;
   reason?: string | null;
@@ -248,6 +250,18 @@ export function SpaceMembersEditor({ spaceId, spaceName, grants, myLevel, onChan
   const [expiry, setExpiry] = useState('');
   const [reason, setReason] = useState('');
   const [busy, setBusy] = useState(false);
+  // Audience preview: who would newly get access to the space (same rules as the server's ACL engine).
+  const previews = useQueries({
+    queries: picked.map((p) => ({
+      queryKey: ['space-access-preview', spaceId, p.type, entryId(p), level],
+      queryFn: () => post<{ addedCount: number; added: Array<{ name: string }> }>(`/api/v1/spaces/${spaceId}/access/preview`, { subjectType: p.type, subjectId: entryId(p), level }),
+      staleTime: 15_000,
+      retry: false,
+    })),
+  });
+  const previewLoading = previews.some((x) => x.isLoading);
+  const previewNames = [...new Set(previews.flatMap((x) => x.data?.added.map((a) => a.name) ?? []))];
+  const previewCount = previews.reduce((n, x) => n + (x.data?.addedCount ?? 0), 0);
 
   const putGrant = async (body: Record<string, unknown>) => {
     const full = { resourceType: 'space', resourceId: spaceId, timeZone: timeZone(), ...body };
@@ -311,7 +325,8 @@ export function SpaceMembersEditor({ spaceId, spaceName, grants, myLevel, onChan
     onChanged();
   };
 
-  const label = (g: SpaceGrant) => (g.subject_type === 'org' ? 'Все сотрудники организации' : g.subject_type === 'group' ? g.group_name ?? 'Группа' : g.user_name ?? 'Пользователь');
+  const label = (g: SpaceGrant) =>
+    g.subject_type === 'org' ? 'Все сотрудники организации' : g.subject_type === 'group' ? g.group_name ?? 'Группа' : g.subject_type === 'space' ? `Участники пространства «${g.space_name ?? '—'}»` : g.user_name ?? 'Пользователь';
   const allowed = (l: string) => myLevel === 'full' || GRANT_LEVELS.indexOf(l as (typeof GRANT_LEVELS)[number]) <= GRANT_LEVELS.indexOf(myLevel as (typeof GRANT_LEVELS)[number]);
 
   return (
@@ -331,7 +346,7 @@ export function SpaceMembersEditor({ spaceId, spaceName, grants, myLevel, onChan
           </div>
         )}
         <div className="share-add">
-          <DirectoryPicker placeholder="Сотрудник, группа или отдел" excludeIds={picked.map(entryId)} onPick={(e) => setPicked((cur) => [...cur, e])} />
+          <DirectoryPicker includeSpaces placeholder="Сотрудник, группа или отдел" excludeIds={[spaceId, ...picked.map(entryId)]} onPick={(e) => setPicked((cur) => [...cur, e])} />
           <label className="sr-only" htmlFor="space-add-level">
             Уровень доступа
           </label>
@@ -349,6 +364,15 @@ export function SpaceMembersEditor({ spaceId, spaceName, grants, myLevel, onChan
           <input type="date" className="input" style={{ width: 150 }} aria-label="Доступ до" value={expiry} min={inDays(0)} onChange={(e) => setExpiry(e.target.value)} />
         </div>
         <input className="input" placeholder="Основание (необязательно), например: «участник проекта до сдачи»" aria-label="Основание доступа" value={reason} maxLength={500} onChange={(e) => setReason(e.target.value)} />
+        {picked.length > 0 && (
+          <div className="small muted" aria-live="polite" data-testid="space-access-preview" title={previewNames.join(', ')}>
+            {previewLoading
+              ? 'Считаем, кто получит доступ…'
+              : previewCount > 0
+                ? `Доступ получат ${previewCount} чел.: ${previewNames.slice(0, 8).join(', ')}${previewNames.length > 8 ? ' и другие' : ''}`
+                : 'Новых людей с доступом не появится.'}
+          </div>
+        )}
         <div>
           <button className="btn primary" disabled={!picked.length || busy} aria-busy={busy} onClick={add}>
             {busy && <span className="spinner" />} Добавить в пространство
@@ -366,7 +390,7 @@ export function SpaceMembersEditor({ spaceId, spaceName, grants, myLevel, onChan
                 {g.user_kind === 'guest' && <span className="badge amber" style={{ marginLeft: 6 }}>гость</span>}
               </span>
               <span className="small muted ellipsis">
-                {g.subject_type === 'user' ? g.user_email : g.subject_type === 'group' ? (g.group_kind === 'department' ? 'Отдел' : 'Группа') : 'Кроме гостей'}
+                {g.subject_type === 'user' ? g.user_email : g.subject_type === 'group' ? (g.group_kind === 'department' ? 'Отдел' : 'Группа') : g.subject_type === 'space' ? 'Все участники другого пространства' : 'Кроме гостей'}
                 {g.expires_at && (
                   <>
                     {' '}

@@ -52,7 +52,7 @@ export const ACTION_MIN_LEVEL: Record<Action, Level> = {
   manage_space: 'full',
 };
 
-export type SubjectType = 'user' | 'group' | 'org';
+export type SubjectType = 'user' | 'group' | 'org' | 'space';
 export type ResourceType = 'space' | 'page';
 
 export interface GrantFlags {

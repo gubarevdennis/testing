@@ -88,7 +88,7 @@ function importFormat(filename: string) {
 
 export async function importExportRoutes(app: FastifyInstance, s: Services) {
   /** Upload files for import. Nothing is created until the user confirms the preview. */
-  app.post('/api/v1/imports', async (req) => {
+  app.post('/api/v1/imports', { config: { rateLimit: { max: s.cfg.uploadRateLimitPerMinute, timeWindow: '1 minute', distributed: true } as any } }, async (req) => {
     const user = requireUser(req);
     const fields: Record<string, string> = {};
     const files: Array<{ filename: string; sha: string; size: number }> = [];

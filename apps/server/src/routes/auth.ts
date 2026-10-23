@@ -42,7 +42,7 @@ export async function authRoutes(app: FastifyInstance, s: Services) {
     return { user: toAuthUser(result.owner), csrfToken: sess.csrf };
   });
 
-  app.post('/api/v1/auth/login', { config: { rateLimit: { max: s.cfg.authRateLimitPerMinute, timeWindow: '1 minute' } } }, async (req, reply) => {
+  app.post('/api/v1/auth/login', { config: { rateLimit: { max: s.cfg.authRateLimitPerMinute, timeWindow: '1 minute', distributed: true } as any } }, async (req, reply) => {
     const body = parse(z.object({ email: z.string().min(3).max(320), password: z.string().min(1).max(1024), totp: z.string().optional(), org: z.string().optional() }), req.body);
     const email = body.email.trim().toLowerCase();
     const rows = (await s.db.query(`select u.* from users u join organizations o on o.id = u.org_id where lower(u.email) = $1 ${body.org ? 'and o.slug = $2' : ''} order by u.created_at limit 2`, body.org ? [email, body.org] : [email])).rows;
@@ -75,14 +75,20 @@ export async function authRoutes(app: FastifyInstance, s: Services) {
     return { user: toAuthUser(user), csrfToken: sess.csrf, mustEnrollMfa };
   });
 
+  /** Set when OIDC is configured (below): the IdP end-session URL for an SSO session. */
+  let oidcLogoutUrl: ((sessionId: string) => Promise<string | null>) | null = null;
+
   app.post('/api/v1/auth/logout', async (req, reply) => {
+    let redirect: string | null = null;
     if (req.session) {
-      await s.db.query(`update sessions set revoked_at = now(), revoke_reason = 'logout' where id = $1`, [req.session.id]);
-      await auditStandalone(s.db, actorOf(req), { action: 'auth.logout' });
+      // SSO session: the browser is sent on to the IdP so its session ends too (RP-initiated logout).
+      redirect = oidcLogoutUrl ? await oidcLogoutUrl(req.session.id).catch(() => null) : null;
+      await s.db.query(`update sessions set revoked_at = now(), revoke_reason = 'logout', id_token_sealed = null where id = $1`, [req.session.id]);
+      await auditStandalone(s.db, actorOf(req), { action: 'auth.logout', details: redirect ? { method: 'oidc' } : undefined });
     }
     reply.clearCookie(SESSION_COOKIE, { path: '/' });
     reply.clearCookie(CSRF_COOKIE, { path: '/' });
-    return { ok: true };
+    return { ok: true, redirect };
   });
 
   app.get('/api/v1/auth/me', async (req) => {
@@ -194,7 +200,7 @@ export async function authRoutes(app: FastifyInstance, s: Services) {
   });
 
   /** Accepting an invitation sets the password and activates the account. */
-  app.post('/api/v1/auth/invite/accept', { config: { rateLimit: { max: s.cfg.authRateLimitPerMinute, timeWindow: '1 minute' } } }, async (req, reply) => {
+  app.post('/api/v1/auth/invite/accept', { config: { rateLimit: { max: s.cfg.authRateLimitPerMinute, timeWindow: '1 minute', distributed: true } as any } }, async (req, reply) => {
     const body = parse(z.object({ token: z.string().min(10), password: z.string(), name: z.string().min(1).max(200).optional() }), req.body);
     const p = passwordProblems(body.password);
     if (p) throw badRequest(p);
@@ -213,30 +219,79 @@ export async function authRoutes(app: FastifyInstance, s: Services) {
     return { user: toAuthUser(user), csrfToken: sess.csrf };
   });
 
-  // ---- OIDC SSO (authorization code + PKCE). Enabled when OIDC_* variables are configured.
+  // ---- OIDC SSO (authorization code + PKCE + state + nonce). Enabled when OIDC_* variables are configured.
+  // Every failure ends on the login page with a reason (?sso_error=<code>) and an audit record — never a 500.
   if (s.cfg.oidc) {
-    const oidc = await import('../auth/oidc.js');
-    const provider = await oidc.createOidc(s.cfg.oidc);
-    app.get('/api/v1/auth/oidc/start', async (req: FastifyRequest, reply) => {
-      const { url, state, verifier } = await provider.start();
-      reply.setCookie('kb_oidc', JSON.stringify({ state, verifier }), { path: '/api/v1/auth/oidc', httpOnly: true, sameSite: 'lax', secure: s.cfg.cookieSecure, maxAge: 600 });
-      return reply.redirect(url);
+    const oidcCfg = s.cfg.oidc;
+    const provider = (await import('../auth/oidc.js')).createOidc(oidcCfg);
+    const { OidcError } = await import('../auth/oidc.js');
+    const { resolveSsoUser, SsoDenied } = await import('../services/sso.js');
+    const OIDC_COOKIE = 'kb_oidc';
+    const cookiePath = '/api/v1/auth/oidc';
+    const toLogin = (reply: FastifyReply, code: string) => reply.redirect('/?sso_error=' + encodeURIComponent(code));
+    /** Relative in-app path only (no scheme, no protocol-relative //host, no backslashes): no open redirect. */
+    const safeReturn = (v: unknown) => (typeof v === 'string' && /^\/(?![/\\])[^\s\\]*$/.test(v) && v.length < 2000 ? v : '/');
+
+    app.get('/api/v1/auth/oidc/start', { config: { rateLimit: { max: s.cfg.authRateLimitPerMinute, timeWindow: '1 minute', distributed: true } as any } }, async (req: FastifyRequest, reply) => {
+      let st;
+      try {
+        st = await provider.start();
+      } catch (e) {
+        req.log.error({ err: e }, 'oidc start failed');
+        return toLogin(reply, 'idp_unavailable');
+      }
+      const returnTo = safeReturn((req.query as Record<string, unknown>)?.returnTo);
+      reply.setCookie(OIDC_COOKIE, JSON.stringify({ state: st.state, verifier: st.verifier, nonce: st.nonce, returnTo }), { path: cookiePath, httpOnly: true, sameSite: 'lax', secure: s.cfg.cookieSecure, maxAge: 600 });
+      return reply.redirect(st.url);
     });
-    app.get('/api/v1/auth/oidc/callback', async (req, reply) => {
-      const saved = JSON.parse(req.cookies.kb_oidc ?? '{}');
-      const claims = await provider.callback(new URL(req.url, s.cfg.publicUrl), saved.state, saved.verifier);
-      const email = String(claims.email ?? '').toLowerCase();
-      if (!email) throw unauthorized('Провайдер не передал email');
-      let user = (await s.db.query(`select * from users where lower(email) = $1 order by created_at limit 1`, [email])).rows[0];
-      if (!user) throw unauthorized('Учётная запись не найдена. Обратитесь к администратору.');
-      if (user.status === 'invited') user = (await s.db.query(`update users set status = 'active', external_id = $2 where id = $1 returning *`, [user.id, claims.sub])).rows[0];
-      if (user.status !== 'active') throw unauthorized('Учётная запись отключена');
+
+    app.get('/api/v1/auth/oidc/callback', { config: { rateLimit: { max: s.cfg.authRateLimitPerMinute, timeWindow: '1 minute', distributed: true } as any } }, async (req, reply) => {
+      let saved: Record<string, unknown> = {};
+      try {
+        saved = JSON.parse(req.cookies[OIDC_COOKIE] ?? '{}') ?? {};
+      } catch {
+        /* tampered cookie = no saved state */
+      }
+      // The state cookie is single-use, whatever the outcome.
+      reply.clearCookie(OIDC_COOKIE, { path: cookiePath });
+      const actor = { ip: req.ip, correlationId: req.correlationId };
+      const deny = async (code: string, detail: string, who: { userId?: string | null; orgId?: string | null } = {}) => {
+        await auditStandalone(s.db, { ...actor, userId: who.userId ?? null, orgId: who.orgId ?? null }, { action: 'auth.login', outcome: 'denied', details: { method: 'oidc', reason: code, detail: detail.slice(0, 300) } });
+        return toLogin(reply, code);
+      };
+      let result;
+      try {
+        // The registered redirect URI (not PUBLIC_URL/Host) is what the code was issued for; only the query is taken.
+        const current = new URL(oidcCfg.redirectUri);
+        current.search = new URL(req.url, 'http://local').search;
+        result = await provider.callback(current, saved);
+      } catch (e) {
+        if (e instanceof OidcError) {
+          req.log.warn({ err: e.message, code: e.code }, 'oidc callback rejected');
+          return deny(e.code, e.message);
+        }
+        throw e;
+      }
+      let user;
+      try {
+        user = await tx(s.db, (q) => resolveSsoUser(q, result.claims, oidcCfg, actor));
+      } catch (e) {
+        if (e instanceof SsoDenied) return deny(e.code, String(result.claims.email ?? ''), { userId: e.userId, orgId: e.orgId });
+        throw e;
+      }
       const sess = await createSession(s.db, user.id, s.cfg.sessionTtlHours, { ip: req.ip, userAgent: req.headers['user-agent'], mfaPassed: true });
+      await s.db.query(`update sessions set auth_method = 'oidc', id_token_sealed = $2 where id = $1`, [sess.id, sealSecret(s.cfg.secretKey, 'oidc-id-token', result.idToken)]);
       setCookies(reply, sess.token, sess.csrf, sess.expiresAt);
-      await auditStandalone(s.db, { orgId: user.org_id, userId: user.id, name: user.name, ip: req.ip, correlationId: req.correlationId }, { action: 'auth.login', details: { method: 'oidc' } });
-      reply.clearCookie('kb_oidc', { path: '/api/v1/auth/oidc' });
-      return reply.redirect('/');
+      await auditStandalone(s.db, { orgId: user.org_id, userId: user.id, name: user.name, sessionId: sess.id, ip: req.ip, correlationId: req.correlationId }, { action: 'auth.login', details: { method: 'oidc', sub: result.claims.sub } });
+      return reply.redirect(safeReturn(saved.returnTo));
     });
+
+    /** IdP logout URL for the current session (used by POST /auth/logout; exposed for clients that sign out elsewhere). */
+    oidcLogoutUrl = async (sessionId: string) => {
+      const row = (await s.db.query(`select auth_method, id_token_sealed from sessions where id = $1`, [sessionId])).rows[0];
+      if (row?.auth_method !== 'oidc') return null;
+      return provider.logoutUrl(openSecret(s.cfg.secretKey, 'oidc-id-token', row.id_token_sealed));
+    };
   }
 
 }

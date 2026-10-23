@@ -12,6 +12,10 @@ import { getPage } from '../services/pages.js';
 import { docToHtml } from '../convert/html.js';
 import { badRequest, conflict, forbidden, notFound } from '../lib/errors.js';
 import { randomToken, sha256, signToken, verifyToken } from '../lib/crypto.js';
+import { limitKey } from '../services/rate-limit.js';
+
+/** Password attempts per public link per minute, from all addresses and all instances together (SEC-L4). */
+const PUBLIC_PASSWORD_PER_LINK = Number(process.env.PUBLIC_LINK_ATTEMPTS_PER_LINK_PER_MINUTE ?? 30);
 
 const uuid = z.string().uuid();
 const LINK_MAX_DAYS = 365;
@@ -271,13 +275,13 @@ export async function aclExtraRoutes(app: FastifyInstance, s: Services) {
       const p = v ? verifyToken<{ l: string }>(s.cfg.secretKey, v) : null;
       return p?.l === link.id;
     };
-    const passwordForm = (reply: FastifyReply, link: LinkRow, token: string, error?: string) =>
+    const passwordForm = (reply: FastifyReply, link: LinkRow, token: string, error?: string, status?: number) =>
       publicHtml(
         reply,
         link,
         'Документ защищён паролем',
         `<h1>Документ защищён паролем</h1>${error ? `<p role="alert" style="color:#B42318">${esc(error)}</p>` : ''}<form method="post" action="/pub/${token}"><label for="pw">Пароль</label><input id="pw" name="password" type="password" autocomplete="off" autofocus required><button type="submit">Открыть</button></form>`,
-        error ? 401 : 200,
+        status ?? (error ? 401 : 200),
       );
 
     const show = async (req: FastifyRequest, reply: FastifyReply, token: string, pageId: string | null) => {
@@ -300,10 +304,17 @@ export async function aclExtraRoutes(app: FastifyInstance, s: Services) {
       return show(req, reply, token, pageId);
     });
 
-    pub.post('/pub/:token', { config: { rateLimit: { max: 10, timeWindow: '1 minute', keyGenerator: (r: FastifyRequest) => r.ip } } }, async (req, reply) => {
+    pub.post('/pub/:token', { config: { rateLimit: { max: 10, timeWindow: '1 minute', keyGenerator: (r: FastifyRequest) => r.ip, distributed: true } as any } }, async (req, reply) => {
       const { token } = req.params as { token: string };
       const a = await activeLink(s, token);
       if (!a) return invalidLink(reply);
+      // Per link as well (all addresses, all instances): a password cannot be guessed from many addresses at once (SEC-L4).
+      const perLink = await app.sharedLimiter.hit(limitKey('pub-password-link', a.link.id), 60_000, PUBLIC_PASSWORD_PER_LINK);
+      if (perLink.current > PUBLIC_PASSWORD_PER_LINK) {
+        await auditStandalone(s.db, { orgId: a.link.org_id, ip: req.ip, correlationId: req.correlationId }, { action: 'share_link.password_failed', outcome: 'denied', targetType: 'page', targetId: a.link.page_id, details: { linkId: a.link.id, reason: 'rate_limited' } });
+        reply.header('retry-after', Math.ceil(perLink.ttl / 1000));
+        return passwordForm(reply, a.link, token, 'Слишком много попыток ввода пароля для этой ссылки. Повторите позже.', 429);
+      }
       const password = String((req.body as Record<string, unknown> | null)?.password ?? '');
       if (!a.link.password_hash || !(await verifyPassword(a.link.password_hash, password))) {
         await auditStandalone(s.db, { orgId: a.link.org_id, ip: req.ip, correlationId: req.correlationId }, { action: 'share_link.password_failed', outcome: 'denied', targetType: 'page', targetId: a.link.page_id, details: { linkId: a.link.id } });
@@ -403,6 +414,9 @@ export async function aclExtraRoutes(app: FastifyInstance, s: Services) {
       : [];
     const groupNames = new Map((await s.db.query('select id, name from groups where org_id = $1', [user.orgId])).rows.map((g) => [g.id, g.name]));
     const userNames = new Map((await s.db.query('select id, name from users where org_id = $1', [user.orgId])).rows.map((u) => [u.id, u.name]));
+    const spaceNames = new Map((await s.db.query('select id, name from spaces where org_id = $1', [user.orgId])).rows.map((x) => [x.id, x.name]));
+    const via = (x: { subjectType: string; subjectId: string | null }, deny: boolean) =>
+      x.subjectType === 'user' ? 'лично' : x.subjectType === 'org' ? 'вся организация' : x.subjectType === 'space' ? 'участники «' + (spaceNames.get(x.subjectId!) ?? '?') + '»' : deny ? groupNames.get(x.subjectId!) ?? 'группа' : 'группа «' + (groupNames.get(x.subjectId!) ?? '?') + '»';
     const guestsDisabled = await orgGuestsDisabled(s.db, user.orgId);
     const now = new Date();
     const cells: Record<string, Record<string, { level: Level; source: string; expiresAt: string | null; conflict: boolean }>> = {};
@@ -413,10 +427,10 @@ export async function aclExtraRoutes(app: FastifyInstance, s: Services) {
         const eff = combine(gs as any, p.subjects, policyOf(sp.settings), { guest: p.kind === 'guest', personalOwner: false, guestsDisabled, now });
         const best = eff.sources.filter((x) => x.level === eff.level);
         const src = eff.denies.length
-          ? 'запрет: ' + eff.denies.map((d) => (d.subjectType === 'user' ? 'лично' : d.subjectType === 'org' ? 'вся организация' : groupNames.get(d.subjectId!) ?? 'группа')).join(', ')
-          : best.map((b) => (b.subjectType === 'user' ? 'лично' : b.subjectType === 'org' ? 'вся организация' : 'группа «' + (groupNames.get(b.subjectId!) ?? '?') + '»')).join(', ');
+          ? 'запрет: ' + eff.denies.map((d) => via(d, true)).join(', ')
+          : best.map((b) => via(b, false)).join(', ');
         const expiry = best.map((b) => b.expiresAt).filter(Boolean).sort()[0] ?? null;
-        if (eff.level !== 'none' || eff.denies.length) cells[p.id][sp.id] = { level: eff.level, source: src, expiresAt: expiry, conflict: eff.denies.length > 0 && gs.some((g) => g.level !== 'none' && (g.subject_type === 'org' ? p.subjects.employee : g.subject_type === 'user' ? g.subject_id === p.id : p.subjects.groupIds.includes(g.subject_id))) };
+        if (eff.level !== 'none' || eff.denies.length) cells[p.id][sp.id] = { level: eff.level, source: src, expiresAt: expiry, conflict: eff.denies.length > 0 && gs.some((g) => g.level !== 'none' && (g.subject_type === 'org' ? p.subjects.employee : g.subject_type === 'user' ? g.subject_id === p.id : g.subject_type === 'space' ? p.subjects.spaceIds.includes(g.subject_id) : p.subjects.groupIds.includes(g.subject_id))) };
       }
     }
     const managers = Object.fromEntries(spaces.map((sp) => [sp.id, grants.filter((g) => g.resource_id === sp.id && g.level === 'full' && g.subject_type === 'user' && (!g.expires_at || g.expires_at > now)).map((g) => userNames.get(g.subject_id) ?? '—')]));

@@ -1,8 +1,6 @@
 import sharp from 'sharp';
 import { fileTypeFromFile } from 'file-type';
 import { readFile, writeFile, rm } from 'node:fs/promises';
-import { createConnection } from 'node:net';
-import { createReadStream } from 'node:fs';
 import { extname } from 'node:path';
 import type { Queryable } from '../db/pool.js';
 import type { BlobStore } from '../storage/blob-store.js';
@@ -98,33 +96,6 @@ export async function sanitizeSvgFile(path: string) {
     exclusiveFilter: (frame) => ['href', 'xlink:href'].some((a) => frame.attribs[a] && !String(frame.attribs[a]).startsWith('#') && !String(frame.attribs[a]).startsWith('data:image/')),
   });
   await writeFile(path, clean.includes('<svg') ? clean : '<svg xmlns="http://www.w3.org/2000/svg"/>');
-}
-
-/** Optional ClamAV scan (clamd INSTREAM). Returns null when clean or scanning is not configured. */
-export async function scanForViruses(path: string, host: string | null): Promise<string | null> {
-  if (!host) return null;
-  const [h, p] = host.split(':');
-  return new Promise((resolve, reject) => {
-    const sock = createConnection({ host: h, port: Number(p ?? 3310) });
-    let reply = '';
-    sock.on('data', (d) => (reply += d.toString()));
-    // clamd terminates z-commands with NUL; strip it (PostgreSQL jsonb/text cannot store \u0000).
-    sock.on('end', () => {
-      const r = reply.replace(/\0/g, '').trim();
-      resolve(/FOUND$/.test(r) ? r.replace(/^stream: /, '').replace(/ FOUND$/, '').trim() || 'FOUND' : null);
-    });
-    sock.on('error', reject);
-    sock.write('zINSTREAM\0');
-    const rs = createReadStream(path, { highWaterMark: 64 * 1024 });
-    rs.on('data', (chunk) => {
-      const len = Buffer.alloc(4);
-      len.writeUInt32BE((chunk as Buffer).length);
-      sock.write(len);
-      sock.write(chunk);
-    });
-    rs.on('end', () => sock.write(Buffer.from([0, 0, 0, 0])));
-    rs.on('error', reject);
-  });
 }
 
 export function isInlineSafe(mime: string) {

@@ -28,7 +28,7 @@ interface SpaceDetail {
 }
 interface Grant {
   id: string;
-  subject_type: 'user' | 'group' | 'org';
+  subject_type: 'user' | 'group' | 'org' | 'space';
   subject_id: string | null;
   level: string;
   user_name: string | null;
@@ -36,6 +36,7 @@ interface Grant {
   user_kind: string | null;
   group_name: string | null;
   group_kind: string | null;
+  space_name?: string | null;
   expires_at?: string | null;
 }
 
@@ -188,10 +189,10 @@ function AccessTab({ space }: { space: SpaceDetail }) {
           {grants.map((g) => (
             <li key={g.id} className="space-grant">
               <span className="space-grant-icon" aria-hidden>
-                {g.subject_type === 'org' ? <Building2 size={16} /> : g.subject_type === 'group' ? <UsersRound size={16} /> : <User size={16} />}
+                {g.subject_type === 'org' ? <Building2 size={16} /> : g.subject_type === 'group' || g.subject_type === 'space' ? <UsersRound size={16} /> : <User size={16} />}
               </span>
               <span className="grow col" style={{ gap: 0, minWidth: 0 }}>
-                <span className="ellipsis">{g.subject_type === 'org' ? 'Все сотрудники организации' : g.subject_type === 'group' ? g.group_name ?? 'Группа' : g.user_name ?? 'Пользователь'}</span>
+                <span className="ellipsis">{g.subject_type === 'org' ? 'Все сотрудники организации' : g.subject_type === 'group' ? g.group_name ?? 'Группа' : g.subject_type === 'space' ? `Участники пространства «${g.space_name ?? '—'}»` : g.user_name ?? 'Пользователь'}</span>
                 {g.subject_type === 'user' && (
                   <span className="small muted ellipsis">
                     {g.user_email}

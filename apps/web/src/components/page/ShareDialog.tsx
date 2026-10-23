@@ -10,7 +10,7 @@ import { toast } from '../ui/Toast';
 import { Tooltip } from '../ui/Tooltip';
 import { LEVEL_LABEL, fullTime } from '../../lib/format';
 import { useMe } from '../../state/session';
-import { DirectoryPicker, SubjectIcon, errMsg, type DirEntry, type DirGroup } from './directory';
+import { DirectoryPicker, SubjectIcon, dirEntryId, dirEntryName, errMsg, type DirEntry, type DirGroup } from './directory';
 import { PublicLinksSection } from './PublicLinks';
 import { ExpiryPresets, startOfDay, timeZone, inDays } from '../space/SpaceAccess';
 
@@ -22,7 +22,7 @@ interface Subject {
   members?: number;
 }
 interface AudienceEntry {
-  subjectType: 'user' | 'group' | 'org';
+  subjectType: 'user' | 'group' | 'org' | 'space';
   subjectId: string | null;
   level: string;
   via: string;
@@ -32,7 +32,7 @@ interface AudienceEntry {
 }
 interface PageGrant {
   id: string;
-  subject_type: 'user' | 'group' | 'org';
+  subject_type: 'user' | 'group' | 'org' | 'space';
   subject_id: string | null;
   level: string;
   expires_at: string | null;
@@ -94,7 +94,7 @@ function PreviewList({ p }: { p: AudiencePreview }) {
 
 const RANK: Record<string, number> = { none: 0, view: 1, comment: 2, edit: 3, full: 4 };
 const GRANT_LEVELS = ['view', 'comment', 'edit', 'full'] as const;
-const VIA_LABEL: Record<string, string> = { space: 'из пространства', 'inherited-page': 'от родительской страницы', group: 'через группу', org: 'для всей организации', direct: 'выдан напрямую' };
+const VIA_LABEL: Record<string, string> = { space: 'из пространства', 'inherited-page': 'от родительской страницы', group: 'через группу', org: 'для всей организации', direct: 'выдан напрямую', 'space-members': 'участникам пространства' };
 
 /** Builds an end-of-day ISO timestamp (local time) from a yyyy-mm-dd input. */
 function endOfDay(d: string): string | null {
@@ -130,7 +130,7 @@ export function ShareDialog({ page, open, onClose }: { page: PageDto; open: bool
 
   const previews = useQueries({
     queries: (canManage ? picked : []).map((p) => {
-      const subjectId = p.type === 'user' ? p.user.id : p.group.id;
+      const subjectId = dirEntryId(p);
       return {
         queryKey: ['access-preview', page.id, p.type, subjectId, newLevel],
         queryFn: () => post<AudiencePreview>(`/api/v1/pages/${page.id}/access/preview`, { subjectType: p.type, subjectId, level: newLevel }),
@@ -186,7 +186,7 @@ export function ShareDialog({ page, open, onClose }: { page: PageDto; open: bool
       try {
         await putGrant({
           subjectType: p.type,
-          subjectId: p.type === 'user' ? p.user.id : p.group.id,
+          subjectId: dirEntryId(p),
           level: newLevel,
           expiresAt: endOfDay(expiry),
           startsAt: startOfDay(startDate),
@@ -198,7 +198,7 @@ export function ShareDialog({ page, open, onClose }: { page: PageDto; open: bool
         });
       } catch (e) {
         failed.push(p);
-        toast.error(`${p.type === 'user' ? p.user.name : p.group.name}: ${errMsg(e)}`);
+        toast.error(`${dirEntryName(p)}: ${errMsg(e)}`);
       }
     }
     setBusy(false);
@@ -289,11 +289,16 @@ export function ShareDialog({ page, open, onClose }: { page: PageDto; open: bool
         } else {
           const ok = await confirm({
             title: 'Закрыть доступ для организации?',
-            body: 'Доступ всей организации унаследован от пространства или родительской страницы. Будет добавлен явный запрет для всех сотрудников — доступ сохранится только у тех, кому он выдан лично или через группу.',
+            body: 'Доступ всей организации унаследован от пространства или родительской страницы. Страница перестанет наследовать права: разрешения людей и групп скопируются на неё, а доступ для всей организации будет убран. Доступ сохранится только у тех, кому он выдан лично или через группу.',
             confirmLabel: 'Закрыть',
           });
           if (!ok) return;
-          await putGrant({ subjectType: 'org', subjectId: null, level: 'none' });
+          // Not an organisation-wide deny: a deny wins over every allow, so it locked out the invited people and the
+          // person closing the page as well (QA-A9). Stop inheriting (the inherited grants are copied as explicit) and
+          // drop the organisation grant instead.
+          if (data?.inheritPermissions) await post(`/api/v1/pages/${page.id}/inheritance`, { inherit: false });
+          const fresh = await get<AccessResponse>(`/api/v1/pages/${page.id}/access`);
+          for (const g of fresh.pageGrants.filter((x) => x.subject_type === 'org')) await del('/api/v1/grants/' + g.id);
         }
         toast.success('Доступ для всей организации закрыт');
       } else if (await putGrant({ subjectType: 'org', subjectId: null, level })) toast.success('Общий доступ изменён');
@@ -355,8 +360,8 @@ export function ShareDialog({ page, open, onClose }: { page: PageDto; open: bool
               {picked.length > 0 && (
                 <div className="share-chips" style={{ marginBottom: 6 }}>
                   {picked.map((p) => (
-                    <span className="share-chip" key={p.type + (p.type === 'user' ? p.user.id : p.group.id)}>
-                      {p.type === 'user' ? p.user.name : p.group.name}
+                    <span className="share-chip" key={p.type + dirEntryId(p)}>
+                      {dirEntryName(p)}
                       <button aria-label="Убрать" onClick={() => setPicked(picked.filter((x) => x !== p))}>
                         <X size={12} />
                       </button>
@@ -366,8 +371,9 @@ export function ShareDialog({ page, open, onClose }: { page: PageDto; open: bool
               )}
               <div className="share-add">
                 <DirectoryPicker
-                  onPick={(e) => setPicked((cur) => [...cur.filter((x) => !(x.type === e.type && (x.type === 'user' ? x.user.id : x.group.id) === (e.type === 'user' ? e.user.id : e.group.id))), e])}
-                  excludeIds={picked.map((p) => (p.type === 'user' ? p.user.id : p.group.id))}
+                  includeSpaces
+                  onPick={(e) => setPicked((cur) => [...cur.filter((x) => !(x.type === e.type && dirEntryId(x) === dirEntryId(e))), e])}
+                  excludeIds={picked.map(dirEntryId)}
                 />
                 <label className="sr-only" htmlFor="share-level">Уровень доступа</label>
                 <select id="share-level" className="select" value={newLevel} onChange={(e) => setNewLevel(e.target.value)}>
@@ -464,7 +470,11 @@ export function ShareDialog({ page, open, onClose }: { page: PageDto; open: bool
                   {g.subject.kind === 'guest' && <span className="badge amber" style={{ marginLeft: 6 }}>гость</span>}
                 </div>
                 <div className="kb-meta ellipsis">
-                  {g.subject_type === 'group' ? `Группа${g.subject.members !== undefined ? ` · ${g.subject.members} чел.` : ''}` : g.subject.email ?? ''}
+                  {g.subject_type === 'group'
+                    ? `Группа${g.subject.members !== undefined ? ` · ${g.subject.members} чел.` : ''}`
+                    : g.subject_type === 'space'
+                      ? `Все, кто участвует в пространстве${g.subject.members !== undefined ? ` · сейчас ${g.subject.members} чел.` : ''}`
+                      : g.subject.email ?? ''}
                   {g.expires_at && (
                     <span title={fullTime(g.expires_at)}>
                       {' '}

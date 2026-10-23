@@ -282,9 +282,9 @@ export async function guestSearchScope(q: Queryable, user: AuthUser): Promise<st
   const r = await q.query(
     `select distinct a.page_id from grants g join page_ancestors a on a.ancestor_id = g.resource_id join pages p on p.id = a.page_id
       where g.resource_type = 'page' and g.revoked_at is null and g.level <> 'none' and p.deleted_at is null and p.org_id = $1
-        and ((g.subject_type = 'user' and g.subject_id = $2) or (g.subject_type = 'group' and g.subject_id = any($3::uuid[])))
+        and ((g.subject_type = 'user' and g.subject_id = $2) or (g.subject_type = 'group' and g.subject_id = any($3::uuid[])) or (g.subject_type = 'space' and g.subject_id = any($4::uuid[])))
         and (g.expires_at is null or g.expires_at > now()) and (g.starts_at is null or g.starts_at <= now())`,
-    [user.orgId, user.id, s.groupIds],
+    [user.orgId, user.id, s.groupIds, s.spaceIds],
   );
   return r.rows.map((x) => x.page_id as string);
 }

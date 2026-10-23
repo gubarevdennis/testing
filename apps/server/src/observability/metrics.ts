@@ -3,8 +3,13 @@ import client from 'prom-client';
 export function createMetrics() {
   const registry = new client.Registry();
   client.collectDefaultMetrics({ register: registry, prefix: 'kb_' });
+  /** Set by buildApp: 1 = clamd answers PING, 0 = down, null = no antivirus configured (series omitted). */
+  let antivirusProbe: (() => Promise<number | null>) | null = null;
   const m = {
     registry,
+    setAntivirusProbe(p: (() => Promise<number | null>) | null) {
+      antivirusProbe = p;
+    },
     httpDuration: new client.Histogram({ name: 'kb_http_request_duration_seconds', help: 'HTTP request duration', labelNames: ['method', 'route', 'status'], buckets: [0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2, 5], registers: [registry] }),
     collabConnections: new client.Gauge({ name: 'kb_collab_connections', help: 'Open collaboration WebSocket connections', registers: [registry] }),
     collabDocs: new client.Gauge({ name: 'kb_collab_documents', help: 'Documents loaded in memory', registers: [registry] }),
@@ -25,6 +30,18 @@ export function createMetrics() {
     collabReconnects: new client.Counter({ name: 'kb_collab_reconnects_total', help: 'Collaboration WebSocket reconnects (same session and page within 2 minutes of a disconnect)', registers: [registry] }),
     importFiles: new client.Counter({ name: 'kb_import_files_total', help: 'Files analysed for import by format and result (ok, warning, error, rejected)', labelNames: ['format', 'status'], registers: [registry] }),
     ocrSeconds: new client.Histogram({ name: 'kb_ocr_duration_seconds', help: 'OCR recognition time per image', labelNames: ['status'], buckets: [0.5, 1, 2, 5, 10, 20, 30, 60, 120, 300], registers: [registry] }),
+    // Antivirus (SEC-L3): scan outcomes and clamd reachability; alert KbAntivirusDown / KbAntivirusScanErrors.
+    antivirusScans: new client.Counter({ name: 'kb_antivirus_scans_total', help: 'Antivirus scans by result (clean, infected, error = no verdict, file refused)', labelNames: ['result'], registers: [registry] }),
+    antivirusUp: new client.Gauge({
+      name: 'kb_antivirus_up',
+      help: 'clamd answers PING (1) or not (0); absent when no antivirus is configured',
+      registers: [registry],
+      async collect() {
+        const v = antivirusProbe ? await antivirusProbe() : null;
+        if (v === null) this.reset();
+        else this.set(v);
+      },
+    }),
   };
   return m;
 }

@@ -192,8 +192,9 @@ export async function spaceRoutes(app: FastifyInstance, s: Services) {
     const a = await requireSpace(s.db, user, id, 'view');
     const grants = (
       await s.db.query(
-        `select g.*, u.name as user_name, u.email as user_email, u.kind as user_kind, gr.name as group_name, gr.kind as group_kind
+        `select g.*, u.name as user_name, u.email as user_email, u.kind as user_kind, gr.name as group_name, gr.kind as group_kind, ssp.name as space_name
            from grants g left join users u on g.subject_type = 'user' and u.id = g.subject_id left join groups gr on g.subject_type = 'group' and gr.id = g.subject_id
+           left join spaces ssp on g.subject_type = 'space' and ssp.id = g.subject_id
           where g.resource_type = 'space' and g.resource_id = $1 and g.revoked_at is null order by g.created_at`,
         [id],
       )

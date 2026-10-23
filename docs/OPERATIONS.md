@@ -76,7 +76,9 @@ sudo systemctl daemon-reload && sudo systemctl enable --now kb kb-backup.timer
 * `METRICS_TOKEN` защищает `/metrics` (Bearer). nginx также закрывает `/metrics` снаружи.
 * `CLAMAV_HOST=clamd:3310` включает антивирусную проверку загрузок, импорта (каждый файл и каждое вложение
   внутри ZIP/DOCX) и восстановления архива. Проверка работает в режиме fail-closed: если clamd недоступен, файл
-  не принимается. Этапы импорта (upload, scan, detect, parse, normalize, media, validate, preview, commit, index)
+  не принимается (HTTP 503 `av_unavailable` «Антивирусная проверка недоступна…»; файл больше `StreamMaxLength`
+  clamd — 413 `av_limit`, поэтому `StreamMaxLength` ≥ `MAX_UPLOAD_MB`/`MAX_IMPORT_MB`). `CLAMAV_TIMEOUT_MS` (60 000) —
+  предельное время вердикта. Метрики `kb_antivirus_up`, `kb_antivirus_scans_total{result}`. Этапы импорта (upload, scan, detect, parse, normalize, media, validate, preview, commit, index)
   записываются в задание (`GET /api/v1/imports/:id` → `progress.stages`) и в журнал (`msg: import stage`).
 
 ## 3. Обновление, миграции и откат
@@ -332,6 +334,20 @@ sudo systemctl daemon-reload && sudo systemctl enable --now kb kb-backup.timer
 * OCR: `kb_ocr_duration_seconds` — время распознавания одного изображения. Рост p95 означает нехватку CPU у
   воркеров: увеличьте `WORKER_CONCURRENCY` только при свободных ядрах, иначе вынесите воркеры на отдельные
   экземпляры (`WORKER_ENABLED`). Ошибки — в `ocr_results.error` и журнале (`job failed`, `type: ocr`).
+
+<a id="runbook-antivirus"></a>
+### 7.6.3 Антивирус недоступен (`KbAntivirusDown`, `KbAntivirusScanErrors`, `KbMalwareRejected`)
+
+* Пока clamd недоступен, загрузка вложений, импорт и восстановление архивов **отклоняются** (fail closed),
+  пользователи видят «Антивирусная проверка недоступна — файл … не принят. Повторите позже.». Уже сохранённые
+  данные не затрагиваются.
+* Проверка: `printf 'zPING\0' | nc clamd 3310` → `PONG`; журнал clamd; память (clamd с полной базой занимает
+  ≈ 1–1,5 ГБ, при нехватке его завершает OOM killer); `freshclam` (устаревшая база не мешает работе, но снижает
+  защиту).
+* `KbAntivirusScanErrors` без `KbAntivirusDown`: тайм-аут (`CLAMAV_TIMEOUT_MS`), слишком большой файл
+  (`StreamMaxLength`, `MaxScanSize` в `clamd.conf`) — в журнале приложения `antivirus scan failed`.
+* `KbMalwareRejected`: найти загрузившего в аудите (`attachment.rejected`, `import.rejected`,
+  `archive.restore_rejected`), проверить его рабочее место.
 
 <a id="runbook-slow"></a>
 ### 7.7 Медленная работа

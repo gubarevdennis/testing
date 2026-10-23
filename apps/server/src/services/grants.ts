@@ -8,7 +8,8 @@ import { orgSettings } from './org.js';
 export interface GrantInput {
   resourceType: 'space' | 'page';
   resourceId: string;
-  subjectType: 'user' | 'group' | 'org';
+  /** 'space' = the members of that space («участники пространства X», R-ACL-036). */
+  subjectType: 'user' | 'group' | 'org' | 'space';
   subjectId: string | null;
   level: Level;
   canExport?: boolean | null;
@@ -55,6 +56,16 @@ export async function setGrant(q: Tx, user: AuthUser, actor: AuditActor, input: 
   if (input.subjectType === 'group') {
     const g = (await q.query('select org_id from groups where id = $1 and deleted_at is null', [input.subjectId])).rows[0];
     if (!g || g.org_id !== user.orgId) throw notFound('Группа не найдена');
+  }
+  if (input.subjectType === 'space') {
+    const sp = (await q.query('select org_id, kind from spaces where id = $1 and deleted_at is null', [input.subjectId])).rows[0];
+    if (!sp || sp.org_id !== user.orgId) throw notFound('Пространство не найдено');
+    // Only spaces the person can see may be named (otherwise the grant would reveal/forward a hidden audience).
+    await requireSpace(q, user, input.subjectId!, 'view').catch(() => {
+      throw notFound('Пространство не найдено');
+    });
+    if (sp.kind === 'personal') throw badRequest('Участникам личного пространства доступ не выдаётся — поделитесь с человеком напрямую');
+    if (input.resourceType === 'space' && input.subjectId === input.resourceId) throw badRequest('Пространство не может получить доступ к самому себе');
   }
   const before = input.resourceType === 'page' ? await pageAudience(q, input.resourceId) : null;
   if (input.subjectType === 'org' && input.level !== 'none' && !input.confirmWiden) {

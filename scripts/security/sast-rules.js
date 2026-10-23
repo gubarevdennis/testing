@@ -63,6 +63,8 @@ export const sastExemptions = [
       'apps/server/src/routes/import-export.ts',
       'apps/server/src/services/attachments.ts',
       'apps/server/src/services/importer.ts',
+      // streams server-generated temp files (upload/import temp names) to clamd
+      'apps/server/src/services/antivirus.ts',
     ],
     rules: { 'security/detect-non-literal-fs-filename': 'off' },
   },

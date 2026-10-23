@@ -11,7 +11,8 @@ import { actorOf, parse, requireUser, type Services } from '../app.js';
 import { requirePage, pageAccess, type AuthUser } from '../acl/engine.js';
 import { streamToTemp } from '../storage/blob-store.js';
 import { fetchRemote, RemoteFetchError } from '../services/remote-fetch.js';
-import { inspectFile, sanitizeSvgFile, scanForViruses, safeFilename, createAttachment, registerBlob, makeImageDerivatives, isInlineSafe, derivedKey, removeTemp, IMAGE_MIME } from '../services/attachments.js';
+import { scanFile } from '../services/antivirus.js';
+import { inspectFile, sanitizeSvgFile, safeFilename, createAttachment, registerBlob, makeImageDerivatives, isInlineSafe, derivedKey, removeTemp, IMAGE_MIME } from '../services/attachments.js';
 import { audit, auditStandalone } from '../services/audit.js';
 import { badRequest, conflict, forbidden, notFound, tooLarge, unprocessable } from '../lib/errors.js';
 import { signToken, verifyToken } from '../lib/crypto.js';
@@ -112,7 +113,7 @@ export async function ingestFile(s: Services, req: FastifyRequest, user: AuthUse
     await quotaCheck(s, user, tmp.size);
     const info = await inspectFile(tmp.path, filename, opts.declaredMime);
     if (info.mime === 'image/svg+xml') await sanitizeSvgFile(tmp.path);
-    const virus = await scanForViruses(tmp.path, s.cfg.clamavHost);
+    const virus = await scanFile(s, tmp.path, filename);
     if (virus) {
       await auditStandalone(s.db, actorOf(req), { action: 'attachment.rejected', outcome: 'denied', details: { filename, reason: virus } });
       throw unprocessable('malware', 'Файл отклонён антивирусной проверкой');
@@ -165,7 +166,7 @@ export async function attachmentRoutes(app: FastifyInstance, s: Services) {
   app.addContentTypeParser('application/octet-stream', (_req, payload, done) => done(null, payload));
 
   /** Simple multipart upload: fields pageId, kind (optional), replaceId (optional), then one or more files. */
-  app.post('/api/v1/attachments', async (req) => {
+  app.post('/api/v1/attachments', { config: { rateLimit: { max: s.cfg.uploadRateLimitPerMinute, timeWindow: '1 minute', distributed: true } as any } }, async (req) => {
     const user = requireUser(req);
     const fields: Record<string, string> = {};
     const results: unknown[] = [];
@@ -197,7 +198,7 @@ export async function attachmentRoutes(app: FastifyInstance, s: Services) {
 
   // ---- image by URL (R-MEDIA-009): fetched by the server through the SSRF guard and stored as a regular attachment,
   // so the page never depends on (or leaks readers to) the external host
-  app.post('/api/v1/attachments/from-url', async (req) => {
+  app.post('/api/v1/attachments/from-url', { config: { rateLimit: { max: s.cfg.uploadRateLimitPerMinute, timeWindow: '1 minute', distributed: true } as any } }, async (req) => {
     const user = requireUser(req);
     const body = parse(z.object({ url: z.string().min(1).max(4000), pageId: uuid.nullable() }), req.body);
     if (body.pageId) await requirePage(s.db, user, body.pageId, 'edit');
@@ -239,7 +240,7 @@ export async function attachmentRoutes(app: FastifyInstance, s: Services) {
   });
 
   // ---- resumable uploads (large files, unstable networks)
-  app.post('/api/v1/uploads', async (req) => {
+  app.post('/api/v1/uploads', { config: { rateLimit: { max: s.cfg.uploadRateLimitPerMinute, timeWindow: '1 minute', distributed: true } as any } }, async (req) => {
     const user = requireUser(req);
     const body = parse(z.object({ pageId: uuid.nullable(), filename: z.string().min(1).max(255), size: z.number().int().min(0), mime: z.string().max(200).optional(), sha256: z.string().regex(/^[0-9a-f]{64}$/).optional(), replaceId: uuid.optional() }), req.body);
     if (body.size > s.cfg.maxUploadBytes) throw tooLarge(`Файл больше ${Math.round(s.cfg.maxUploadBytes / 1048576)} МБ`);

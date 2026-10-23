@@ -1026,7 +1026,7 @@
 - id: R-PROCESS-051
   status: partial
   evidence: 'docs/qa/defects.yaml (validated: owner, test, severity, status; accepted only medium/low with name and reason) -> docs/qa/DEFECTS.md (also open P0 requirement gaps and failing tests of the last run); 16 registered defects incl. QA-D3..D8 found by tests/e2e/qa-actions.spec.ts'
-  note: 'register not closed: 8 high open (PERF-D1, PERF-D2, PERF-D4, SEC-L3, QA-D2, QA-D4, QA-D7, QA-D8); medium/low open, none accepted in writing'
+  note: 'register not closed: 7 high open (PERF-D1, PERF-D2, PERF-D4, QA-D2, QA-D4, QA-D7, QA-D8); medium/low open, none accepted in writing'
 - id: R-QA-035
   status: process
   evidence: n/a

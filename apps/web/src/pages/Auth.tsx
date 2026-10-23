@@ -20,12 +20,38 @@ function AuthCard({ title, subtitle, children }: { title: string; subtitle?: str
   );
 }
 
+/** Reasons the server gives when an SSO login ends on the login page (routes/auth.ts, ?sso_error=<code>). */
+const SSO_ERRORS: Record<string, string> = {
+  idp_unavailable: 'Корпоративный вход (SSO) сейчас недоступен. Попробуйте позже или обратитесь к администратору.',
+  idp_error: 'Вход через SSO отменён или отклонён провайдером учётных записей.',
+  state_mismatch: 'Сеанс входа устарел или был начат в другом окне. Нажмите «Войти через корпоративный SSO» ещё раз.',
+  token_invalid: 'Провайдер учётных записей вернул недействительный ответ — вход не выполнен.',
+  no_email: 'Провайдер учётных записей не передал адрес электронной почты.',
+  email_unverified: 'Адрес электронной почты не подтверждён у провайдера учётных записей.',
+  no_account: 'Учётная запись не найдена. Обратитесь к администратору базы знаний.',
+  account_disabled: 'Учётная запись отключена.',
+  access_expired: 'Срок доступа истёк.',
+  subject_mismatch: 'Учётная запись уже связана с другим пользователем SSO. Обратитесь к администратору.',
+};
+
+/** The SSO failure reason from the address bar (removed from it after the first render). */
+function ssoError(): string | null {
+  const code = new URLSearchParams(window.location.search).get('sso_error');
+  return code ? SSO_ERRORS[code] ?? 'Не удалось войти через корпоративный SSO.' : null;
+}
+
 export function LoginPage({ onDone }: { onDone: (m: Me) => void }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [totp, setTotp] = useState('');
   const [mfa, setMfa] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(ssoError);
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    if (!url.searchParams.has('sso_error')) return;
+    url.searchParams.delete('sso_error');
+    window.history.replaceState(window.history.state, '', url.pathname + url.search + url.hash);
+  }, []);
   const [busy, setBusy] = useState(false);
   const [sso, setSso] = useState(false);
   useEffect(() => {
@@ -81,7 +107,7 @@ export function LoginPage({ onDone }: { onDone: (m: Me) => void }) {
           {mfa ? 'Подтвердить' : 'Войти'}
         </button>
         {sso && (
-          <a className="btn lg" href="/api/v1/auth/oidc/start">
+          <a className="btn lg" href={'/api/v1/auth/oidc/start?returnTo=' + encodeURIComponent(window.location.pathname === '/' ? '/' : window.location.pathname + window.location.search)}>
             Войти через корпоративный SSO
           </a>
         )}

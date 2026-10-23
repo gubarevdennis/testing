@@ -29,6 +29,16 @@ describe('security headers for user content (SECURITY)', () => {
     expect(csp).toContain("script-src 'self'");
   });
 
+  it('SEC-L1: pictures only from this origin (img-src \'self\' data: blob:) — no hot-linking on app pages and public pages', async () => {
+    for (const path of ['/api/v1/auth/me', '/', '/pub/not-a-real-token']) {
+      const res = await org.owner.raw('GET', path);
+      const csp = res.headers.get('content-security-policy') ?? '';
+      const img = /img-src ([^;]+)/.exec(csp)?.[1].trim().split(/\s+/) ?? [];
+      expect(img, path).toEqual(["'self'", 'data:', 'blob:']);
+      expect(csp, path).not.toMatch(/img-src[^;]*https:/);
+    }
+  });
+
   it('uploaded SVG/HTML-like content is served sandboxed with nosniff; PDF is script-free but viewable', async () => {
     const svg = await upload('logo.svg', Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"><script>alert(1)</script><rect width="10" height="10"/></svg>'), 'image/svg+xml');
     const s = await org.owner.raw('GET', `/api/v1/attachments/${svg.id}/content`);

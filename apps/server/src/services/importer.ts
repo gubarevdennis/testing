@@ -6,7 +6,8 @@ import { markdownToDoc, rowsToTable, walk, ensureBlockIds, docToPlainText, type 
 import type { Services } from '../app.js';
 import type { Tx } from '../db/pool.js';
 import { blobKey } from '../storage/blob-store.js';
-import { inspectFile, registerBlob, makeImageDerivatives, sanitizeSvgFile, safeFilename, scanForViruses, type InspectResult } from './attachments.js';
+import { scanFile } from './antivirus.js';
+import { inspectFile, registerBlob, makeImageDerivatives, sanitizeSvgFile, safeFilename, type InspectResult } from './attachments.js';
 import { docxToDoc } from '../convert/docx-import.js';
 import { htmlToDoc, htmlToNodes } from '../convert/html.js';
 import { parseCsv, parseXlsx, sheetPreview, normalizeDate, normalizeNumber, inferTypes, applyRange, type Sheet } from '../convert/tabular.js';
@@ -85,17 +86,8 @@ export async function readZipSafe(buf: Buffer, limits = ZIP_LIMITS): Promise<Map
  * Fails closed: if a scanner is configured (CLAMAV_HOST) but unreachable, the file is not accepted.
  */
 export async function assertClean(s: Services, path: string, filename: string): Promise<void> {
-  let found: string | null;
-  try {
-    found = await scanForViruses(path, s.cfg.clamavHost);
-  } catch (e) {
-    s.log.error({ err: e, filename }, 'antivirus scan failed');
-    throw unprocessable('av_unavailable', `Антивирусная проверка недоступна — файл «${filename}» не принят. Повторите позже.`);
-  }
-  if (found) {
-    s.log.warn({ filename, found }, 'file rejected by antivirus');
-    throw unprocessable('malware', `Файл «${filename}» отклонён антивирусной проверкой (${found})`);
-  }
+  const found = await scanFile(s, path, filename);
+  if (found) throw unprocessable('malware', `Файл «${filename}» отклонён антивирусной проверкой (${found})`);
 }
 
 /** Same as assertClean for an in-memory buffer. */

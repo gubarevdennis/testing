@@ -27,10 +27,57 @@ export interface Subjects {
   userId: string;
   groupIds: string[];
   employee: boolean;
+  /**
+   * Spaces whose members the user is, among the spaces used as a grant subject («участники пространства X»,
+   * R-ACL-036). Membership = an active allowing grant on space X to the user, one of their groups/departments or the
+   * whole organisation, no deny there, and (for guests) the space policy admits guests. It is deliberately one level
+   * deep: grants whose subject is itself a space never make anyone a member of another space (no cycles, predictable).
+   */
+  spaceIds: string[];
+}
+
+/**
+ * Active grants on spaces that are referenced as a subject ("members of space X") by some active grant; only these
+ * spaces need membership evaluation. Rows: (space, subject, level) with the space policy and the org guest switch.
+ */
+const SPACE_MEMBERSHIP_SQL = `
+  select g.resource_id as space_id, g.subject_type, g.subject_id, g.level, s.settings, s.kind,
+         coalesce((o.settings->'guestsEnabled') = 'false'::jsonb, false) as guests_off
+    from grants g join spaces s on s.id = g.resource_id join organizations o on o.id = s.org_id
+   where g.resource_type = 'space' and g.revoked_at is null and s.deleted_at is null and s.kind <> 'personal'
+     and g.subject_type in ('user', 'group', 'org')
+     and (g.starts_at is null or g.starts_at <= now()) and (g.expires_at is null or g.expires_at > now())
+     and s.org_id = $1
+     and (g.resource_id in (select x.subject_id from grants x where x.subject_type = 'space' and x.revoked_at is null and x.org_id = $1)
+          or g.resource_id = any($2::uuid[]))`;
+
+interface MembershipRow {
+  space_id: string;
+  subject_type: 'user' | 'group' | 'org';
+  subject_id: string | null;
+  level: Level;
+  settings: unknown;
+  kind: string;
+  guests_off: boolean;
+}
+
+/** Spaces (from MembershipRow sets) whose member a subject set is — same deny-wins rule as combine(). */
+function memberSpaces(rows: MembershipRow[], s: Omit<Subjects, 'spaceIds'>): string[] {
+  const bySpace = new Map<string, { allow: boolean; deny: boolean; guestsOk: boolean }>();
+  for (const r of rows) {
+    const hit = r.subject_type === 'user' ? r.subject_id === s.userId : r.subject_type === 'group' ? s.groupIds.includes(r.subject_id!) : s.employee;
+    const cur = bySpace.get(r.space_id) ?? { allow: false, deny: false, guestsOk: !r.guests_off && policyOf(r.settings).allowGuests };
+    if (hit) {
+      if (r.level === 'none') cur.deny = true;
+      else cur.allow = true;
+    }
+    bySpace.set(r.space_id, cur);
+  }
+  return [...bySpace].filter(([, m]) => m.allow && !m.deny && (s.employee || m.guestsOk)).map(([id]) => id);
 }
 
 /** Groups a user belongs to, including parent departments of the departments they are in. */
-export async function userSubjects(q: Queryable, user: Pick<AuthUser, 'id' | 'kind'>): Promise<Subjects> {
+export async function userSubjects(q: Queryable, user: Pick<AuthUser, 'id' | 'kind'> & { orgId?: string }): Promise<Subjects> {
   const r = await q.query(
     `with recursive direct as (
        select g.id, g.parent_id, g.kind from group_members gm join groups g on g.id = gm.group_id
@@ -43,7 +90,11 @@ export async function userSubjects(q: Queryable, user: Pick<AuthUser, 'id' | 'ki
      ) select distinct id from up`,
     [user.id],
   );
-  return { userId: user.id, groupIds: r.rows.map((x) => x.id), employee: user.kind === 'employee' };
+  const base = { userId: user.id, groupIds: r.rows.map((x) => x.id as string), employee: user.kind === 'employee' };
+  const orgId = user.orgId ?? (await q.query('select org_id from users where id = $1', [user.id])).rows[0]?.org_id;
+  // Fast path: the sub-select finds no space used as a subject → no rows, one cheap indexed query.
+  const rows = orgId ? ((await q.query(SPACE_MEMBERSHIP_SQL, [orgId, []])).rows as MembershipRow[]) : [];
+  return { ...base, spaceIds: rows.length ? memberSpaces(rows, base) : [] };
 }
 
 interface GrantRow {
@@ -51,7 +102,7 @@ interface GrantRow {
   target_page: string;
   resource_type: 'space' | 'page';
   resource_id: string;
-  subject_type: 'user' | 'group' | 'org';
+  subject_type: 'user' | 'group' | 'org' | 'space';
   subject_id: string | null;
   level: Level;
   can_export: boolean | null;
@@ -103,13 +154,14 @@ function active(g: { starts_at: Date | null; expires_at: Date | null }, now: Dat
 function matches(g: { subject_type: string; subject_id: string | null }, s: Subjects): boolean {
   if (g.subject_type === 'user') return g.subject_id === s.userId;
   if (g.subject_type === 'group') return s.groupIds.includes(g.subject_id!);
+  if (g.subject_type === 'space') return s.spaceIds.includes(g.subject_id!);
   return s.employee; // 'org' = all employees (never guests)
 }
 
 function viaOf(g: GrantRow): string {
   if (g.resource_type === 'space') return 'space';
   if (g.depth && g.depth > 0) return 'inherited-page';
-  return g.subject_type === 'user' ? 'direct' : g.subject_type;
+  return g.subject_type === 'user' ? 'direct' : g.subject_type === 'space' ? 'space-members' : g.subject_type;
 }
 
 function toSource(g: GrantRow): AccessSource {
@@ -165,7 +217,7 @@ export function combine(grants: GrantRow[], subjects: Subjects, policy: SpacePol
 }
 
 function describe(g: GrantRow): string {
-  const who = g.subject_type === 'user' ? 'лично' : g.subject_type === 'group' ? 'через группу/отдел' : 'как сотруднику организации';
+  const who = g.subject_type === 'user' ? 'лично' : g.subject_type === 'group' ? 'через группу/отдел' : g.subject_type === 'space' ? 'как участнику пространства' : 'как сотруднику организации';
   const where = g.resource_type === 'space' ? 'права пространства' : g.depth ? 'унаследовано от родительской страницы' : 'права страницы';
   return `${g.level}: ${who}, ${where}${g.expires_at ? ` (до ${g.expires_at.toISOString()})` : ''}`;
 }
@@ -301,7 +353,7 @@ export function canReadAudit(user: AuthUser) {
 }
 
 export interface AudienceEntry {
-  subjectType: 'user' | 'group' | 'org';
+  subjectType: 'user' | 'group' | 'org' | 'space';
   subjectId: string | null;
   level: Level;
   via: string;
@@ -382,10 +434,12 @@ export interface OrgPerson {
 }
 
 /** Active and invited users of an organisation with their subjects, computed in bulk (same rules as userSubjects). */
-export async function orgPeople(q: Queryable, orgId: string): Promise<OrgPerson[]> {
+export async function orgPeople(q: Queryable, orgId: string, extraSpaceIds: string[] = []): Promise<OrgPerson[]> {
   const users = (await q.query(`select id, name, kind, status from users where org_id = $1 and status in ('active', 'invited') and (access_expires_at is null or access_expires_at > now()) order by name`, [orgId])).rows;
   const groups = new Map((await q.query('select id, parent_id, kind from groups where org_id = $1 and deleted_at is null', [orgId])).rows.map((g) => [g.id, g]));
   const members = (await q.query(`select gm.user_id, gm.group_id from group_members gm join groups g on g.id = gm.group_id where g.org_id = $1 and g.deleted_at is null and (gm.expires_at is null or gm.expires_at > now())`, [orgId])).rows;
+  // extraSpaceIds: spaces not yet used as a subject but about to be (preview of a proposed grant).
+  const membership = (await q.query(SPACE_MEMBERSHIP_SQL, [orgId, extraSpaceIds])).rows as MembershipRow[];
   const byUser = new Map<string, Set<string>>();
   for (const m of members) {
     const set = byUser.get(m.user_id) ?? new Set<string>();
@@ -398,7 +452,10 @@ export async function orgPeople(q: Queryable, orgId: string): Promise<OrgPerson[
     }
     byUser.set(m.user_id, set);
   }
-  return users.map((u) => ({ id: u.id, name: u.name, status: u.status, kind: u.kind, subjects: { userId: u.id, groupIds: [...(byUser.get(u.id) ?? [])], employee: u.kind === 'employee' } }));
+  return users.map((u) => {
+    const base = { userId: u.id, groupIds: [...(byUser.get(u.id) ?? [])], employee: u.kind === 'employee' };
+    return { id: u.id, name: u.name, status: u.status, kind: u.kind, subjects: { ...base, spaceIds: membership.length ? memberSpaces(membership, base) : [] } };
+  });
 }
 
 export interface ResourceRef {
@@ -407,7 +464,7 @@ export interface ResourceRef {
 }
 
 export interface ProposedGrant {
-  subjectType: 'user' | 'group' | 'org';
+  subjectType: 'user' | 'group' | 'org' | 'space';
   subjectId: string | null;
   level: Level;
   canExport?: boolean | null;
@@ -486,7 +543,7 @@ export async function previewGrantAudience(q: Queryable, orgId: string, r: Resou
   const rg = await resourceGrants(q, r);
   if (!rg) throw notFound();
   const after = withProposed(rg.rows, r, g);
-  const people = await orgPeople(q, orgId);
+  const people = await orgPeople(q, orgId, g.subjectType === 'space' && g.subjectId ? [g.subjectId] : []);
   const added: AudiencePreview['added'] = [];
   const removed: AudiencePreview['removed'] = [];
   const guestsDisabled = await orgGuestsDisabled(q, orgId);

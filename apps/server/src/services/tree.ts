@@ -93,9 +93,10 @@ export async function sharedWithMe(q: Queryable, user: AuthUser) {
     await q.query(
       `select distinct g.resource_id as id from grants g join pages p on p.id = g.resource_id
         where g.resource_type = 'page' and g.revoked_at is null and g.level <> 'none' and p.deleted_at is null and p.org_id = $1
-          and ((g.subject_type = 'user' and g.subject_id = $2) or (g.subject_type = 'group' and g.subject_id = any($3::uuid[])) or (g.subject_type = 'org' and $4))
+          and ((g.subject_type = 'user' and g.subject_id = $2) or (g.subject_type = 'group' and g.subject_id = any($3::uuid[])) or (g.subject_type = 'org' and $4)
+               or (g.subject_type = 'space' and g.subject_id = any($5::uuid[])))
           and (g.expires_at is null or g.expires_at > now()) and (g.starts_at is null or g.starts_at <= now())`,
-      [user.orgId, user.id, s.groupIds, s.employee],
+      [user.orgId, user.id, s.groupIds, s.employee, s.spaceIds],
     )
   ).rows.map((r) => r.id);
   if (!cand.length) return [];

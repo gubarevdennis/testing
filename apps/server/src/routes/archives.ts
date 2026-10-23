@@ -78,7 +78,7 @@ export async function archiveRoutes(app: FastifyInstance, s: Services) {
   });
 
   /** Upload an archive: integrity check + dry run report. Nothing is changed. */
-  app.post('/api/v1/admin/archives/restore', async (req) => {
+  app.post('/api/v1/admin/archives/restore', { config: { rateLimit: { max: s.cfg.uploadRateLimitPerMinute, timeWindow: '1 minute', distributed: true } as any } }, async (req) => {
     const user = requireUser(req);
     if (!isOrgAdmin(user)) throw forbidden();
     const file = await req.file();

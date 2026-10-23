@@ -22,6 +22,8 @@ import { isConnectionError } from './db/pool.js';
 import { createDenialLogger } from './services/denials.js';
 import { CollabHub } from './collab/hub.js';
 import { createMetrics, type Metrics } from './observability/metrics.js';
+import { clamdPing } from './services/antivirus.js';
+import { SharedRateLimiter, rateLimitStore } from './services/rate-limit.js';
 import { Tracer, parseTraceparent, parseOtlpHeaders, type Span } from './observability/tracing.js';
 import type { BlobStore } from './storage/blob-store.js';
 import type { AuditActor } from './services/audit.js';
@@ -33,6 +35,10 @@ declare module 'fastify' {
     session: SessionInfo | null;
     correlationId: string;
     span: Span | null;
+  }
+  interface FastifyInstance {
+    /** Rate-limit counters shared by all instances (services/rate-limit.ts, SEC-L4). */
+    sharedLimiter: SharedRateLimiter;
   }
 }
 
@@ -74,6 +80,7 @@ export async function buildApp(base: Omit<Services, 'hub' | 'bus' | 'metrics' | 
   await bus.start();
   const hub = new CollabHub(base.db, base.log, bus, metrics);
   const services: Services = { ...base, metrics, bus, hub, tracer };
+  metrics.setAntivirusProbe(async () => (base.cfg.clamavHost ? ((await clamdPing(base.cfg.clamavHost)) ? 1 : 0) : null));
 
   const app = Fastify({
     loggerInstance: base.log as any,
@@ -109,7 +116,9 @@ export async function buildApp(base: Omit<Services, 'hub' | 'bus' | 'metrics' | 
         defaultSrc: ["'self'"],
         scriptSrc: ["'self'"],
         styleSrc: ["'self'", "'unsafe-inline'"],
-        imgSrc: ["'self'", 'data:', 'blob:', 'https:'],
+        // SEC-L1: no hot-linked pictures — pasted/imported images of other sites are copied to this server
+        // (attachments/from-url, services/remote-fetch.ts); the browser never contacts another site for an image.
+        imgSrc: ["'self'", 'data:', 'blob:'],
         mediaSrc: ["'self'", 'blob:'],
         connectSrc: ["'self'", 'ws:', 'wss:'],
         fontSrc: ["'self'", 'data:'],
@@ -128,7 +137,12 @@ export async function buildApp(base: Omit<Services, 'hub' | 'bus' | 'metrics' | 
   // Compression only for the client bundle and static documents (Lighthouse: 470 KB of JS went uncompressed).
   // JSON API responses are excluded: they mix secrets (CSRF token, content) with reflected input (BREACH).
   await app.register(compress, { global: true, threshold: 1024, encodings: ['br', 'gzip'], customTypes: /^(?:text\/(?:css|javascript|html)|application\/(?:javascript|wasm|manifest\+json)|image\/svg\+xml|font\/ttf)(?:;|$)/ });
+  // SEC-L4: routes with `distributed: true` (sign-in, public-link passwords, uploads) count in PostgreSQL across instances.
+  const sharedLimiter = new SharedRateLimiter(base.db, base.log);
+  app.addHook('onClose', async () => sharedLimiter.stop());
+  app.decorate('sharedLimiter', sharedLimiter);
   await app.register(rateLimit, {
+    store: rateLimitStore(sharedLimiter) as any,
     max: base.cfg.rateLimitPerMinute,
     timeWindow: '1 minute',
     keyGenerator: (req) => (req.headers.cookie?.match(/kb_session=([^;]+)/)?.[1] ?? req.ip),

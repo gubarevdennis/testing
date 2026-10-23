@@ -32,7 +32,7 @@ export async function startServer(overrides: Partial<Config> = {}, opts: { worke
   const dbUrl = adminUrl.replace(/\/[^/]*$/, '/' + name);
   const root = await mkdtemp(join(tmpdir(), 'kb-store-'));
   const srv = await createServer(
-    { databaseUrl: dbUrl, storage: { driver: 'fs', root }, env: 'test', logLevel: process.env.TEST_LOG ?? 'silent', port: 0, host: '127.0.0.1', rateLimitPerMinute: 100_000, authRateLimitPerMinute: 100_000, publicUrl: 'http://127.0.0.1', dbPoolSize: 10, ...overrides },
+    { databaseUrl: dbUrl, storage: { driver: 'fs', root }, env: 'test', logLevel: process.env.TEST_LOG ?? 'silent', port: 0, host: '127.0.0.1', rateLimitPerMinute: 100_000, authRateLimitPerMinute: 100_000, uploadRateLimitPerMinute: 100_000, publicUrl: 'http://127.0.0.1', dbPoolSize: 10, ...overrides },
     { worker: opts.worker ?? false },
   );
   await srv.app.listen({ port: 0, host: '127.0.0.1' });

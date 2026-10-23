@@ -222,6 +222,13 @@ async function resolveMoveTarget(q: Queryable, user: AuthUser, page: PageRow, in
   return { targetSpaceId: targetSpaceId!, targetParentId };
 }
 
+/** Names of spaces used as grant subjects («Участники пространства «X»», R-ACL-036). */
+async function spaceSubjectNames(q: Queryable, list: Array<{ subjectType: string; subjectId: string | null }>): Promise<Array<[string, string]>> {
+  const ids = list.filter((g) => g.subjectType === 'space').map((g) => g.subjectId);
+  if (!ids.length) return [];
+  return (await q.query('select id, name from spaces where id = any($1::uuid[])', [ids])).rows.map((r) => [r.id, `Участники пространства «${r.name}»`] as [string, string]);
+}
+
 /** Adds human readable names to the subjects of an audience diff (confirmation dialogs). */
 async function nameAudience(q: Queryable, audience: AudienceDiff) {
   const all = [...audience.gained, ...audience.lost];
@@ -230,6 +237,7 @@ async function nameAudience(q: Queryable, audience: AudienceDiff) {
   const names = new Map<string, string>([
     ...((users.length ? (await q.query('select id, name from users where id = any($1::uuid[])', [users])).rows : []) as any[]).map((r) => [r.id, r.name] as [string, string]),
     ...((groups.length ? (await q.query('select id, name from groups where id = any($1::uuid[])', [groups])).rows : []) as any[]).map((r) => [r.id, r.name] as [string, string]),
+    ...(await spaceSubjectNames(q, all)),
   ]);
   for (const e of all) (e as any).name = e.subjectType === 'org' ? 'Все сотрудники организации' : names.get(e.subjectId ?? '') ?? '—';
 }
@@ -248,6 +256,7 @@ export async function previewMove(q: Queryable, user: AuthUser, input: MoveInput
   const names = new Map<string, string>([
     ...((users.length ? (await q.query('select id, name from users where id = any($1::uuid[])', [users])).rows : []) as any[]).map((r) => [r.id, r.name] as [string, string]),
     ...((groups.length ? (await q.query('select id, name from groups where id = any($1::uuid[])', [groups])).rows : []) as any[]).map((r) => [r.id, r.name] as [string, string]),
+    ...(await spaceSubjectNames(q, audience.gained.concat(audience.lost))),
   ]);
   for (const e of [...audience.gained, ...audience.lost]) (e as any).name = e.subjectType === 'org' ? 'Все сотрудники организации' : names.get(e.subjectId ?? '') ?? '—';
   const counts = await q.query(

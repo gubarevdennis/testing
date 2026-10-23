@@ -139,8 +139,8 @@
   note: ''
 - id: R-AUTH-001
   status: done
-  evidence: password login + TOTP MFA (auth/totp.ts, tests/unit/totp.test.ts), OIDC (auth/oidc.ts), sessions list/revoke, admin revoke-sessions; core test suspend
-  note: SAML not implemented; OIDC not verifiable without an external IdP.
+  evidence: 'password login + TOTP MFA (auth/totp.ts, tests/unit/totp.test.ts), OIDC SSO (auth/oidc.ts, services/sso.ts: code + PKCE + state + nonce, JIT by org policy, group/department claims, RP-initiated logout) verified against a real OpenID Provider (tests/integration/oidc-sso.test.ts, tests/e2e/sso-oidc.spec.ts), sessions list/revoke, admin revoke-sessions; core test suspend'
+  note: SAML not implemented; the customer's corporate IdP was not connected (test IdP is panva/oidc-provider); no back-channel logout.
 - id: R-ACL-015
   status: done
   evidence: requirePage in pages/revisions/attachments/OCR/export/search; WS connect+recheck (apps/server/src/collab/hub.ts); tests/integration/acl.test.ts, tests/integration/content.test.ts E2E-102, tests/integration/collab.test.ts
@@ -158,8 +158,7 @@
     (19 address forms + import), open redirect, path traversal (13 encodings), rate limits incl. X-Forwarded-For spoofing (TRUST_PROXY), cookie flags (Secure in production), malformed input without
     stack traces; tests/integration/acl-p0.test.ts ''SC-33 R-SECURITY-002: …'', ''R-SECURITY-007: …'' (antivirus with emulated clamd, type checks); secrets only via env (config.ts, weak SECRET_KEY
     refused in production); docs/SECURITY.md, docs/ASVS.md'
-  note: TLS is terminated by deploy/nginx.conf and encryption at rest is delegated to disk/DB/S3/backup encryption (BACKUP_RESTORE.md) — both are deployment concerns not exercised by automated tests;
-    ClamAV is verified with an emulated clamd only.
+  note: 'TLS is terminated by deploy/nginx.conf and encryption at rest is delegated to disk/DB/S3/backup encryption (BACKUP_RESTORE.md) — both are deployment concerns not exercised by automated tests. SEC-L3 closed: ClamAV verified against a real clamd 1.5.4 with the official signature DB (tests/resilience/clamav-real.test.ts, KB_TEST_CLAMAV_HOST: EICAR, EICAR in ZIP, daemon down/hung → fail closed 503 av_unavailable + kb_antivirus_up/kb_antivirus_scans_total + alerts); OIDC verified against a real OpenID Provider (panva/oidc-provider: tests/integration/oidc-sso.test.ts, tests/e2e/sso-oidc.spec.ts). SEC-L4 closed: sign-in, public-link password and upload limits shared across instances via PostgreSQL (tests/resilience/rate-limit-global.test.ts, two server processes). Not done: customer''s corporate IdP on a stand.'
 - id: R-SECURITY-003
   status: done
   evidence: OCR local tesseract.js with bundled rus/eng data (apps/server/src/ocr/ocr.ts); no AI/external calls
@@ -211,8 +210,7 @@
   evidence: 'SAST `npm run security:sast` (eslint-plugin-security + no-unsanitized, 0 findings, justified suppressions only; also in `npm run lint`); dependency gate `npm run security:deps` (prod
     0 high/critical; accepted advisories with reason and expiry in scripts/security/audit-allowlist.json); DAST `npm run security:dast` + tests/integration/security-dast.test.ts (0 findings);
     OWASP ASVS 4.0.3 L2 mapping docs/ASVS.md; Lighthouse `npm run perf:lighthouse` (results in docs/PERFORMANCE.md); accessibility audit tests/e2e/a11y.spec.ts (axe); CI steps in .github/workflows/ci.yml'
-  note: 'Open: 2 critical advisories in dev-only vitest 3 (tinypool) accepted until 2026-12-31 (fix = vitest >= 4.1.11); Lighthouse mobile performance of the document page 0.76 < 0.8 (PageView/editor
-    chunk); ASVS L2 gaps (password length 12 / breached-password check, idle session timeout, TOTP secret not encrypted by the app); no independent pentest, DAST is an in-house baseline (no ZAP).'
+  note: 'Dev critical advisories (vitest 3 → tinypool) fixed by upgrading to vitest 4.1.11 (all vitest projects pass); 2 moderate in @vitest/mocker accepted until vitest 4.1.12 (browser mode unused). Open: Lighthouse mobile performance of the document page 0.76 < 0.8 (PageView/editor chunk); ASVS L2 gaps (breached-password check against a full database, absolute session lifetime); no independent pentest, DAST is an in-house baseline (no ZAP).'
 - id: R-HELP-001
   status: process
   evidence: in-app HelpCenter articles; seed.ts creates demo org (no demo content)
@@ -227,15 +225,14 @@
   note: No written OWASP File Upload checklist document.
 - id: R-SECURITY-007
   status: done
-  evidence: 'antivirus for attachments, imports (incl. assets inside ZIP/DOCX) and archive restore; type sniffing; tests/integration/acl-p0.test.ts ''R-SECURITY-007: malicious fixtures are rejected …''
-    (fake clamd INSTREAM: infected attachment and import rejected and audited, disguised PE/ELF rejected, clean original byte-exact); tests/integration/import-pipeline.test.ts'
-  note: Verified against a protocol-compatible fake clamd; a real ClamAV daemon is not available in this environment (CLAMAV_HOST).
+  evidence: 'antivirus (services/antivirus.ts, fail closed, timeout, metrics) for attachments, images by URL, imports (incl. assets inside ZIP/DOCX) and archive restore; type sniffing; tests/integration/acl-p0.test.ts ''R-SECURITY-007: malicious fixtures are rejected …'' (fake clamd INSTREAM: infected attachment and import rejected and audited, disguised PE/ELF rejected, clean original byte-exact); tests/integration/import-pipeline.test.ts; tests/resilience/clamav-real.test.ts (real clamd + official signatures: EICAR and EICAR in ZIP rejected and audited, clean files byte-exact, daemon down/hung → fail closed)'
+  note: 'The real-daemon suite runs when KB_TEST_CLAMAV_HOST points at a clamd (skipped otherwise); archive restore uses the same assertClean path but was not run against the real daemon.'
 - id: R-SECURITY-008
   status: done
   evidence: 'services/remote-fetch.ts (SSRF-guarded fetcher: every resolved address checked, pinned connection, re-checked redirects, size/time limits, REMOTE_FETCH_ALLOW_HOSTS) + services/remote-images.ts
     (import copies remote images as attachments, internal addresses removed with a report warning); tests/integration/acl-p0.test.ts ''R-SECURITY-008: on import remote images are copied …'', ''SC-33 R-SECURITY-008:
     …'''
-  note: Images in pasted HTML are still hot-linked by the browser (docs/SECURITY.md limitation 1).
+  note: 'SEC-L1 closed: images in pasted HTML are copied through the same fetcher (POST /api/v1/attachments/from-url) with in-place progress/failure and retry (apps/web/src/editor/clipboard/remoteImages.ts, tests/e2e/paste-external-images.spec.ts); the browser never loads images of other sites (CSP img-src ''self'' data: blob:, tests/integration/security-headers.test.ts). Hot-linked images pasted before this change are no longer displayed.'
 - id: R-ACL-018
   status: done
   evidence: events WS /api/v1/events (tree-changed, access-changed, comments-changed), hub.recheckAccess on acl-changed
@@ -406,10 +403,9 @@
   evidence: previewMove/movePage requiresConfirmation (audience_change 409); tests/integration/acl.test.ts ACL-165
   note: ''
 - id: R-ACL-036
-  status: partial
-  evidence: 'grants store subject user/group(department)/org, starts_at, expires_at, time_zone (IANA, from the browser), granted_by, reason; ShareDialog «Ещё параметры» (start date, reason, flags) and SpaceMembersEditor
-    (term, reason); tests/integration/acl-p0.test.ts ''R-ACL-036 R-ACL-063: …''; tests/e2e/acl-p0-spaces.spec.ts ''R-ACL-021 R-ACL-036 …'''
-  note: A space as a subject («участники пространства X») is not supported — grant to the group/department that forms the space instead.
+  status: done
+  evidence: 'grants store subject user/group(department)/org/space («участники пространства X»: members = active allowing grant on X to the user, their group/department or the organisation, no deny, guests only where the space admits them; one level deep), starts_at, expires_at, time_zone (IANA, from the browser), granted_by, reason (acl/engine.ts, services/grants.ts, migration 0022); API PUT /api/v1/grants subjectType ''space'', directory ?spaces=1, audience preview POST /pages/:id/access/preview and /spaces/:id/access/preview, audit grant.create/revoke with subjectType; ShareDialog and SpaceMembersEditor offer spaces, show «Участники пространства «X»» with member count and preview names; tests/integration/acl-space-subject.test.ts (members via user/group get access, outsiders do not, preview, audit, join/leave/deny in X apply at once, not transitive, guests, validation, expiry and revocation close live editors), tests/integration/acl-p0.test.ts ''R-ACL-036 R-ACL-063: …'', tests/e2e/acl-space-subject.spec.ts, tests/e2e/acl-p0-spaces.spec.ts ''R-ACL-021 R-ACL-036 …'''
+  note: 'Archive restore drops grants to space subjects (reported as dropped grants) instead of guessing the target space.'
 - id: R-ACL-037
   status: partial
   evidence: apps/web/src/components/page/ShareDialog.tsx date input (empty = бессрочно)

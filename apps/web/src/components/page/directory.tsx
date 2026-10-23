@@ -1,6 +1,6 @@
 import '../../styles/panels.css';
 import { useEffect, useRef, useState } from 'react';
-import { Users, Building2 } from 'lucide-react';
+import { Users, Building2, LayoutGrid } from 'lucide-react';
 import { get, ApiError } from '../../api/client';
 import { Avatar } from '../Avatar';
 
@@ -17,11 +17,21 @@ export interface DirGroup {
   kind: string;
   members: number;
 }
-export type DirEntry = { type: 'user'; user: DirUser } | { type: 'group'; group: DirGroup };
+/** A space as a grant subject: its members («участники пространства X», R-ACL-036). */
+export interface DirSpace {
+  id: string;
+  name: string;
+  kind: string;
+  icon: string | null;
+}
+export type DirEntry = { type: 'user'; user: DirUser } | { type: 'group'; group: DirGroup } | { type: 'space'; space: DirSpace };
+
+export const dirEntryId = (e: DirEntry) => (e.type === 'user' ? e.user.id : e.type === 'group' ? e.group.id : e.space.id);
+export const dirEntryName = (e: DirEntry) => (e.type === 'user' ? e.user.name : e.type === 'group' ? e.group.name : `Участники пространства «${e.space.name}»`);
 
 /** Debounced people/groups search via /api/v1/directory. */
-export function useDirectorySearch(q: string, enabled = true, limit = 8) {
-  const [data, setData] = useState<{ users: DirUser[]; groups: DirGroup[] }>({ users: [], groups: [] });
+export function useDirectorySearch(q: string, enabled = true, limit = 8, spaces = false) {
+  const [data, setData] = useState<{ users: DirUser[]; groups: DirGroup[]; spaces?: DirSpace[] }>({ users: [], groups: [], spaces: [] });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   useEffect(() => {
@@ -29,7 +39,7 @@ export function useDirectorySearch(q: string, enabled = true, limit = 8) {
     const ctrl = new AbortController();
     setLoading(true);
     const t = setTimeout(() => {
-      get<{ users: DirUser[]; groups: DirGroup[] }>(`/api/v1/directory?q=${encodeURIComponent(q.trim())}&limit=${limit}`, ctrl.signal)
+      get<{ users: DirUser[]; groups: DirGroup[]; spaces?: DirSpace[] }>(`/api/v1/directory?q=${encodeURIComponent(q.trim())}&limit=${limit}${spaces ? '&spaces=1' : ''}`, ctrl.signal)
         .then((r) => {
           setData(r);
           setError(null);
@@ -44,7 +54,7 @@ export function useDirectorySearch(q: string, enabled = true, limit = 8) {
       clearTimeout(t);
       ctrl.abort();
     };
-  }, [q, enabled, limit]);
+  }, [q, enabled, limit, spaces]);
   return { ...data, loading, error };
 }
 
@@ -52,6 +62,7 @@ export function useDirectorySearch(q: string, enabled = true, limit = 8) {
 export function DirectoryPicker({
   onPick,
   includeGroups = true,
+  includeSpaces = false,
   placeholder = 'Имя, e-mail или группа',
   excludeIds = [],
   autoFocus,
@@ -59,6 +70,8 @@ export function DirectoryPicker({
 }: {
   onPick(e: DirEntry): void;
   includeGroups?: boolean;
+  /** Also offer spaces («участники пространства»). */
+  includeSpaces?: boolean;
   placeholder?: string;
   excludeIds?: string[];
   autoFocus?: boolean;
@@ -68,10 +81,11 @@ export function DirectoryPicker({
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
   const wrap = useRef<HTMLDivElement>(null);
-  const res = useDirectorySearch(q, open);
+  const res = useDirectorySearch(q, open, 8, includeSpaces);
   const items: DirEntry[] = [
     ...res.users.filter((u) => !excludeIds.includes(u.id)).map((user) => ({ type: 'user' as const, user })),
     ...(includeGroups ? res.groups.filter((g) => !excludeIds.includes(g.id)).map((group) => ({ type: 'group' as const, group })) : []),
+    ...(includeSpaces ? (res.spaces ?? []).filter((x) => !excludeIds.includes(x.id)).map((space) => ({ type: 'space' as const, space })) : []),
   ];
   useEffect(() => {
     const onDoc = (e: MouseEvent) => {
@@ -127,7 +141,7 @@ export function DirectoryPicker({
           {items.map((it, i) => (
             <button
               type="button"
-              key={it.type + (it.type === 'user' ? it.user.id : it.group.id)}
+              key={it.type + dirEntryId(it)}
               role="option"
               aria-selected={i === active}
               className="pick-item"
@@ -144,13 +158,21 @@ export function DirectoryPicker({
                   </span>
                   {it.user.kind === 'guest' && <span className="badge amber">гость</span>}
                 </>
-              ) : (
+              ) : it.type === 'group' ? (
                 <>
                   <span className="share-subject-icon">
                     <Users size={14} />
                   </span>
                   <span className="grow ellipsis">{it.group.name}</span>
                   <span className="muted small">{it.group.members} чел.</span>
+                </>
+              ) : (
+                <>
+                  <span className="share-subject-icon">
+                    <LayoutGrid size={14} />
+                  </span>
+                  <span className="grow ellipsis">{dirEntryName(it)}</span>
+                  <span className="muted small">пространство</span>
                 </>
               )}
             </button>
@@ -163,7 +185,7 @@ export function DirectoryPicker({
 
 export function SubjectIcon({ type, id, name }: { type: string; id: string | null; name: string }) {
   if (type === 'user' && id) return <Avatar name={name} id={id} />;
-  return <span className="share-subject-icon">{type === 'org' ? <Building2 size={14} /> : <Users size={14} />}</span>;
+  return <span className="share-subject-icon">{type === 'org' ? <Building2 size={14} /> : type === 'space' ? <LayoutGrid size={14} /> : <Users size={14} />}</span>;
 }
 
 export function errMsg(e: unknown, fallback = 'Не удалось выполнить действие'): string {

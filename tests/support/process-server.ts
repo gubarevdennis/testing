@@ -84,6 +84,7 @@ async function spawnOnce(opts: { dbUrl: string; storageRoot: string; dataDir: st
       OCR_ENABLED: 'false',
       RATE_LIMIT_PER_MINUTE: '100000',
       AUTH_RATE_LIMIT_PER_MINUTE: '100000',
+      UPLOAD_RATE_LIMIT_PER_MINUTE: '100000',
       DB_POOL_SIZE: '10',
       ...opts.env,
     },

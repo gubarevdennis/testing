@@ -22,42 +22,22 @@
       "expires": "2027-01-31"
     },
     {
-      "id": "GHSA-5gmw-xhrv-c9v3",
-      "package": "tinypool",
-      "scope": "dev",
-      "severity": "critical",
-      "path": "vitest@3.2.7 > tinypool@1.1.1",
-      "reason": "Test runner only; requires an attacker-controlled prototype pollution inside the test process. Never installed in the production image (Dockerfile runs `npm prune --omit=dev`). Fixed only in vitest 4.1.11+/5 (major upgrade of the whole test suite, scheduled separately so concurrent test runs are not broken).",
-      "reviewed": "2026-10-23",
-      "expires": "2026-12-31"
-    },
-    {
-      "id": "GHSA-85c8-ppgw-ccpr",
-      "package": "tinypool",
-      "scope": "dev",
-      "severity": "critical",
-      "path": "vitest@3.2.7 > tinypool@1.1.1",
-      "reason": "Same as GHSA-5gmw-xhrv-c9v3: dev-only test worker pool, not shipped; fix = vitest major upgrade.",
-      "reviewed": "2026-10-23",
-      "expires": "2026-12-31"
-    },
-    {
-      "id": "GHSA-82fw-gwwq-j7x9",
-      "package": "@vitest/mocker",
-      "scope": "dev",
-      "severity": "moderate",
-      "path": "vitest@3.2.7 > @vitest/mocker@3.2.7",
-      "reason": "Affects the browser-mode/UI mock server, which this project does not run (node environment only, no --ui, no browser mode). Dev-only, not shipped.",
-      "reviewed": "2026-10-23",
-      "expires": "2026-12-31"
-    },
-    {
       "id": "GHSA-qxg6-89mg-rqv8",
       "package": "@vitest/mocker",
       "scope": "dev",
       "severity": "moderate",
-      "path": "vitest@3.2.7 > @vitest/mocker@3.2.7",
-      "reason": "Unauthenticated mock registration over the browser-mode server, which is not used here. Dev-only, not shipped.",
+      "path": "vitest@4.1.11 > @vitest/mocker@4.1.11",
+      "reason": "Unauthenticated mock registration over the vitest browser-mode/UI server, which this project never starts (node environment only, no --ui, no browser mode). Dev-only, not shipped. The critical tinypool advisories (GHSA-5gmw-xhrv-c9v3, GHSA-85c8-ppgw-ccpr) were fixed by the upgrade 3.2.7 → 4.1.11 (23.10.2026); 4.1.12 (fix for this one) was released 15.10.2026 and is held back until it is two weeks old.",
+      "reviewed": "2026-10-23",
+      "expires": "2026-12-31"
+    },
+    {
+      "id": "GHSA-xp26-3454-mjgp",
+      "package": "@vitest/mocker",
+      "scope": "dev",
+      "severity": "moderate",
+      "path": "vitest@4.1.11 > @vitest/mocker@4.1.11",
+      "reason": "Windows-only backslash traversal in the redirect allowlist of the browser-mode mock server; tests run on Linux in node mode, the server is never started. Dev-only, not shipped. Fixed in vitest 4.1.12 (upgrade after the two-week hold).",
       "reviewed": "2026-10-23",
       "expires": "2026-12-31"
     }

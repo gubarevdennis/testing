@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { LEVELS } from '@kb/shared';
 import { tx } from '../db/pool.js';
 import { actorOf, parse, requireUser, type Services } from '../app.js';
-import { accessForPages, accessForSpaces, pageAudience, previewGrantAudience, requirePage, canManagePeople, isOrgAdmin, canReadAudit, type AuthUser } from '../acl/engine.js';
+import { accessForPages, accessForSpaces, orgPeople, pageAudience, previewGrantAudience, requirePage, requireSpace, canManagePeople, isOrgAdmin, canReadAudit, type AuthUser } from '../acl/engine.js';
 import { setGrant, revokeGrant, setInheritance } from '../services/grants.js';
 import { toAuthUser } from '../auth/sessions.js';
 import { forbidden, notFound } from '../lib/errors.js';
@@ -17,8 +17,18 @@ async function nameSubjects(q: Queryable, list: Array<{ subjectType: string; sub
   const groupIds = list.filter((x) => x.subjectType === 'group').map((x) => x.subjectId);
   const users = userIds.length ? (await q.query('select id, name, email, kind, status from users where id = any($1::uuid[])', [userIds])).rows : [];
   const groups = groupIds.length ? (await q.query(`select g.id, g.name, g.kind, (select count(*)::int from group_members m where m.group_id = g.id) as members from groups g where g.id = any($1::uuid[])`, [groupIds])).rows : [];
+  const spaceIds = list.filter((x) => x.subjectType === 'space').map((x) => x.subjectId);
+  const spaces = spaceIds.length ? (await q.query('select id, name, org_id, deleted_at from spaces where id = any($1::uuid[])', [spaceIds])).rows : [];
+  // Member counts of spaces used as subjects (same membership rule as the ACL engine).
+  const people = spaces.length ? await orgPeople(q, spaces[0].org_id) : [];
   return (x: { subjectType: string; subjectId: string | null }) => {
     if (x.subjectType === 'org') return { name: 'Все сотрудники организации', kind: 'org' };
+    if (x.subjectType === 'space') {
+      const sp = spaces.find((y) => y.id === x.subjectId);
+      return sp && !sp.deleted_at
+        ? { name: `Участники пространства «${sp.name}»`, kind: 'space', members: people.filter((p) => p.subjects.spaceIds.includes(sp.id)).length }
+        : { name: 'Удалённое пространство', kind: 'space', members: 0 };
+    }
     if (x.subjectType === 'user') {
       const u = users.find((y) => y.id === x.subjectId);
       return u ? { name: u.name, email: u.email, kind: u.kind, status: u.status } : { name: 'Удалённый пользователь', kind: 'user' };
@@ -51,7 +61,7 @@ export async function accessRoutes(app: FastifyInstance, s: Services) {
   const grantBody = z.object({
     resourceType: z.enum(['space', 'page']),
     resourceId: uuid,
-    subjectType: z.enum(['user', 'group', 'org']),
+    subjectType: z.enum(['user', 'group', 'org', 'space']),
     subjectId: uuid.nullable(),
     level: z.enum(LEVELS),
     canExport: z.boolean().nullable().optional(),
@@ -72,6 +82,20 @@ export async function accessRoutes(app: FastifyInstance, s: Services) {
     const body = parse(grantBody.pick({ subjectType: true, subjectId: true, level: true, canExport: true, canDownload: true, canShare: true, canPublish: true }), req.body);
     await requirePage(s.db, user, id, 'share');
     const preview = await previewGrantAudience(s.db, user.orgId, { type: 'page', id }, body);
+    const name = await nameSubjects(s.db, [...preview.subjects.gained, ...preview.subjects.lost]);
+    return {
+      ...preview,
+      subjects: { ...preview.subjects, gained: preview.subjects.gained.map((g) => ({ ...g, subject: name(g) })), lost: preview.subjects.lost.map((g) => ({ ...g, subject: name(g) })) },
+    };
+  });
+
+  /** Same preview for a space-level grant (space access editor). */
+  app.post('/api/v1/spaces/:id/access/preview', async (req) => {
+    const user = requireUser(req);
+    const { id } = parse(z.object({ id: uuid }), req.params);
+    const body = parse(grantBody.pick({ subjectType: true, subjectId: true, level: true, canExport: true, canDownload: true, canShare: true, canPublish: true }), req.body);
+    await requireSpace(s.db, user, id, 'share');
+    const preview = await previewGrantAudience(s.db, user.orgId, { type: 'space', id }, body);
     const name = await nameSubjects(s.db, [...preview.subjects.gained, ...preview.subjects.lost]);
     return {
       ...preview,
@@ -173,11 +197,18 @@ export async function accessRoutes(app: FastifyInstance, s: Services) {
   app.get('/api/v1/directory', async (req) => {
     const user = requireUser(req);
     if (user.kind === 'guest') throw forbidden('Каталог сотрудников недоступен гостям');
-    const { q, limit } = parse(z.object({ q: z.string().max(100).default(''), limit: z.coerce.number().int().min(1).max(50).default(20) }), req.query);
+    const { q, limit, spaces: withSpaces } = parse(z.object({ q: z.string().max(100).default(''), limit: z.coerce.number().int().min(1).max(50).default(20), spaces: z.enum(['0', '1']).default('0') }), req.query);
     const like = '%' + q.replace(/[%_]/g, '') + '%';
     const users = (await s.db.query(`select id, name, email, kind, title from users where org_id = $1 and status in ('active', 'invited') and (name ilike $2 or email ilike $2) order by name limit $3`, [user.orgId, like, limit])).rows;
     const groups = (await s.db.query(`select g.id, g.name, g.kind, (select count(*)::int from group_members m where m.group_id = g.id) as members from groups g where g.org_id = $1 and g.deleted_at is null and g.name ilike $2 order by g.kind, g.name limit $3`, [user.orgId, like, limit])).rows;
-    return { users, groups };
+    // Spaces as subjects («участники пространства», R-ACL-036): only spaces the caller can see, never personal ones.
+    let spaces: Array<{ id: string; name: string; kind: string; icon: string | null }> = [];
+    if (withSpaces === '1') {
+      const cand = (await s.db.query(`select id, name, kind, icon from spaces where org_id = $1 and deleted_at is null and kind <> 'personal' and name ilike $2 order by name limit $3`, [user.orgId, like, limit])).rows;
+      const acc = cand.length ? await accessForSpaces(s.db, user, cand.map((c) => c.id)) : new Map();
+      spaces = cand.filter((c) => acc.get(c.id)?.actions.view);
+    }
+    return { users, groups, spaces };
   });
 
   /** Admin: list of grants expiring soon (temporary access overview). */
@@ -186,8 +217,9 @@ export async function accessRoutes(app: FastifyInstance, s: Services) {
     if (!canManagePeople(user) && !isOrgAdmin(user)) throw forbidden();
     const rows = (
       await s.db.query(
-        `select g.*, coalesce(u.name, gr.name, 'Все сотрудники') as subject_name, coalesce(p.title, sp.name) as resource_name
+        `select g.*, coalesce(u.name, gr.name, 'Участники пространства «' || ssp.name || '»', 'Все сотрудники') as subject_name, coalesce(p.title, sp.name) as resource_name
            from grants g left join users u on g.subject_type = 'user' and u.id = g.subject_id left join groups gr on g.subject_type = 'group' and gr.id = g.subject_id
+           left join spaces ssp on g.subject_type = 'space' and ssp.id = g.subject_id
            left join pages p on g.resource_type = 'page' and p.id = g.resource_id left join spaces sp on g.resource_type = 'space' and sp.id = g.resource_id
           where g.org_id = $1 and g.revoked_at is null and g.expires_at is not null order by g.expires_at limit 500`,
         [user.orgId],

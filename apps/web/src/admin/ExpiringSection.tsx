@@ -12,7 +12,7 @@ interface ExpGrant {
   id: string;
   resource_type: 'page' | 'space';
   resource_id: string;
-  subject_type: 'user' | 'group' | 'org';
+  subject_type: 'user' | 'group' | 'org' | 'space';
   subject_id: string | null;
   subject_name: string;
   resource_name: string | null;
@@ -22,7 +22,7 @@ interface ExpGrant {
   expired: boolean;
 }
 
-const SUBJECT: Record<string, string> = { user: 'Пользователь', group: 'Группа', org: 'Организация' };
+const SUBJECT: Record<string, string> = { user: 'Пользователь', group: 'Группа', org: 'Организация', space: 'Участники пространства' };
 
 export function ExpiringSection() {
   const qc = useQueryClient();

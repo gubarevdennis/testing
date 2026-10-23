@@ -31,16 +31,30 @@ export interface Config {
   ocrEnabled: boolean;
   tessdataDir: string;
   chromiumPath: string | null;
-  oidc: { issuer: string; clientId: string; clientSecret: string; redirectUri: string } | null;
+  oidc: {
+    issuer: string;
+    clientId: string;
+    clientSecret: string;
+    redirectUri: string;
+    postLogoutRedirectUri?: string;
+    scopes?: string;
+    groupsClaim?: string | null;
+    departmentClaim?: string | null;
+    allowInsecure?: boolean;
+  } | null;
   logLevel: string;
   retention: { trashDays: number; journalDays: number; revisionDays: number };
   /** Stored files re-hashed per maintenance run (hourly). */
   integrityBatch: number;
   rateLimitPerMinute: number;
   authRateLimitPerMinute: number;
+  /** Uploads (attachments, imports, archives, images by URL) per minute per session/address, shared by all instances. */
+  uploadRateLimitPerMinute: number;
   /** Which X-Forwarded-For hops to trust for the client address (rate limits, audit IP): false | hop count | address list. */
   trustProxy: boolean | number | string;
   clamavHost: string | null;
+  /** clamd verdict deadline per file (CLAMAV_TIMEOUT_MS); a scan that does not finish in time rejects the file (fail closed). */
+  clamavTimeoutMs: number;
   /** Server-side fetching of remote images (import): SSRF-guarded; private addresses are refused unless the host is allow-listed (R-SECURITY-008). */
   remoteFetch: { enabled: boolean; allowHosts: string[]; timeoutMs: number; maxBytes: number };
   /** Pending migrations on a database with data require a full backup this fresh (minutes); null = not enforced (R-OPS-001, R-OPS-004). */
@@ -87,15 +101,27 @@ export function loadConfig(overrides: Partial<Config> = {}): Config {
     tessdataDir: env('TESSDATA_DIR', ''),
     chromiumPath: process.env.CHROMIUM_PATH || null,
     oidc: process.env.OIDC_ISSUER
-      ? { issuer: env('OIDC_ISSUER'), clientId: env('OIDC_CLIENT_ID'), clientSecret: env('OIDC_CLIENT_SECRET'), redirectUri: env('OIDC_REDIRECT_URI', env('PUBLIC_URL', 'http://localhost:8080') + '/api/v1/auth/oidc/callback') }
+      ? {
+          issuer: env('OIDC_ISSUER'),
+          clientId: env('OIDC_CLIENT_ID'),
+          clientSecret: env('OIDC_CLIENT_SECRET'),
+          redirectUri: env('OIDC_REDIRECT_URI', env('PUBLIC_URL', 'http://localhost:8080') + '/api/v1/auth/oidc/callback'),
+          postLogoutRedirectUri: env('OIDC_POST_LOGOUT_REDIRECT_URI', env('PUBLIC_URL', 'http://localhost:8080') + '/'),
+          scopes: env('OIDC_SCOPES', 'openid email profile'),
+          groupsClaim: process.env.OIDC_GROUPS_CLAIM || null,
+          departmentClaim: process.env.OIDC_DEPARTMENT_CLAIM || null,
+          allowInsecure: bool('OIDC_ALLOW_INSECURE_HTTP', false),
+        }
       : null,
     logLevel: env('LOG_LEVEL', nodeEnv === 'test' ? 'warn' : 'info'),
     integrityBatch: int('INTEGRITY_BATCH', 500),
     retention: { trashDays: int('RETENTION_TRASH_DAYS', 90), journalDays: int('RETENTION_JOURNAL_DAYS', 90), revisionDays: int('RETENTION_REVISION_DAYS', 365) },
     rateLimitPerMinute: int('RATE_LIMIT_PER_MINUTE', 600),
     authRateLimitPerMinute: int('AUTH_RATE_LIMIT_PER_MINUTE', 30),
+    uploadRateLimitPerMinute: int('UPLOAD_RATE_LIMIT_PER_MINUTE', 120),
     trustProxy: parseTrustProxy(process.env.TRUST_PROXY),
     clamavHost: process.env.CLAMAV_HOST || null,
+    clamavTimeoutMs: int('CLAMAV_TIMEOUT_MS', 60_000),
     remoteFetch: {
       enabled: bool('REMOTE_FETCH_ENABLED', true),
       allowHosts: (process.env.REMOTE_FETCH_ALLOW_HOSTS ?? '').split(',').map((h) => h.trim().toLowerCase()).filter(Boolean),
@@ -109,6 +135,7 @@ export function loadConfig(overrides: Partial<Config> = {}): Config {
   if (cfg.env === 'production' && cfg.secretKey.length < 32) throw new Error('SECRET_KEY must be at least 32 characters in production');
   if (cfg.env === 'production' && (/change[_-]?me|example|placeholder|insecure|secret[_-]?key/i.test(cfg.secretKey) || new Set(cfg.secretKey).size < 10))
     throw new Error('SECRET_KEY looks like a placeholder; generate one with `openssl rand -base64 48`');
+  if (cfg.env === 'production' && cfg.oidc && (cfg.oidc.allowInsecure || !cfg.oidc.issuer.startsWith('https://'))) throw new Error('OIDC_ISSUER must be https:// in production (OIDC_ALLOW_INSECURE_HTTP is for development only)');
   return { ...cfg, ...overrides };
 }
 

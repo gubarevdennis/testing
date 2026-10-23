@@ -40,37 +40,37 @@ defects:
     requirements: [V17-F02]
     source: 'docs/PERFORMANCE.md «Результаты: нагрузка»'
   - id: SEC-L1
-    title: Внешние изображения во вставленном HTML загружаются браузером напрямую с внешнего адреса (CSP img-src https:) — утечка факта просмотра
+    title: 'Внешние изображения во вставленном HTML загружались браузером напрямую с внешнего адреса (CSP img-src https:) — утечка факта просмотра. Исправлено — картинки копируются сервером через SSRF-защищённый загрузчик с прогрессом и состоянием «не скопировано», CSP img-src ''self'' data: blob:'
     severity: medium
-    status: open
+    status: fixed
     owner: команда «Редактор»
-    test: none
+    test: 'tests/e2e/paste-external-images.spec.ts; tests/integration/security-headers.test.ts › SEC-L1'
     requirements: [R-SECURITY-008]
-    source: docs/SECURITY.md «Известные ограничения» п. 1
+    source: 'docs/SECURITY.md «Контент пользователей»'
   - id: SEC-L2
-    title: Нет независимого тестирования на проникновение; уязвимости moderate/low в транзитивных зависимостях (uuid в exceljs, sprintf-js/argparse в mammoth, katex) без исправления
+    title: 'Нет независимого тестирования на проникновение; уязвимости moderate/low в транзитивных зависимостях (uuid в exceljs, katex в micromark, @vitest/mocker в dev) без исправления. Critical в dev (vitest 3 → tinypool) устранены переходом на vitest 4.1.11'
     severity: medium
     status: open
     owner: команда «Администрирование и доступ»
-    test: scripts/security/audit-gate.mjs (npm run security:deps)
+    test: 'scripts/security/audit-gate.mjs (npm run security:deps)'
     requirements: [R-SECURITY-004]
-    source: docs/SECURITY.md «Известные ограничения» п. 2
+    source: 'docs/SECURITY.md «Известные ограничения» п. 1'
   - id: SEC-L3
-    title: Вход через OIDC и антивирусная проверка ClamAV не проверены с реальными сервисами
+    title: 'Вход через OIDC и антивирусная проверка ClamAV не были проверены с реальными сервисами. Исправлено — проверены с реальным OpenID Provider (panva/oidc-provider) и реальным clamd с официальной базой; найдены и исправлены ошибки OIDC (нет nonce, 500 при любом сбое, сервер не стартовал без IdP, не было JIT/выхода из IdP/проверки email_verified и sub) и ClamAV (ошибка демона при загрузке вложения давала 500, ответ «… ERROR» считался чистым, не было тайм-аута и метрик). Корпоративный IdP заказчика не подключался'
     severity: high
-    status: open
+    status: fixed
     owner: команда «Администрирование и доступ»
-    test: none (нужен стенд с IdP и clamd)
+    test: 'tests/integration/oidc-sso.test.ts; tests/e2e/sso-oidc.spec.ts; tests/resilience/clamav-real.test.ts (KB_TEST_CLAMAV_HOST)'
     requirements: [R-SECURITY-002]
-    source: docs/SECURITY.md «Известные ограничения» п. 3
+    source: 'docs/SECURITY.md «Аутентификация и сеансы», «Контент пользователей»'
   - id: SEC-L4
-    title: Ограничение частоты запросов действует на экземпляр процесса, а не глобально (при нескольких экземплярах лимит умножается)
+    title: 'Ограничение частоты запросов действовало на экземпляр процесса, а не глобально (при нескольких экземплярах лимит умножался). Исправлено для входа, паролей публичных ссылок и загрузок — общий счётчик в PostgreSQL с быстрым путём; общий лимит API от перегрузки остаётся на экземпляр'
     severity: medium
-    status: open
+    status: fixed
     owner: команда «Администрирование и доступ»
-    test: none
+    test: 'tests/resilience/rate-limit-global.test.ts'
     requirements: [R-SECURITY-002]
-    source: docs/SECURITY.md «Известные ограничения» п. 4
+    source: 'docs/SECURITY.md «Ограничение частоты запросов»'
   - id: QA-D1
     title: 'GET /api/v1/spaces отвечает 500 (TypeError: reading ''actions'' of undefined, routes/spaces.ts), если пространство создано между расчётом прав и выборкой списка'
     severity: medium
@@ -142,3 +142,62 @@ defects:
     requirements: [R-UI-059, R-UI-068]
     source: 'tests/e2e/qa-actions.spec.ts, 2026-10-23 (окно 1440×900, components/ui/Menu.tsx SubMenu; R-UI-059 в статусе done — противоречие)'
     actions: [editor/BlockHandle/color, editor/BlockHandle/turn]
+  - id: QA-E1
+    title: 'Совместное редактирование: курсор, стоявший в конце абзаца, оставался перед текстом, который соавтор дописывал в конец (привязка позиции @tiptap/y-tiptap 3.0 к символу слева); Enter разрывал ещё набираемое соавтором предложение — часть уходила в новый абзац, следующие буквы оставались в старом. Причина нестабильности tests/e2e/collab.spec.ts «two people edit the same page» под нагрузкой (правка соавтора приходила несколькими пакетами между Ctrl+End и Enter владельца, текст «Добавил Борис.» оказывался разорван и не находился 10 с)'
+    severity: medium
+    status: fixed
+    owner: команда «Редактор»
+    test: 'tests/e2e/qa-editor-collab.spec.ts › QA-E1 (fixed): a caret parked at the end of a paragraph stays at its end when a co-author appends there — Enter then starts a new paragraph after the co-author’s sentence instead of tearing it apart'
+    requirements: [R-COLLAB-006, R-EDITOR-022, QA26-07]
+    source: 'диагностический прогон с CPU ×4 и журналом транзакций обоих редакторов, 2026-10-23 (синхронизация не теряла обновлений: текст сохранялся целиком, но разорванным); исправление — apps/web/src/editor/extensions/stableSelection.ts (keepAtTextblockEnd)'
+  - id: QA-E2
+    title: 'Меню «[[»: если создать вложенную страницу не удалось (ошибка сервера, нет сети), набранный текст «[[название» удалялся из документа — повторить было нечего'
+    severity: low
+    status: fixed
+    owner: команда «Редактор»
+    test: 'tests/e2e/qa-editor-toolbars.spec.ts › R-EDITOR-031: «[[» → «Создать вложенную страницу «…»» — Esc cancels without creating; a server error and offline keep the typed text and create nothing; success links a new child page (server), survives reload'
+    requirements: [R-EDITOR-031, R-QA-029]
+    source: 'tests/e2e/qa-editor-toolbars.spec.ts, 2026-10-23'
+    actions: [editor/suggest/new]
+  - id: QA-E3
+    title: 'Правки без сети на странице, которую тем временем переместили в корзину: после восстановления связи сервер отвечал «Страница не найдена или нет доступа», диалог «Страница удалена, пока вы её редактировали» (сохранить мою версию новой страницей) не появлялся — только скачивание Markdown; читатель страницы, удалённой при просмотре, наоборот получал этот диалог без единой своей правки'
+    severity: medium
+    status: fixed
+    owner: команда «Страница и совместная работа»
+    test: 'tests/e2e/qa-editor-conflicts.spec.ts › QA-E3 (fixed): offline edits to a page trashed meanwhile — after reconnecting the same «Страница удалена, пока вы её редактировали» dialog offers to keep them as a new page'
+    requirements: [R-COLLAB-036, R-OFFLINE-009]
+    source: 'tests/e2e/qa-editor-conflicts.spec.ts, 2026-10-23; исправление — apps/server/src/collab/hub.ts (connect → ERROR deleted), apps/web/src/editor/Editor.tsx (диалог только при неотправленных изменениях); проверка сервера — tests/integration/qa-editor-collab.test.ts'
+    actions: [editor/DocConflictDialog/stranica-udalena-poka-vy-ee-redaktirovali, editor/DocConflictDialog/sohranit-moyu-versiyu-kak-novuyu-stranicu]
+  - id: QA-E4
+    title: 'Сервер совместной работы: соединение, закрытое клиентом во время проверки доступа и загрузки документа, оставалось в списке подключений навсегда — «призрак» в присутствии, документ никогда не выгружался из памяти (событие close приходило до подписки)'
+    severity: medium
+    status: fixed
+    owner: команда «Страница и совместная работа»
+    test: 'tests/integration/qa-editor-collab.test.ts › collaboration hub › QA-E4: a socket that closes while its access is being checked leaves no ghost connection (presence, idle unload)'
+    requirements: [R-COLLAB-012, R-PERF-025]
+    source: 'анализ apps/server/src/collab/hub.ts (connect) при поиске причины QA-E1, 2026-10-23; 25 из 25 сокетов, закрытых сразу после upgrade, оставались «подключёнными»'
+  - id: QA-E5
+    title: 'Одновременный набор двумя людьми в одной точке абзаца и Enter посреди ещё набираемого соавтором слова: CRDT упорядочивает вставки, но разбиение абзаца в y-prosemirror — это удаление и вставка копии текста, поэтому буквы соавтора, пришедшие после разбиения, остаются в прежнем абзаце (слово разрывается). Полное решение требует перехода на перемещение без копирования (изменение библиотеки привязки) — нужно решение о доработке @tiptap/y-tiptap'
+    severity: medium
+    status: open
+    owner: команда «Редактор»
+    test: 'none (воспроизводится диагностическим прогоном одновременного набора в конец одного абзаца, см. QA-E1)'
+    requirements: [R-COLLAB-001, R-COLLAB-006]
+    source: 'диагностический прогон 2026-10-23 (итерация «А1 Б17борис.7анна.»); после QA-E1 остаётся только для одновременного набора в одной позиции'
+  - id: QA-E6
+    title: 'Повтор (Ctrl+Shift+Z) ставил курсор в начало последнего блока, а не в конец повторённого текста: отмена хранит выделение относительными позициями Yjs, а повтор создаёт содержимое заново новыми элементами. Следующий Enter разрывал абзац, ввод «## …» превращал в заголовок чужой абзац («Заголовок ОАбзац О»)'
+    severity: high
+    status: fixed
+    owner: команда «Редактор»
+    test: 'tests/e2e/qa-editor-matrix.spec.ts › QA-E6 (fixed): after Undo then Redo the caret is at the end of the redone text — Enter and typing continue after it instead of splitting the last block'
+    requirements: [R-EDITOR-001, QA26-07]
+    source: 'tests/e2e/qa-editor-matrix.spec.ts «after Undo/Redo», 2026-10-23; исправление — apps/web/src/editor/extensions/stableSelection.ts (redoCaret)'
+  - id: QA-E7
+    title: 'Поиск: состояние «Среди загруженных результатов нет совпадений выбранного типа» с кнопкой «Загрузить ещё» недостижимо — тип фильтруется на сервере, страницы результатов полные; мёртвый код в SearchPage.tsx держит в матрице непокрываемое действие'
+    severity: low
+    status: open
+    owner: команда «Поиск»
+    test: none (getNextPageParam не даёт следующей страницы при пустой странице результатов)
+    requirements: [R-QA-004]
+    source: tests/e2e/qa-editor-shell.spec.ts, 2026-10-23
+    actions: [search/SearchPage/zagruzit-esche]

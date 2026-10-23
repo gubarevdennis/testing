@@ -92,9 +92,10 @@ export function Sidebar({ mobile, onNavigate }: { mobile?: boolean; onNavigate?:
               onSelect: async () => {
                 const pending = [...(await pagesWithPending().catch(() => new Map())).keys()].filter((k) => k.startsWith(me.user.id + ':'));
                 if (pending.length && !(await confirm({ title: 'Есть неотправленные изменения', body: `Изменения на ${pending.length} стр. ещё не дошли до сервера. После выхода они останутся на этом устройстве и будут отправлены при следующем входе под вашей учётной записью. Выйти сейчас?`, confirmLabel: 'Выйти', danger: true }))) return;
-                await post('/api/v1/auth/logout').catch(() => undefined);
+                const out = await post<{ redirect?: string | null }>('/api/v1/auth/logout').catch(() => null);
                 localStorage.removeItem('kb:me');
-                window.location.href = '/';
+                // SSO session: continue to the identity provider so its session ends too (it returns to the app).
+                window.location.href = out?.redirect || '/';
               },
             },
           ]}

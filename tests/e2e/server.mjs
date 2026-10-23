@@ -29,6 +29,7 @@ Object.assign(process.env, {
   WEB_DIST: resolve(data, 'web'),
   AUTH_RATE_LIMIT_PER_MINUTE: '100000',
   RATE_LIMIT_PER_MINUTE: '100000',
+  UPLOAD_RATE_LIMIT_PER_MINUTE: '100000',
   LOG_LEVEL: 'warn',
   OCR_ENABLED: process.env.OCR_ENABLED ?? 'false',
 });
