@@ -8,10 +8,10 @@
 
 | Приоритет | Всего | реализовано | частично | не реализовано | требует ручной проверки | ограничение окружения | процесс/документ | заменено | не оценено | покрыто тестами |
 |---|---|---|---|---|---|---|---|---|---|---|
-| P0 | 637 | 562 | 46 | 1 | 1 | 12 | 14 | 1 | 0 | 454 |
+| P0 | 637 | 563 | 45 | 1 | 1 | 12 | 14 | 1 | 0 | 454 |
 | P1 | 588 | 227 | 276 | 30 | 32 | 7 | 15 | 1 | 0 | 95 |
 | P2 | 73 | 26 | 24 | 6 | 7 | 0 | 9 | 1 | 0 | 1 |
-| **Итого** | 1298 | 815 | 346 | 37 | 40 | 19 | 38 | 3 | 0 | 550 |
+| **Итого** | 1298 | 816 | 345 | 37 | 40 | 19 | 38 | 3 | 0 | 550 |
 
 ## По модулям
 
@@ -28,7 +28,7 @@
 | COLLAB | 80 | 75 | 3 | 0 | 2 | 0 | 0 | 61 |
 | COLLECTION | 10 | 4 | 6 | 0 | 0 | 0 | 0 | 3 |
 | COMMENTS | 3 | 0 | 2 | 1 | 0 | 0 | 0 | 1 |
-| EDITOR | 105 | 69 | 29 | 2 | 4 | 1 | 0 | 30 |
+| EDITOR | 105 | 70 | 28 | 2 | 4 | 1 | 0 | 30 |
 | EXPORT | 37 | 23 | 10 | 0 | 2 | 1 | 0 | 21 |
 | FILES | 17 | 12 | 5 | 0 | 0 | 0 | 0 | 7 |
 | HELP | 11 | 5 | 2 | 0 | 3 | 0 | 1 | 0 |
@@ -314,7 +314,6 @@
 - **UX-135** (P1, EDITOR, частично): Раскрытие toggle heading — Toggle раскрывается; создать раскрывающийся заголовок из UI нельзя
 - **UX-139** (P1, UI, частично): Меню у нижнего края — flip вверх — untested
 - **UX-140** (P1, UI, частично): Меню у правого края — без выхода за экран — untested
-- **R-EDITOR-052** (P0, EDITOR, частично): v2.0 — статус P0, применяется совместно с ранее определёнными; все команды мышью и клавиатурой, критические — touch — tests/e2e/editor-p0-dnd.spec.ts:'keyboard alternatives…'. Не сделано: перетаскивание касанием (долгое нажатие на ручку) — ручка на узких экранах скрыта; изменение размера изображения с клавиатуры — только кнопками-пресетами панели
 - **R-EDITOR-057** (P1, EDITOR, частично): Состояния normal/hover/focus/selected/mixed-format/loading/disabled/error/success/readonly/offline/conflict/collaboration … — Нет mixed-format состояния в панели (isActive=false при смешанном)
 - **R-EDITOR-059** (P1, EDITOR, частично): Палитра: 10–12 цветов текста и 10–12 подложек, «без цвета», последние; предпросмотр при hover без фиксации; цвет и фон независимы … — Нет «последних» цветов и предпросмотра при hover
 - **R-EDITOR-063** (P1, EDITOR, частично): Ссылки: Ctrl/Cmd+K, вставка URL поверх выделения → «Сделать ссылкой», правка/снятие, предпросмотр и проверка URL, внутренние ссылки … — Нет предпросмотра ссылки (hover card); без тестов
@@ -4337,7 +4336,7 @@
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| R-EDITOR-052 | P0 | v2.0 — статус P0, применяется совместно с ранее определёнными; все команды мышью и клавиатурой, критические — touch | частично | Клавиатура: BlockOps (Esc, Esc-Esc — родительский блок, Shift+↑/↓, Alt+Shift+стрелки — в т. ч. вынос из колонки/выноски, Ctrl+A), меню блока; мышь: всё, включая перетаскивание (menus/blockDrag.ts); touch: «+» (TouchInsertButton), меню; tests/e2e/editor-p0-dnd.spec.ts:'keyboard alternatives…'. Не сделано: перетаскивание касанием (долгое нажатие на ручку) — ручка на узких экранах скрыта; изменение размера изображения с клавиатуры — только кнопками-пресетами панели | tests/e2e/editor-p0-undo-ops.spec.ts: image resize by the handle and by a preset, table column resize: each is one undo step (R-<br>tests/e2e/editor-p0-dnd.spec.ts: keyboard alternatives: Alt+Shift+↑/↓ move (also out of a callout / column), Esc twice sele |
+| R-EDITOR-052 | P0 | v2.0 — статус P0, применяется совместно с ранее определёнными; все команды мышью и клавиатурой, критические — touch | реализовано | Клавиатура: BlockOps (Esc, Esc-Esc — родительский блок, Shift+↑/↓, Alt+Shift+↑/↓ — в т. ч. вынос из колонки/выноски, Alt+Shift+←/→ — ширина выделенного изображения, Ctrl+A), меню блока, справка (HelpCenter); мышь: всё, включая перетаскивание (menus/blockDrag.ts); touch: «+» (TouchInsertButton) и «Действия с блоком» (menus/BlockHandle.tsx TouchBlockActions: вверх/вниз, на другую страницу, дублировать, превратить, удалить); D-31; tests/e2e/editor-p0-dnd.spec.ts:'keyboard alternatives…', 'touch: the block menu (no hover handle)…'; tests/e2e/editor-p0-undo-ops.spec.ts:'image resize… keyboard resize'; tests/e2e/ui-p0-touch.spec.ts. Перетаскивание долгим нажатием на касании не реализовано — ТЗ допускает вместо него меню «Переместить» | tests/e2e/editor-p0-undo-ops.spec.ts: image resize by the handle and by a preset, table column resize: each is one undo step (R-<br>tests/e2e/editor-p0-dnd.spec.ts: keyboard alternatives: Alt+Shift+↑/↓ move (also out of a callout / column), Esc twice sele<br>tests/e2e/editor-p0-dnd.spec.ts: touch: the block menu (no hover handle) moves and deletes the block at the caret; one Undo |
 | R-EDITOR-053 | P0 | Блочный редактор с выделением и копированием как в текстовом процессоре; согласованы курсор, выделение, IME, автосохранение, Undo/Redo … | реализовано | Tiptap+Yjs; StableSelection; Undo только своих правок; tests/e2e/editor-p0-core.spec.ts:'IME composition… (E221, R-EDITOR-021, R-EDITOR-053)', 'caret and selection stay in place…'; tests/e2e/undo.spec.ts | tests/e2e/editor-p0-core.spec.ts: IME composition commits once, coexists with a colleague typing and autosave, and undo reve |
 | R-EDITOR-054 | P1 | Три способа команд: палитра при выделении, /-меню, ⋮⋮-меню и «+»; без дублирования постоянно видимых панелей | реализовано | apps/web/src/editor/menus/BubbleToolbar.tsx; apps/web/src/editor/commands.tsx SLASH_COMMANDS; apps/web/src/editor/menus/BlockHandle.tsx |  |
 | R-EDITOR-055 | P1 | Hover — только неопасные кнопки; палитра у выделения с flip вверх/вниз, в пределах viewport, не закрывает текст, без скачков | реализовано | apps/web/src/editor/menus/BubbleToolbar.tsx BUBBLE_OPTIONS flip/shift; hover-ручка без опасных действий |  |
@@ -4366,7 +4365,7 @@
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| R-EDITOR-069 | P0 | Drag handle ⋮⋮ предсказуем; порог начала; линия до/после/внутрь; автопрокрутка, вложенность, колонки, Ctrl/Alt-копирование, клавиатура … | реализовано | apps/web/src/editor/menus/blockDrag.ts (порог 5 px, линия до/после/внутрь, автопрокрутка, Alt/Ctrl — копия, Esc), apps/web/src/editor/blockDrop.ts (модель, одна транзакция), moveToPage.ts (перенос на страницу без потери), extensions/blockOps.ts (клавиатура); D-31; tests/e2e/editor-p0-dnd.spec.ts:'drag threshold, preview, line before/after, one atomic drop, one Undo…', 'Esc cancels a drag…', 'inside a callout, between columns…', 'autoscroll…', 'drop on another page in the sidebar tree…', 'keyboard alternatives…'; tests/unit/editor-block-drop.test.ts | tests/unit/editor-block-drop.test.ts: block drag-and-drop model (R-EDITOR-069/075/076)<br>tests/e2e/editor-p0-dnd.spec.ts: drag threshold, preview, line before/after, one atomic drop, one Undo; ids kept on the ser<br>tests/e2e/editor-p0-dnd.spec.ts: keyboard alternatives: Alt+Shift+↑/↓ move (also out of a callout / column), Esc twice sele |
+| R-EDITOR-069 | P0 | Drag handle ⋮⋮ предсказуем; порог начала; линия до/после/внутрь; автопрокрутка, вложенность, колонки, Ctrl/Alt-копирование, клавиатура … | реализовано | apps/web/src/editor/menus/blockDrag.ts (порог 5 px, линия до/после/внутрь, автопрокрутка, Alt/Ctrl — копия, Esc), apps/web/src/editor/blockDrop.ts (модель, одна транзакция), moveToPage.ts (перенос на страницу без потери), extensions/blockOps.ts (клавиатура); D-31; tests/e2e/editor-p0-dnd.spec.ts:'drag threshold, preview, line before/after, one atomic drop, one Undo…', 'Esc cancels a drag…', 'inside a callout, between columns…', 'autoscroll…', 'drop on another page in the sidebar tree…', 'keyboard alternatives…'; tests/unit/editor-block-drop.test.ts | tests/unit/editor-block-drop.test.ts: block drag-and-drop model (R-EDITOR-069/075/076)<br>tests/e2e/editor-p0-dnd.spec.ts: drag threshold, preview, line before/after, one atomic drop, one Undo; ids kept on the ser<br>tests/e2e/editor-p0-dnd.spec.ts: keyboard alternatives: Alt+Shift+↑/↓ move (also out of a callout / column), Esc twice sele<br>… ещё 1 |
 
 ### ACL
 

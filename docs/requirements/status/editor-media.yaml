@@ -699,9 +699,9 @@
   evidence: TemplatesPage → createPage(templateId)
   note: tests/integration/gaps.test.ts:'creates a template directly from ProseMirror JSON and uses it for new pages'
 - id: R-EDITOR-052
-  status: partial
-  evidence: "Клавиатура: BlockOps (Esc, Esc-Esc — родительский блок, Shift+↑/↓, Alt+Shift+стрелки — в т. ч. вынос из колонки/выноски, Ctrl+A), меню блока; мышь: всё, включая перетаскивание (menus/blockDrag.ts); touch: «+» (TouchInsertButton), меню"
-  note: "tests/e2e/editor-p0-dnd.spec.ts:'keyboard alternatives…'. Не сделано: перетаскивание касанием (долгое нажатие на ручку) — ручка на узких экранах скрыта; изменение размера изображения с клавиатуры — только кнопками-пресетами панели"
+  status: done
+  evidence: "Клавиатура: BlockOps (Esc, Esc-Esc — родительский блок, Shift+↑/↓, Alt+Shift+↑/↓ — в т. ч. вынос из колонки/выноски, Alt+Shift+←/→ — ширина выделенного изображения, Ctrl+A), меню блока, справка (HelpCenter); мышь: всё, включая перетаскивание (menus/blockDrag.ts); touch: «+» (TouchInsertButton) и «Действия с блоком» (menus/BlockHandle.tsx TouchBlockActions: вверх/вниз, на другую страницу, дублировать, превратить, удалить); D-31"
+  note: "tests/e2e/editor-p0-dnd.spec.ts:'keyboard alternatives…', 'touch: the block menu (no hover handle)…'; tests/e2e/editor-p0-undo-ops.spec.ts:'image resize… keyboard resize'; tests/e2e/ui-p0-touch.spec.ts. Перетаскивание долгим нажатием на касании не реализовано — ТЗ допускает вместо него меню «Переместить»"
 - id: R-EDITOR-053
   status: done
   evidence: "Tiptap+Yjs; StableSelection; Undo только своих правок"
