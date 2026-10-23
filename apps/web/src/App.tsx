@@ -111,6 +111,7 @@ function Authenticated() {
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/p/:pageId" element={<PageView />} />
+            <Route path="/p/:pageId/:slug" element={<PageView />} />
             <Route path="/s/:spaceId" element={<SpacePage />} />
             <Route path="/search" element={<SearchPage />} />
             <Route path="/trash" element={<TrashPage />} />

@@ -25,6 +25,7 @@ import { moveBlocksToPage } from './moveToPage';
 import { blockRangeKey } from './extensions/blockOps';
 import type { CommandContext } from './commands';
 import type { ConflictInfo } from './extensions/conflictGuard';
+import { BlockConflictHost, DocConflictDialog, useConflicts } from './ConflictDialog';
 import { copyWithFeedback, useCopyPageCommands } from './clipboard/copy';
 import { useSelectionMemory } from './selectionMemory';
 
@@ -75,6 +76,9 @@ export function PageEditor(p: Props) {
   const [fatal, setFatal] = useState<{ code: string; message: string } | null>(null);
   const [serverCanEdit, setServerCanEdit] = useState<boolean | null>(null);
   const [ready, setReady] = useState(false);
+  // bumped after «accept the server version»: the document is reopened from a fresh local replica
+  const [epoch, setEpoch] = useState(0);
+  const [conflictOpen, setConflictOpen] = useState(true);
   const cbs = useRef(p);
   cbs.current = p;
   useEffect(() => {
@@ -88,7 +92,10 @@ export function PageEditor(p: Props) {
         cbs.current.onAccess?.(canEdit, reason);
       },
       onPresence: (u) => cbs.current.onPresence?.(u),
-      onFatal: (code, message) => setFatal({ code, message }),
+      onFatal: (code, message) => {
+        setConflictOpen(true);
+        setFatal({ code, message });
+      },
       // one warning per episode, not one per keystroke batch
       onStorageError: (message) => {
         if (Date.now() - lastStorageWarning < 30_000) return;
@@ -109,15 +116,47 @@ export function PageEditor(p: Props) {
       s.destroy();
       setSession(null);
     };
-  }, [p.pageId, p.generation]);
+  }, [p.pageId, p.generation, epoch]);
   if (!session || !ready) return <EditorSkeleton />;
+  // Non-mergeable rejection of this device's changes: comparison dialog with three choices (R-COLLAB-036).
+  const docConflict = !!fatal && DOC_CONFLICT_CODES.includes(fatal.code);
   return (
     <>
+      {docConflict && conflictOpen && (
+        <DocConflictDialog
+          pageId={p.pageId}
+          code={fatal!.code}
+          message={fatal!.message}
+          localDoc={() => yXmlFragmentToProsemirrorJSON(session.doc.getXmlFragment('default')) as Record<string, any>}
+          localTitle={() => session.doc.getText(TITLE_NAME).toString()}
+          localMarkdown={async () => (await loadMarkdown()).docToMarkdown(yXmlFragmentToProsemirrorJSON(session.doc.getXmlFragment('default')) as any, { markers: true }).markdown}
+          download={() => downloadLocalCopy(session)}
+          acceptServer={async () => {
+            await session.provider.discardUnsynced();
+            await session.local.clearData().catch(() => undefined);
+            setFatal(null);
+            setServerCanEdit(null);
+            setEpoch((e) => e + 1);
+          }}
+          onClose={() => setConflictOpen(false)}
+        />
+      )}
+      {docConflict && !conflictOpen && (
+        <div className="alert warning editor-conflicts" role="status" data-testid="doc-conflict-reminder">
+          Конфликт не разрешён: ваши изменения на этом устройстве не приняты сервером.{' '}
+          <button className="btn sm" onClick={() => setConflictOpen(true)}>
+            Разрешить
+          </button>
+        </div>
+      )}
       <LocalCopyGuard pageId={p.pageId} session={session} fatal={fatal} lostEdit={serverCanEdit === false} />
       <EditorInner key={session.pageId + (p.generation ?? '')} {...p} session={session} canEdit={p.canEdit && serverCanEdit !== false && !fatal} />
     </>
   );
 }
+
+/** Server refusals that are a conflict between this device's version and the server's (not a lost right). */
+const DOC_CONFLICT_CODES = ['invalid_update', 'too_large', 'deleted'];
 
 export function EditorSkeleton() {
   return (
@@ -135,8 +174,14 @@ export function EditorSkeleton() {
  * the user gets an explicit way to keep it. Never claims "nothing unsaved" while operations are queued.
  */
 function LocalCopyGuard({ pageId, session, fatal, lostEdit }: { pageId: string; session: CollabSession; fatal: { code: string; message: string } | null; lostEdit: boolean }) {
-  const sync = useSyncState((s) => s.pages[pageId]);
-  const pending = sync?.pending ?? 0;
+  // derived values only: the counters change on every keystroke, the guard's output almost never (PERF-D1)
+  const key = useSyncState((s) => {
+    const i = s.pages[pageId];
+    return i ? `${i.status === 'error' ? 1 : 0}|${(lostEdit || i.status === 'error') && i.pending > 0 ? 1 : 0}|${i.message ?? ''}` : '';
+  });
+  const [isError, hasPending, ...msg] = key.split('|');
+  const sync = key ? { status: isError === '1' ? ('error' as const) : null, message: msg.join('|') || undefined } : null;
+  const pending = hasPending === '1' ? 1 : 0;
   if (fatal) return <FatalBanner fatal={fatal} session={session} />;
   if ((lostEdit || sync?.status === 'error') && pending > 0)
     return <FatalBanner fatal={{ code: lostEdit ? 'forbidden' : 'error', message: sync?.message ?? (lostEdit ? 'Права на редактирование отозваны: часть изменений не отправлена на сервер.' : 'Изменения не удалось сохранить на сервере.') }} session={session} />;
@@ -232,29 +277,10 @@ function EditorInner(p: Props & { session: CollabSession }) {
       try {
         saved = await post<{ id: string }>(`/api/v1/pages/${p.pageId}/conflicts`, c);
       } catch {
-        /* offline: the toast still lets the user restore locally */
+        /* offline: the dialog still lets the user restore locally */
       }
-      const what = c.reason === 'moved' ? 'переместил блок, который вы редактировали, — ваши последние правки в нём не попали в перемещённую копию' : 'удалил блок, который вы редактировали';
-      toast.sticky(`Другой участник ${what}. Ваша версия сохранена` + (saved ? ' в истории страницы.' : ' на этом устройстве.'), {
-        label: 'Вернуть мою версию',
-        run: () => {
-          const ed = editorRef.current;
-          if (!ed || ed.isDestroyed) return;
-          if (c.reason === 'moved') {
-            // replace the moved copy (it keeps its new place) with the user's version
-            let range: { from: number; to: number } | null = null;
-            ed.state.doc.forEach((n, off) => n.attrs.id === c.blockId && !range && (range = { from: off, to: off + n.nodeSize }));
-            if (range) ed.chain().insertContentAt(range, c.block).run();
-            else ed.chain().insertContentAt(ed.state.doc.content.size, c.block).run();
-            if (saved) void post(`/api/v1/pages/${p.pageId}/conflicts/${saved.id}/resolve`, { resolution: 'restored' }).catch(() => undefined);
-            return;
-          }
-          let at = 0;
-          if (c.afterBlockId) ed.state.doc.forEach((n, off) => n.attrs.id === c.afterBlockId && (at = off + n.nodeSize));
-          ed.chain().insertContentAt(at, c.block).run();
-          if (saved) void post(`/api/v1/pages/${p.pageId}/conflicts/${saved.id}/resolve`, { resolution: 'restored' }).catch(() => undefined);
-        },
-      });
+      // Never hidden: a comparison dialog with «keep both / accept server / keep mine» (R-COLLAB-036).
+      useConflicts.getState().push({ key: crypto.randomUUID(), pageId: p.pageId, info: c, savedId: saved?.id ?? null, at: Date.now() });
     })();
   };
 
@@ -413,6 +439,7 @@ function EditorInner(p: Props & { session: CollabSession }) {
     <div ref={wrapRef} className={'editor-wrap' + (p.wide ? ' wide' : '')}>
       {flash && <div className="kb-flash-overlay" data-block={flash.id} style={{ top: flash.top - 4, left: flash.left - 6, width: flash.width + 12, height: flash.height + 8 }} aria-hidden />}
       {findOpen && editor && <FindBar editor={editor} onClose={() => setFindOpen(false)} />}
+      <BlockConflictHost pageId={p.pageId} editor={editor} />
       <textarea
         ref={titleRef}
         className="page-title-input"

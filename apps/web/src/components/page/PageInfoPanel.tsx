@@ -11,6 +11,7 @@ import type { PageDto } from '../../api/types';
 import { Avatar } from '../Avatar';
 import { relTime, fullTime, fileSize, STATUS_LABEL } from '../../lib/format';
 import { errMsg } from './directory';
+import { undoPropertyChange } from '../../lib/undoChange';
 
 interface Backlink {
   id: string;
@@ -95,6 +96,7 @@ export function PageInfoPanel({ page, wordCount, onClose }: { page: PageDto; wor
           <dd>{page.version}</dd>
         </dl>
 
+        <TagsEditor page={page} />
         <PropertiesEditor page={page} />
         <LegalHold page={page} />
 
@@ -179,6 +181,73 @@ export function PageInfoPanel({ page, wordCount, onClose }: { page: PageDto; wor
   );
 }
 
+/**
+ * Page tags (R-PAGE-001): added with Enter or comma, removed with ×; every change is saved at once and can be undone.
+ * Clicking a tag searches pages with that tag.
+ */
+function TagsEditor({ page }: { page: PageDto }) {
+  const qc = useQueryClient();
+  const canEdit = !!page.access.actions.edit && !page.deletedAt && (!page.locked || page.access.level === 'full');
+  const tags = page.tags ?? [];
+  const [draft, setDraft] = useState('');
+  const [busy, setBusy] = useState(false);
+  if (!tags.length && !canEdit) return null;
+  const save = async (next: string[], what: string) => {
+    setBusy(true);
+    try {
+      const r = await patch<{ undoEventId: string | null }>(`/api/v1/pages/${page.id}`, { tags: next });
+      if (r.undoEventId) toast.success(what, { label: 'Отменить', run: () => void undoPropertyChange(page.id, r.undoEventId!, () => qc.invalidateQueries({ queryKey: ['page', page.id] })) });
+    } catch (e) {
+      toast.error(errMsg(e, 'Не удалось сохранить теги'));
+    } finally {
+      setBusy(false);
+      qc.invalidateQueries({ queryKey: ['page', page.id] });
+    }
+  };
+  const add = () => {
+    const parts = draft.split(',').map((t) => t.replace(/^#+/, '').trim()).filter(Boolean);
+    if (!parts.length) return;
+    setDraft('');
+    const fresh = parts.filter((t) => !tags.some((x) => x.toLowerCase() === t.toLowerCase()));
+    if (fresh.length) void save([...tags, ...fresh], fresh.length > 1 ? 'Теги добавлены' : `Тег «${fresh[0]}» добавлен`);
+  };
+  return (
+    <>
+      <div className="kb-section-title">Теги</div>
+      <div className="kb-tags" aria-label="Теги страницы" data-testid="page-tags">
+        {tags.map((t) => (
+          <span key={t} className="badge kb-tag">
+            <Link to={`/search?q=${encodeURIComponent(t)}&tag=${encodeURIComponent(t)}`} title={`Найти страницы с тегом «${t}»`}>
+              #{t}
+            </Link>
+            {canEdit && (
+              <button className="icon-btn xs" aria-label={`Убрать тег «${t}»`} disabled={busy} onClick={() => void save(tags.filter((x) => x !== t), `Тег «${t}» убран`)}>
+                <X size={11} />
+              </button>
+            )}
+          </span>
+        ))}
+        {!tags.length && <span className="muted small">Тегов нет</span>}
+      </div>
+      {canEdit && (
+        <form
+          className="row"
+          style={{ gap: 4, marginTop: 6 }}
+          onSubmit={(e) => {
+            e.preventDefault();
+            add();
+          }}
+        >
+          <input className="input sm grow" aria-label="Новый тег" placeholder="Добавить тег" maxLength={50} value={draft} disabled={busy} onChange={(e) => setDraft(e.target.value)} />
+          <button className="btn sm" type="submit" disabled={busy || !draft.trim()}>
+            <Plus size={13} /> Тег
+          </button>
+        </form>
+      )}
+    </>
+  );
+}
+
 function propText(v: unknown): string {
   if (v === null || v === undefined) return '';
   if (Array.isArray(v)) return v.join(', ');
@@ -204,7 +273,8 @@ function PropertiesEditor({ page }: { page: PageDto }) {
   const save = async (changes: Record<string, unknown>) => {
     setBusy(true);
     try {
-      await patch(`/api/v1/pages/${page.id}`, { properties: changes, expectedVersion: page.version });
+      const r = await patch<{ undoEventId: string | null }>(`/api/v1/pages/${page.id}`, { properties: changes, expectedVersion: page.version });
+      if (r.undoEventId) toast.success('Свойство сохранено', { label: 'Отменить', run: () => void undoPropertyChange(page.id, r.undoEventId!, () => qc.invalidateQueries({ queryKey: ['page', page.id] })) });
       setDrafts((d) => {
         const n = { ...d };
         for (const k of Object.keys(changes)) delete n[k];

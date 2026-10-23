@@ -492,6 +492,28 @@ export class CollabProvider {
     }
   }
 
+  /**
+   * "Accept the server version" after a non-mergeable conflict (R-COLLAB-036): forgets every unacknowledged local
+   * operation, in memory and in the local pending store, so it is never re-sent. The caller then reopens the document
+   * from a fresh replica. Only called on an explicit user choice, after the local copy was offered.
+   */
+  async discardUnsynced(): Promise<number> {
+    if (this.batchTimer) clearTimeout(this.batchTimer);
+    this.batchTimer = null;
+    const ids = [...this.pending.keys()];
+    const writes = [...this.pending.values()].map((p) => p.write);
+    const n = ids.length + (this.batch.length ? 1 : 0);
+    this.pending.clear();
+    this.batch = [];
+    const store = this.opts.pendingStore;
+    if (store && ids.length) {
+      await Promise.allSettled(writes.filter(Boolean) as Promise<void>[]);
+      await store.remove(ids);
+    }
+    this.setStatus();
+    return n;
+  }
+
   /** Local unsynced content for "save a local copy" when the server refuses changes. */
   unsyncedUpdates(): Uint8Array[] {
     return [...this.pending.values()].map((p) => p.update).concat(this.batch);

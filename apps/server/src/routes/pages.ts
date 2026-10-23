@@ -16,6 +16,16 @@ import { createViewLogger } from '../services/denials.js';
 const uuid = z.string().uuid();
 const idParam = z.object({ id: uuid });
 
+/** Tags: trimmed, single spaces, without a leading "#", unique case-insensitively, first spelling wins (R-PAGE-001). */
+export function normalizeTags(tags: string[]): string[] {
+  const out = new Map<string, string>();
+  for (const raw of tags) {
+    const t = raw.replace(/^#+/, '').replace(/\s+/g, ' ').trim().slice(0, 50);
+    if (t && !out.has(t.toLowerCase())) out.set(t.toLowerCase(), t);
+  }
+  return [...out.values()];
+}
+
 export async function pageDto(q: Queryable, user: AuthUser, p: PageRow, acc: PageAccess) {
   const people = (await q.query('select id, name from users where id = any($1::uuid[])', [[p.created_by, p.updated_by, p.owner_id].filter(Boolean)])).rows;
   const name = (id: string | null) => (id ? { id, name: people.find((x) => x.id === id)?.name ?? '—' } : null);
@@ -66,6 +76,8 @@ export async function pageDto(q: Queryable, user: AuthUser, p: PageRow, acc: Pag
     locked: p.locked,
     wide: p.wide,
     properties: p.properties,
+    tags: (p as any).tags ?? [],
+    slug: (p as any).slug ?? '',
     collectionId: p.collection_id,
     createdAt: p.created_at,
     updatedAt: p.updated_at,
@@ -168,6 +180,7 @@ export async function pageRoutes(app: FastifyInstance, s: Services) {
         wide: z.boolean().optional(),
         locked: z.boolean().optional(),
         properties: z.record(z.string(), z.unknown()).optional(),
+        tags: z.array(z.string().max(60)).max(50).optional(),
         reviewDueAt: z.string().date().nullable().optional(),
         verified: z.boolean().optional(),
         expectedVersion: z.number().int().optional(),
@@ -180,6 +193,7 @@ export async function pageRoutes(app: FastifyInstance, s: Services) {
     if (cur.locked && acc.level !== 'full' && body.locked === undefined) throw forbidden('Страница защищена от изменений — предложите правку через черновик или обратитесь к владельцу');
     if (body.properties && JSON.stringify(body.properties).length > 100_000) throw badRequest('Слишком большие свойства');
     if (body.title !== undefined) await s.hub.applyServerChange(id, user.id, (d) => setTitle(d, body.title!));
+    let undoEventId: string | null = null;
     const updated = await tx(s.db, async (q) => {
       const p = (await q.query('select * from pages where id = $1 for update', [id])).rows[0];
       if (body.expectedVersion !== undefined && body.properties && p.version !== body.expectedVersion) throw conflict('version_conflict', 'Свойства изменены другим пользователем', { current: p.properties, version: p.version });
@@ -194,6 +208,7 @@ export async function pageRoutes(app: FastifyInstance, s: Services) {
       if (body.cover !== undefined) set('cover', body.cover);
       if (body.wide !== undefined) set('wide', body.wide);
       if (body.locked !== undefined) set('locked', body.locked);
+      if (body.tags !== undefined) set('tags', normalizeTags(body.tags));
       // null removes a property
       if (body.properties !== undefined) set('properties', Object.fromEntries(Object.entries({ ...p.properties, ...body.properties }).filter(([, v]) => v !== null)));
       if (body.reviewDueAt !== undefined) set('review_due_at', body.reviewDueAt);
@@ -207,15 +222,73 @@ export async function pageRoutes(app: FastifyInstance, s: Services) {
       sets.push(`updated_by = $${vals.length}`);
       const r = await q.query(`update pages set ${sets.join(', ')} where id = $1 returning *`, vals);
       const changed = Object.keys(body).filter((k) => k !== 'expectedVersion');
-      await q.query(`insert into page_events (org_id, page_id, actor_id, type, data) values ($1, $2, $3, 'updated', $4)`, [user.orgId, id, user.id, { fields: changed, before: Object.fromEntries(changed.map((k) => [k, (p as any)[snake(k)]])) }]);
+      // before AND after are journaled, so the change can be undone exactly (R-HISTORY-002) and only while nobody changed it since.
+      const ev = await q.query(`insert into page_events (org_id, page_id, actor_id, type, data) values ($1, $2, $3, 'updated', $4) returning id`, [user.orgId, id, user.id, { fields: changed, before: Object.fromEntries(changed.map((k) => [k, k === 'title' ? cur.title : (p as any)[snake(k)]])), after: Object.fromEntries(changed.map((k) => [k, r.rows[0][snake(k)]])) }]);
+      undoEventId = String(ev.rows[0].id);
       if (body.locked !== undefined) await audit(q, actorOf(req), { action: body.locked ? 'page.lock' : 'page.unlock', targetType: 'page', targetId: id });
-      if (body.properties !== undefined) await q.query(`insert into outbox (topic, payload) values ('index-page', $1)`, [{ pageId: id }]);
+      if (body.properties !== undefined || body.tags !== undefined) await q.query(`insert into outbox (topic, payload) values ('index-page', $1)`, [{ pageId: id }]);
       return r.rows[0];
     });
     if (body.locked !== undefined) void s.hub.recheckAccess(user.orgId);
     s.bus.emit({ type: 'page-changed', orgId: user.orgId, pageId: id, fields: Object.keys(body) });
     if (body.title !== undefined || body.icon !== undefined) s.bus.emit({ type: 'tree-changed', orgId: user.orgId, spaceId: updated.space_id });
-    return { page: await pageDto(s.db, user, updated, (await pageAccess(s.db, user, id))!) };
+    return { page: await pageDto(s.db, user, updated, (await pageAccess(s.db, user, id))!), undoEventId };
+  });
+
+  /**
+   * Undo of a property change (title, icon, cover, width, protection, tags, custom properties, review date) —
+   * R-HISTORY-002. Applied only to fields whose value is still the one this change set: what someone changed later
+   * is never overwritten (409 with the list of such fields). The undo is itself a journaled, undoable change.
+   */
+  app.post('/api/v1/pages/:id/events/:eid/undo', async (req) => {
+    const user = requireUser(req);
+    const { id, eid } = parse(z.object({ id: uuid, eid: z.coerce.number().int().positive() }), req.params);
+    const acc = await requirePage(s.db, user, id, 'edit');
+    const UNDOABLE: Record<string, string> = { title: 'title', icon: 'icon', cover: 'cover', wide: 'wide', locked: 'locked', properties: 'properties', tags: 'tags', reviewDueAt: 'review_due_at' };
+    let titleTo: string | null = null;
+    const result = await tx(s.db, async (q) => {
+      const e = (await q.query(`select id, type, data from page_events where id = $1 and page_id = $2`, [eid, id])).rows[0];
+      if (!e || e.type !== 'updated' || !e.data?.after) throw notFound('Это изменение нельзя отменить');
+      if (e.data.undoneBy) throw conflict('already_undone', 'Изменение уже отменено');
+      const fields = (e.data.fields as string[]).filter((f) => UNDOABLE[f]);
+      if (!fields.length) throw badRequest('Это изменение нельзя отменить');
+      if (fields.includes('locked') && acc.level !== 'full') throw forbidden('Снять или вернуть защиту может только владелец доступа');
+      const p = (await q.query('select * from pages where id = $1 for update', [id])).rows[0];
+      if (p.locked && acc.level !== 'full' && !fields.includes('locked')) throw forbidden('Страница защищена от изменений');
+      // date columns come back as local-midnight Dates and are journaled as ISO strings: compare calendar days
+      const day = (v: unknown) => {
+        const d = v instanceof Date ? v : typeof v === 'string' && /^\d{4}-\d\d-\d\dT/.test(v) ? new Date(v) : null;
+        return d ? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}` : v;
+      };
+      const val = (f: string, v: unknown) => (f === 'reviewDueAt' ? day(v) : v);
+      const norm = (f: string, v: unknown) => JSON.stringify(val(f, v) ?? null);
+      const changedSince = fields.filter((f) => norm(f, p[UNDOABLE[f]]) !== norm(f, e.data.after[f]));
+      if (changedSince.length) throw conflict('changed_since', 'После этого изменения поля уже меняли — отмена не перезапишет чужую правку', { fields: changedSince });
+      const sets: string[] = [];
+      const vals: unknown[] = [id];
+      for (const f of fields) {
+        vals.push(val(f, e.data.before[f]) ?? (f === 'tags' ? [] : f === 'properties' ? {} : f === 'wide' || f === 'locked' ? false : f === 'title' ? '' : null));
+        sets.push(`${UNDOABLE[f]} = $${vals.length}`);
+      }
+      vals.push(user.id);
+      const r = await q.query(`update pages set ${sets.join(', ')}, version = version + 1, updated_at = now(), updated_by = $${vals.length} where id = $1 returning *`, vals);
+      const ev = await q.query(`insert into page_events (org_id, page_id, actor_id, type, data) values ($1, $2, $3, 'updated', $4) returning id`, [
+        user.orgId,
+        id,
+        user.id,
+        { fields, before: Object.fromEntries(fields.map((f) => [f, p[UNDOABLE[f]]])), after: Object.fromEntries(fields.map((f) => [f, r.rows[0][UNDOABLE[f]]])), source: 'undo', undoOf: String(eid) },
+      ]);
+      await q.query(`update page_events set data = data || jsonb_build_object('undoneBy', $2::text) where id = $1`, [eid, String(ev.rows[0].id)]);
+      if (fields.includes('locked')) await audit(q, actorOf(req), { action: r.rows[0].locked ? 'page.lock' : 'page.unlock', targetType: 'page', targetId: id, details: { undoOf: String(eid) } });
+      if (fields.includes('properties') || fields.includes('tags')) await q.query(`insert into outbox (topic, payload) values ('index-page', $1)`, [{ pageId: id }]);
+      if (fields.includes('title')) titleTo = r.rows[0].title;
+      return { page: r.rows[0], fields, undoEventId: String(ev.rows[0].id) };
+    });
+    if (titleTo !== null) await s.hub.applyServerChange(id, user.id, (d) => setTitle(d, titleTo!));
+    if (result.fields.includes('locked')) void s.hub.recheckAccess(user.orgId);
+    s.bus.emit({ type: 'page-changed', orgId: user.orgId, pageId: id, fields: result.fields });
+    s.bus.emit({ type: 'tree-changed', orgId: user.orgId, spaceId: result.page.space_id });
+    return { page: await pageDto(s.db, user, result.page, (await pageAccess(s.db, user, id))!), undoEventId: result.undoEventId, fields: result.fields };
   });
 
   app.delete('/api/v1/pages/:id', async (req) => {

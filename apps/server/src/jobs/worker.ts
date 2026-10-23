@@ -1,7 +1,7 @@
 import type pg from 'pg';
 import type { Logger } from 'pino';
 import { hostname } from 'node:os';
-import { extractPageRefs, docToPlainText } from '@kb/shared';
+import { extractPageRefs, docToPlainText, collectBlocks } from '@kb/shared';
 import { tx } from '../db/pool.js';
 import type { Services } from '../app.js';
 import { purgePages } from '../services/pages.js';
@@ -59,6 +59,9 @@ export async function indexPage(db: pg.Pool | pg.PoolClient, pageId: string, sto
   const props = Object.entries(p.properties ?? {})
     .map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(', ') : typeof v === 'object' ? JSON.stringify(v) : v}`)
     .join('\n');
+  // Tags and headings are separate, highly weighted sources (R-SEARCH-003): a match there is reported as such.
+  const tags = ((p.tags ?? []) as string[]).join(' ');
+  const headings = st?.content ? collectBlocks(st.content).filter((b) => b.type === 'heading' && b.text).map((b) => b.text).join('\n').slice(0, 100_000) : '';
   let pubTitle: string | null = null;
   let pubBody: string | null = null;
   if (p.published_revision_id) {
@@ -69,18 +72,21 @@ export async function indexPage(db: pg.Pool | pg.PoolClient, pageId: string, sto
     }
   }
   await db.query(
-    `insert into search_index (page_id, org_id, space_id, title, body, ocr, files, properties, tsv, pub_title, pub_body, pub_tsv, updated_at, comments, file_text)
+    `insert into search_index (page_id, org_id, space_id, title, body, ocr, files, properties, tsv, pub_title, pub_body, pub_tsv, updated_at, comments, file_text, tags, headings)
      values ($1, $2, $3, $4, $5, $6, $7, $8,
        setweight(to_tsvector('russian', $4), 'A') || setweight(to_tsvector('english', $4), 'A') ||
+       setweight(to_tsvector('russian', $13), 'A') || setweight(to_tsvector('simple', $13), 'A') ||
+       setweight(to_tsvector('russian', $14), 'A') || setweight(to_tsvector('english', $14), 'A') ||
        setweight(to_tsvector('russian', $5), 'B') || setweight(to_tsvector('english', $5), 'B') ||
        setweight(to_tsvector('russian', $8 || ' ' || $7), 'C') || setweight(to_tsvector('russian', $6), 'D') || setweight(to_tsvector('english', $6), 'D') ||
        setweight(to_tsvector('russian', $11), 'C') || setweight(to_tsvector('english', $11), 'C') || setweight(to_tsvector('russian', $12), 'D') || setweight(to_tsvector('english', $12), 'D'),
        $9, $10,
        case when $9::text is null then null else setweight(to_tsvector('russian', $9), 'A') || setweight(to_tsvector('english', $9), 'A') || setweight(to_tsvector('russian', $10), 'B') || setweight(to_tsvector('english', $10), 'B') || setweight(to_tsvector('russian', $6), 'D') end,
-       now(), $11, $12)
+       now(), $11, $12, $13, $14)
      on conflict (page_id) do update set space_id = excluded.space_id, title = excluded.title, body = excluded.body, ocr = excluded.ocr, files = excluded.files, properties = excluded.properties,
-       tsv = excluded.tsv, pub_title = excluded.pub_title, pub_body = excluded.pub_body, pub_tsv = excluded.pub_tsv, updated_at = now(), comments = excluded.comments, file_text = excluded.file_text`,
-    [pageId, p.org_id, p.space_id, p.title, body, ocr, files, props, pubTitle, pubBody, comments, fileText],
+       tsv = excluded.tsv, pub_title = excluded.pub_title, pub_body = excluded.pub_body, pub_tsv = excluded.pub_tsv, updated_at = now(), comments = excluded.comments, file_text = excluded.file_text,
+       tags = excluded.tags, headings = excluded.headings`,
+    [pageId, p.org_id, p.space_id, p.title, body, ocr, files, props, pubTitle, pubBody, comments, fileText, tags, headings],
   );
   // Link graph for backlinks and broken-link detection.
   if (st?.content) {

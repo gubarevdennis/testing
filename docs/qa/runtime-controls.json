@@ -1,0 +1,5823 @@
+{
+  "format": "kb-qa-runtime/1",
+  "routes": [
+    "/",
+    "/p/:pageId",
+    "/s/:spaceId",
+    "/s/:spaceId?tab=settings",
+    "/search",
+    "/trash",
+    "/templates",
+    "/import",
+    "/settings/profile",
+    "/settings/appearance",
+    "/settings/security",
+    "/settings/sessions",
+    "/settings/tokens",
+    "/admin/users",
+    "/admin/groups",
+    "/admin/settings",
+    "/admin/audit",
+    "/admin/archives",
+    "/admin/health",
+    "/admin/expiring",
+    "/admin/access"
+  ],
+  "data": [
+    "owner@corp.test",
+    "Абзац страницы для обхода действий.",
+    "Анна Владелец",
+    "Архитектурное решение (ADR)",
+    "Баг-репорт",
+    "База FAQ",
+    "База поставщиков",
+    "Библиотека файлов",
+    "Галерея изображений",
+    "Дорожная карта",
+    "Журнал рисков",
+    "Инженерия",
+    "Инструкция (SOP)",
+    "Инструкция по эксплуатации",
+    "Карточка оборудования",
+    "Каталог материалов",
+    "Качество",
+    "Команда",
+    "Макеты",
+    "Моё пространство",
+    "ООО «Тест»",
+    "Обход действий",
+    "Общее",
+    "Онбординг сотрудника",
+    "Описание архитектуры",
+    "Паспорт продукта",
+    "План проекта",
+    "Политика информационной безопасности",
+    "Предложение по улучшению",
+    "Продукт",
+    "Проекты",
+    "Протокол встречи",
+    "Процессы",
+    "Разбор инцидента (postmortem)",
+    "Регламент",
+    "Релиз-ноты",
+    "Ретроспектива",
+    "Руководство пользователя",
+    "Справочник терминов",
+    "Справочники",
+    "Страница команды",
+    "Страница обхода",
+    "Тест-кейс",
+    "Тест-план",
+    "Технический обзор",
+    "Технический паспорт объекта",
+    "Техническое задание",
+    "Типовое проектное решение",
+    "Удалённая для обхода",
+    "Чек-лист",
+    "Шаблон колонок",
+    "Шаблон таблицы"
+  ],
+  "controls": [
+    {
+      "route": "/",
+      "role": "link",
+      "name": "Перейти к содержимому"
+    },
+    {
+      "route": "/",
+      "role": "button",
+      "name": "ООО «Тест» Анна Владелец"
+    },
+    {
+      "route": "/",
+      "role": "button",
+      "name": "Скрыть боковую панель"
+    },
+    {
+      "route": "/",
+      "role": "button",
+      "name": "Поиск Ctrl+K"
+    },
+    {
+      "route": "/",
+      "role": "link",
+      "name": "Главная"
+    },
+    {
+      "route": "/",
+      "role": "button",
+      "name": "Входящие уведомления"
+    },
+    {
+      "route": "/",
+      "role": "button",
+      "name": "Новая страница"
+    },
+    {
+      "route": "/",
+      "role": "button",
+      "name": "Новое пространство"
+    },
+    {
+      "route": "/",
+      "role": "button",
+      "name": "Моё пространство"
+    },
+    {
+      "route": "/",
+      "role": "link",
+      "name": "Страница обхода"
+    },
+    {
+      "route": "/",
+      "role": "button",
+      "name": "Добавить страницу внутрь «Страница обхода»"
+    },
+    {
+      "route": "/",
+      "role": "button",
+      "name": "Действия со страницей «Страница обхода»"
+    },
+    {
+      "route": "/",
+      "role": "button",
+      "name": "Пространства"
+    },
+    {
+      "route": "/",
+      "role": "button",
+      "name": "Развернуть"
+    },
+    {
+      "route": "/",
+      "role": "button",
+      "name": "Общее"
+    },
+    {
+      "route": "/",
+      "role": "button",
+      "name": "Новая страница в «Общее»"
+    },
+    {
+      "route": "/",
+      "role": "button",
+      "name": "Действия пространства «Общее»"
+    },
+    {
+      "route": "/",
+      "role": "button",
+      "name": "Обход действий"
+    },
+    {
+      "route": "/",
+      "role": "button",
+      "name": "Новая страница в «Обход действий»"
+    },
+    {
+      "route": "/",
+      "role": "button",
+      "name": "Действия пространства «Обход действий»"
+    },
+    {
+      "route": "/",
+      "role": "link",
+      "name": "Шаблоны"
+    },
+    {
+      "route": "/",
+      "role": "link",
+      "name": "Импорт"
+    },
+    {
+      "route": "/",
+      "role": "link",
+      "name": "Корзина"
+    },
+    {
+      "route": "/",
+      "role": "link",
+      "name": "Администрирование"
+    },
+    {
+      "route": "/",
+      "role": "button",
+      "name": "Новая страница В личном пространстве"
+    },
+    {
+      "route": "/",
+      "role": "link",
+      "name": "Из шаблона Регламент, инструкция, FAQ…"
+    },
+    {
+      "route": "/",
+      "role": "link",
+      "name": "Импорт DOCX, Markdown, CSV, XLSX"
+    },
+    {
+      "route": "/",
+      "role": "link",
+      "name": "Поиск По тексту и изображениям"
+    },
+    {
+      "route": "/",
+      "role": "tab",
+      "name": "Открытые мной"
+    },
+    {
+      "route": "/",
+      "role": "tab",
+      "name": "Изменённые"
+    },
+    {
+      "route": "/",
+      "role": "link",
+      "name": "Страница обхода Моё пространство · только что"
+    },
+    {
+      "route": "/",
+      "role": "link",
+      "name": "Личное пространство Личные заметки и черновики — видны только вам"
+    },
+    {
+      "route": "/",
+      "role": "link",
+      "name": "Общее Пространство для всей компании"
+    },
+    {
+      "route": "/",
+      "role": "link",
+      "name": "Обход действий"
+    },
+    {
+      "route": "/",
+      "role": "menuitem",
+      "name": "Настройки профиля"
+    },
+    {
+      "route": "/",
+      "role": "menuitem",
+      "name": "Тема"
+    },
+    {
+      "route": "/",
+      "role": "menuitem",
+      "name": "Сбросить панель по умолчанию"
+    },
+    {
+      "route": "/",
+      "role": "menuitem",
+      "name": "Справка и горячие клавиши ?"
+    },
+    {
+      "route": "/",
+      "role": "menuitem",
+      "name": "Выйти"
+    },
+    {
+      "route": "/",
+      "role": "menuitem",
+      "name": "Новая вложенная страница"
+    },
+    {
+      "route": "/",
+      "role": "menuitem",
+      "name": "Переименовать F2"
+    },
+    {
+      "route": "/",
+      "role": "menuitem",
+      "name": "😀 Изменить иконку"
+    },
+    {
+      "route": "/",
+      "role": "menuitem",
+      "name": "Переместить в…"
+    },
+    {
+      "route": "/",
+      "role": "menuitem",
+      "name": "Дублировать"
+    },
+    {
+      "route": "/",
+      "role": "menuitem",
+      "name": "Копировать ссылку"
+    },
+    {
+      "route": "/",
+      "role": "menuitem",
+      "name": "В избранное"
+    },
+    {
+      "route": "/",
+      "role": "menuitem",
+      "name": "🗑 Удалить в корзину"
+    },
+    {
+      "route": "/",
+      "role": "menuitem",
+      "name": "Новая страница"
+    },
+    {
+      "route": "/",
+      "role": "menuitem",
+      "name": "Обзор пространства"
+    },
+    {
+      "route": "/",
+      "role": "menuitem",
+      "name": "Настройки и участники"
+    },
+    {
+      "route": "/p/:pageId",
+      "role": "link",
+      "name": "Перейти к содержимому"
+    },
+    {
+      "route": "/p/:pageId",
+      "role": "button",
+      "name": "ООО «Тест» Анна Владелец"
+    },
+    {
+      "route": "/p/:pageId",
+      "role": "button",
+      "name": "Скрыть боковую панель"
+    },
+    {
+      "route": "/p/:pageId",
+      "role": "button",
+      "name": "Поиск Ctrl+K"
+    },
+    {
+      "route": "/p/:pageId",
+      "role": "link",
+      "name": "Главная"
+    },
+    {
+      "route": "/p/:pageId",
+      "role": "button",
+      "name": "Входящие уведомления"
+    },
+    {
+      "route": "/p/:pageId",
+      "role": "button",
+      "name": "Новая страница"
+    },
+    {
+      "route": "/p/:pageId",
+      "role": "button",
+      "name": "Новое пространство"
+    },
+    {
+      "route": "/p/:pageId",
+      "role": "button",
+      "name": "Моё пространство"
+    },
+    {
+      "route": "/p/:pageId",
+      "role": "link",
+      "name": "Страница обхода"
+    },
+    {
+      "route": "/p/:pageId",
+      "role": "button",
+      "name": "Добавить страницу внутрь «Страница обхода»"
+    },
+    {
+      "route": "/p/:pageId",
+      "role": "button",
+      "name": "Действия со страницей «Страница обхода»"
+    },
+    {
+      "route": "/p/:pageId",
+      "role": "button",
+      "name": "Пространства"
+    },
+    {
+      "route": "/p/:pageId",
+      "role": "button",
+      "name": "Развернуть"
+    },
+    {
+      "route": "/p/:pageId",
+      "role": "button",
+      "name": "Общее"
+    },
+    {
+      "route": "/p/:pageId",
+      "role": "button",
+      "name": "Новая страница в «Общее»"
+    },
+    {
+      "route": "/p/:pageId",
+      "role": "button",
+      "name": "Действия пространства «Общее»"
+    },
+    {
+      "route": "/p/:pageId",
+      "role": "button",
+      "name": "Обход действий"
+    },
+    {
+      "route": "/p/:pageId",
+      "role": "button",
+      "name": "Новая страница в «Обход действий»"
+    },
+    {
+      "route": "/p/:pageId",
+      "role": "button",
+      "name": "Действия пространства «Обход действий»"
+    },
+    {
+      "route": "/p/:pageId",
+      "role": "link",
+      "name": "Шаблоны"
+    },
+    {
+      "route": "/p/:pageId",
+      "role": "link",
+      "name": "Импорт"
+    },
+    {
+      "route": "/p/:pageId",
+      "role": "link",
+      "name": "Корзина"
+    },
+    {
+      "route": "/p/:pageId",
+      "role": "link",
+      "name": "Администрирование"
+    },
+    {
+      "route": "/p/:pageId",
+      "role": "link",
+      "name": "🔒 Моё пространство"
+    },
+    {
+      "route": "/p/:pageId",
+      "role": "button",
+      "name": "Поделиться"
+    },
+    {
+      "route": "/p/:pageId",
+      "role": "button",
+      "name": "Комментарии"
+    },
+    {
+      "route": "/p/:pageId",
+      "role": "button",
+      "name": "Избранное"
+    },
+    {
+      "route": "/p/:pageId",
+      "role": "button",
+      "name": "Действия со страницей"
+    },
+    {
+      "route": "/p/:pageId",
+      "role": "button",
+      "name": "Добавить значок"
+    },
+    {
+      "route": "/p/:pageId",
+      "role": "textbox",
+      "name": "Название страницы"
+    },
+    {
+      "route": "/p/:pageId",
+      "role": "textbox",
+      "name": "Содержимое страницы"
+    },
+    {
+      "route": "/p/:pageId",
+      "role": "button",
+      "name": "Закрыть подсказку"
+    },
+    {
+      "route": "/p/:pageId",
+      "role": "button",
+      "name": "Понятно"
+    },
+    {
+      "route": "/p/:pageId",
+      "role": "button",
+      "name": "Не показывать подсказки"
+    },
+    {
+      "route": "/p/:pageId",
+      "role": "menuitem",
+      "name": "Настройки профиля"
+    },
+    {
+      "route": "/p/:pageId",
+      "role": "menuitem",
+      "name": "Тема"
+    },
+    {
+      "route": "/p/:pageId",
+      "role": "menuitem",
+      "name": "Сбросить панель по умолчанию"
+    },
+    {
+      "route": "/p/:pageId",
+      "role": "menuitem",
+      "name": "Справка и горячие клавиши ?"
+    },
+    {
+      "route": "/p/:pageId",
+      "role": "menuitem",
+      "name": "Выйти"
+    },
+    {
+      "route": "/p/:pageId",
+      "role": "menuitem",
+      "name": "Новая вложенная страница"
+    },
+    {
+      "route": "/p/:pageId",
+      "role": "menuitem",
+      "name": "Переименовать F2"
+    },
+    {
+      "route": "/p/:pageId",
+      "role": "menuitem",
+      "name": "😀 Изменить иконку"
+    },
+    {
+      "route": "/p/:pageId",
+      "role": "menuitem",
+      "name": "Переместить в…"
+    },
+    {
+      "route": "/p/:pageId",
+      "role": "menuitem",
+      "name": "Дублировать"
+    },
+    {
+      "route": "/p/:pageId",
+      "role": "menuitem",
+      "name": "Копировать ссылку"
+    },
+    {
+      "route": "/p/:pageId",
+      "role": "menuitem",
+      "name": "В избранное"
+    },
+    {
+      "route": "/p/:pageId",
+      "role": "menuitem",
+      "name": "🗑 Удалить в корзину"
+    },
+    {
+      "route": "/p/:pageId",
+      "role": "menuitem",
+      "name": "Новая страница"
+    },
+    {
+      "route": "/p/:pageId",
+      "role": "menuitem",
+      "name": "Обзор пространства"
+    },
+    {
+      "route": "/p/:pageId",
+      "role": "menuitem",
+      "name": "Настройки и участники"
+    },
+    {
+      "route": "/p/:pageId",
+      "role": "menuitem",
+      "name": "Добавить в избранное"
+    },
+    {
+      "route": "/p/:pageId",
+      "role": "menuitem",
+      "name": "Копировать страницу"
+    },
+    {
+      "route": "/p/:pageId",
+      "role": "menuitem",
+      "name": "История версий"
+    },
+    {
+      "route": "/p/:pageId",
+      "role": "menuitem",
+      "name": "Сведения о странице"
+    },
+    {
+      "route": "/p/:pageId",
+      "role": "menuitem",
+      "name": "Экспорт…"
+    },
+    {
+      "route": "/p/:pageId",
+      "role": "menuitem",
+      "name": "Печать"
+    },
+    {
+      "route": "/p/:pageId",
+      "role": "menuitemcheckbox",
+      "name": "Широкая страница"
+    },
+    {
+      "route": "/p/:pageId",
+      "role": "menuitem",
+      "name": "Защитить от изменений"
+    },
+    {
+      "route": "/p/:pageId",
+      "role": "menuitem",
+      "name": "Сохранить как шаблон"
+    },
+    {
+      "route": "/p/:pageId",
+      "role": "menuitem",
+      "name": "Удалить"
+    },
+    {
+      "route": "/s/:spaceId",
+      "role": "link",
+      "name": "Перейти к содержимому"
+    },
+    {
+      "route": "/s/:spaceId",
+      "role": "button",
+      "name": "ООО «Тест» Анна Владелец"
+    },
+    {
+      "route": "/s/:spaceId",
+      "role": "button",
+      "name": "Скрыть боковую панель"
+    },
+    {
+      "route": "/s/:spaceId",
+      "role": "button",
+      "name": "Поиск Ctrl+K"
+    },
+    {
+      "route": "/s/:spaceId",
+      "role": "link",
+      "name": "Главная"
+    },
+    {
+      "route": "/s/:spaceId",
+      "role": "button",
+      "name": "Входящие уведомления"
+    },
+    {
+      "route": "/s/:spaceId",
+      "role": "button",
+      "name": "Новая страница"
+    },
+    {
+      "route": "/s/:spaceId",
+      "role": "button",
+      "name": "Новое пространство"
+    },
+    {
+      "route": "/s/:spaceId",
+      "role": "button",
+      "name": "Моё пространство"
+    },
+    {
+      "route": "/s/:spaceId",
+      "role": "link",
+      "name": "Страница обхода"
+    },
+    {
+      "route": "/s/:spaceId",
+      "role": "button",
+      "name": "Добавить страницу внутрь «Страница обхода»"
+    },
+    {
+      "route": "/s/:spaceId",
+      "role": "button",
+      "name": "Действия со страницей «Страница обхода»"
+    },
+    {
+      "route": "/s/:spaceId",
+      "role": "button",
+      "name": "Пространства"
+    },
+    {
+      "route": "/s/:spaceId",
+      "role": "button",
+      "name": "Развернуть"
+    },
+    {
+      "route": "/s/:spaceId",
+      "role": "button",
+      "name": "Общее"
+    },
+    {
+      "route": "/s/:spaceId",
+      "role": "button",
+      "name": "Новая страница в «Общее»"
+    },
+    {
+      "route": "/s/:spaceId",
+      "role": "button",
+      "name": "Действия пространства «Общее»"
+    },
+    {
+      "route": "/s/:spaceId",
+      "role": "button",
+      "name": "Обход действий"
+    },
+    {
+      "route": "/s/:spaceId",
+      "role": "button",
+      "name": "Новая страница в «Обход действий»"
+    },
+    {
+      "route": "/s/:spaceId",
+      "role": "button",
+      "name": "Действия пространства «Обход действий»"
+    },
+    {
+      "route": "/s/:spaceId",
+      "role": "link",
+      "name": "Шаблоны"
+    },
+    {
+      "route": "/s/:spaceId",
+      "role": "link",
+      "name": "Импорт"
+    },
+    {
+      "route": "/s/:spaceId",
+      "role": "link",
+      "name": "Корзина"
+    },
+    {
+      "route": "/s/:spaceId",
+      "role": "link",
+      "name": "Администрирование"
+    },
+    {
+      "route": "/s/:spaceId",
+      "role": "link",
+      "name": "Из шаблона"
+    },
+    {
+      "route": "/s/:spaceId",
+      "role": "tab",
+      "name": "Страницы"
+    },
+    {
+      "route": "/s/:spaceId",
+      "role": "tab",
+      "name": "Участники"
+    },
+    {
+      "route": "/s/:spaceId",
+      "role": "tab",
+      "name": "Настройки"
+    },
+    {
+      "route": "/s/:spaceId",
+      "role": "menuitem",
+      "name": "Настройки профиля"
+    },
+    {
+      "route": "/s/:spaceId",
+      "role": "menuitem",
+      "name": "Тема"
+    },
+    {
+      "route": "/s/:spaceId",
+      "role": "menuitem",
+      "name": "Сбросить панель по умолчанию"
+    },
+    {
+      "route": "/s/:spaceId",
+      "role": "menuitem",
+      "name": "Справка и горячие клавиши ?"
+    },
+    {
+      "route": "/s/:spaceId",
+      "role": "menuitem",
+      "name": "Выйти"
+    },
+    {
+      "route": "/s/:spaceId",
+      "role": "menuitem",
+      "name": "Новая вложенная страница"
+    },
+    {
+      "route": "/s/:spaceId",
+      "role": "menuitem",
+      "name": "Переименовать F2"
+    },
+    {
+      "route": "/s/:spaceId",
+      "role": "menuitem",
+      "name": "😀 Изменить иконку"
+    },
+    {
+      "route": "/s/:spaceId",
+      "role": "menuitem",
+      "name": "Переместить в…"
+    },
+    {
+      "route": "/s/:spaceId",
+      "role": "menuitem",
+      "name": "Дублировать"
+    },
+    {
+      "route": "/s/:spaceId",
+      "role": "menuitem",
+      "name": "Копировать ссылку"
+    },
+    {
+      "route": "/s/:spaceId",
+      "role": "menuitem",
+      "name": "В избранное"
+    },
+    {
+      "route": "/s/:spaceId",
+      "role": "menuitem",
+      "name": "🗑 Удалить в корзину"
+    },
+    {
+      "route": "/s/:spaceId",
+      "role": "menuitem",
+      "name": "Новая страница"
+    },
+    {
+      "route": "/s/:spaceId",
+      "role": "menuitem",
+      "name": "Обзор пространства"
+    },
+    {
+      "route": "/s/:spaceId",
+      "role": "menuitem",
+      "name": "Настройки и участники"
+    },
+    {
+      "route": "/s/:spaceId?tab=settings",
+      "role": "link",
+      "name": "Перейти к содержимому"
+    },
+    {
+      "route": "/s/:spaceId?tab=settings",
+      "role": "button",
+      "name": "ООО «Тест» Анна Владелец"
+    },
+    {
+      "route": "/s/:spaceId?tab=settings",
+      "role": "button",
+      "name": "Скрыть боковую панель"
+    },
+    {
+      "route": "/s/:spaceId?tab=settings",
+      "role": "button",
+      "name": "Поиск Ctrl+K"
+    },
+    {
+      "route": "/s/:spaceId?tab=settings",
+      "role": "link",
+      "name": "Главная"
+    },
+    {
+      "route": "/s/:spaceId?tab=settings",
+      "role": "button",
+      "name": "Входящие уведомления"
+    },
+    {
+      "route": "/s/:spaceId?tab=settings",
+      "role": "button",
+      "name": "Новая страница"
+    },
+    {
+      "route": "/s/:spaceId?tab=settings",
+      "role": "button",
+      "name": "Новое пространство"
+    },
+    {
+      "route": "/s/:spaceId?tab=settings",
+      "role": "button",
+      "name": "Моё пространство"
+    },
+    {
+      "route": "/s/:spaceId?tab=settings",
+      "role": "link",
+      "name": "Страница обхода"
+    },
+    {
+      "route": "/s/:spaceId?tab=settings",
+      "role": "button",
+      "name": "Добавить страницу внутрь «Страница обхода»"
+    },
+    {
+      "route": "/s/:spaceId?tab=settings",
+      "role": "button",
+      "name": "Действия со страницей «Страница обхода»"
+    },
+    {
+      "route": "/s/:spaceId?tab=settings",
+      "role": "button",
+      "name": "Пространства"
+    },
+    {
+      "route": "/s/:spaceId?tab=settings",
+      "role": "button",
+      "name": "Развернуть"
+    },
+    {
+      "route": "/s/:spaceId?tab=settings",
+      "role": "button",
+      "name": "Общее"
+    },
+    {
+      "route": "/s/:spaceId?tab=settings",
+      "role": "button",
+      "name": "Новая страница в «Общее»"
+    },
+    {
+      "route": "/s/:spaceId?tab=settings",
+      "role": "button",
+      "name": "Действия пространства «Общее»"
+    },
+    {
+      "route": "/s/:spaceId?tab=settings",
+      "role": "button",
+      "name": "Обход действий"
+    },
+    {
+      "route": "/s/:spaceId?tab=settings",
+      "role": "button",
+      "name": "Новая страница в «Обход действий»"
+    },
+    {
+      "route": "/s/:spaceId?tab=settings",
+      "role": "button",
+      "name": "Действия пространства «Обход действий»"
+    },
+    {
+      "route": "/s/:spaceId?tab=settings",
+      "role": "link",
+      "name": "Шаблоны"
+    },
+    {
+      "route": "/s/:spaceId?tab=settings",
+      "role": "link",
+      "name": "Импорт"
+    },
+    {
+      "route": "/s/:spaceId?tab=settings",
+      "role": "link",
+      "name": "Корзина"
+    },
+    {
+      "route": "/s/:spaceId?tab=settings",
+      "role": "link",
+      "name": "Администрирование"
+    },
+    {
+      "route": "/s/:spaceId?tab=settings",
+      "role": "link",
+      "name": "Из шаблона"
+    },
+    {
+      "route": "/s/:spaceId?tab=settings",
+      "role": "tab",
+      "name": "Страницы"
+    },
+    {
+      "route": "/s/:spaceId?tab=settings",
+      "role": "tab",
+      "name": "Участники"
+    },
+    {
+      "route": "/s/:spaceId?tab=settings",
+      "role": "tab",
+      "name": "Настройки"
+    },
+    {
+      "route": "/s/:spaceId?tab=settings",
+      "role": "menuitem",
+      "name": "Настройки профиля"
+    },
+    {
+      "route": "/s/:spaceId?tab=settings",
+      "role": "menuitem",
+      "name": "Тема"
+    },
+    {
+      "route": "/s/:spaceId?tab=settings",
+      "role": "menuitem",
+      "name": "Сбросить панель по умолчанию"
+    },
+    {
+      "route": "/s/:spaceId?tab=settings",
+      "role": "menuitem",
+      "name": "Справка и горячие клавиши ?"
+    },
+    {
+      "route": "/s/:spaceId?tab=settings",
+      "role": "menuitem",
+      "name": "Выйти"
+    },
+    {
+      "route": "/s/:spaceId?tab=settings",
+      "role": "menuitem",
+      "name": "Новая вложенная страница"
+    },
+    {
+      "route": "/s/:spaceId?tab=settings",
+      "role": "menuitem",
+      "name": "Переименовать F2"
+    },
+    {
+      "route": "/s/:spaceId?tab=settings",
+      "role": "menuitem",
+      "name": "😀 Изменить иконку"
+    },
+    {
+      "route": "/s/:spaceId?tab=settings",
+      "role": "menuitem",
+      "name": "Переместить в…"
+    },
+    {
+      "route": "/s/:spaceId?tab=settings",
+      "role": "menuitem",
+      "name": "Дублировать"
+    },
+    {
+      "route": "/s/:spaceId?tab=settings",
+      "role": "menuitem",
+      "name": "Копировать ссылку"
+    },
+    {
+      "route": "/s/:spaceId?tab=settings",
+      "role": "menuitem",
+      "name": "В избранное"
+    },
+    {
+      "route": "/s/:spaceId?tab=settings",
+      "role": "menuitem",
+      "name": "🗑 Удалить в корзину"
+    },
+    {
+      "route": "/s/:spaceId?tab=settings",
+      "role": "menuitem",
+      "name": "Новая страница"
+    },
+    {
+      "route": "/s/:spaceId?tab=settings",
+      "role": "menuitem",
+      "name": "Обзор пространства"
+    },
+    {
+      "route": "/s/:spaceId?tab=settings",
+      "role": "menuitem",
+      "name": "Настройки и участники"
+    },
+    {
+      "route": "/search",
+      "role": "link",
+      "name": "Перейти к содержимому"
+    },
+    {
+      "route": "/search",
+      "role": "button",
+      "name": "ООО «Тест» Анна Владелец"
+    },
+    {
+      "route": "/search",
+      "role": "button",
+      "name": "Скрыть боковую панель"
+    },
+    {
+      "route": "/search",
+      "role": "button",
+      "name": "Поиск Ctrl+K"
+    },
+    {
+      "route": "/search",
+      "role": "link",
+      "name": "Главная"
+    },
+    {
+      "route": "/search",
+      "role": "button",
+      "name": "Входящие уведомления"
+    },
+    {
+      "route": "/search",
+      "role": "button",
+      "name": "Новая страница"
+    },
+    {
+      "route": "/search",
+      "role": "button",
+      "name": "Новое пространство"
+    },
+    {
+      "route": "/search",
+      "role": "button",
+      "name": "Моё пространство"
+    },
+    {
+      "route": "/search",
+      "role": "link",
+      "name": "Страница обхода"
+    },
+    {
+      "route": "/search",
+      "role": "button",
+      "name": "Добавить страницу внутрь «Страница обхода»"
+    },
+    {
+      "route": "/search",
+      "role": "button",
+      "name": "Действия со страницей «Страница обхода»"
+    },
+    {
+      "route": "/search",
+      "role": "button",
+      "name": "Пространства"
+    },
+    {
+      "route": "/search",
+      "role": "button",
+      "name": "Развернуть"
+    },
+    {
+      "route": "/search",
+      "role": "button",
+      "name": "Общее"
+    },
+    {
+      "route": "/search",
+      "role": "button",
+      "name": "Новая страница в «Общее»"
+    },
+    {
+      "route": "/search",
+      "role": "button",
+      "name": "Действия пространства «Общее»"
+    },
+    {
+      "route": "/search",
+      "role": "button",
+      "name": "Обход действий"
+    },
+    {
+      "route": "/search",
+      "role": "button",
+      "name": "Новая страница в «Обход действий»"
+    },
+    {
+      "route": "/search",
+      "role": "button",
+      "name": "Действия пространства «Обход действий»"
+    },
+    {
+      "route": "/search",
+      "role": "link",
+      "name": "Шаблоны"
+    },
+    {
+      "route": "/search",
+      "role": "link",
+      "name": "Импорт"
+    },
+    {
+      "route": "/search",
+      "role": "link",
+      "name": "Корзина"
+    },
+    {
+      "route": "/search",
+      "role": "link",
+      "name": "Администрирование"
+    },
+    {
+      "route": "/search",
+      "role": "searchbox",
+      "name": "Поисковый запрос"
+    },
+    {
+      "route": "/search",
+      "role": "button",
+      "name": "Очистить"
+    },
+    {
+      "route": "/search",
+      "role": "button",
+      "name": "Фильтры"
+    },
+    {
+      "route": "/search",
+      "role": "radio",
+      "name": "Всё"
+    },
+    {
+      "route": "/search",
+      "role": "radio",
+      "name": "Текст страниц"
+    },
+    {
+      "route": "/search",
+      "role": "radio",
+      "name": "Вложения"
+    },
+    {
+      "route": "/search",
+      "role": "radio",
+      "name": "Изображения (OCR)"
+    },
+    {
+      "route": "/search",
+      "role": "link",
+      "name": "Страница обхода 🔒 Моё пространство Абзац страницы для обхода действий Черновик только что"
+    },
+    {
+      "route": "/search",
+      "role": "menuitem",
+      "name": "Настройки профиля"
+    },
+    {
+      "route": "/search",
+      "role": "menuitem",
+      "name": "Тема"
+    },
+    {
+      "route": "/search",
+      "role": "menuitem",
+      "name": "Сбросить панель по умолчанию"
+    },
+    {
+      "route": "/search",
+      "role": "menuitem",
+      "name": "Справка и горячие клавиши ?"
+    },
+    {
+      "route": "/search",
+      "role": "menuitem",
+      "name": "Выйти"
+    },
+    {
+      "route": "/search",
+      "role": "menuitem",
+      "name": "Новая вложенная страница"
+    },
+    {
+      "route": "/search",
+      "role": "menuitem",
+      "name": "Переименовать F2"
+    },
+    {
+      "route": "/search",
+      "role": "menuitem",
+      "name": "😀 Изменить иконку"
+    },
+    {
+      "route": "/search",
+      "role": "menuitem",
+      "name": "Переместить в…"
+    },
+    {
+      "route": "/search",
+      "role": "menuitem",
+      "name": "Дублировать"
+    },
+    {
+      "route": "/search",
+      "role": "menuitem",
+      "name": "Копировать ссылку"
+    },
+    {
+      "route": "/search",
+      "role": "menuitem",
+      "name": "В избранное"
+    },
+    {
+      "route": "/search",
+      "role": "menuitem",
+      "name": "🗑 Удалить в корзину"
+    },
+    {
+      "route": "/search",
+      "role": "menuitem",
+      "name": "Новая страница"
+    },
+    {
+      "route": "/search",
+      "role": "menuitem",
+      "name": "Обзор пространства"
+    },
+    {
+      "route": "/search",
+      "role": "menuitem",
+      "name": "Настройки и участники"
+    },
+    {
+      "route": "/trash",
+      "role": "link",
+      "name": "Перейти к содержимому"
+    },
+    {
+      "route": "/trash",
+      "role": "button",
+      "name": "ООО «Тест» Анна Владелец"
+    },
+    {
+      "route": "/trash",
+      "role": "button",
+      "name": "Скрыть боковую панель"
+    },
+    {
+      "route": "/trash",
+      "role": "button",
+      "name": "Поиск Ctrl+K"
+    },
+    {
+      "route": "/trash",
+      "role": "link",
+      "name": "Главная"
+    },
+    {
+      "route": "/trash",
+      "role": "button",
+      "name": "Входящие уведомления"
+    },
+    {
+      "route": "/trash",
+      "role": "button",
+      "name": "Новая страница"
+    },
+    {
+      "route": "/trash",
+      "role": "button",
+      "name": "Новое пространство"
+    },
+    {
+      "route": "/trash",
+      "role": "button",
+      "name": "Моё пространство"
+    },
+    {
+      "route": "/trash",
+      "role": "link",
+      "name": "Страница обхода"
+    },
+    {
+      "route": "/trash",
+      "role": "button",
+      "name": "Добавить страницу внутрь «Страница обхода»"
+    },
+    {
+      "route": "/trash",
+      "role": "button",
+      "name": "Действия со страницей «Страница обхода»"
+    },
+    {
+      "route": "/trash",
+      "role": "button",
+      "name": "Пространства"
+    },
+    {
+      "route": "/trash",
+      "role": "button",
+      "name": "Развернуть"
+    },
+    {
+      "route": "/trash",
+      "role": "button",
+      "name": "Общее"
+    },
+    {
+      "route": "/trash",
+      "role": "button",
+      "name": "Новая страница в «Общее»"
+    },
+    {
+      "route": "/trash",
+      "role": "button",
+      "name": "Действия пространства «Общее»"
+    },
+    {
+      "route": "/trash",
+      "role": "button",
+      "name": "Обход действий"
+    },
+    {
+      "route": "/trash",
+      "role": "button",
+      "name": "Новая страница в «Обход действий»"
+    },
+    {
+      "route": "/trash",
+      "role": "button",
+      "name": "Действия пространства «Обход действий»"
+    },
+    {
+      "route": "/trash",
+      "role": "link",
+      "name": "Шаблоны"
+    },
+    {
+      "route": "/trash",
+      "role": "link",
+      "name": "Импорт"
+    },
+    {
+      "route": "/trash",
+      "role": "link",
+      "name": "Корзина"
+    },
+    {
+      "route": "/trash",
+      "role": "link",
+      "name": "Администрирование"
+    },
+    {
+      "route": "/trash",
+      "role": "textbox",
+      "name": "Найти в корзине"
+    },
+    {
+      "route": "/trash",
+      "role": "link",
+      "name": "Обход действий"
+    },
+    {
+      "route": "/trash",
+      "role": "button",
+      "name": "Восстановить"
+    },
+    {
+      "route": "/trash",
+      "role": "button",
+      "name": "Удалить навсегда «Удалённая для обхода»"
+    },
+    {
+      "route": "/trash",
+      "role": "menuitem",
+      "name": "Настройки профиля"
+    },
+    {
+      "route": "/trash",
+      "role": "menuitem",
+      "name": "Тема"
+    },
+    {
+      "route": "/trash",
+      "role": "menuitem",
+      "name": "Сбросить панель по умолчанию"
+    },
+    {
+      "route": "/trash",
+      "role": "menuitem",
+      "name": "Справка и горячие клавиши ?"
+    },
+    {
+      "route": "/trash",
+      "role": "menuitem",
+      "name": "Выйти"
+    },
+    {
+      "route": "/trash",
+      "role": "menuitem",
+      "name": "Новая вложенная страница"
+    },
+    {
+      "route": "/trash",
+      "role": "menuitem",
+      "name": "Переименовать F2"
+    },
+    {
+      "route": "/trash",
+      "role": "menuitem",
+      "name": "😀 Изменить иконку"
+    },
+    {
+      "route": "/trash",
+      "role": "menuitem",
+      "name": "Переместить в…"
+    },
+    {
+      "route": "/trash",
+      "role": "menuitem",
+      "name": "Дублировать"
+    },
+    {
+      "route": "/trash",
+      "role": "menuitem",
+      "name": "Копировать ссылку"
+    },
+    {
+      "route": "/trash",
+      "role": "menuitem",
+      "name": "В избранное"
+    },
+    {
+      "route": "/trash",
+      "role": "menuitem",
+      "name": "🗑 Удалить в корзину"
+    },
+    {
+      "route": "/trash",
+      "role": "menuitem",
+      "name": "Новая страница"
+    },
+    {
+      "route": "/trash",
+      "role": "menuitem",
+      "name": "Обзор пространства"
+    },
+    {
+      "route": "/trash",
+      "role": "menuitem",
+      "name": "Настройки и участники"
+    },
+    {
+      "route": "/templates",
+      "role": "link",
+      "name": "Перейти к содержимому"
+    },
+    {
+      "route": "/templates",
+      "role": "button",
+      "name": "ООО «Тест» Анна Владелец"
+    },
+    {
+      "route": "/templates",
+      "role": "button",
+      "name": "Скрыть боковую панель"
+    },
+    {
+      "route": "/templates",
+      "role": "button",
+      "name": "Поиск Ctrl+K"
+    },
+    {
+      "route": "/templates",
+      "role": "link",
+      "name": "Главная"
+    },
+    {
+      "route": "/templates",
+      "role": "button",
+      "name": "Входящие уведомления"
+    },
+    {
+      "route": "/templates",
+      "role": "button",
+      "name": "Новая страница"
+    },
+    {
+      "route": "/templates",
+      "role": "button",
+      "name": "Новое пространство"
+    },
+    {
+      "route": "/templates",
+      "role": "button",
+      "name": "Моё пространство"
+    },
+    {
+      "route": "/templates",
+      "role": "link",
+      "name": "Страница обхода"
+    },
+    {
+      "route": "/templates",
+      "role": "button",
+      "name": "Добавить страницу внутрь «Страница обхода»"
+    },
+    {
+      "route": "/templates",
+      "role": "button",
+      "name": "Действия со страницей «Страница обхода»"
+    },
+    {
+      "route": "/templates",
+      "role": "button",
+      "name": "Пространства"
+    },
+    {
+      "route": "/templates",
+      "role": "button",
+      "name": "Развернуть"
+    },
+    {
+      "route": "/templates",
+      "role": "button",
+      "name": "Общее"
+    },
+    {
+      "route": "/templates",
+      "role": "button",
+      "name": "Новая страница в «Общее»"
+    },
+    {
+      "route": "/templates",
+      "role": "button",
+      "name": "Действия пространства «Общее»"
+    },
+    {
+      "route": "/templates",
+      "role": "button",
+      "name": "Обход действий"
+    },
+    {
+      "route": "/templates",
+      "role": "button",
+      "name": "Новая страница в «Обход действий»"
+    },
+    {
+      "route": "/templates",
+      "role": "button",
+      "name": "Действия пространства «Обход действий»"
+    },
+    {
+      "route": "/templates",
+      "role": "link",
+      "name": "Шаблоны"
+    },
+    {
+      "route": "/templates",
+      "role": "link",
+      "name": "Импорт"
+    },
+    {
+      "route": "/templates",
+      "role": "link",
+      "name": "Корзина"
+    },
+    {
+      "route": "/templates",
+      "role": "link",
+      "name": "Администрирование"
+    },
+    {
+      "route": "/templates",
+      "role": "button",
+      "name": "Новый шаблон"
+    },
+    {
+      "route": "/templates",
+      "role": "searchbox",
+      "name": "Найти шаблон"
+    },
+    {
+      "route": "/templates",
+      "role": "tab",
+      "name": "Все"
+    },
+    {
+      "route": "/templates",
+      "role": "tab",
+      "name": "Инженерия"
+    },
+    {
+      "route": "/templates",
+      "role": "tab",
+      "name": "Качество"
+    },
+    {
+      "route": "/templates",
+      "role": "tab",
+      "name": "Команда"
+    },
+    {
+      "route": "/templates",
+      "role": "tab",
+      "name": "Макеты"
+    },
+    {
+      "route": "/templates",
+      "role": "tab",
+      "name": "Продукт"
+    },
+    {
+      "route": "/templates",
+      "role": "tab",
+      "name": "Проекты"
+    },
+    {
+      "route": "/templates",
+      "role": "tab",
+      "name": "Процессы"
+    },
+    {
+      "route": "/templates",
+      "role": "tab",
+      "name": "Справочники"
+    },
+    {
+      "route": "/templates",
+      "role": "button",
+      "name": "В избранные"
+    },
+    {
+      "route": "/templates",
+      "role": "button",
+      "name": "Архитектурное решение (ADR)"
+    },
+    {
+      "route": "/templates",
+      "role": "button",
+      "name": "Просмотр"
+    },
+    {
+      "route": "/templates",
+      "role": "button",
+      "name": "Использовать"
+    },
+    {
+      "route": "/templates",
+      "role": "button",
+      "name": "Описание архитектуры"
+    },
+    {
+      "route": "/templates",
+      "role": "button",
+      "name": "Технический обзор"
+    },
+    {
+      "route": "/templates",
+      "role": "button",
+      "name": "Техническое задание"
+    },
+    {
+      "route": "/templates",
+      "role": "button",
+      "name": "Типовое проектное решение"
+    },
+    {
+      "route": "/templates",
+      "role": "button",
+      "name": "Баг-репорт"
+    },
+    {
+      "route": "/templates",
+      "role": "button",
+      "name": "Предложение по улучшению"
+    },
+    {
+      "route": "/templates",
+      "role": "button",
+      "name": "Разбор инцидента (postmortem)"
+    },
+    {
+      "route": "/templates",
+      "role": "button",
+      "name": "Тест-кейс"
+    },
+    {
+      "route": "/templates",
+      "role": "button",
+      "name": "Тест-план"
+    },
+    {
+      "route": "/templates",
+      "role": "button",
+      "name": "Онбординг сотрудника"
+    },
+    {
+      "route": "/templates",
+      "role": "button",
+      "name": "Протокол встречи"
+    },
+    {
+      "route": "/templates",
+      "role": "button",
+      "name": "Ретроспектива"
+    },
+    {
+      "route": "/templates",
+      "role": "button",
+      "name": "Страница команды"
+    },
+    {
+      "route": "/templates",
+      "role": "button",
+      "name": "Библиотека файлов"
+    },
+    {
+      "route": "/templates",
+      "role": "button",
+      "name": "Галерея изображений"
+    },
+    {
+      "route": "/templates",
+      "role": "button",
+      "name": "Шаблон колонок"
+    },
+    {
+      "route": "/templates",
+      "role": "button",
+      "name": "Шаблон таблицы"
+    },
+    {
+      "route": "/templates",
+      "role": "button",
+      "name": "Инструкция по эксплуатации"
+    },
+    {
+      "route": "/templates",
+      "role": "button",
+      "name": "Паспорт продукта"
+    },
+    {
+      "route": "/templates",
+      "role": "button",
+      "name": "Релиз-ноты"
+    },
+    {
+      "route": "/templates",
+      "role": "button",
+      "name": "Руководство пользователя"
+    },
+    {
+      "route": "/templates",
+      "role": "button",
+      "name": "Дорожная карта"
+    },
+    {
+      "route": "/templates",
+      "role": "button",
+      "name": "Журнал рисков"
+    },
+    {
+      "route": "/templates",
+      "role": "button",
+      "name": "План проекта"
+    },
+    {
+      "route": "/templates",
+      "role": "button",
+      "name": "Инструкция (SOP)"
+    },
+    {
+      "route": "/templates",
+      "role": "button",
+      "name": "Политика информационной безопасности"
+    },
+    {
+      "route": "/templates",
+      "role": "button",
+      "name": "Регламент"
+    },
+    {
+      "route": "/templates",
+      "role": "button",
+      "name": "Чек-лист"
+    },
+    {
+      "route": "/templates",
+      "role": "button",
+      "name": "База FAQ"
+    },
+    {
+      "route": "/templates",
+      "role": "button",
+      "name": "База поставщиков"
+    },
+    {
+      "route": "/templates",
+      "role": "button",
+      "name": "Карточка оборудования"
+    },
+    {
+      "route": "/templates",
+      "role": "button",
+      "name": "Каталог материалов"
+    },
+    {
+      "route": "/templates",
+      "role": "button",
+      "name": "Справочник терминов"
+    },
+    {
+      "route": "/templates",
+      "role": "button",
+      "name": "Технический паспорт объекта"
+    },
+    {
+      "route": "/templates",
+      "role": "menuitem",
+      "name": "Настройки профиля"
+    },
+    {
+      "route": "/templates",
+      "role": "menuitem",
+      "name": "Тема"
+    },
+    {
+      "route": "/templates",
+      "role": "menuitem",
+      "name": "Сбросить панель по умолчанию"
+    },
+    {
+      "route": "/templates",
+      "role": "menuitem",
+      "name": "Справка и горячие клавиши ?"
+    },
+    {
+      "route": "/templates",
+      "role": "menuitem",
+      "name": "Выйти"
+    },
+    {
+      "route": "/templates",
+      "role": "menuitem",
+      "name": "Новая вложенная страница"
+    },
+    {
+      "route": "/templates",
+      "role": "menuitem",
+      "name": "Переименовать F2"
+    },
+    {
+      "route": "/templates",
+      "role": "menuitem",
+      "name": "😀 Изменить иконку"
+    },
+    {
+      "route": "/templates",
+      "role": "menuitem",
+      "name": "Переместить в…"
+    },
+    {
+      "route": "/templates",
+      "role": "menuitem",
+      "name": "Дублировать"
+    },
+    {
+      "route": "/templates",
+      "role": "menuitem",
+      "name": "Копировать ссылку"
+    },
+    {
+      "route": "/templates",
+      "role": "menuitem",
+      "name": "В избранное"
+    },
+    {
+      "route": "/templates",
+      "role": "menuitem",
+      "name": "🗑 Удалить в корзину"
+    },
+    {
+      "route": "/templates",
+      "role": "menuitem",
+      "name": "Новая страница"
+    },
+    {
+      "route": "/templates",
+      "role": "menuitem",
+      "name": "Обзор пространства"
+    },
+    {
+      "route": "/templates",
+      "role": "menuitem",
+      "name": "Настройки и участники"
+    },
+    {
+      "route": "/import",
+      "role": "link",
+      "name": "Перейти к содержимому"
+    },
+    {
+      "route": "/import",
+      "role": "button",
+      "name": "ООО «Тест» Анна Владелец"
+    },
+    {
+      "route": "/import",
+      "role": "button",
+      "name": "Скрыть боковую панель"
+    },
+    {
+      "route": "/import",
+      "role": "button",
+      "name": "Поиск Ctrl+K"
+    },
+    {
+      "route": "/import",
+      "role": "link",
+      "name": "Главная"
+    },
+    {
+      "route": "/import",
+      "role": "button",
+      "name": "Входящие уведомления"
+    },
+    {
+      "route": "/import",
+      "role": "button",
+      "name": "Новая страница"
+    },
+    {
+      "route": "/import",
+      "role": "button",
+      "name": "Новое пространство"
+    },
+    {
+      "route": "/import",
+      "role": "button",
+      "name": "Моё пространство"
+    },
+    {
+      "route": "/import",
+      "role": "link",
+      "name": "Страница обхода"
+    },
+    {
+      "route": "/import",
+      "role": "button",
+      "name": "Добавить страницу внутрь «Страница обхода»"
+    },
+    {
+      "route": "/import",
+      "role": "button",
+      "name": "Действия со страницей «Страница обхода»"
+    },
+    {
+      "route": "/import",
+      "role": "button",
+      "name": "Пространства"
+    },
+    {
+      "route": "/import",
+      "role": "button",
+      "name": "Развернуть"
+    },
+    {
+      "route": "/import",
+      "role": "button",
+      "name": "Общее"
+    },
+    {
+      "route": "/import",
+      "role": "button",
+      "name": "Новая страница в «Общее»"
+    },
+    {
+      "route": "/import",
+      "role": "button",
+      "name": "Действия пространства «Общее»"
+    },
+    {
+      "route": "/import",
+      "role": "button",
+      "name": "Обход действий"
+    },
+    {
+      "route": "/import",
+      "role": "button",
+      "name": "Новая страница в «Обход действий»"
+    },
+    {
+      "route": "/import",
+      "role": "button",
+      "name": "Действия пространства «Обход действий»"
+    },
+    {
+      "route": "/import",
+      "role": "link",
+      "name": "Шаблоны"
+    },
+    {
+      "route": "/import",
+      "role": "link",
+      "name": "Импорт"
+    },
+    {
+      "route": "/import",
+      "role": "link",
+      "name": "Корзина"
+    },
+    {
+      "route": "/import",
+      "role": "link",
+      "name": "Администрирование"
+    },
+    {
+      "route": "/import",
+      "role": "button",
+      "name": "Перетащите файлы сюда или нажмите, чтобы выбрать DOCX · MD · ZIP с Markdown · HTML · CSV · XLSX"
+    },
+    {
+      "route": "/import",
+      "role": "combobox",
+      "name": "Пространство"
+    },
+    {
+      "route": "/import",
+      "role": "option",
+      "name": "🔒 Личное пространство"
+    },
+    {
+      "route": "/import",
+      "role": "option",
+      "name": "🏢 Общее"
+    },
+    {
+      "route": "/import",
+      "role": "option",
+      "name": "Обход действий"
+    },
+    {
+      "route": "/import",
+      "role": "combobox",
+      "name": "Куда поместить"
+    },
+    {
+      "route": "/import",
+      "role": "option",
+      "name": "В корень пространства"
+    },
+    {
+      "route": "/import",
+      "role": "option",
+      "name": "Внутрь «Страница обхода»"
+    },
+    {
+      "route": "/import",
+      "role": "button",
+      "name": "Загрузить и проверить"
+    },
+    {
+      "route": "/import",
+      "role": "menuitem",
+      "name": "Настройки профиля"
+    },
+    {
+      "route": "/import",
+      "role": "menuitem",
+      "name": "Тема"
+    },
+    {
+      "route": "/import",
+      "role": "menuitem",
+      "name": "Сбросить панель по умолчанию"
+    },
+    {
+      "route": "/import",
+      "role": "menuitem",
+      "name": "Справка и горячие клавиши ?"
+    },
+    {
+      "route": "/import",
+      "role": "menuitem",
+      "name": "Выйти"
+    },
+    {
+      "route": "/import",
+      "role": "menuitem",
+      "name": "Новая вложенная страница"
+    },
+    {
+      "route": "/import",
+      "role": "menuitem",
+      "name": "Переименовать F2"
+    },
+    {
+      "route": "/import",
+      "role": "menuitem",
+      "name": "😀 Изменить иконку"
+    },
+    {
+      "route": "/import",
+      "role": "menuitem",
+      "name": "Переместить в…"
+    },
+    {
+      "route": "/import",
+      "role": "menuitem",
+      "name": "Дублировать"
+    },
+    {
+      "route": "/import",
+      "role": "menuitem",
+      "name": "Копировать ссылку"
+    },
+    {
+      "route": "/import",
+      "role": "menuitem",
+      "name": "В избранное"
+    },
+    {
+      "route": "/import",
+      "role": "menuitem",
+      "name": "🗑 Удалить в корзину"
+    },
+    {
+      "route": "/import",
+      "role": "menuitem",
+      "name": "Новая страница"
+    },
+    {
+      "route": "/import",
+      "role": "menuitem",
+      "name": "Обзор пространства"
+    },
+    {
+      "route": "/import",
+      "role": "menuitem",
+      "name": "Настройки и участники"
+    },
+    {
+      "route": "/settings/profile",
+      "role": "link",
+      "name": "Перейти к содержимому"
+    },
+    {
+      "route": "/settings/profile",
+      "role": "button",
+      "name": "ООО «Тест» Анна Владелец"
+    },
+    {
+      "route": "/settings/profile",
+      "role": "button",
+      "name": "Скрыть боковую панель"
+    },
+    {
+      "route": "/settings/profile",
+      "role": "button",
+      "name": "Поиск Ctrl+K"
+    },
+    {
+      "route": "/settings/profile",
+      "role": "link",
+      "name": "Главная"
+    },
+    {
+      "route": "/settings/profile",
+      "role": "button",
+      "name": "Входящие уведомления"
+    },
+    {
+      "route": "/settings/profile",
+      "role": "button",
+      "name": "Новая страница"
+    },
+    {
+      "route": "/settings/profile",
+      "role": "button",
+      "name": "Новое пространство"
+    },
+    {
+      "route": "/settings/profile",
+      "role": "button",
+      "name": "Моё пространство"
+    },
+    {
+      "route": "/settings/profile",
+      "role": "link",
+      "name": "Страница обхода"
+    },
+    {
+      "route": "/settings/profile",
+      "role": "button",
+      "name": "Добавить страницу внутрь «Страница обхода»"
+    },
+    {
+      "route": "/settings/profile",
+      "role": "button",
+      "name": "Действия со страницей «Страница обхода»"
+    },
+    {
+      "route": "/settings/profile",
+      "role": "button",
+      "name": "Пространства"
+    },
+    {
+      "route": "/settings/profile",
+      "role": "button",
+      "name": "Развернуть"
+    },
+    {
+      "route": "/settings/profile",
+      "role": "button",
+      "name": "Общее"
+    },
+    {
+      "route": "/settings/profile",
+      "role": "button",
+      "name": "Новая страница в «Общее»"
+    },
+    {
+      "route": "/settings/profile",
+      "role": "button",
+      "name": "Действия пространства «Общее»"
+    },
+    {
+      "route": "/settings/profile",
+      "role": "button",
+      "name": "Обход действий"
+    },
+    {
+      "route": "/settings/profile",
+      "role": "button",
+      "name": "Новая страница в «Обход действий»"
+    },
+    {
+      "route": "/settings/profile",
+      "role": "button",
+      "name": "Действия пространства «Обход действий»"
+    },
+    {
+      "route": "/settings/profile",
+      "role": "link",
+      "name": "Шаблоны"
+    },
+    {
+      "route": "/settings/profile",
+      "role": "link",
+      "name": "Импорт"
+    },
+    {
+      "route": "/settings/profile",
+      "role": "link",
+      "name": "Корзина"
+    },
+    {
+      "route": "/settings/profile",
+      "role": "link",
+      "name": "Администрирование"
+    },
+    {
+      "route": "/settings/profile",
+      "role": "link",
+      "name": "Профиль"
+    },
+    {
+      "route": "/settings/profile",
+      "role": "link",
+      "name": "Оформление и редактор"
+    },
+    {
+      "route": "/settings/profile",
+      "role": "link",
+      "name": "Пароль и вход"
+    },
+    {
+      "route": "/settings/profile",
+      "role": "link",
+      "name": "Активные сеансы"
+    },
+    {
+      "route": "/settings/profile",
+      "role": "link",
+      "name": "API-токены"
+    },
+    {
+      "route": "/settings/profile",
+      "role": "textbox",
+      "name": "Имя и фамилия"
+    },
+    {
+      "route": "/settings/profile",
+      "role": "textbox",
+      "name": "Должность"
+    },
+    {
+      "route": "/settings/profile",
+      "role": "button",
+      "name": "Отменить"
+    },
+    {
+      "route": "/settings/profile",
+      "role": "button",
+      "name": "Сохранить"
+    },
+    {
+      "route": "/settings/profile",
+      "role": "menuitem",
+      "name": "Настройки профиля"
+    },
+    {
+      "route": "/settings/profile",
+      "role": "menuitem",
+      "name": "Тема"
+    },
+    {
+      "route": "/settings/profile",
+      "role": "menuitem",
+      "name": "Сбросить панель по умолчанию"
+    },
+    {
+      "route": "/settings/profile",
+      "role": "menuitem",
+      "name": "Справка и горячие клавиши ?"
+    },
+    {
+      "route": "/settings/profile",
+      "role": "menuitem",
+      "name": "Выйти"
+    },
+    {
+      "route": "/settings/profile",
+      "role": "menuitem",
+      "name": "Новая вложенная страница"
+    },
+    {
+      "route": "/settings/profile",
+      "role": "menuitem",
+      "name": "Переименовать F2"
+    },
+    {
+      "route": "/settings/profile",
+      "role": "menuitem",
+      "name": "😀 Изменить иконку"
+    },
+    {
+      "route": "/settings/profile",
+      "role": "menuitem",
+      "name": "Переместить в…"
+    },
+    {
+      "route": "/settings/profile",
+      "role": "menuitem",
+      "name": "Дублировать"
+    },
+    {
+      "route": "/settings/profile",
+      "role": "menuitem",
+      "name": "Копировать ссылку"
+    },
+    {
+      "route": "/settings/profile",
+      "role": "menuitem",
+      "name": "В избранное"
+    },
+    {
+      "route": "/settings/profile",
+      "role": "menuitem",
+      "name": "🗑 Удалить в корзину"
+    },
+    {
+      "route": "/settings/profile",
+      "role": "menuitem",
+      "name": "Новая страница"
+    },
+    {
+      "route": "/settings/profile",
+      "role": "menuitem",
+      "name": "Обзор пространства"
+    },
+    {
+      "route": "/settings/profile",
+      "role": "menuitem",
+      "name": "Настройки и участники"
+    },
+    {
+      "route": "/settings/appearance",
+      "role": "link",
+      "name": "Перейти к содержимому"
+    },
+    {
+      "route": "/settings/appearance",
+      "role": "button",
+      "name": "ООО «Тест» Анна Владелец"
+    },
+    {
+      "route": "/settings/appearance",
+      "role": "button",
+      "name": "Скрыть боковую панель"
+    },
+    {
+      "route": "/settings/appearance",
+      "role": "button",
+      "name": "Поиск Ctrl+K"
+    },
+    {
+      "route": "/settings/appearance",
+      "role": "link",
+      "name": "Главная"
+    },
+    {
+      "route": "/settings/appearance",
+      "role": "button",
+      "name": "Входящие уведомления"
+    },
+    {
+      "route": "/settings/appearance",
+      "role": "button",
+      "name": "Новая страница"
+    },
+    {
+      "route": "/settings/appearance",
+      "role": "button",
+      "name": "Новое пространство"
+    },
+    {
+      "route": "/settings/appearance",
+      "role": "button",
+      "name": "Моё пространство"
+    },
+    {
+      "route": "/settings/appearance",
+      "role": "link",
+      "name": "Страница обхода"
+    },
+    {
+      "route": "/settings/appearance",
+      "role": "button",
+      "name": "Добавить страницу внутрь «Страница обхода»"
+    },
+    {
+      "route": "/settings/appearance",
+      "role": "button",
+      "name": "Действия со страницей «Страница обхода»"
+    },
+    {
+      "route": "/settings/appearance",
+      "role": "button",
+      "name": "Пространства"
+    },
+    {
+      "route": "/settings/appearance",
+      "role": "button",
+      "name": "Развернуть"
+    },
+    {
+      "route": "/settings/appearance",
+      "role": "button",
+      "name": "Общее"
+    },
+    {
+      "route": "/settings/appearance",
+      "role": "button",
+      "name": "Новая страница в «Общее»"
+    },
+    {
+      "route": "/settings/appearance",
+      "role": "button",
+      "name": "Действия пространства «Общее»"
+    },
+    {
+      "route": "/settings/appearance",
+      "role": "button",
+      "name": "Обход действий"
+    },
+    {
+      "route": "/settings/appearance",
+      "role": "button",
+      "name": "Новая страница в «Обход действий»"
+    },
+    {
+      "route": "/settings/appearance",
+      "role": "button",
+      "name": "Действия пространства «Обход действий»"
+    },
+    {
+      "route": "/settings/appearance",
+      "role": "link",
+      "name": "Шаблоны"
+    },
+    {
+      "route": "/settings/appearance",
+      "role": "link",
+      "name": "Импорт"
+    },
+    {
+      "route": "/settings/appearance",
+      "role": "link",
+      "name": "Корзина"
+    },
+    {
+      "route": "/settings/appearance",
+      "role": "link",
+      "name": "Администрирование"
+    },
+    {
+      "route": "/settings/appearance",
+      "role": "link",
+      "name": "Профиль"
+    },
+    {
+      "route": "/settings/appearance",
+      "role": "link",
+      "name": "Оформление и редактор"
+    },
+    {
+      "route": "/settings/appearance",
+      "role": "link",
+      "name": "Пароль и вход"
+    },
+    {
+      "route": "/settings/appearance",
+      "role": "link",
+      "name": "Активные сеансы"
+    },
+    {
+      "route": "/settings/appearance",
+      "role": "link",
+      "name": "API-токены"
+    },
+    {
+      "route": "/settings/appearance",
+      "role": "radio",
+      "name": "Как в системе"
+    },
+    {
+      "route": "/settings/appearance",
+      "role": "radio",
+      "name": "Светлая"
+    },
+    {
+      "route": "/settings/appearance",
+      "role": "radio",
+      "name": "Тёмная"
+    },
+    {
+      "route": "/settings/appearance",
+      "role": "switch",
+      "name": "Проверка орфографии"
+    },
+    {
+      "route": "/settings/appearance",
+      "role": "switch",
+      "name": "Широкие страницы по умолчанию"
+    },
+    {
+      "route": "/settings/appearance",
+      "role": "switch",
+      "name": "Умная типографика"
+    },
+    {
+      "route": "/settings/appearance",
+      "role": "switch",
+      "name": "Подсказки по интерфейсу"
+    },
+    {
+      "route": "/settings/appearance",
+      "role": "menuitem",
+      "name": "Настройки профиля"
+    },
+    {
+      "route": "/settings/appearance",
+      "role": "menuitem",
+      "name": "Тема"
+    },
+    {
+      "route": "/settings/appearance",
+      "role": "menuitem",
+      "name": "Сбросить панель по умолчанию"
+    },
+    {
+      "route": "/settings/appearance",
+      "role": "menuitem",
+      "name": "Справка и горячие клавиши ?"
+    },
+    {
+      "route": "/settings/appearance",
+      "role": "menuitem",
+      "name": "Выйти"
+    },
+    {
+      "route": "/settings/appearance",
+      "role": "menuitem",
+      "name": "Новая вложенная страница"
+    },
+    {
+      "route": "/settings/appearance",
+      "role": "menuitem",
+      "name": "Переименовать F2"
+    },
+    {
+      "route": "/settings/appearance",
+      "role": "menuitem",
+      "name": "😀 Изменить иконку"
+    },
+    {
+      "route": "/settings/appearance",
+      "role": "menuitem",
+      "name": "Переместить в…"
+    },
+    {
+      "route": "/settings/appearance",
+      "role": "menuitem",
+      "name": "Дублировать"
+    },
+    {
+      "route": "/settings/appearance",
+      "role": "menuitem",
+      "name": "Копировать ссылку"
+    },
+    {
+      "route": "/settings/appearance",
+      "role": "menuitem",
+      "name": "В избранное"
+    },
+    {
+      "route": "/settings/appearance",
+      "role": "menuitem",
+      "name": "🗑 Удалить в корзину"
+    },
+    {
+      "route": "/settings/appearance",
+      "role": "menuitem",
+      "name": "Новая страница"
+    },
+    {
+      "route": "/settings/appearance",
+      "role": "menuitem",
+      "name": "Обзор пространства"
+    },
+    {
+      "route": "/settings/appearance",
+      "role": "menuitem",
+      "name": "Настройки и участники"
+    },
+    {
+      "route": "/settings/security",
+      "role": "link",
+      "name": "Перейти к содержимому"
+    },
+    {
+      "route": "/settings/security",
+      "role": "button",
+      "name": "ООО «Тест» Анна Владелец"
+    },
+    {
+      "route": "/settings/security",
+      "role": "button",
+      "name": "Скрыть боковую панель"
+    },
+    {
+      "route": "/settings/security",
+      "role": "button",
+      "name": "Поиск Ctrl+K"
+    },
+    {
+      "route": "/settings/security",
+      "role": "link",
+      "name": "Главная"
+    },
+    {
+      "route": "/settings/security",
+      "role": "button",
+      "name": "Входящие уведомления"
+    },
+    {
+      "route": "/settings/security",
+      "role": "button",
+      "name": "Новая страница"
+    },
+    {
+      "route": "/settings/security",
+      "role": "button",
+      "name": "Новое пространство"
+    },
+    {
+      "route": "/settings/security",
+      "role": "button",
+      "name": "Моё пространство"
+    },
+    {
+      "route": "/settings/security",
+      "role": "link",
+      "name": "Страница обхода"
+    },
+    {
+      "route": "/settings/security",
+      "role": "button",
+      "name": "Добавить страницу внутрь «Страница обхода»"
+    },
+    {
+      "route": "/settings/security",
+      "role": "button",
+      "name": "Действия со страницей «Страница обхода»"
+    },
+    {
+      "route": "/settings/security",
+      "role": "button",
+      "name": "Пространства"
+    },
+    {
+      "route": "/settings/security",
+      "role": "button",
+      "name": "Развернуть"
+    },
+    {
+      "route": "/settings/security",
+      "role": "button",
+      "name": "Общее"
+    },
+    {
+      "route": "/settings/security",
+      "role": "button",
+      "name": "Новая страница в «Общее»"
+    },
+    {
+      "route": "/settings/security",
+      "role": "button",
+      "name": "Действия пространства «Общее»"
+    },
+    {
+      "route": "/settings/security",
+      "role": "button",
+      "name": "Обход действий"
+    },
+    {
+      "route": "/settings/security",
+      "role": "button",
+      "name": "Новая страница в «Обход действий»"
+    },
+    {
+      "route": "/settings/security",
+      "role": "button",
+      "name": "Действия пространства «Обход действий»"
+    },
+    {
+      "route": "/settings/security",
+      "role": "link",
+      "name": "Шаблоны"
+    },
+    {
+      "route": "/settings/security",
+      "role": "link",
+      "name": "Импорт"
+    },
+    {
+      "route": "/settings/security",
+      "role": "link",
+      "name": "Корзина"
+    },
+    {
+      "route": "/settings/security",
+      "role": "link",
+      "name": "Администрирование"
+    },
+    {
+      "route": "/settings/security",
+      "role": "link",
+      "name": "Профиль"
+    },
+    {
+      "route": "/settings/security",
+      "role": "link",
+      "name": "Оформление и редактор"
+    },
+    {
+      "route": "/settings/security",
+      "role": "link",
+      "name": "Пароль и вход"
+    },
+    {
+      "route": "/settings/security",
+      "role": "link",
+      "name": "Активные сеансы"
+    },
+    {
+      "route": "/settings/security",
+      "role": "link",
+      "name": "API-токены"
+    },
+    {
+      "route": "/settings/security",
+      "role": "textbox",
+      "name": "Текущий пароль"
+    },
+    {
+      "route": "/settings/security",
+      "role": "textbox",
+      "name": "Новый пароль"
+    },
+    {
+      "route": "/settings/security",
+      "role": "textbox",
+      "name": "Повторите пароль"
+    },
+    {
+      "route": "/settings/security",
+      "role": "button",
+      "name": "Изменить пароль"
+    },
+    {
+      "route": "/settings/security",
+      "role": "button",
+      "name": "Настроить"
+    },
+    {
+      "route": "/settings/security",
+      "role": "menuitem",
+      "name": "Настройки профиля"
+    },
+    {
+      "route": "/settings/security",
+      "role": "menuitem",
+      "name": "Тема"
+    },
+    {
+      "route": "/settings/security",
+      "role": "menuitem",
+      "name": "Сбросить панель по умолчанию"
+    },
+    {
+      "route": "/settings/security",
+      "role": "menuitem",
+      "name": "Справка и горячие клавиши ?"
+    },
+    {
+      "route": "/settings/security",
+      "role": "menuitem",
+      "name": "Выйти"
+    },
+    {
+      "route": "/settings/security",
+      "role": "menuitem",
+      "name": "Новая вложенная страница"
+    },
+    {
+      "route": "/settings/security",
+      "role": "menuitem",
+      "name": "Переименовать F2"
+    },
+    {
+      "route": "/settings/security",
+      "role": "menuitem",
+      "name": "😀 Изменить иконку"
+    },
+    {
+      "route": "/settings/security",
+      "role": "menuitem",
+      "name": "Переместить в…"
+    },
+    {
+      "route": "/settings/security",
+      "role": "menuitem",
+      "name": "Дублировать"
+    },
+    {
+      "route": "/settings/security",
+      "role": "menuitem",
+      "name": "Копировать ссылку"
+    },
+    {
+      "route": "/settings/security",
+      "role": "menuitem",
+      "name": "В избранное"
+    },
+    {
+      "route": "/settings/security",
+      "role": "menuitem",
+      "name": "🗑 Удалить в корзину"
+    },
+    {
+      "route": "/settings/security",
+      "role": "menuitem",
+      "name": "Новая страница"
+    },
+    {
+      "route": "/settings/security",
+      "role": "menuitem",
+      "name": "Обзор пространства"
+    },
+    {
+      "route": "/settings/security",
+      "role": "menuitem",
+      "name": "Настройки и участники"
+    },
+    {
+      "route": "/settings/sessions",
+      "role": "link",
+      "name": "Перейти к содержимому"
+    },
+    {
+      "route": "/settings/sessions",
+      "role": "button",
+      "name": "ООО «Тест» Анна Владелец"
+    },
+    {
+      "route": "/settings/sessions",
+      "role": "button",
+      "name": "Скрыть боковую панель"
+    },
+    {
+      "route": "/settings/sessions",
+      "role": "button",
+      "name": "Поиск Ctrl+K"
+    },
+    {
+      "route": "/settings/sessions",
+      "role": "link",
+      "name": "Главная"
+    },
+    {
+      "route": "/settings/sessions",
+      "role": "button",
+      "name": "Входящие уведомления"
+    },
+    {
+      "route": "/settings/sessions",
+      "role": "button",
+      "name": "Новая страница"
+    },
+    {
+      "route": "/settings/sessions",
+      "role": "button",
+      "name": "Новое пространство"
+    },
+    {
+      "route": "/settings/sessions",
+      "role": "button",
+      "name": "Моё пространство"
+    },
+    {
+      "route": "/settings/sessions",
+      "role": "link",
+      "name": "Страница обхода"
+    },
+    {
+      "route": "/settings/sessions",
+      "role": "button",
+      "name": "Добавить страницу внутрь «Страница обхода»"
+    },
+    {
+      "route": "/settings/sessions",
+      "role": "button",
+      "name": "Действия со страницей «Страница обхода»"
+    },
+    {
+      "route": "/settings/sessions",
+      "role": "button",
+      "name": "Пространства"
+    },
+    {
+      "route": "/settings/sessions",
+      "role": "button",
+      "name": "Развернуть"
+    },
+    {
+      "route": "/settings/sessions",
+      "role": "button",
+      "name": "Общее"
+    },
+    {
+      "route": "/settings/sessions",
+      "role": "button",
+      "name": "Новая страница в «Общее»"
+    },
+    {
+      "route": "/settings/sessions",
+      "role": "button",
+      "name": "Действия пространства «Общее»"
+    },
+    {
+      "route": "/settings/sessions",
+      "role": "button",
+      "name": "Обход действий"
+    },
+    {
+      "route": "/settings/sessions",
+      "role": "button",
+      "name": "Новая страница в «Обход действий»"
+    },
+    {
+      "route": "/settings/sessions",
+      "role": "button",
+      "name": "Действия пространства «Обход действий»"
+    },
+    {
+      "route": "/settings/sessions",
+      "role": "link",
+      "name": "Шаблоны"
+    },
+    {
+      "route": "/settings/sessions",
+      "role": "link",
+      "name": "Импорт"
+    },
+    {
+      "route": "/settings/sessions",
+      "role": "link",
+      "name": "Корзина"
+    },
+    {
+      "route": "/settings/sessions",
+      "role": "link",
+      "name": "Администрирование"
+    },
+    {
+      "route": "/settings/sessions",
+      "role": "link",
+      "name": "Профиль"
+    },
+    {
+      "route": "/settings/sessions",
+      "role": "link",
+      "name": "Оформление и редактор"
+    },
+    {
+      "route": "/settings/sessions",
+      "role": "link",
+      "name": "Пароль и вход"
+    },
+    {
+      "route": "/settings/sessions",
+      "role": "link",
+      "name": "Активные сеансы"
+    },
+    {
+      "route": "/settings/sessions",
+      "role": "link",
+      "name": "API-токены"
+    },
+    {
+      "route": "/settings/sessions",
+      "role": "button",
+      "name": "Завершить остальные"
+    },
+    {
+      "route": "/settings/sessions",
+      "role": "button",
+      "name": "Завершить"
+    },
+    {
+      "route": "/settings/sessions",
+      "role": "menuitem",
+      "name": "Настройки профиля"
+    },
+    {
+      "route": "/settings/sessions",
+      "role": "menuitem",
+      "name": "Тема"
+    },
+    {
+      "route": "/settings/sessions",
+      "role": "menuitem",
+      "name": "Сбросить панель по умолчанию"
+    },
+    {
+      "route": "/settings/sessions",
+      "role": "menuitem",
+      "name": "Справка и горячие клавиши ?"
+    },
+    {
+      "route": "/settings/sessions",
+      "role": "menuitem",
+      "name": "Выйти"
+    },
+    {
+      "route": "/settings/sessions",
+      "role": "menuitem",
+      "name": "Новая вложенная страница"
+    },
+    {
+      "route": "/settings/sessions",
+      "role": "menuitem",
+      "name": "Переименовать F2"
+    },
+    {
+      "route": "/settings/sessions",
+      "role": "menuitem",
+      "name": "😀 Изменить иконку"
+    },
+    {
+      "route": "/settings/sessions",
+      "role": "menuitem",
+      "name": "Переместить в…"
+    },
+    {
+      "route": "/settings/sessions",
+      "role": "menuitem",
+      "name": "Дублировать"
+    },
+    {
+      "route": "/settings/sessions",
+      "role": "menuitem",
+      "name": "Копировать ссылку"
+    },
+    {
+      "route": "/settings/sessions",
+      "role": "menuitem",
+      "name": "В избранное"
+    },
+    {
+      "route": "/settings/sessions",
+      "role": "menuitem",
+      "name": "🗑 Удалить в корзину"
+    },
+    {
+      "route": "/settings/sessions",
+      "role": "menuitem",
+      "name": "Новая страница"
+    },
+    {
+      "route": "/settings/sessions",
+      "role": "menuitem",
+      "name": "Обзор пространства"
+    },
+    {
+      "route": "/settings/sessions",
+      "role": "menuitem",
+      "name": "Настройки и участники"
+    },
+    {
+      "route": "/settings/tokens",
+      "role": "link",
+      "name": "Перейти к содержимому"
+    },
+    {
+      "route": "/settings/tokens",
+      "role": "button",
+      "name": "ООО «Тест» Анна Владелец"
+    },
+    {
+      "route": "/settings/tokens",
+      "role": "button",
+      "name": "Скрыть боковую панель"
+    },
+    {
+      "route": "/settings/tokens",
+      "role": "button",
+      "name": "Поиск Ctrl+K"
+    },
+    {
+      "route": "/settings/tokens",
+      "role": "link",
+      "name": "Главная"
+    },
+    {
+      "route": "/settings/tokens",
+      "role": "button",
+      "name": "Входящие уведомления"
+    },
+    {
+      "route": "/settings/tokens",
+      "role": "button",
+      "name": "Новая страница"
+    },
+    {
+      "route": "/settings/tokens",
+      "role": "button",
+      "name": "Новое пространство"
+    },
+    {
+      "route": "/settings/tokens",
+      "role": "button",
+      "name": "Моё пространство"
+    },
+    {
+      "route": "/settings/tokens",
+      "role": "link",
+      "name": "Страница обхода"
+    },
+    {
+      "route": "/settings/tokens",
+      "role": "button",
+      "name": "Добавить страницу внутрь «Страница обхода»"
+    },
+    {
+      "route": "/settings/tokens",
+      "role": "button",
+      "name": "Действия со страницей «Страница обхода»"
+    },
+    {
+      "route": "/settings/tokens",
+      "role": "button",
+      "name": "Пространства"
+    },
+    {
+      "route": "/settings/tokens",
+      "role": "button",
+      "name": "Развернуть"
+    },
+    {
+      "route": "/settings/tokens",
+      "role": "button",
+      "name": "Общее"
+    },
+    {
+      "route": "/settings/tokens",
+      "role": "button",
+      "name": "Новая страница в «Общее»"
+    },
+    {
+      "route": "/settings/tokens",
+      "role": "button",
+      "name": "Действия пространства «Общее»"
+    },
+    {
+      "route": "/settings/tokens",
+      "role": "button",
+      "name": "Обход действий"
+    },
+    {
+      "route": "/settings/tokens",
+      "role": "button",
+      "name": "Новая страница в «Обход действий»"
+    },
+    {
+      "route": "/settings/tokens",
+      "role": "button",
+      "name": "Действия пространства «Обход действий»"
+    },
+    {
+      "route": "/settings/tokens",
+      "role": "link",
+      "name": "Шаблоны"
+    },
+    {
+      "route": "/settings/tokens",
+      "role": "link",
+      "name": "Импорт"
+    },
+    {
+      "route": "/settings/tokens",
+      "role": "link",
+      "name": "Корзина"
+    },
+    {
+      "route": "/settings/tokens",
+      "role": "link",
+      "name": "Администрирование"
+    },
+    {
+      "route": "/settings/tokens",
+      "role": "link",
+      "name": "Профиль"
+    },
+    {
+      "route": "/settings/tokens",
+      "role": "link",
+      "name": "Оформление и редактор"
+    },
+    {
+      "route": "/settings/tokens",
+      "role": "link",
+      "name": "Пароль и вход"
+    },
+    {
+      "route": "/settings/tokens",
+      "role": "link",
+      "name": "Активные сеансы"
+    },
+    {
+      "route": "/settings/tokens",
+      "role": "link",
+      "name": "API-токены"
+    },
+    {
+      "route": "/settings/tokens",
+      "role": "textbox",
+      "name": "Назначение"
+    },
+    {
+      "route": "/settings/tokens",
+      "role": "spinbutton",
+      "name": "Срок действия, дней"
+    },
+    {
+      "route": "/settings/tokens",
+      "role": "button",
+      "name": "Создать токен"
+    },
+    {
+      "route": "/settings/tokens",
+      "role": "menuitem",
+      "name": "Настройки профиля"
+    },
+    {
+      "route": "/settings/tokens",
+      "role": "menuitem",
+      "name": "Тема"
+    },
+    {
+      "route": "/settings/tokens",
+      "role": "menuitem",
+      "name": "Сбросить панель по умолчанию"
+    },
+    {
+      "route": "/settings/tokens",
+      "role": "menuitem",
+      "name": "Справка и горячие клавиши ?"
+    },
+    {
+      "route": "/settings/tokens",
+      "role": "menuitem",
+      "name": "Выйти"
+    },
+    {
+      "route": "/settings/tokens",
+      "role": "menuitem",
+      "name": "Новая вложенная страница"
+    },
+    {
+      "route": "/settings/tokens",
+      "role": "menuitem",
+      "name": "Переименовать F2"
+    },
+    {
+      "route": "/settings/tokens",
+      "role": "menuitem",
+      "name": "😀 Изменить иконку"
+    },
+    {
+      "route": "/settings/tokens",
+      "role": "menuitem",
+      "name": "Переместить в…"
+    },
+    {
+      "route": "/settings/tokens",
+      "role": "menuitem",
+      "name": "Дублировать"
+    },
+    {
+      "route": "/settings/tokens",
+      "role": "menuitem",
+      "name": "Копировать ссылку"
+    },
+    {
+      "route": "/settings/tokens",
+      "role": "menuitem",
+      "name": "В избранное"
+    },
+    {
+      "route": "/settings/tokens",
+      "role": "menuitem",
+      "name": "🗑 Удалить в корзину"
+    },
+    {
+      "route": "/settings/tokens",
+      "role": "menuitem",
+      "name": "Новая страница"
+    },
+    {
+      "route": "/settings/tokens",
+      "role": "menuitem",
+      "name": "Обзор пространства"
+    },
+    {
+      "route": "/settings/tokens",
+      "role": "menuitem",
+      "name": "Настройки и участники"
+    },
+    {
+      "route": "/admin/users",
+      "role": "link",
+      "name": "Перейти к содержимому"
+    },
+    {
+      "route": "/admin/users",
+      "role": "button",
+      "name": "ООО «Тест» Анна Владелец"
+    },
+    {
+      "route": "/admin/users",
+      "role": "button",
+      "name": "Скрыть боковую панель"
+    },
+    {
+      "route": "/admin/users",
+      "role": "button",
+      "name": "Поиск Ctrl+K"
+    },
+    {
+      "route": "/admin/users",
+      "role": "link",
+      "name": "Главная"
+    },
+    {
+      "route": "/admin/users",
+      "role": "button",
+      "name": "Входящие уведомления"
+    },
+    {
+      "route": "/admin/users",
+      "role": "button",
+      "name": "Новая страница"
+    },
+    {
+      "route": "/admin/users",
+      "role": "button",
+      "name": "Новое пространство"
+    },
+    {
+      "route": "/admin/users",
+      "role": "button",
+      "name": "Моё пространство"
+    },
+    {
+      "route": "/admin/users",
+      "role": "link",
+      "name": "Страница обхода"
+    },
+    {
+      "route": "/admin/users",
+      "role": "button",
+      "name": "Добавить страницу внутрь «Страница обхода»"
+    },
+    {
+      "route": "/admin/users",
+      "role": "button",
+      "name": "Действия со страницей «Страница обхода»"
+    },
+    {
+      "route": "/admin/users",
+      "role": "button",
+      "name": "Пространства"
+    },
+    {
+      "route": "/admin/users",
+      "role": "button",
+      "name": "Развернуть"
+    },
+    {
+      "route": "/admin/users",
+      "role": "button",
+      "name": "Общее"
+    },
+    {
+      "route": "/admin/users",
+      "role": "button",
+      "name": "Новая страница в «Общее»"
+    },
+    {
+      "route": "/admin/users",
+      "role": "button",
+      "name": "Действия пространства «Общее»"
+    },
+    {
+      "route": "/admin/users",
+      "role": "button",
+      "name": "Обход действий"
+    },
+    {
+      "route": "/admin/users",
+      "role": "button",
+      "name": "Новая страница в «Обход действий»"
+    },
+    {
+      "route": "/admin/users",
+      "role": "button",
+      "name": "Действия пространства «Обход действий»"
+    },
+    {
+      "route": "/admin/users",
+      "role": "link",
+      "name": "Шаблоны"
+    },
+    {
+      "route": "/admin/users",
+      "role": "link",
+      "name": "Импорт"
+    },
+    {
+      "route": "/admin/users",
+      "role": "link",
+      "name": "Корзина"
+    },
+    {
+      "route": "/admin/users",
+      "role": "link",
+      "name": "Администрирование"
+    },
+    {
+      "route": "/admin/users",
+      "role": "link",
+      "name": "Пользователи"
+    },
+    {
+      "route": "/admin/users",
+      "role": "link",
+      "name": "Группы и отделы"
+    },
+    {
+      "route": "/admin/users",
+      "role": "link",
+      "name": "Настройки организации"
+    },
+    {
+      "route": "/admin/users",
+      "role": "link",
+      "name": "Журнал аудита"
+    },
+    {
+      "route": "/admin/users",
+      "role": "link",
+      "name": "Резервные копии и архив"
+    },
+    {
+      "route": "/admin/users",
+      "role": "link",
+      "name": "Состояние системы"
+    },
+    {
+      "route": "/admin/users",
+      "role": "link",
+      "name": "Истекающие доступы"
+    },
+    {
+      "route": "/admin/users",
+      "role": "link",
+      "name": "Доступ"
+    },
+    {
+      "route": "/admin/users",
+      "role": "button",
+      "name": "Импорт CSV"
+    },
+    {
+      "route": "/admin/users",
+      "role": "button",
+      "name": "Добавить"
+    },
+    {
+      "route": "/admin/users",
+      "role": "searchbox",
+      "name": "Поиск пользователей"
+    },
+    {
+      "route": "/admin/users",
+      "role": "combobox",
+      "name": "Статус"
+    },
+    {
+      "route": "/admin/users",
+      "role": "option",
+      "name": "Все статусы"
+    },
+    {
+      "route": "/admin/users",
+      "role": "option",
+      "name": "Активен"
+    },
+    {
+      "route": "/admin/users",
+      "role": "option",
+      "name": "Приглашён"
+    },
+    {
+      "route": "/admin/users",
+      "role": "option",
+      "name": "Приостановлен"
+    },
+    {
+      "route": "/admin/users",
+      "role": "option",
+      "name": "Деактивирован"
+    },
+    {
+      "route": "/admin/users",
+      "role": "combobox",
+      "name": "Тип"
+    },
+    {
+      "route": "/admin/users",
+      "role": "option",
+      "name": "Сотрудники и гости"
+    },
+    {
+      "route": "/admin/users",
+      "role": "option",
+      "name": "Только сотрудники"
+    },
+    {
+      "route": "/admin/users",
+      "role": "option",
+      "name": "Только гости"
+    },
+    {
+      "route": "/admin/users",
+      "role": "combobox",
+      "name": "Роль"
+    },
+    {
+      "route": "/admin/users",
+      "role": "option",
+      "name": "Все роли"
+    },
+    {
+      "route": "/admin/users",
+      "role": "option",
+      "name": "Владелец"
+    },
+    {
+      "route": "/admin/users",
+      "role": "option",
+      "name": "Администратор"
+    },
+    {
+      "route": "/admin/users",
+      "role": "option",
+      "name": "Администратор персонала"
+    },
+    {
+      "route": "/admin/users",
+      "role": "option",
+      "name": "Аудитор"
+    },
+    {
+      "route": "/admin/users",
+      "role": "option",
+      "name": "Сотрудник"
+    },
+    {
+      "route": "/admin/users",
+      "role": "option",
+      "name": "Гость"
+    },
+    {
+      "route": "/admin/users",
+      "role": "combobox",
+      "name": "Отдел или группа"
+    },
+    {
+      "route": "/admin/users",
+      "role": "option",
+      "name": "Все отделы и группы"
+    },
+    {
+      "route": "/admin/users",
+      "role": "button",
+      "name": "Действия с пользователем Анна Владелец"
+    },
+    {
+      "route": "/admin/users",
+      "role": "menuitem",
+      "name": "Настройки профиля"
+    },
+    {
+      "route": "/admin/users",
+      "role": "menuitem",
+      "name": "Тема"
+    },
+    {
+      "route": "/admin/users",
+      "role": "menuitem",
+      "name": "Сбросить панель по умолчанию"
+    },
+    {
+      "route": "/admin/users",
+      "role": "menuitem",
+      "name": "Справка и горячие клавиши ?"
+    },
+    {
+      "route": "/admin/users",
+      "role": "menuitem",
+      "name": "Выйти"
+    },
+    {
+      "route": "/admin/users",
+      "role": "menuitem",
+      "name": "Новая вложенная страница"
+    },
+    {
+      "route": "/admin/users",
+      "role": "menuitem",
+      "name": "Переименовать F2"
+    },
+    {
+      "route": "/admin/users",
+      "role": "menuitem",
+      "name": "😀 Изменить иконку"
+    },
+    {
+      "route": "/admin/users",
+      "role": "menuitem",
+      "name": "Переместить в…"
+    },
+    {
+      "route": "/admin/users",
+      "role": "menuitem",
+      "name": "Дублировать"
+    },
+    {
+      "route": "/admin/users",
+      "role": "menuitem",
+      "name": "Копировать ссылку"
+    },
+    {
+      "route": "/admin/users",
+      "role": "menuitem",
+      "name": "В избранное"
+    },
+    {
+      "route": "/admin/users",
+      "role": "menuitem",
+      "name": "🗑 Удалить в корзину"
+    },
+    {
+      "route": "/admin/users",
+      "role": "menuitem",
+      "name": "Новая страница"
+    },
+    {
+      "route": "/admin/users",
+      "role": "menuitem",
+      "name": "Обзор пространства"
+    },
+    {
+      "route": "/admin/users",
+      "role": "menuitem",
+      "name": "Настройки и участники"
+    },
+    {
+      "route": "/admin/users",
+      "role": "menuitem",
+      "name": "Изменить профиль и роль"
+    },
+    {
+      "route": "/admin/users",
+      "role": "menuitem",
+      "name": "Перевести в другой отдел…"
+    },
+    {
+      "route": "/admin/users",
+      "role": "menuitem",
+      "name": "Сбросить пароль"
+    },
+    {
+      "route": "/admin/users",
+      "role": "menuitem",
+      "name": "Завершить все сеансы"
+    },
+    {
+      "route": "/admin/users",
+      "role": "menuitem",
+      "name": "Приостановить доступ…"
+    },
+    {
+      "route": "/admin/users",
+      "role": "menuitem",
+      "name": "Деактивировать (увольнение)…"
+    },
+    {
+      "route": "/admin/groups",
+      "role": "link",
+      "name": "Перейти к содержимому"
+    },
+    {
+      "route": "/admin/groups",
+      "role": "button",
+      "name": "ООО «Тест» Анна Владелец"
+    },
+    {
+      "route": "/admin/groups",
+      "role": "button",
+      "name": "Скрыть боковую панель"
+    },
+    {
+      "route": "/admin/groups",
+      "role": "button",
+      "name": "Поиск Ctrl+K"
+    },
+    {
+      "route": "/admin/groups",
+      "role": "link",
+      "name": "Главная"
+    },
+    {
+      "route": "/admin/groups",
+      "role": "button",
+      "name": "Входящие уведомления"
+    },
+    {
+      "route": "/admin/groups",
+      "role": "button",
+      "name": "Новая страница"
+    },
+    {
+      "route": "/admin/groups",
+      "role": "button",
+      "name": "Новое пространство"
+    },
+    {
+      "route": "/admin/groups",
+      "role": "button",
+      "name": "Моё пространство"
+    },
+    {
+      "route": "/admin/groups",
+      "role": "link",
+      "name": "Страница обхода"
+    },
+    {
+      "route": "/admin/groups",
+      "role": "button",
+      "name": "Добавить страницу внутрь «Страница обхода»"
+    },
+    {
+      "route": "/admin/groups",
+      "role": "button",
+      "name": "Действия со страницей «Страница обхода»"
+    },
+    {
+      "route": "/admin/groups",
+      "role": "button",
+      "name": "Пространства"
+    },
+    {
+      "route": "/admin/groups",
+      "role": "button",
+      "name": "Развернуть"
+    },
+    {
+      "route": "/admin/groups",
+      "role": "button",
+      "name": "Общее"
+    },
+    {
+      "route": "/admin/groups",
+      "role": "button",
+      "name": "Новая страница в «Общее»"
+    },
+    {
+      "route": "/admin/groups",
+      "role": "button",
+      "name": "Действия пространства «Общее»"
+    },
+    {
+      "route": "/admin/groups",
+      "role": "button",
+      "name": "Обход действий"
+    },
+    {
+      "route": "/admin/groups",
+      "role": "button",
+      "name": "Новая страница в «Обход действий»"
+    },
+    {
+      "route": "/admin/groups",
+      "role": "button",
+      "name": "Действия пространства «Обход действий»"
+    },
+    {
+      "route": "/admin/groups",
+      "role": "link",
+      "name": "Шаблоны"
+    },
+    {
+      "route": "/admin/groups",
+      "role": "link",
+      "name": "Импорт"
+    },
+    {
+      "route": "/admin/groups",
+      "role": "link",
+      "name": "Корзина"
+    },
+    {
+      "route": "/admin/groups",
+      "role": "link",
+      "name": "Администрирование"
+    },
+    {
+      "route": "/admin/groups",
+      "role": "link",
+      "name": "Пользователи"
+    },
+    {
+      "route": "/admin/groups",
+      "role": "link",
+      "name": "Группы и отделы"
+    },
+    {
+      "route": "/admin/groups",
+      "role": "link",
+      "name": "Настройки организации"
+    },
+    {
+      "route": "/admin/groups",
+      "role": "link",
+      "name": "Журнал аудита"
+    },
+    {
+      "route": "/admin/groups",
+      "role": "link",
+      "name": "Резервные копии и архив"
+    },
+    {
+      "route": "/admin/groups",
+      "role": "link",
+      "name": "Состояние системы"
+    },
+    {
+      "route": "/admin/groups",
+      "role": "link",
+      "name": "Истекающие доступы"
+    },
+    {
+      "route": "/admin/groups",
+      "role": "link",
+      "name": "Доступ"
+    },
+    {
+      "route": "/admin/groups",
+      "role": "button",
+      "name": "Группа"
+    },
+    {
+      "route": "/admin/groups",
+      "role": "button",
+      "name": "Отдел"
+    },
+    {
+      "route": "/admin/groups",
+      "role": "menuitem",
+      "name": "Настройки профиля"
+    },
+    {
+      "route": "/admin/groups",
+      "role": "menuitem",
+      "name": "Тема"
+    },
+    {
+      "route": "/admin/groups",
+      "role": "menuitem",
+      "name": "Сбросить панель по умолчанию"
+    },
+    {
+      "route": "/admin/groups",
+      "role": "menuitem",
+      "name": "Справка и горячие клавиши ?"
+    },
+    {
+      "route": "/admin/groups",
+      "role": "menuitem",
+      "name": "Выйти"
+    },
+    {
+      "route": "/admin/groups",
+      "role": "menuitem",
+      "name": "Новая вложенная страница"
+    },
+    {
+      "route": "/admin/groups",
+      "role": "menuitem",
+      "name": "Переименовать F2"
+    },
+    {
+      "route": "/admin/groups",
+      "role": "menuitem",
+      "name": "😀 Изменить иконку"
+    },
+    {
+      "route": "/admin/groups",
+      "role": "menuitem",
+      "name": "Переместить в…"
+    },
+    {
+      "route": "/admin/groups",
+      "role": "menuitem",
+      "name": "Дублировать"
+    },
+    {
+      "route": "/admin/groups",
+      "role": "menuitem",
+      "name": "Копировать ссылку"
+    },
+    {
+      "route": "/admin/groups",
+      "role": "menuitem",
+      "name": "В избранное"
+    },
+    {
+      "route": "/admin/groups",
+      "role": "menuitem",
+      "name": "🗑 Удалить в корзину"
+    },
+    {
+      "route": "/admin/groups",
+      "role": "menuitem",
+      "name": "Новая страница"
+    },
+    {
+      "route": "/admin/groups",
+      "role": "menuitem",
+      "name": "Обзор пространства"
+    },
+    {
+      "route": "/admin/groups",
+      "role": "menuitem",
+      "name": "Настройки и участники"
+    },
+    {
+      "route": "/admin/settings",
+      "role": "link",
+      "name": "Перейти к содержимому"
+    },
+    {
+      "route": "/admin/settings",
+      "role": "button",
+      "name": "ООО «Тест» Анна Владелец"
+    },
+    {
+      "route": "/admin/settings",
+      "role": "button",
+      "name": "Скрыть боковую панель"
+    },
+    {
+      "route": "/admin/settings",
+      "role": "button",
+      "name": "Поиск Ctrl+K"
+    },
+    {
+      "route": "/admin/settings",
+      "role": "link",
+      "name": "Главная"
+    },
+    {
+      "route": "/admin/settings",
+      "role": "button",
+      "name": "Входящие уведомления"
+    },
+    {
+      "route": "/admin/settings",
+      "role": "button",
+      "name": "Новая страница"
+    },
+    {
+      "route": "/admin/settings",
+      "role": "button",
+      "name": "Новое пространство"
+    },
+    {
+      "route": "/admin/settings",
+      "role": "button",
+      "name": "Моё пространство"
+    },
+    {
+      "route": "/admin/settings",
+      "role": "link",
+      "name": "Страница обхода"
+    },
+    {
+      "route": "/admin/settings",
+      "role": "button",
+      "name": "Добавить страницу внутрь «Страница обхода»"
+    },
+    {
+      "route": "/admin/settings",
+      "role": "button",
+      "name": "Действия со страницей «Страница обхода»"
+    },
+    {
+      "route": "/admin/settings",
+      "role": "button",
+      "name": "Пространства"
+    },
+    {
+      "route": "/admin/settings",
+      "role": "button",
+      "name": "Развернуть"
+    },
+    {
+      "route": "/admin/settings",
+      "role": "button",
+      "name": "Общее"
+    },
+    {
+      "route": "/admin/settings",
+      "role": "button",
+      "name": "Новая страница в «Общее»"
+    },
+    {
+      "route": "/admin/settings",
+      "role": "button",
+      "name": "Действия пространства «Общее»"
+    },
+    {
+      "route": "/admin/settings",
+      "role": "button",
+      "name": "Обход действий"
+    },
+    {
+      "route": "/admin/settings",
+      "role": "button",
+      "name": "Новая страница в «Обход действий»"
+    },
+    {
+      "route": "/admin/settings",
+      "role": "button",
+      "name": "Действия пространства «Обход действий»"
+    },
+    {
+      "route": "/admin/settings",
+      "role": "link",
+      "name": "Шаблоны"
+    },
+    {
+      "route": "/admin/settings",
+      "role": "link",
+      "name": "Импорт"
+    },
+    {
+      "route": "/admin/settings",
+      "role": "link",
+      "name": "Корзина"
+    },
+    {
+      "route": "/admin/settings",
+      "role": "link",
+      "name": "Администрирование"
+    },
+    {
+      "route": "/admin/settings",
+      "role": "link",
+      "name": "Пользователи"
+    },
+    {
+      "route": "/admin/settings",
+      "role": "link",
+      "name": "Группы и отделы"
+    },
+    {
+      "route": "/admin/settings",
+      "role": "link",
+      "name": "Настройки организации"
+    },
+    {
+      "route": "/admin/settings",
+      "role": "link",
+      "name": "Журнал аудита"
+    },
+    {
+      "route": "/admin/settings",
+      "role": "link",
+      "name": "Резервные копии и архив"
+    },
+    {
+      "route": "/admin/settings",
+      "role": "link",
+      "name": "Состояние системы"
+    },
+    {
+      "route": "/admin/settings",
+      "role": "link",
+      "name": "Истекающие доступы"
+    },
+    {
+      "route": "/admin/settings",
+      "role": "link",
+      "name": "Доступ"
+    },
+    {
+      "route": "/admin/settings",
+      "role": "textbox",
+      "name": "Название организации"
+    },
+    {
+      "route": "/admin/settings",
+      "role": "button",
+      "name": "Переименовать"
+    },
+    {
+      "route": "/admin/settings",
+      "role": "switch",
+      "name": "Обязательная двухфакторная аутентификация"
+    },
+    {
+      "route": "/admin/settings",
+      "role": "switch",
+      "name": "Вход только через SSO"
+    },
+    {
+      "route": "/admin/settings",
+      "role": "switch",
+      "name": "Автоматическое создание учётных записей при входе через SSO"
+    },
+    {
+      "route": "/admin/settings",
+      "role": "switch",
+      "name": "Гостевые учётные записи"
+    },
+    {
+      "route": "/admin/settings",
+      "role": "switch",
+      "name": "Публичные ссылки"
+    },
+    {
+      "route": "/admin/settings",
+      "role": "spinbutton",
+      "name": "Срок хранения в корзине"
+    },
+    {
+      "route": "/admin/settings",
+      "role": "spinbutton",
+      "name": "Срок хранения версий"
+    },
+    {
+      "route": "/admin/settings",
+      "role": "spinbutton",
+      "name": "Срок хранения журнала изменений"
+    },
+    {
+      "route": "/admin/settings",
+      "role": "spinbutton",
+      "name": "Квота файлов на пользователя"
+    },
+    {
+      "route": "/admin/settings",
+      "role": "button",
+      "name": "Отменить изменения"
+    },
+    {
+      "route": "/admin/settings",
+      "role": "button",
+      "name": "Сохранить"
+    },
+    {
+      "route": "/admin/settings",
+      "role": "menuitem",
+      "name": "Настройки профиля"
+    },
+    {
+      "route": "/admin/settings",
+      "role": "menuitem",
+      "name": "Тема"
+    },
+    {
+      "route": "/admin/settings",
+      "role": "menuitem",
+      "name": "Сбросить панель по умолчанию"
+    },
+    {
+      "route": "/admin/settings",
+      "role": "menuitem",
+      "name": "Справка и горячие клавиши ?"
+    },
+    {
+      "route": "/admin/settings",
+      "role": "menuitem",
+      "name": "Выйти"
+    },
+    {
+      "route": "/admin/settings",
+      "role": "menuitem",
+      "name": "Новая вложенная страница"
+    },
+    {
+      "route": "/admin/settings",
+      "role": "menuitem",
+      "name": "Переименовать F2"
+    },
+    {
+      "route": "/admin/settings",
+      "role": "menuitem",
+      "name": "😀 Изменить иконку"
+    },
+    {
+      "route": "/admin/settings",
+      "role": "menuitem",
+      "name": "Переместить в…"
+    },
+    {
+      "route": "/admin/settings",
+      "role": "menuitem",
+      "name": "Дублировать"
+    },
+    {
+      "route": "/admin/settings",
+      "role": "menuitem",
+      "name": "Копировать ссылку"
+    },
+    {
+      "route": "/admin/settings",
+      "role": "menuitem",
+      "name": "В избранное"
+    },
+    {
+      "route": "/admin/settings",
+      "role": "menuitem",
+      "name": "🗑 Удалить в корзину"
+    },
+    {
+      "route": "/admin/settings",
+      "role": "menuitem",
+      "name": "Новая страница"
+    },
+    {
+      "route": "/admin/settings",
+      "role": "menuitem",
+      "name": "Обзор пространства"
+    },
+    {
+      "route": "/admin/settings",
+      "role": "menuitem",
+      "name": "Настройки и участники"
+    },
+    {
+      "route": "/admin/audit",
+      "role": "link",
+      "name": "Перейти к содержимому"
+    },
+    {
+      "route": "/admin/audit",
+      "role": "button",
+      "name": "ООО «Тест» Анна Владелец"
+    },
+    {
+      "route": "/admin/audit",
+      "role": "button",
+      "name": "Скрыть боковую панель"
+    },
+    {
+      "route": "/admin/audit",
+      "role": "button",
+      "name": "Поиск Ctrl+K"
+    },
+    {
+      "route": "/admin/audit",
+      "role": "link",
+      "name": "Главная"
+    },
+    {
+      "route": "/admin/audit",
+      "role": "button",
+      "name": "Входящие уведомления"
+    },
+    {
+      "route": "/admin/audit",
+      "role": "button",
+      "name": "Новая страница"
+    },
+    {
+      "route": "/admin/audit",
+      "role": "button",
+      "name": "Новое пространство"
+    },
+    {
+      "route": "/admin/audit",
+      "role": "button",
+      "name": "Моё пространство"
+    },
+    {
+      "route": "/admin/audit",
+      "role": "link",
+      "name": "Страница обхода"
+    },
+    {
+      "route": "/admin/audit",
+      "role": "button",
+      "name": "Добавить страницу внутрь «Страница обхода»"
+    },
+    {
+      "route": "/admin/audit",
+      "role": "button",
+      "name": "Действия со страницей «Страница обхода»"
+    },
+    {
+      "route": "/admin/audit",
+      "role": "button",
+      "name": "Пространства"
+    },
+    {
+      "route": "/admin/audit",
+      "role": "button",
+      "name": "Развернуть"
+    },
+    {
+      "route": "/admin/audit",
+      "role": "button",
+      "name": "Общее"
+    },
+    {
+      "route": "/admin/audit",
+      "role": "button",
+      "name": "Новая страница в «Общее»"
+    },
+    {
+      "route": "/admin/audit",
+      "role": "button",
+      "name": "Действия пространства «Общее»"
+    },
+    {
+      "route": "/admin/audit",
+      "role": "button",
+      "name": "Обход действий"
+    },
+    {
+      "route": "/admin/audit",
+      "role": "button",
+      "name": "Новая страница в «Обход действий»"
+    },
+    {
+      "route": "/admin/audit",
+      "role": "button",
+      "name": "Действия пространства «Обход действий»"
+    },
+    {
+      "route": "/admin/audit",
+      "role": "link",
+      "name": "Шаблоны"
+    },
+    {
+      "route": "/admin/audit",
+      "role": "link",
+      "name": "Импорт"
+    },
+    {
+      "route": "/admin/audit",
+      "role": "link",
+      "name": "Корзина"
+    },
+    {
+      "route": "/admin/audit",
+      "role": "link",
+      "name": "Администрирование"
+    },
+    {
+      "route": "/admin/audit",
+      "role": "link",
+      "name": "Пользователи"
+    },
+    {
+      "route": "/admin/audit",
+      "role": "link",
+      "name": "Группы и отделы"
+    },
+    {
+      "route": "/admin/audit",
+      "role": "link",
+      "name": "Настройки организации"
+    },
+    {
+      "route": "/admin/audit",
+      "role": "link",
+      "name": "Журнал аудита"
+    },
+    {
+      "route": "/admin/audit",
+      "role": "link",
+      "name": "Резервные копии и архив"
+    },
+    {
+      "route": "/admin/audit",
+      "role": "link",
+      "name": "Состояние системы"
+    },
+    {
+      "route": "/admin/audit",
+      "role": "link",
+      "name": "Истекающие доступы"
+    },
+    {
+      "route": "/admin/audit",
+      "role": "link",
+      "name": "Доступ"
+    },
+    {
+      "route": "/admin/audit",
+      "role": "button",
+      "name": "CSV"
+    },
+    {
+      "route": "/admin/audit",
+      "role": "button",
+      "name": "Проверить целостность"
+    },
+    {
+      "route": "/admin/audit",
+      "role": "combobox",
+      "name": "Действие"
+    },
+    {
+      "route": "/admin/audit",
+      "role": "option",
+      "name": "Все действия"
+    },
+    {
+      "route": "/admin/audit",
+      "role": "option",
+      "name": "Вход и безопасность"
+    },
+    {
+      "route": "/admin/audit",
+      "role": "option",
+      "name": "Пользователи"
+    },
+    {
+      "route": "/admin/audit",
+      "role": "option",
+      "name": "Группы"
+    },
+    {
+      "route": "/admin/audit",
+      "role": "option",
+      "name": "Права доступа"
+    },
+    {
+      "route": "/admin/audit",
+      "role": "option",
+      "name": "Страницы"
+    },
+    {
+      "route": "/admin/audit",
+      "role": "option",
+      "name": "Пространства"
+    },
+    {
+      "route": "/admin/audit",
+      "role": "option",
+      "name": "Организация"
+    },
+    {
+      "route": "/admin/audit",
+      "role": "option",
+      "name": "Архивы"
+    },
+    {
+      "route": "/admin/audit",
+      "role": "option",
+      "name": "Экспорт"
+    },
+    {
+      "route": "/admin/audit",
+      "role": "textbox",
+      "name": "Код действия"
+    },
+    {
+      "route": "/admin/audit",
+      "role": "combobox",
+      "name": "Кто"
+    },
+    {
+      "route": "/admin/audit",
+      "role": "combobox",
+      "name": "Тип объекта"
+    },
+    {
+      "route": "/admin/audit",
+      "role": "option",
+      "name": "Любой"
+    },
+    {
+      "route": "/admin/audit",
+      "role": "option",
+      "name": "Пользователь"
+    },
+    {
+      "route": "/admin/audit",
+      "role": "option",
+      "name": "Группа"
+    },
+    {
+      "route": "/admin/audit",
+      "role": "option",
+      "name": "Страница"
+    },
+    {
+      "route": "/admin/audit",
+      "role": "option",
+      "name": "Пространство"
+    },
+    {
+      "route": "/admin/audit",
+      "role": "option",
+      "name": "Задача"
+    },
+    {
+      "route": "/admin/audit",
+      "role": "option",
+      "name": "Файл"
+    },
+    {
+      "route": "/admin/audit",
+      "role": "textbox",
+      "name": "ID объекта"
+    },
+    {
+      "route": "/admin/audit",
+      "role": "textbox",
+      "name": "С"
+    },
+    {
+      "route": "/admin/audit",
+      "role": "textbox",
+      "name": "По"
+    },
+    {
+      "route": "/admin/audit",
+      "role": "button",
+      "name": "Сбросить"
+    },
+    {
+      "route": "/admin/audit",
+      "role": "button",
+      "name": "Применить"
+    },
+    {
+      "route": "/admin/audit",
+      "role": "button",
+      "name": "Подробности"
+    },
+    {
+      "route": "/admin/audit",
+      "role": "menuitem",
+      "name": "Настройки профиля"
+    },
+    {
+      "route": "/admin/audit",
+      "role": "menuitem",
+      "name": "Тема"
+    },
+    {
+      "route": "/admin/audit",
+      "role": "menuitem",
+      "name": "Сбросить панель по умолчанию"
+    },
+    {
+      "route": "/admin/audit",
+      "role": "menuitem",
+      "name": "Справка и горячие клавиши ?"
+    },
+    {
+      "route": "/admin/audit",
+      "role": "menuitem",
+      "name": "Выйти"
+    },
+    {
+      "route": "/admin/audit",
+      "role": "menuitem",
+      "name": "Новая вложенная страница"
+    },
+    {
+      "route": "/admin/audit",
+      "role": "menuitem",
+      "name": "Переименовать F2"
+    },
+    {
+      "route": "/admin/audit",
+      "role": "menuitem",
+      "name": "😀 Изменить иконку"
+    },
+    {
+      "route": "/admin/audit",
+      "role": "menuitem",
+      "name": "Переместить в…"
+    },
+    {
+      "route": "/admin/audit",
+      "role": "menuitem",
+      "name": "Дублировать"
+    },
+    {
+      "route": "/admin/audit",
+      "role": "menuitem",
+      "name": "Копировать ссылку"
+    },
+    {
+      "route": "/admin/audit",
+      "role": "menuitem",
+      "name": "В избранное"
+    },
+    {
+      "route": "/admin/audit",
+      "role": "menuitem",
+      "name": "🗑 Удалить в корзину"
+    },
+    {
+      "route": "/admin/audit",
+      "role": "menuitem",
+      "name": "Новая страница"
+    },
+    {
+      "route": "/admin/audit",
+      "role": "menuitem",
+      "name": "Обзор пространства"
+    },
+    {
+      "route": "/admin/audit",
+      "role": "menuitem",
+      "name": "Настройки и участники"
+    },
+    {
+      "route": "/admin/archives",
+      "role": "link",
+      "name": "Перейти к содержимому"
+    },
+    {
+      "route": "/admin/archives",
+      "role": "button",
+      "name": "ООО «Тест» Анна Владелец"
+    },
+    {
+      "route": "/admin/archives",
+      "role": "button",
+      "name": "Скрыть боковую панель"
+    },
+    {
+      "route": "/admin/archives",
+      "role": "button",
+      "name": "Поиск Ctrl+K"
+    },
+    {
+      "route": "/admin/archives",
+      "role": "link",
+      "name": "Главная"
+    },
+    {
+      "route": "/admin/archives",
+      "role": "button",
+      "name": "Входящие уведомления"
+    },
+    {
+      "route": "/admin/archives",
+      "role": "button",
+      "name": "Новая страница"
+    },
+    {
+      "route": "/admin/archives",
+      "role": "button",
+      "name": "Новое пространство"
+    },
+    {
+      "route": "/admin/archives",
+      "role": "button",
+      "name": "Моё пространство"
+    },
+    {
+      "route": "/admin/archives",
+      "role": "link",
+      "name": "Страница обхода"
+    },
+    {
+      "route": "/admin/archives",
+      "role": "button",
+      "name": "Добавить страницу внутрь «Страница обхода»"
+    },
+    {
+      "route": "/admin/archives",
+      "role": "button",
+      "name": "Действия со страницей «Страница обхода»"
+    },
+    {
+      "route": "/admin/archives",
+      "role": "button",
+      "name": "Пространства"
+    },
+    {
+      "route": "/admin/archives",
+      "role": "button",
+      "name": "Развернуть"
+    },
+    {
+      "route": "/admin/archives",
+      "role": "button",
+      "name": "Общее"
+    },
+    {
+      "route": "/admin/archives",
+      "role": "button",
+      "name": "Новая страница в «Общее»"
+    },
+    {
+      "route": "/admin/archives",
+      "role": "button",
+      "name": "Действия пространства «Общее»"
+    },
+    {
+      "route": "/admin/archives",
+      "role": "button",
+      "name": "Обход действий"
+    },
+    {
+      "route": "/admin/archives",
+      "role": "button",
+      "name": "Новая страница в «Обход действий»"
+    },
+    {
+      "route": "/admin/archives",
+      "role": "button",
+      "name": "Действия пространства «Обход действий»"
+    },
+    {
+      "route": "/admin/archives",
+      "role": "link",
+      "name": "Шаблоны"
+    },
+    {
+      "route": "/admin/archives",
+      "role": "link",
+      "name": "Импорт"
+    },
+    {
+      "route": "/admin/archives",
+      "role": "link",
+      "name": "Корзина"
+    },
+    {
+      "route": "/admin/archives",
+      "role": "link",
+      "name": "Администрирование"
+    },
+    {
+      "route": "/admin/archives",
+      "role": "link",
+      "name": "Пользователи"
+    },
+    {
+      "route": "/admin/archives",
+      "role": "link",
+      "name": "Группы и отделы"
+    },
+    {
+      "route": "/admin/archives",
+      "role": "link",
+      "name": "Настройки организации"
+    },
+    {
+      "route": "/admin/archives",
+      "role": "link",
+      "name": "Журнал аудита"
+    },
+    {
+      "route": "/admin/archives",
+      "role": "link",
+      "name": "Резервные копии и архив"
+    },
+    {
+      "route": "/admin/archives",
+      "role": "link",
+      "name": "Состояние системы"
+    },
+    {
+      "route": "/admin/archives",
+      "role": "link",
+      "name": "Истекающие доступы"
+    },
+    {
+      "route": "/admin/archives",
+      "role": "link",
+      "name": "Доступ"
+    },
+    {
+      "route": "/admin/archives",
+      "role": "button",
+      "name": "Восстановить из архива"
+    },
+    {
+      "route": "/admin/archives",
+      "role": "button",
+      "name": "Создать архив"
+    },
+    {
+      "route": "/admin/archives",
+      "role": "menuitem",
+      "name": "Настройки профиля"
+    },
+    {
+      "route": "/admin/archives",
+      "role": "menuitem",
+      "name": "Тема"
+    },
+    {
+      "route": "/admin/archives",
+      "role": "menuitem",
+      "name": "Сбросить панель по умолчанию"
+    },
+    {
+      "route": "/admin/archives",
+      "role": "menuitem",
+      "name": "Справка и горячие клавиши ?"
+    },
+    {
+      "route": "/admin/archives",
+      "role": "menuitem",
+      "name": "Выйти"
+    },
+    {
+      "route": "/admin/archives",
+      "role": "menuitem",
+      "name": "Новая вложенная страница"
+    },
+    {
+      "route": "/admin/archives",
+      "role": "menuitem",
+      "name": "Переименовать F2"
+    },
+    {
+      "route": "/admin/archives",
+      "role": "menuitem",
+      "name": "😀 Изменить иконку"
+    },
+    {
+      "route": "/admin/archives",
+      "role": "menuitem",
+      "name": "Переместить в…"
+    },
+    {
+      "route": "/admin/archives",
+      "role": "menuitem",
+      "name": "Дублировать"
+    },
+    {
+      "route": "/admin/archives",
+      "role": "menuitem",
+      "name": "Копировать ссылку"
+    },
+    {
+      "route": "/admin/archives",
+      "role": "menuitem",
+      "name": "В избранное"
+    },
+    {
+      "route": "/admin/archives",
+      "role": "menuitem",
+      "name": "🗑 Удалить в корзину"
+    },
+    {
+      "route": "/admin/archives",
+      "role": "menuitem",
+      "name": "Новая страница"
+    },
+    {
+      "route": "/admin/archives",
+      "role": "menuitem",
+      "name": "Обзор пространства"
+    },
+    {
+      "route": "/admin/archives",
+      "role": "menuitem",
+      "name": "Настройки и участники"
+    },
+    {
+      "route": "/admin/health",
+      "role": "link",
+      "name": "Перейти к содержимому"
+    },
+    {
+      "route": "/admin/health",
+      "role": "button",
+      "name": "ООО «Тест» Анна Владелец"
+    },
+    {
+      "route": "/admin/health",
+      "role": "button",
+      "name": "Скрыть боковую панель"
+    },
+    {
+      "route": "/admin/health",
+      "role": "button",
+      "name": "Поиск Ctrl+K"
+    },
+    {
+      "route": "/admin/health",
+      "role": "link",
+      "name": "Главная"
+    },
+    {
+      "route": "/admin/health",
+      "role": "button",
+      "name": "Входящие уведомления"
+    },
+    {
+      "route": "/admin/health",
+      "role": "button",
+      "name": "Новая страница"
+    },
+    {
+      "route": "/admin/health",
+      "role": "button",
+      "name": "Новое пространство"
+    },
+    {
+      "route": "/admin/health",
+      "role": "button",
+      "name": "Моё пространство"
+    },
+    {
+      "route": "/admin/health",
+      "role": "link",
+      "name": "Страница обхода"
+    },
+    {
+      "route": "/admin/health",
+      "role": "button",
+      "name": "Добавить страницу внутрь «Страница обхода»"
+    },
+    {
+      "route": "/admin/health",
+      "role": "button",
+      "name": "Действия со страницей «Страница обхода»"
+    },
+    {
+      "route": "/admin/health",
+      "role": "button",
+      "name": "Пространства"
+    },
+    {
+      "route": "/admin/health",
+      "role": "button",
+      "name": "Развернуть"
+    },
+    {
+      "route": "/admin/health",
+      "role": "button",
+      "name": "Общее"
+    },
+    {
+      "route": "/admin/health",
+      "role": "button",
+      "name": "Новая страница в «Общее»"
+    },
+    {
+      "route": "/admin/health",
+      "role": "button",
+      "name": "Действия пространства «Общее»"
+    },
+    {
+      "route": "/admin/health",
+      "role": "button",
+      "name": "Обход действий"
+    },
+    {
+      "route": "/admin/health",
+      "role": "button",
+      "name": "Новая страница в «Обход действий»"
+    },
+    {
+      "route": "/admin/health",
+      "role": "button",
+      "name": "Действия пространства «Обход действий»"
+    },
+    {
+      "route": "/admin/health",
+      "role": "link",
+      "name": "Шаблоны"
+    },
+    {
+      "route": "/admin/health",
+      "role": "link",
+      "name": "Импорт"
+    },
+    {
+      "route": "/admin/health",
+      "role": "link",
+      "name": "Корзина"
+    },
+    {
+      "route": "/admin/health",
+      "role": "link",
+      "name": "Администрирование"
+    },
+    {
+      "route": "/admin/health",
+      "role": "link",
+      "name": "Пользователи"
+    },
+    {
+      "route": "/admin/health",
+      "role": "link",
+      "name": "Группы и отделы"
+    },
+    {
+      "route": "/admin/health",
+      "role": "link",
+      "name": "Настройки организации"
+    },
+    {
+      "route": "/admin/health",
+      "role": "link",
+      "name": "Журнал аудита"
+    },
+    {
+      "route": "/admin/health",
+      "role": "link",
+      "name": "Резервные копии и архив"
+    },
+    {
+      "route": "/admin/health",
+      "role": "link",
+      "name": "Состояние системы"
+    },
+    {
+      "route": "/admin/health",
+      "role": "link",
+      "name": "Истекающие доступы"
+    },
+    {
+      "route": "/admin/health",
+      "role": "link",
+      "name": "Доступ"
+    },
+    {
+      "route": "/admin/health",
+      "role": "button",
+      "name": "Обновить"
+    },
+    {
+      "route": "/admin/health",
+      "role": "menuitem",
+      "name": "Настройки профиля"
+    },
+    {
+      "route": "/admin/health",
+      "role": "menuitem",
+      "name": "Тема"
+    },
+    {
+      "route": "/admin/health",
+      "role": "menuitem",
+      "name": "Сбросить панель по умолчанию"
+    },
+    {
+      "route": "/admin/health",
+      "role": "menuitem",
+      "name": "Справка и горячие клавиши ?"
+    },
+    {
+      "route": "/admin/health",
+      "role": "menuitem",
+      "name": "Выйти"
+    },
+    {
+      "route": "/admin/health",
+      "role": "menuitem",
+      "name": "Новая вложенная страница"
+    },
+    {
+      "route": "/admin/health",
+      "role": "menuitem",
+      "name": "Переименовать F2"
+    },
+    {
+      "route": "/admin/health",
+      "role": "menuitem",
+      "name": "😀 Изменить иконку"
+    },
+    {
+      "route": "/admin/health",
+      "role": "menuitem",
+      "name": "Переместить в…"
+    },
+    {
+      "route": "/admin/health",
+      "role": "menuitem",
+      "name": "Дублировать"
+    },
+    {
+      "route": "/admin/health",
+      "role": "menuitem",
+      "name": "Копировать ссылку"
+    },
+    {
+      "route": "/admin/health",
+      "role": "menuitem",
+      "name": "В избранное"
+    },
+    {
+      "route": "/admin/health",
+      "role": "menuitem",
+      "name": "🗑 Удалить в корзину"
+    },
+    {
+      "route": "/admin/health",
+      "role": "menuitem",
+      "name": "Новая страница"
+    },
+    {
+      "route": "/admin/health",
+      "role": "menuitem",
+      "name": "Обзор пространства"
+    },
+    {
+      "route": "/admin/health",
+      "role": "menuitem",
+      "name": "Настройки и участники"
+    },
+    {
+      "route": "/admin/expiring",
+      "role": "link",
+      "name": "Перейти к содержимому"
+    },
+    {
+      "route": "/admin/expiring",
+      "role": "button",
+      "name": "ООО «Тест» Анна Владелец"
+    },
+    {
+      "route": "/admin/expiring",
+      "role": "button",
+      "name": "Скрыть боковую панель"
+    },
+    {
+      "route": "/admin/expiring",
+      "role": "button",
+      "name": "Поиск Ctrl+K"
+    },
+    {
+      "route": "/admin/expiring",
+      "role": "link",
+      "name": "Главная"
+    },
+    {
+      "route": "/admin/expiring",
+      "role": "button",
+      "name": "Входящие уведомления"
+    },
+    {
+      "route": "/admin/expiring",
+      "role": "button",
+      "name": "Новая страница"
+    },
+    {
+      "route": "/admin/expiring",
+      "role": "button",
+      "name": "Новое пространство"
+    },
+    {
+      "route": "/admin/expiring",
+      "role": "button",
+      "name": "Моё пространство"
+    },
+    {
+      "route": "/admin/expiring",
+      "role": "link",
+      "name": "Страница обхода"
+    },
+    {
+      "route": "/admin/expiring",
+      "role": "button",
+      "name": "Добавить страницу внутрь «Страница обхода»"
+    },
+    {
+      "route": "/admin/expiring",
+      "role": "button",
+      "name": "Действия со страницей «Страница обхода»"
+    },
+    {
+      "route": "/admin/expiring",
+      "role": "button",
+      "name": "Пространства"
+    },
+    {
+      "route": "/admin/expiring",
+      "role": "button",
+      "name": "Развернуть"
+    },
+    {
+      "route": "/admin/expiring",
+      "role": "button",
+      "name": "Общее"
+    },
+    {
+      "route": "/admin/expiring",
+      "role": "button",
+      "name": "Новая страница в «Общее»"
+    },
+    {
+      "route": "/admin/expiring",
+      "role": "button",
+      "name": "Действия пространства «Общее»"
+    },
+    {
+      "route": "/admin/expiring",
+      "role": "button",
+      "name": "Обход действий"
+    },
+    {
+      "route": "/admin/expiring",
+      "role": "button",
+      "name": "Новая страница в «Обход действий»"
+    },
+    {
+      "route": "/admin/expiring",
+      "role": "button",
+      "name": "Действия пространства «Обход действий»"
+    },
+    {
+      "route": "/admin/expiring",
+      "role": "link",
+      "name": "Шаблоны"
+    },
+    {
+      "route": "/admin/expiring",
+      "role": "link",
+      "name": "Импорт"
+    },
+    {
+      "route": "/admin/expiring",
+      "role": "link",
+      "name": "Корзина"
+    },
+    {
+      "route": "/admin/expiring",
+      "role": "link",
+      "name": "Администрирование"
+    },
+    {
+      "route": "/admin/expiring",
+      "role": "link",
+      "name": "Пользователи"
+    },
+    {
+      "route": "/admin/expiring",
+      "role": "link",
+      "name": "Группы и отделы"
+    },
+    {
+      "route": "/admin/expiring",
+      "role": "link",
+      "name": "Настройки организации"
+    },
+    {
+      "route": "/admin/expiring",
+      "role": "link",
+      "name": "Журнал аудита"
+    },
+    {
+      "route": "/admin/expiring",
+      "role": "link",
+      "name": "Резервные копии и архив"
+    },
+    {
+      "route": "/admin/expiring",
+      "role": "link",
+      "name": "Состояние системы"
+    },
+    {
+      "route": "/admin/expiring",
+      "role": "link",
+      "name": "Истекающие доступы"
+    },
+    {
+      "route": "/admin/expiring",
+      "role": "link",
+      "name": "Доступ"
+    },
+    {
+      "route": "/admin/expiring",
+      "role": "searchbox",
+      "name": "Поиск"
+    },
+    {
+      "route": "/admin/expiring",
+      "role": "combobox",
+      "name": "Период"
+    },
+    {
+      "route": "/admin/expiring",
+      "role": "option",
+      "name": "Истекают в течение 7 дней"
+    },
+    {
+      "route": "/admin/expiring",
+      "role": "option",
+      "name": "Истекают в течение 30 дней"
+    },
+    {
+      "route": "/admin/expiring",
+      "role": "option",
+      "name": "Уже истекли"
+    },
+    {
+      "route": "/admin/expiring",
+      "role": "option",
+      "name": "Все временные"
+    },
+    {
+      "route": "/admin/expiring",
+      "role": "menuitem",
+      "name": "Настройки профиля"
+    },
+    {
+      "route": "/admin/expiring",
+      "role": "menuitem",
+      "name": "Тема"
+    },
+    {
+      "route": "/admin/expiring",
+      "role": "menuitem",
+      "name": "Сбросить панель по умолчанию"
+    },
+    {
+      "route": "/admin/expiring",
+      "role": "menuitem",
+      "name": "Справка и горячие клавиши ?"
+    },
+    {
+      "route": "/admin/expiring",
+      "role": "menuitem",
+      "name": "Выйти"
+    },
+    {
+      "route": "/admin/expiring",
+      "role": "menuitem",
+      "name": "Новая вложенная страница"
+    },
+    {
+      "route": "/admin/expiring",
+      "role": "menuitem",
+      "name": "Переименовать F2"
+    },
+    {
+      "route": "/admin/expiring",
+      "role": "menuitem",
+      "name": "😀 Изменить иконку"
+    },
+    {
+      "route": "/admin/expiring",
+      "role": "menuitem",
+      "name": "Переместить в…"
+    },
+    {
+      "route": "/admin/expiring",
+      "role": "menuitem",
+      "name": "Дублировать"
+    },
+    {
+      "route": "/admin/expiring",
+      "role": "menuitem",
+      "name": "Копировать ссылку"
+    },
+    {
+      "route": "/admin/expiring",
+      "role": "menuitem",
+      "name": "В избранное"
+    },
+    {
+      "route": "/admin/expiring",
+      "role": "menuitem",
+      "name": "🗑 Удалить в корзину"
+    },
+    {
+      "route": "/admin/expiring",
+      "role": "menuitem",
+      "name": "Новая страница"
+    },
+    {
+      "route": "/admin/expiring",
+      "role": "menuitem",
+      "name": "Обзор пространства"
+    },
+    {
+      "route": "/admin/expiring",
+      "role": "menuitem",
+      "name": "Настройки и участники"
+    },
+    {
+      "route": "/admin/access",
+      "role": "link",
+      "name": "Перейти к содержимому"
+    },
+    {
+      "route": "/admin/access",
+      "role": "button",
+      "name": "ООО «Тест» Анна Владелец"
+    },
+    {
+      "route": "/admin/access",
+      "role": "button",
+      "name": "Скрыть боковую панель"
+    },
+    {
+      "route": "/admin/access",
+      "role": "button",
+      "name": "Поиск Ctrl+K"
+    },
+    {
+      "route": "/admin/access",
+      "role": "link",
+      "name": "Главная"
+    },
+    {
+      "route": "/admin/access",
+      "role": "button",
+      "name": "Входящие уведомления"
+    },
+    {
+      "route": "/admin/access",
+      "role": "button",
+      "name": "Новая страница"
+    },
+    {
+      "route": "/admin/access",
+      "role": "button",
+      "name": "Новое пространство"
+    },
+    {
+      "route": "/admin/access",
+      "role": "button",
+      "name": "Моё пространство"
+    },
+    {
+      "route": "/admin/access",
+      "role": "link",
+      "name": "Страница обхода"
+    },
+    {
+      "route": "/admin/access",
+      "role": "button",
+      "name": "Добавить страницу внутрь «Страница обхода»"
+    },
+    {
+      "route": "/admin/access",
+      "role": "button",
+      "name": "Действия со страницей «Страница обхода»"
+    },
+    {
+      "route": "/admin/access",
+      "role": "button",
+      "name": "Пространства"
+    },
+    {
+      "route": "/admin/access",
+      "role": "button",
+      "name": "Развернуть"
+    },
+    {
+      "route": "/admin/access",
+      "role": "button",
+      "name": "Общее"
+    },
+    {
+      "route": "/admin/access",
+      "role": "button",
+      "name": "Новая страница в «Общее»"
+    },
+    {
+      "route": "/admin/access",
+      "role": "button",
+      "name": "Действия пространства «Общее»"
+    },
+    {
+      "route": "/admin/access",
+      "role": "button",
+      "name": "Обход действий"
+    },
+    {
+      "route": "/admin/access",
+      "role": "button",
+      "name": "Новая страница в «Обход действий»"
+    },
+    {
+      "route": "/admin/access",
+      "role": "button",
+      "name": "Действия пространства «Обход действий»"
+    },
+    {
+      "route": "/admin/access",
+      "role": "link",
+      "name": "Шаблоны"
+    },
+    {
+      "route": "/admin/access",
+      "role": "link",
+      "name": "Импорт"
+    },
+    {
+      "route": "/admin/access",
+      "role": "link",
+      "name": "Корзина"
+    },
+    {
+      "route": "/admin/access",
+      "role": "link",
+      "name": "Администрирование"
+    },
+    {
+      "route": "/admin/access",
+      "role": "link",
+      "name": "Пользователи"
+    },
+    {
+      "route": "/admin/access",
+      "role": "link",
+      "name": "Группы и отделы"
+    },
+    {
+      "route": "/admin/access",
+      "role": "link",
+      "name": "Настройки организации"
+    },
+    {
+      "route": "/admin/access",
+      "role": "link",
+      "name": "Журнал аудита"
+    },
+    {
+      "route": "/admin/access",
+      "role": "link",
+      "name": "Резервные копии и архив"
+    },
+    {
+      "route": "/admin/access",
+      "role": "link",
+      "name": "Состояние системы"
+    },
+    {
+      "route": "/admin/access",
+      "role": "link",
+      "name": "Истекающие доступы"
+    },
+    {
+      "route": "/admin/access",
+      "role": "link",
+      "name": "Доступ"
+    },
+    {
+      "route": "/admin/access",
+      "role": "tab",
+      "name": "Проверить доступ"
+    },
+    {
+      "route": "/admin/access",
+      "role": "tab",
+      "name": "Матрица доступа"
+    },
+    {
+      "route": "/admin/access",
+      "role": "tab",
+      "name": "Экстренный доступ"
+    },
+    {
+      "route": "/admin/access",
+      "role": "tab",
+      "name": "Публичные ссылки"
+    },
+    {
+      "route": "/admin/access",
+      "role": "combobox",
+      "name": "Сотрудник"
+    },
+    {
+      "route": "/admin/access",
+      "role": "textbox",
+      "name": "Документ (ссылка, ID или название)"
+    },
+    {
+      "route": "/admin/access",
+      "role": "menuitem",
+      "name": "Настройки профиля"
+    },
+    {
+      "route": "/admin/access",
+      "role": "menuitem",
+      "name": "Тема"
+    },
+    {
+      "route": "/admin/access",
+      "role": "menuitem",
+      "name": "Сбросить панель по умолчанию"
+    },
+    {
+      "route": "/admin/access",
+      "role": "menuitem",
+      "name": "Справка и горячие клавиши ?"
+    },
+    {
+      "route": "/admin/access",
+      "role": "menuitem",
+      "name": "Выйти"
+    },
+    {
+      "route": "/admin/access",
+      "role": "menuitem",
+      "name": "Новая вложенная страница"
+    },
+    {
+      "route": "/admin/access",
+      "role": "menuitem",
+      "name": "Переименовать F2"
+    },
+    {
+      "route": "/admin/access",
+      "role": "menuitem",
+      "name": "😀 Изменить иконку"
+    },
+    {
+      "route": "/admin/access",
+      "role": "menuitem",
+      "name": "Переместить в…"
+    },
+    {
+      "route": "/admin/access",
+      "role": "menuitem",
+      "name": "Дублировать"
+    },
+    {
+      "route": "/admin/access",
+      "role": "menuitem",
+      "name": "Копировать ссылку"
+    },
+    {
+      "route": "/admin/access",
+      "role": "menuitem",
+      "name": "В избранное"
+    },
+    {
+      "route": "/admin/access",
+      "role": "menuitem",
+      "name": "🗑 Удалить в корзину"
+    },
+    {
+      "route": "/admin/access",
+      "role": "menuitem",
+      "name": "Новая страница"
+    },
+    {
+      "route": "/admin/access",
+      "role": "menuitem",
+      "name": "Обзор пространства"
+    },
+    {
+      "route": "/admin/access",
+      "role": "menuitem",
+      "name": "Настройки и участники"
+    }
+  ],
+  "unnamed": []
+}

@@ -101,6 +101,15 @@ export class CollabHub {
     return { docs: this.docs.size, connections: conns };
   }
 
+  /** People currently connected to a page on this instance (restore preview: "others are editing now"). */
+  connectedUsers(pageId: string): Array<{ id: string; name: string; canEdit: boolean }> {
+    const live = this.docs.get(pageId);
+    if (!live) return [];
+    const byId = new Map<string, { id: string; name: string; canEdit: boolean }>();
+    for (const c of live.conns) byId.set(c.user.id, { id: c.user.id, name: c.user.name, canEdit: c.canEdit || !!byId.get(c.user.id)?.canEdit });
+    return [...byId.values()];
+  }
+
   // ------------------------------------------------------------------ loading
 
   private async load(pageId: string): Promise<LiveDoc> {

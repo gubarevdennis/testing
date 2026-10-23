@@ -57,6 +57,10 @@ export interface PageDto {
   locked: boolean;
   wide: boolean;
   properties: Record<string, any>;
+  /** Free-form page tags (R-PAGE-001), searchable (R-SEARCH-003). */
+  tags?: string[];
+  /** Readable URL part derived from the title; the id stays the identity. */
+  slug?: string;
   collectionId: string | null;
   createdAt: string;
   updatedAt: string;

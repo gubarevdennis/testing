@@ -163,8 +163,9 @@ export async function duplicatePage(pageId: string) {
   return r.page as { id: string };
 }
 
-export async function copyLink(pageId: string, blockId?: string) {
-  const url = `${location.origin}/p/${pageId}${blockId ? '?block=' + blockId : ''}`;
+/** The id is the identity of the link; the readable slug after it is cosmetic (renames never break the link). */
+export async function copyLink(pageId: string, blockId?: string, slug?: string) {
+  const url = `${location.origin}/p/${pageId}${slug ? '/' + slug : ''}${blockId ? '?block=' + blockId : ''}`;
   try {
     await navigator.clipboard.writeText(url);
     toast.success('Ссылка скопирована');

@@ -127,8 +127,11 @@ export function BlockHandle({ editor, pageId, onComment, onMoveToPage }: { edito
       editor={editor}
       className="block-handle"
       onNodeChange={({ node, pos }) => {
+        const prev = current.current;
         current.current = node ? { node, pos } : null;
-        setTick((x) => x + 1);
+        // The plugin reports on every keydown (node: null) and on every edit of the hovered block (a new node object):
+        // re-render only when the menu's contents can differ (another block type), not once per keystroke (PERF-D1).
+        if ((prev?.node.type.name ?? null) !== (node?.type.name ?? null) || prev?.node.attrs.level !== node?.attrs.level) setTick((x) => x + 1);
       }}
       computePositionConfig={POSITION}
     >

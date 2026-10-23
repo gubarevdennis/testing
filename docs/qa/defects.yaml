@@ -1,0 +1,90 @@
+# Defect and open-issue register (R-PROCESS-051, OPS-018). Source of truth; docs/qa/DEFECTS.md is generated from it
+# by `npm run qa:report` (scripts/qa/defects.ts), together with the automatically derived list of P0 requirement gaps.
+#
+# Fields: id, title, severity (blocker | critical | high | medium | low), status (open | fixed | accepted),
+# owner (accountable team), test (the test that reproduces it or proves the fix; "none" if a test is still missing),
+# requirements, source (where it was found), actions (ids from docs/qa/action-inventory.yaml it affects),
+# accepted_by / reason (required for status accepted; only medium/low may be accepted — R-PROCESS-051).
+# scripts/release-gate.py fails while any blocker/critical/high defect is open (OPS-018).
+defects:
+  - id: PERF-D1
+    title: Ввод при замедлении CPU 4× не укладывается в бюджет (p95 ≈ 0,5–0,8 с вместо 50 мс; p99 0,8–1,2 с вместо 100 мс)
+    severity: high
+    status: open
+    owner: команда «Редактор»
+    test: tests/e2e/perf-typing.spec.ts › R-PERF-008, AT-84 (бюджет проверяется при KB_PERF_ENFORCE=1)
+    requirements: [R-PERF-008, AT-84]
+    source: docs/PERFORMANCE.md «Открытые дефекты производительности» п. 1
+  - id: PERF-D2
+    title: Документ 5 000 блоков — p50 ввода ≈ 190 мс; вставка 5 000 блоков одной транзакцией квадратична (y-prosemirror mapPositionMigration)
+    severity: high
+    status: open
+    owner: команда «Редактор»
+    test: tests/e2e/perf-typing.spec.ts › SC-04
+    requirements: [R-PERF-025, SC-04]
+    source: docs/PERFORMANCE.md «Открытые дефекты производительности» п. 2
+  - id: PERF-D3
+    title: Главный экран — смещение макета при замене скелетонов списками (CLS ≈ 0,03)
+    severity: low
+    status: open
+    owner: команда «Навигация и оболочка»
+    test: tests/e2e/ui-p0-layout.spec.ts (CLS < 0,1 проверяется)
+    requirements: [R-UI-006, R-UI-040]
+    source: docs/PERFORMANCE.md «Открытые дефекты производительности» п. 3
+  - id: PERF-D4
+    title: Совместное редактирование при 100 читателях + 20 редакторах — подтверждение правки p95 ≈ 1,4 с при бюджете 500 мс (стенд не эталонный)
+    severity: high
+    status: open
+    owner: команда «Страница и совместная работа»
+    test: scripts/load/collab-load.mjs (отчёты test-results/load/*.json)
+    requirements: [V17-F02]
+    source: 'docs/PERFORMANCE.md «Результаты: нагрузка»'
+  - id: SEC-L1
+    title: Внешние изображения во вставленном HTML загружаются браузером напрямую с внешнего адреса (CSP img-src https:) — утечка факта просмотра
+    severity: medium
+    status: open
+    owner: команда «Редактор»
+    test: none
+    requirements: [R-SECURITY-008]
+    source: docs/SECURITY.md «Известные ограничения» п. 1
+  - id: SEC-L2
+    title: Нет независимого тестирования на проникновение; уязвимости moderate/low в транзитивных зависимостях (uuid в exceljs, sprintf-js/argparse в mammoth, katex) без исправления
+    severity: medium
+    status: open
+    owner: команда «Администрирование и доступ»
+    test: scripts/security/audit-gate.mjs (npm run security:deps)
+    requirements: [R-SECURITY-004]
+    source: docs/SECURITY.md «Известные ограничения» п. 2
+  - id: SEC-L3
+    title: Вход через OIDC и антивирусная проверка ClamAV не проверены с реальными сервисами
+    severity: high
+    status: open
+    owner: команда «Администрирование и доступ»
+    test: none (нужен стенд с IdP и clamd)
+    requirements: [R-SECURITY-002]
+    source: docs/SECURITY.md «Известные ограничения» п. 3
+  - id: SEC-L4
+    title: Ограничение частоты запросов действует на экземпляр процесса, а не глобально (при нескольких экземплярах лимит умножается)
+    severity: medium
+    status: open
+    owner: команда «Администрирование и доступ»
+    test: none
+    requirements: [R-SECURITY-002]
+    source: docs/SECURITY.md «Известные ограничения» п. 4
+  - id: QA-D1
+    title: 'GET /api/v1/spaces отвечает 500 (TypeError: reading ''actions'' of undefined, routes/spaces.ts), если пространство создано между расчётом прав и выборкой списка'
+    severity: medium
+    status: open
+    owner: команда «Администрирование и доступ»
+    test: none (воспроизводится обходом tests/e2e/qa-crawl.spec.ts — сервер записал ошибку в журнал при создании пространства во время запроса списка)
+    requirements: [R-UI-011]
+    source: 'журнал сервера при прогоне tests/e2e/qa-crawl.spec.ts, 2026-10-23'
+    actions: [shell/Sidebar/novoe-prostranstvo]
+  - id: QA-D2
+    title: Покрытие действий автотестами неполное — см. docs/qa/ACTION_MATRIX.md «Не покрытые критичные действия»
+    severity: high
+    status: open
+    owner: QA (ответственный за релиз)
+    test: scripts/qa/coverage.ts (npm run qa:report)
+    requirements: [QA26-01, QA26-28, R-QA-006, R-UI-026]
+    source: docs/qa/ACTION_MATRIX.md

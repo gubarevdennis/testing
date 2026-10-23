@@ -154,6 +154,7 @@ export default function SearchPage() {
   const to = params.get('to') ?? '';
   const status = params.get('status') ?? '';
   const type = params.get('type') ?? '';
+  const tag = params.get('tag') ?? '';
   const [text, setText] = useState(q);
   const [showFilters, setShowFilters] = useState(() => !!(spaceId || authorId || from || to || status || type));
   const [active, setActive] = useState(-1);
@@ -203,8 +204,9 @@ export default function SearchPage() {
     if (to) u.set('to', toIsoEnd(to));
     if (type === 'images' || type === 'files') u.set('in', type);
     else if (type === 'pages') u.set('in', 'text');
+    if (tag) u.set('tag', tag);
     return u.toString();
-  }, [q, spaceId, authorId, status, from, to, type]);
+  }, [q, spaceId, authorId, status, from, to, type, tag]);
 
   const search = useInfiniteQuery({
     queryKey: ['search', qs],
@@ -369,6 +371,14 @@ export default function SearchPage() {
         </div>
       )}
 
+      {tag && (
+        <div className="row small" style={{ gap: 6, alignItems: 'center', margin: '6px 0' }} data-testid="search-tag-filter">
+          Только страницы с тегом <span className="badge">#{tag}</span>
+          <button type="button" className="btn ghost sm" onClick={() => update({ tag: '' })}>
+            Сбросить
+          </button>
+        </div>
+      )}
       <div aria-live="polite" className="search-status small muted">
         {q && first && !noResults && (
           <>
@@ -511,6 +521,8 @@ export default function SearchPage() {
                         <Paperclip size={11} /> Во вложении
                       </span>
                     )}
+                    {r.matchedIn.includes('heading') && <span className="badge">В заголовке раздела</span>}
+                    {r.matchedIn.includes('tag') && <span className="badge">В тегах</span>}
                     {r.matchedIn.includes('properties') && <span className="badge">В свойствах</span>}
                     {r.matchedIn.includes('comment') && <span className="badge">В комментариях</span>}
                     {r.matchedIn.includes('fuzzy') && <span className="badge amber">Похожее название</span>}

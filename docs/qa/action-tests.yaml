@@ -1,0 +1,54 @@
+# Explicit action → test mapping (QA26-03, R-QA-004, R-QA-029). Read by scripts/qa/coverage.ts.
+#
+# Most links are found automatically: scripts/qa/tests-index.ts reads every test's locators (getByRole names, labels,
+# texts, typed slash commands, visited URLs — also inside helper functions) and scripts/qa/coverage.ts matches them
+# against the labels in docs/qa/action-inventory.yaml. An ambiguous name ("Отмена", "Закрыть") is credited only to the
+# component the same test also addresses unambiguously. Entries below add what the matcher cannot see (unit/integration
+# tests of an action's logic, indirect use), state dimensions a test covers, and justified N/A states.
+#
+# Test keys: "<file> › [describe ›] <title>" exactly as in docs/qa/ACTION_MATRIX.md; a key may end with "…" to match a
+# title prefix.
+
+# State dimensions of the action × condition matrix (R-QA-004, R-QA-029, R-UI-061).
+states: [success, empty, loading, cancel, error, offline, no-permission, double-click]
+
+# States that do not apply to a kind of control (with reason); per-action `na` entries add to these.
+na_by_kind:
+  route: { cancel: 'navigation has nothing to cancel; Back is the reverse operation', double-click: 'a link click is idempotent navigation' }
+  link: { cancel: 'navigation', double-click: 'idempotent navigation', empty: 'no input' }
+  tab: { cancel: 'switching a tab is reversible by switching back', double-click: 'idempotent', offline: 'client-side view switch', error: 'client-side view switch', loading: 'client-side view switch' }
+  menu: { cancel: 'covered by Esc/outside click of the menu component (tests/e2e/ui-p0-interaction.spec.ts)', double-click: 'toggle of a popup', offline: 'client-side popup', error: 'client-side popup', loading: 'client-side popup', empty: 'static item list' }
+  option: { cancel: 'a value pick inside its menu/select', double-click: 'idempotent value pick', offline: 'local editor/selection state', error: 'no server call', loading: 'no server call', empty: 'n/a for a value', no-permission: 'the owning control is hidden without rights' }
+  command: { loading: 'local CRDT edit, no request', error: 'local CRDT edit, no request', double-click: 'palette closes after the first pick', empty: 'covered by the palette "Ничего не найдено" state' }
+  dialog: { double-click: 'not a clickable action', loading: 'see the submit button of the dialog' }
+  input: { double-click: 'not a clickable action', cancel: 'see the dialog/form cancel', loading: 'typing is local' }
+  select: { double-click: 'not a clickable action', cancel: 'Esc keeps the previous value (native select)', loading: 'local value pick' }
+  toggle: { double-click: 'two clicks return the previous value (idempotent pair)', empty: 'boolean' }
+  toast-action: { empty: 'no input', loading: 'see the operation it triggers' }
+
+# Owners per screen (the team accountable for a matrix row; the release manager signs off N/A and manual rows).
+owners:
+  admin: 'команда «Администрирование и доступ»'
+  space: 'команда «Администрирование и доступ»'
+  page: 'команда «Страница и совместная работа»'
+  editor: 'команда «Редактор»'
+  shell: 'команда «Навигация и оболочка»'
+  home: 'команда «Навигация и оболочка»'
+  search: 'команда «Поиск»'
+  import: 'команда «Импорт и экспорт»'
+  templates: 'команда «Редактор»'
+  trash: 'команда «Навигация и оболочка»'
+  settings: 'команда «Навигация и оболочка»'
+  auth: 'команда «Администрирование и доступ»'
+  help: 'команда «Навигация и оболочка»'
+  app: 'команда «Навигация и оболочка»'
+  ui: 'команда «Навигация и оболочка»'
+  common: 'команда «Навигация и оболочка»'
+  runtime: 'команда «Навигация и оболочка»'
+
+# Overrides of the critical flag computed by scripts/qa/inventory.ts (destructive / data / ACL / auth / recovery).
+critical:
+  add: []
+  remove: []
+
+mappings: []

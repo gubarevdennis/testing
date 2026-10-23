@@ -40,6 +40,12 @@ a.crumb:hover { background: var(--surface-hover); color: var(--text); text-decor
 .presence-more { font-size: var(--fs-xs); color: var(--text-2); margin-left: 6px; }
 .editor-skeleton { max-width: var(--content-w); margin: 48px auto; padding: 0 48px; display: flex; flex-direction: column; gap: 14px; }
 .editor-fatal { max-width: var(--content-w); margin: 0 auto 16px; }
+.editor-conflicts { max-width: var(--content-w); margin: 0 auto 12px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.conflict-compare { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 640px) { .conflict-compare { grid-template-columns: 1fr; } }
+.conflict-side { border: 1px solid var(--border); border-radius: var(--r-sm); padding: 8px 10px; max-height: 320px; overflow: auto; min-height: 48px; }
+.conflict-side.mine { border-left: 3px solid var(--accent); }
+.conflict-side.server { border-left: 3px solid var(--text-3, var(--border)); }
 @media (max-width: 860px) {
   .page-body { padding: 16px 16px 120px; }
   .page-title-input, .page-title-static { font-size: 28px; }

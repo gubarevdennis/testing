@@ -10,6 +10,7 @@ import { Tooltip } from '../ui/Tooltip';
 import { DocPreview, type DocNode } from '../DocPreview';
 import { relTime, fullTime } from '../../lib/format';
 import { errMsg } from './directory';
+import { undoPropertyChange } from '../../lib/undoChange';
 
 interface Revision {
   id: string;
@@ -35,12 +36,35 @@ interface BlockDiff {
   after?: string;
   parts?: Array<{ value: string; added?: boolean; removed?: boolean }>;
 }
+interface PropChange {
+  field: string;
+  before: unknown;
+  after: unknown;
+  beforeLabel?: string;
+  afterLabel?: string;
+  items?: Array<{ key: string; before: unknown; after: unknown; status: 'added' | 'removed' | 'changed' }>;
+}
 interface DiffResponse {
   from: { number: number } | null;
   to: { number?: number; label?: string };
   title: { before: string | null; after: string };
+  props?: PropChange[];
+  propsTracked?: boolean;
   blocks: BlockDiff[];
   stats: { added: number; removed: number; changed: number };
+}
+interface RestorePreview {
+  revision: { number: number; createdAt: string };
+  content: { added: number; removed: number; changed: number; moved: number };
+  changedBlocks: Array<{ id: string; type: string; status: string; before?: string; after?: string }>;
+  title: { from: string; to: string } | null;
+  props: PropChange[];
+  propsNotRestored: PropChange[];
+  propsTracked: boolean;
+  laterRevisions: number;
+  preRestoreNumber: number;
+  newRevisionNumber: number;
+  editors: string[];
 }
 
 interface PageEvent {
@@ -119,31 +143,11 @@ export function HistoryPanel({ pageId, canEdit, onClose }: { pageId: string; can
     qc.invalidateQueries({ queryKey: ['revisions', pageId] });
     qc.invalidateQueries({ queryKey: ['page-events', pageId] });
     qc.invalidateQueries({ queryKey: ['revision-diff', pageId] });
+    qc.invalidateQueries({ queryKey: ['page', pageId] });
   };
 
-  const restore = async (r: Revision) => {
-    const ok = await confirm({
-      title: `Восстановить версию ${r.number}?`,
-      body: (
-        <div className="col" style={{ gap: 8 }}>
-          <p>Содержимое страницы станет таким, как в версии от {fullTime(r.created_at)}.</p>
-          <p className="muted">
-            Ничего не потеряется: текущее состояние сначала сохранится отдельной версией, а восстановление создаст новую версию. Его можно будет отменить, восстановив предыдущую. Права доступа не меняются.
-          </p>
-          <p className="muted">Если страницу сейчас редактируют другие, их правки будут объединены с восстановленным текстом.</p>
-        </div>
-      ),
-      confirmLabel: 'Восстановить',
-    });
-    if (!ok) return;
-    try {
-      const res = await post<{ revision: { number: number }; preRestore: { number: number } }>(`/api/v1/pages/${pageId}/revisions/${r.id}/restore`, { restoreTitle: true });
-      toast.success(`Версия ${r.number} восстановлена как версия ${res.revision.number}. Прежнее состояние сохранено как версия ${res.preRestore.number}.`);
-      refresh();
-    } catch (e) {
-      toast.error(errMsg(e, 'Не удалось восстановить версию'));
-    }
-  };
+  const [restoring, setRestoring] = useState<Revision | null>(null);
+  const restore = (r: Revision) => setRestoring(r);
 
   const wide = tab === 'versions' && !!selected;
 
@@ -233,6 +237,7 @@ export function HistoryPanel({ pageId, canEdit, onClose }: { pageId: string; can
         </div>
       )}
       <SaveVersionDialog open={saveOpen} pageId={pageId} onClose={() => setSaveOpen(false)} onSaved={refresh} />
+      {restoring && <RestoreDialog pageId={pageId} rev={restoring} onClose={() => setRestoring(null)} onDone={refresh} />}
     </aside>
   );
 }
@@ -380,8 +385,33 @@ function DiffView({ pageId, rev, diff, against, canEdit, onBlockRestored }: { pa
   const restoreBlock = async (b: BlockDiff) => {
     setBusy(b.id);
     try {
-      const r = await post<{ mode: string }>(`/api/v1/pages/${pageId}/revisions/${rev.id}/restore-block`, { blockId: b.id });
-      toast.success(r.mode === 'inserted' ? 'Блок возвращён в документ' : 'Блок заменён содержимым из версии');
+      // Exact preview first: what the block is now and what it will become (R-HISTORY-002).
+      const { preview: pv } = await post<{ preview: { mode: 'replace' | 'insert'; current: string | null; restored: string; parts: BlockDiff['parts'] | null; editors: string[] } }>(
+        `/api/v1/pages/${pageId}/revisions/${rev.id}/restore-block`,
+        { blockId: b.id, dryRun: true },
+      );
+      const ok = await confirm({
+        title: pv.mode === 'insert' ? `Вернуть удалённый блок из версии ${rev.number}?` : `Заменить блок содержимым из версии ${rev.number}?`,
+        body: (
+          <div className="col" style={{ gap: 8 }} data-testid="restore-block-preview">
+            {pv.mode === 'insert' ? (
+              <p>Блока сейчас нет в документе — он будет вставлен на прежнее место.</p>
+            ) : (
+              <div className="diff-block changed">
+                <span className="diff-tag">Сейчас → станет</span>
+                {pv.parts?.length ? pv.parts.map((p, i) => (p.added ? <ins key={i} className="diff-ins">{p.value}</ins> : p.removed ? <del key={i} className="diff-del">{p.value}</del> : <span key={i}>{p.value}</span>)) : <>{pv.restored || <span className="muted">(пустой блок)</span>}</>}
+              </div>
+            )}
+            {pv.mode === 'insert' && <div className="diff-block added">{pv.restored || <span className="muted">(пустой блок)</span>}</div>}
+            <p className="muted">Остальной текст не меняется. Текущее состояние сохранится отдельной версией, результат — новой версией; более поздние версии остаются в истории.</p>
+            {!!pv.editors.length && <p className="muted">Сейчас страницу редактируют: {pv.editors.join(', ')}. Их правки в других блоках сохранятся.</p>}
+          </div>
+        ),
+        confirmLabel: pv.mode === 'insert' ? 'Вернуть блок' : 'Заменить блок',
+      });
+      if (!ok) return;
+      const r = await post<{ mode: string; revision: { number: number }; preRestore: { number: number } }>(`/api/v1/pages/${pageId}/revisions/${rev.id}/restore-block`, { blockId: b.id });
+      toast.success(`${r.mode === 'inserted' ? 'Блок возвращён в документ' : 'Блок заменён содержимым из версии'} — новая версия ${r.revision.number}, прежнее состояние сохранено как версия ${r.preRestore.number}.`);
       onBlockRestored();
     } catch (e) {
       toast.error(errMsg(e, 'Не удалось восстановить блок'));
@@ -414,6 +444,7 @@ function DiffView({ pageId, rev, diff, against, canEdit, onBlockRestored }: { pa
           <del className="diff-del">{title.before}</del> <ins className="diff-ins">{title.after}</ins>
         </div>
       )}
+      <PropsDiff props={diff.props ?? []} tracked={diff.propsTracked !== false} />
       {!changes && title.before === title.after && <div className="alert success">Различий в содержимом нет.</div>}
       {groups.map((g, gi) => {
         if (g.kind === 'same') {
@@ -465,6 +496,177 @@ function DiffBlock({ b, action }: { b: BlockDiff; action?: ReactNode }) {
       {body}
       {action && <div className="diff-actions">{action}</div>}
     </div>
+  );
+}
+
+const PROP_LABEL: Record<string, string> = {
+  title: 'Название',
+  icon: 'Значок',
+  cover: 'Обложка',
+  status: 'Статус',
+  ownerId: 'Владелец',
+  tags: 'Теги',
+  properties: 'Свойства',
+  locked: 'Защита от изменений',
+  wide: 'Широкая страница',
+  reviewDueAt: 'Дата пересмотра',
+};
+const STATUS_LABEL: Record<string, string> = { draft: 'Черновик', review: 'На согласовании', published: 'Опубликована', archived: 'В архиве' };
+
+function propValue(field: string, v: unknown, label?: string): string {
+  if (label) return label;
+  if (v === null || v === undefined || v === '') return '—';
+  if (field === 'status') return STATUS_LABEL[String(v)] ?? String(v);
+  if (typeof v === 'boolean') return v ? 'да' : 'нет';
+  if (field === 'cover') return 'обложка задана';
+  if (Array.isArray(v)) return v.join(', ') || '—';
+  if (typeof v === 'object') return JSON.stringify(v);
+  return String(v);
+}
+
+/** Property differences between two versions, highlighted like text changes (V16-S11). */
+export function PropsDiff({ props, tracked }: { props: PropChange[]; tracked: boolean }) {
+  if (!tracked)
+    return <p className="kb-meta" data-testid="props-untracked">Свойства страницы для этой версии не сохранялись (версия создана до учёта свойств) — сравнивается только название и содержимое.</p>;
+  if (!props.length) return null;
+  return (
+    <div className="diff-props" data-testid="props-diff">
+      {props.map((c) => (
+        <div key={c.field} className="diff-block changed" data-field={c.field}>
+          <span className="diff-tag">{PROP_LABEL[c.field] ?? c.field} · изменено</span>
+          {c.items?.length ? (
+            <ul className="diff-prop-items">
+              {c.items.map((it) => (
+                <li key={it.key} className={it.status}>
+                  {c.field === 'tags' ? (
+                    it.status === 'added' ? <ins className="diff-ins">#{it.key}</ins> : <del className="diff-del">#{it.key}</del>
+                  ) : (
+                    <>
+                      <b>{it.key}:</b> {it.status !== 'added' && <del className="diff-del">{propValue('', it.before)}</del>} {it.status !== 'removed' && <ins className="diff-ins">{propValue('', it.after)}</ins>}
+                    </>
+                  )}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <>
+              <del className="diff-del">{propValue(c.field, c.before, c.beforeLabel)}</del> <ins className="diff-ins">{propValue(c.field, c.after, c.afterLabel)}</ins>
+            </>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/**
+ * Restore of a whole version with an exact preview (R-HISTORY-002): what changes in the text, which properties come
+ * back (optional), which do not, how many later versions stay, who is editing right now. Nothing is destroyed.
+ */
+function RestoreDialog({ pageId, rev, onClose, onDone }: { pageId: string; rev: Revision; onClose(): void; onDone(): void }) {
+  const [withProps, setWithProps] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const pv = useQuery({
+    queryKey: ['restore-preview', pageId, rev.id, withProps],
+    queryFn: () => post<{ preview: RestorePreview }>(`/api/v1/pages/${pageId}/revisions/${rev.id}/restore`, { restoreTitle: true, restoreProps: withProps, dryRun: true }).then((r) => r.preview),
+    staleTime: 0,
+  });
+  const run = async () => {
+    setBusy(true);
+    try {
+      const res = await post<{ revision: { number: number }; preRestore: { number: number }; restoredProps: string[]; skippedProps: string[] }>(`/api/v1/pages/${pageId}/revisions/${rev.id}/restore`, { restoreTitle: true, restoreProps: withProps });
+      toast.success(
+        `Версия ${rev.number} восстановлена как версия ${res.revision.number}. Прежнее состояние сохранено как версия ${res.preRestore.number}.` +
+          (res.skippedProps?.length ? ' Владелец не возвращён: этого сотрудника больше нет в организации.' : ''),
+      );
+      onDone();
+      onClose();
+    } catch (e) {
+      toast.error(errMsg(e, 'Не удалось восстановить версию'));
+    } finally {
+      setBusy(false);
+    }
+  };
+  const p = pv.data;
+  const nothing = p && !p.content.added && !p.content.removed && !p.content.changed && !p.content.moved && !p.title && !p.props.length;
+  return (
+    <Dialog
+      open
+      size="wide"
+      title={`Восстановить версию ${rev.number}?`}
+      onClose={onClose}
+      footer={
+        <>
+          <button className="btn" onClick={onClose}>
+            Отмена
+          </button>
+          <button className="btn primary" onClick={run} disabled={busy || !p || pv.isFetching} aria-busy={busy}>
+            {busy && <span className="spinner" />} Восстановить
+          </button>
+        </>
+      }
+    >
+      <div className="col" style={{ gap: 10 }} data-testid="restore-preview">
+        <p>Содержимое страницы станет таким, как в версии от {fullTime(rev.created_at)}.</p>
+        {pv.isLoading && <div className="kb-center"><span className="spinner" /></div>}
+        {pv.isError && (
+          <div className="alert error">
+            {errMsg(pv.error, 'Не удалось подготовить предпросмотр')}{' '}
+            <button className="btn sm" onClick={() => pv.refetch()}>Повторить</button>
+          </div>
+        )}
+        {p && (
+          <>
+            <div className="restore-summary">
+              <b>Что изменится в тексте:</b>{' '}
+              {nothing ? 'ничего — текущее состояние совпадает с этой версией.' : `добавится блоков ${p.content.added}, удалится ${p.content.removed}, изменится ${p.content.changed}${p.content.moved ? `, переместится ${p.content.moved}` : ''}.`}
+            </div>
+            {!!p.changedBlocks.length && (
+              <div className="restore-blocks">
+                {p.changedBlocks.map((b) => (
+                  <div key={b.id + b.status} className={'diff-block ' + (b.status === 'added' ? 'added' : b.status === 'removed' ? 'removed' : b.status)}>
+                    <span className="diff-tag">
+                      {BLOCK_TYPE[b.type] ?? b.type} · {b.status === 'added' ? 'вернётся' : b.status === 'removed' ? 'будет удалён' : b.status === 'moved' ? 'переместится' : 'изменится'}
+                    </span>
+                    {b.status === 'changed' ? (
+                      <>
+                        <del className="diff-del">{b.before}</del> <ins className="diff-ins">{b.after}</ins>
+                      </>
+                    ) : (
+                      (b.status === 'removed' ? b.before : b.after) || <span className="muted">(пустой блок)</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+            {p.title && (
+              <div className="diff-block changed">
+                <span className="diff-tag">Название</span>
+                <del className="diff-del">{p.title.from || 'Без названия'}</del> <ins className="diff-ins">{p.title.to || 'Без названия'}</ins>
+              </div>
+            )}
+            {p.propsTracked ? (
+              <label className="row" style={{ gap: 8, alignItems: 'center' }}>
+                <input type="checkbox" checked={withProps} onChange={(e) => setWithProps(e.target.checked)} /> Вернуть и свойства страницы (значок, обложка, владелец, теги, поля)
+              </label>
+            ) : (
+              <p className="kb-meta">Свойства для этой версии не сохранялись — вернётся только содержимое и название.</p>
+            )}
+            {withProps && <PropsDiff props={p.props} tracked />}
+            {!!p.propsNotRestored.length && (
+              <p className="kb-meta">
+                Не меняются: {p.propsNotRestored.map((c) => PROP_LABEL[c.field] ?? c.field).join(', ')}
+                {p.propsNotRestored.some((c) => c.field === 'status' || c.field === 'locked') ? ' (статус и защита — это состояние процесса, а не содержимое)' : ''}.
+              </p>
+            )}
+            <p className="muted">
+              Ничего не потеряется: текущее состояние сохранится как версия {p.preRestoreNumber}, результат — как версия {p.newRevisionNumber}. Более поздние версии ({p.laterRevisions}) останутся в истории. Права доступа не меняются.
+            </p>
+            {!!p.editors.length && <p className="alert warning">Сейчас страницу редактируют: {p.editors.join(', ')}. Их новые правки будут объединены с восстановленным текстом.</p>}
+          </>
+        )}
+      </div>
+    </Dialog>
   );
 }
 
@@ -541,7 +743,7 @@ const EVENT_LABEL: Record<string, string> = {
   'collection-fields-removed': 'удалил(а) поля коллекции',
 };
 
-const FIELD_LABEL: Record<string, string> = { title: 'название', icon: 'значок', cover: 'обложку', wide: 'ширину', locked: 'защиту', reviewDueAt: 'срок проверки', ownerId: 'владельца', properties: 'свойства' };
+const FIELD_LABEL: Record<string, string> = { title: 'название', icon: 'значок', cover: 'обложку', wide: 'ширину', locked: 'защиту', reviewDueAt: 'срок проверки', ownerId: 'владельца', properties: 'свойства', tags: 'теги' };
 
 function eventDetail(e: PageEvent): string | null {
   const d = e.data ?? {};
@@ -553,7 +755,7 @@ function eventDetail(e: PageEvent): string | null {
       return parts.length ? `Блоки: ${parts.join(' ')}` : null;
     }
     case 'updated':
-      return Array.isArray(d.fields) ? 'Изменено: ' + d.fields.map((f: string) => FIELD_LABEL[f] ?? f).join(', ') : null;
+      return Array.isArray(d.fields) ? (d.source === 'undo' ? 'Отменено: ' : d.source === 'restore' ? 'Возвращено из версии: ' : 'Изменено: ') + d.fields.map((f: string) => FIELD_LABEL[f] ?? f).join(', ') + (d.undoneBy ? ' (отменено)' : '') : null;
     case 'restored-revision':
       return d.revisionNumber ? `Версия ${d.revisionNumber} → новая версия ${d.newRevision}; прежнее состояние — версия ${d.preRestoreRevision}` : null;
     case 'restored-journal':
@@ -634,6 +836,11 @@ function EventsList({ pageId, canEdit, onRestored }: { pageId: string; canEdit: 
                 <b>{e.actor_name ?? 'Система'}</b> {EVENT_LABEL[e.type] ?? e.type}
               </div>
               {det && <div className="kb-meta">{det}</div>}
+              {canEdit && e.type === 'updated' && e.data?.after && !e.data?.undoneBy && (
+                <button className="btn ghost sm event-restore" onClick={() => void undoPropertyChange(pageId, e.id, onRestored)}>
+                  <Undo2 size={13} /> Отменить это изменение
+                </button>
+              )}
               {canEdit && e.type === 'edit' && Number(e.data?.seq) > 0 && (
                 <button className="btn ghost sm event-restore" onClick={() => void restoreJournalStep(pageId, e, onRestored)}>
                   <RotateCcw size={13} /> Восстановить состояние на этот момент

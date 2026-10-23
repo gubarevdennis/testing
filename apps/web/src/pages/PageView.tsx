@@ -22,6 +22,7 @@ import { relTime, fullTime } from '../lib/format';
 import { useMediaQuery } from '../hooks/useMediaQuery';
 import { useScrollRestore } from '../hooks/useScrollRestore';
 import type { PageDto, Crumb } from '../api/types';
+import { undoPropertyChange } from '../lib/undoChange';
 
 const HistoryPanel = lazy(() => import('../components/page/HistoryPanel').then((m) => ({ default: m.HistoryPanel })));
 const CommentsPanel = lazy(() => import('../components/page/CommentsPanel').then((m) => ({ default: m.CommentsPanel })));
@@ -141,12 +142,30 @@ function PageLoaded({ page, crumbs, block, justCreated, offline = false }: { pag
   }, [setRightPanel]);
 
   const setPanel = (p: Panel) => setRightPanel(panel === p ? null : p);
+  const panelRef = useRef(panel);
+  panelRef.current = panel;
+  useEffect(() => {
+    const ed = handle.current?.editor;
+    if (panel === 'info' && ed && !ed.isDestroyed) setWordCount(ed.storage.characterCount?.words?.() ?? 0);
+  }, [panel]);
   const patchPage = async (body: Record<string, unknown>, ok?: string) => {
     try {
-      await patch(`/api/v1/pages/${page.id}`, body);
+      const r = await patch<{ undoEventId?: string | null }>(`/api/v1/pages/${page.id}`, body);
       refresh();
       qc.invalidateQueries({ queryKey: ['tree', page.spaceId] });
-      if (ok) toast.success(ok);
+      // Every property change can be undone right away (R-HISTORY-002).
+      const msg = ok ?? ('icon' in body ? (body.icon ? 'Значок изменён' : 'Значок убран') : 'cover' in body ? 'Обложка изменена' : 'wide' in body ? 'Ширина страницы изменена' : null);
+      const undo = r?.undoEventId
+        ? {
+            label: 'Отменить',
+            run: () =>
+              void undoPropertyChange(page.id, r.undoEventId!, () => {
+                refresh();
+                qc.invalidateQueries({ queryKey: ['tree', page.spaceId] });
+              }),
+          }
+        : undefined;
+      if (msg) toast.success(msg, undo);
     } catch (e) {
       toast.error((e as Error).message);
     }
@@ -185,7 +204,7 @@ function PageLoaded({ page, crumbs, block, justCreated, offline = false }: { pag
 
   const menuItems = [
     { id: 'fav', label: page.favorite ? 'Убрать из избранного' : 'Добавить в избранное', icon: <Star size={15} />, onSelect: toggleFavorite },
-    { id: 'link', label: 'Копировать ссылку', icon: <Link2 size={15} />, onSelect: () => copyLink(page.id) },
+    { id: 'link', label: 'Копировать ссылку', icon: <Link2 size={15} />, onSelect: () => copyLink(page.id, undefined, page.slug || undefined) },
     {
       id: 'copy-page',
       label: 'Копировать страницу',
@@ -325,7 +344,8 @@ function PageLoaded({ page, crumbs, block, justCreated, offline = false }: { pag
                   let wcTimer: ReturnType<typeof setTimeout> | null = null;
                   const count = () => {
                     wcTimer = null;
-                    if (!h.editor?.isDestroyed) setWordCount(h.editor?.storage.characterCount?.words?.() ?? 0);
+                    // only while the info panel shows it: a state change here re-renders the whole page (PERF-D1)
+                    if (!h.editor?.isDestroyed && panelRef.current === 'info') setWordCount(h.editor?.storage.characterCount?.words?.() ?? 0);
                   };
                   const upd = () => {
                     emptyRef.current = !!h.editor?.isEmpty;

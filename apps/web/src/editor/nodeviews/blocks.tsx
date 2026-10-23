@@ -293,9 +293,18 @@ export function MermaidView({ node, editor, selected }: NodeViewProps) {
 export function TocView({ editor, selected }: NodeViewProps) {
   const [headings, setHeadings] = useState(() => extractHeadings(editor.getJSON() as any));
   useEffect(() => {
-    const on = () => setHeadings(extractHeadings(editor.getJSON() as any));
+    // serialising the whole document on every keystroke made typing slow on long pages with a TOC: after a pause
+    let t: ReturnType<typeof setTimeout> | null = null;
+    const on = () => {
+      if (t) return;
+      t = setTimeout(() => {
+        t = null;
+        if (!editor.isDestroyed) setHeadings(extractHeadings(editor.getJSON() as any));
+      }, 300);
+    };
     editor.on('update', on);
     return () => {
+      if (t) clearTimeout(t);
       editor.off('update', on);
     };
   }, [editor]);

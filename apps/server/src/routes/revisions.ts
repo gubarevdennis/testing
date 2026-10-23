@@ -1,11 +1,12 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { z } from 'zod';
-import { findBlock, type PMNode } from '@kb/shared';
+import { docToPlainText, findBlock, type PMNode } from '@kb/shared';
 import { tx } from '../db/pool.js';
 import { actorOf, parse, requireUser, type Services } from '../app.js';
 import { requirePage, pageAccess, type AuthUser } from '../acl/engine.js';
 import { audit } from '../services/audit.js';
-import { createRevision, diffDocs, stateAtSeq } from '../services/revisions.js';
+import { createRevision, currentProps, diffDocs, diffProps, stateAtSeq, RESTORABLE_PROPS, type PropChange, type RevisionProps } from '../services/revisions.js';
+import type { Queryable } from '../db/pool.js';
 import { replaceContent, setTitle, titleOf, ydocToJson } from '../collab/ydoc.js';
 import { badRequest, conflict, forbidden, notFound } from '../lib/errors.js';
 import { getPage } from '../services/pages.js';
@@ -41,28 +42,36 @@ export async function revisionRoutes(app: FastifyInstance, s: Services) {
     return { revision: r };
   });
 
-  /** Compare a revision with another revision or with the current state. */
+  /** Compare a revision with another revision or with the current state: text (blocks, words) AND page properties. */
   app.get('/api/v1/pages/:id/revisions/:rid/diff', async (req) => {
     const user = requireUser(req);
     const { id, rid } = parse(z.object({ id: uuid, rid: uuid }), req.params);
     const { against } = parse(z.object({ against: z.union([uuid, z.literal('current'), z.literal('previous')]).default('current') }), req.query);
     await requirePage(s.db, user, id, 'view_history', { allowDeleted: true });
-    const base = (await s.db.query('select number, content, title from page_revisions where id = $1 and page_id = $2', [rid, id])).rows[0];
+    const base = (await s.db.query('select number, content, title, props from page_revisions where id = $1 and page_id = $2', [rid, id])).rows[0];
     if (!base) throw notFound('Версия не найдена');
-    let other: { content: PMNode; title: string; label: string };
+    let other: { content: PMNode; title: string; label: string; props: RevisionProps | null };
     if (against === 'current') {
       const snap = await s.hub.snapshot(id);
-      other = { content: snap.json, title: (await getPage(s.db, id))!.title, label: 'Текущая версия' };
+      other = { content: snap.json, title: (await getPage(s.db, id))!.title, label: 'Текущая версия', props: await currentProps(s.db, id) };
     } else if (against === 'previous') {
-      const prev = (await s.db.query('select number, content, title from page_revisions where page_id = $1 and number < $2 order by number desc limit 1', [id, base.number])).rows[0];
-      if (!prev) return { from: null, to: { number: base.number }, title: { before: null, after: base.title }, ...diffDocs({ type: 'doc', content: [] }, base.content) };
-      return { from: { number: prev.number }, to: { number: base.number }, title: { before: prev.title, after: base.title }, ...diffDocs(prev.content, base.content) };
+      const prev = (await s.db.query('select number, content, title, props from page_revisions where page_id = $1 and number < $2 order by number desc limit 1', [id, base.number])).rows[0];
+      if (!prev) return { from: null, to: { number: base.number }, title: { before: null, after: base.title }, props: [], propsTracked: !!base.props, ...diffDocs({ type: 'doc', content: [] }, base.content) };
+      return { from: { number: prev.number }, to: { number: base.number }, title: { before: prev.title, after: base.title }, props: await labelProps(s.db, diffProps(prev.props, base.props)), propsTracked: !!(prev.props && base.props), ...diffDocs(prev.content, base.content) };
     } else {
-      const o = (await s.db.query('select number, content, title from page_revisions where id = $1 and page_id = $2', [against, id])).rows[0];
+      const o = (await s.db.query('select number, content, title, props from page_revisions where id = $1 and page_id = $2', [against, id])).rows[0];
       if (!o) throw notFound('Версия для сравнения не найдена');
-      other = { content: o.content, title: o.title, label: 'Версия ' + o.number };
+      other = { content: o.content, title: o.title, label: 'Версия ' + o.number, props: o.props };
     }
-    return { from: { number: base.number }, to: { label: other.label }, title: { before: base.title, after: other.title }, ...diffDocs(base.content, other.content) };
+    return {
+      from: { number: base.number },
+      to: { label: other.label },
+      title: { before: base.title, after: other.title },
+      props: await labelProps(s.db, diffProps(base.props, other.props)),
+      // Revisions saved before properties were versioned have no snapshot: the UI says so instead of claiming "no changes".
+      propsTracked: !!(base.props && other.props),
+      ...diffDocs(base.content, other.content),
+    };
   });
 
   app.post('/api/v1/pages/:id/revisions', async (req) => {
@@ -76,18 +85,47 @@ export async function revisionRoutes(app: FastifyInstance, s: Services) {
 
   /**
    * Restores a revision as a NEW revision. The current state is saved first ("pre-restore"), so a restore can
-   * itself be undone. Concurrent edits are merged by the CRDT; ACLs are never rolled back (ACL-173).
+   * itself be undone; later revisions are never touched. Concurrent edits are merged by the CRDT; ACLs are never
+   * rolled back (ACL-173). `dryRun` returns the exact consequences without changing anything (R-HISTORY-002).
+   * `restoreProps` also brings back the page properties of that version (icon, cover, owner, tags, custom properties).
    */
   app.post('/api/v1/pages/:id/revisions/:rid/restore', async (req) => {
     const user = requireUser(req);
     const { id, rid } = parse(z.object({ id: uuid, rid: uuid }), req.params);
-    const { restoreTitle } = parse(z.object({ restoreTitle: z.boolean().default(true) }), req.body ?? {});
+    const body = parse(z.object({ restoreTitle: z.boolean().default(true), restoreProps: z.boolean().default(false), dryRun: z.boolean().default(false) }), req.body ?? {});
     await requireRestore(user, id);
-    const rev = (await s.db.query('select id, number, content, title from page_revisions where id = $1 and page_id = $2', [rid, id])).rows[0];
+    const rev = (await s.db.query('select id, number, content, title, props, created_at from page_revisions where id = $1 and page_id = $2', [rid, id])).rows[0];
     if (!rev) throw notFound('Версия не найдена');
+    const cur = await currentProps(s.db, id);
+    const propChanges = diffProps(cur, rev.props);
+    const restorable = body.restoreProps ? propChanges.filter((c) => (RESTORABLE_PROPS as readonly string[]).includes(c.field)) : [];
+    if (body.dryRun) {
+      const snap = await s.hub.snapshot(id);
+      const d = diffDocs(snap.json, rev.content);
+      const later = (await s.db.query('select count(*)::int n from page_revisions where page_id = $1 and number > $2', [id, rev.number])).rows[0].n;
+      const last = (await s.db.query('select coalesce(max(number), 0)::int n from page_revisions where page_id = $1', [id])).rows[0].n;
+      return {
+        preview: {
+          revision: { number: rev.number, createdAt: rev.created_at },
+          content: { ...d.stats, moved: d.blocks.filter((b) => b.status === 'moved').length },
+          changedBlocks: d.blocks.filter((b) => b.status !== 'same').slice(0, 8).map((b) => ({ id: b.id, type: b.type, status: b.status, before: b.before ?? (b.status === 'moved' ? b.after : undefined), after: b.after })),
+          title: body.restoreTitle && rev.title !== cur?.title ? { from: cur?.title ?? '', to: rev.title } : null,
+          props: await labelProps(s.db, restorable),
+          propsNotRestored: await labelProps(s.db, propChanges.filter((c) => !restorable.includes(c))),
+          propsTracked: !!rev.props,
+          laterRevisions: later,
+          preRestoreNumber: last + 1,
+          newRevisionNumber: last + 2,
+          editors: s.hub.connectedUsers(id).filter((u) => u.id !== user.id && u.canEdit).map((u) => u.name),
+          aclUnchanged: true,
+        },
+      };
+    }
     return restoreContent(req, user, id, {
       content: rev.content,
-      title: restoreTitle ? rev.title : null,
+      title: body.restoreTitle ? rev.title : null,
+      props: restorable.length ? (rev.props as RevisionProps) : null,
+      propFields: restorable.map((c) => c.field),
       preLabel: `Перед восстановлением версии ${rev.number}`,
       label: `Восстановлена версия ${rev.number}`,
       restoredFrom: rev.id,
@@ -123,6 +161,8 @@ export async function revisionRoutes(app: FastifyInstance, s: Services) {
     return restoreContent(req, user, id, {
       content: st.content,
       title: restoreTitle ? st.title : null,
+      props: null,
+      propFields: [],
       preLabel: `Перед восстановлением состояния на операцию №${seq}`,
       label: `Восстановлено состояние на операцию №${seq}${when ? ` (${when})` : ''}`,
       restoredFrom: null,
@@ -133,8 +173,9 @@ export async function revisionRoutes(app: FastifyInstance, s: Services) {
     });
   });
 
-  async function requireRestore(user: AuthUser, id: string) {
-    const acc = await requirePage(s.db, user, id, 'restore');
+  async function requireRestore(user: AuthUser, id: string, action: 'restore' | 'edit' = 'restore') {
+    const acc = await requirePage(s.db, user, id, action, { allowDeleted: true });
+    if (acc.deleted) throw conflict('page_deleted', 'Страница в корзине: сначала восстановите её из корзины — все версии сохранены');
     const page = (await getPage(s.db, id))!;
     if (page.locked && acc.level !== 'full') throw forbidden('Страница защищена от изменений');
   }
@@ -148,7 +189,7 @@ export async function revisionRoutes(app: FastifyInstance, s: Services) {
     req: FastifyRequest,
     user: AuthUser,
     id: string,
-    o: { content: PMNode; title: string | null; preLabel: string; label: string; restoredFrom: string | null; eventType: string; eventData: Record<string, unknown>; auditAction: string; auditDetails: Record<string, unknown> },
+    o: { content: PMNode; title: string | null; props: RevisionProps | null; propFields: string[]; preLabel: string; label: string; restoredFrom: string | null; eventType: string; eventData: Record<string, unknown>; auditAction: string; auditDetails: Record<string, unknown> },
   ) {
     const pre = await s.hub.createRevisionNow(id, 'pre-restore', user.id, o.preLabel);
     const res = await s.hub.applyServerChange(id, user.id, (doc) => {
@@ -158,27 +199,80 @@ export async function revisionRoutes(app: FastifyInstance, s: Services) {
     const snap = await s.hub.snapshot(id);
     const title = o.title ?? (await getPage(s.db, id))!.title;
     const created = await tx(s.db, async (q) => {
+      const restoredProps = o.props ? await applyProps(q, user, id, o.props, o.propFields) : { fields: [], skipped: [] };
       const r = await createRevision(q, { pageId: id, kind: 'restore', title, state: snap.state, content: res.json, seqUpto: res.seq, authors: [user.id], createdBy: user.id, label: o.label, restoredFrom: o.restoredFrom });
-      await q.query(`insert into page_events (org_id, page_id, actor_id, type, data) values ($1, $2, $3, $4, $5)`, [user.orgId, id, user.id, o.eventType, { ...o.eventData, newRevision: r.number, preRestoreRevision: pre.number }]);
-      await audit(q, actorOf(req), { action: o.auditAction, targetType: 'page', targetId: id, details: { ...o.auditDetails, newRevision: r.number, preRestoreRevision: pre.number } });
-      return r;
+      await q.query(`insert into page_events (org_id, page_id, actor_id, type, data) values ($1, $2, $3, $4, $5)`, [user.orgId, id, user.id, o.eventType, { ...o.eventData, newRevision: r.number, preRestoreRevision: pre.number, restoredProps: restoredProps.fields }]);
+      await audit(q, actorOf(req), { action: o.auditAction, targetType: 'page', targetId: id, details: { ...o.auditDetails, newRevision: r.number, preRestoreRevision: pre.number, restoredProps: restoredProps.fields } });
+      return { ...r, restoredProps };
     });
     s.bus.emit({ type: 'page-restored', orgId: user.orgId, pageId: id, actorId: user.id, actorName: user.name, label: o.label, preRestoreRevisionId: pre.id, preRestoreNumber: pre.number });
-    return { revision: created, preRestore: pre };
+    if (created.restoredProps.fields.length) {
+      s.bus.emit({ type: 'page-changed', orgId: user.orgId, pageId: id, fields: created.restoredProps.fields });
+      const sp = (await getPage(s.db, id))!;
+      s.bus.emit({ type: 'tree-changed', orgId: user.orgId, spaceId: sp.space_id });
+    }
+    const { restoredProps, ...revision } = created;
+    return { revision, preRestore: pre, restoredProps: restoredProps.fields, skippedProps: restoredProps.skipped };
   }
 
-  /** Restores a single block from a revision into the current document (replacing the block with the same id, or re-inserting it). */
+  /** Writes restorable properties of a revision back to the page (journaled like a normal property change). */
+  async function applyProps(q: Queryable, user: AuthUser, id: string, props: RevisionProps, fields: string[]) {
+    const p = (await q.query('select * from pages where id = $1 for update', [id])).rows[0];
+    const skipped: string[] = [];
+    const sets: string[] = [];
+    const vals: unknown[] = [id];
+    const before: Record<string, unknown> = {};
+    const set = (field: string, col: string, v: unknown) => {
+      vals.push(v);
+      sets.push(`${col} = $${vals.length}`);
+      before[field] = p[col];
+    };
+    for (const f of fields) {
+      if (f === 'icon') set(f, 'icon', props.icon);
+      else if (f === 'cover') set(f, 'cover', props.cover ?? null);
+      else if (f === 'tags') set(f, 'tags', props.tags ?? []);
+      else if (f === 'properties') set(f, 'properties', props.properties ?? {});
+      else if (f === 'wide') set(f, 'wide', !!props.wide);
+      else if (f === 'reviewDueAt') set(f, 'review_due_at', props.reviewDueAt);
+      else if (f === 'ownerId') {
+        // A former owner who left the organisation is not made owner again.
+        const ok = props.ownerId ? (await q.query(`select 1 from users where id = $1 and org_id = $2 and status = 'active'`, [props.ownerId, user.orgId])).rowCount : 1;
+        if (ok) set(f, 'owner_id', props.ownerId);
+        else skipped.push(f);
+      }
+    }
+    if (!sets.length) return { fields: [] as string[], skipped };
+    vals.push(user.id);
+    await q.query(`update pages set ${sets.join(', ')}, version = version + 1, updated_at = now(), updated_by = $${vals.length} where id = $1`, vals);
+    const changed = Object.keys(before);
+    await q.query(`insert into page_events (org_id, page_id, actor_id, type, data) values ($1, $2, $3, 'updated', $4)`, [user.orgId, id, user.id, { fields: changed, before, source: 'restore' }]);
+    await q.query(`insert into outbox (topic, payload) values ('index-page', $1)`, [{ pageId: id }]);
+    return { fields: changed, skipped };
+  }
+
+  /**
+   * Restores a single block from a revision into the current document (replacing the block with the same id, or
+   * re-inserting it where it was) as a NEW version: the state before is saved as a "pre-restore" revision, the
+   * result as a "restore" revision; later revisions stay. `dryRun` describes the change without applying it.
+   */
   app.post('/api/v1/pages/:id/revisions/:rid/restore-block', async (req) => {
     const user = requireUser(req);
     const { id, rid } = parse(z.object({ id: uuid, rid: uuid }), req.params);
-    const { blockId } = parse(z.object({ blockId: z.string().min(1).max(100) }), req.body);
-    await requirePage(s.db, user, id, 'edit');
-    const rev = (await s.db.query('select number, content from page_revisions where id = $1 and page_id = $2', [rid, id])).rows[0];
+    const { blockId, dryRun } = parse(z.object({ blockId: z.string().min(1).max(100), dryRun: z.boolean().default(false) }), req.body);
+    await requireRestore(user, id, 'edit');
+    const rev = (await s.db.query('select id, number, content from page_revisions where id = $1 and page_id = $2', [rid, id])).rows[0];
     if (!rev) throw notFound('Версия не найдена');
     const fromRev = findBlock(rev.content, blockId);
     if (!fromRev) throw notFound('Блок не найден в выбранной версии');
+    if (dryRun) {
+      const snap = await s.hub.snapshot(id);
+      const existing = findBlock(snap.json, blockId);
+      const d = diffDocs({ type: 'doc', content: existing ? [existing.node] : [] }, { type: 'doc', content: [fromRev.node] });
+      return { preview: { mode: existing ? 'replace' : 'insert', current: existing ? docToPlainText({ type: 'doc', content: [existing.node] }) : null, restored: docToPlainText({ type: 'doc', content: [fromRev.node] }), parts: d.blocks.find((b) => b.id === blockId)?.parts ?? null, revisionNumber: rev.number, editors: s.hub.connectedUsers(id).filter((u) => u.id !== user.id && u.canEdit).map((u) => u.name) } };
+    }
+    const pre = await s.hub.createRevisionNow(id, 'pre-restore', user.id, `Перед восстановлением блока из версии ${rev.number}`);
     let mode = '';
-    await s.hub.applyServerChange(id, user.id, (doc) => {
+    const res = await s.hub.applyServerChange(id, user.id, (doc) => {
       const current = ydocToJson(doc);
       const block = structuredClone(fromRev.node);
       const existing = findBlock(current, blockId);
@@ -198,11 +292,17 @@ export async function revisionRoutes(app: FastifyInstance, s: Services) {
       }
       replaceContent(doc, current, 'restore-block');
     });
-    await tx(s.db, async (q) => {
-      await q.query(`insert into page_events (org_id, page_id, actor_id, type, data) values ($1, $2, $3, 'restored-block', $4)`, [user.orgId, id, user.id, { blockId, revisionNumber: rev.number, mode }]);
-      await audit(q, actorOf(req), { action: 'page.block_restore', targetType: 'page', targetId: id, details: { blockId, revision: rev.number, mode } });
+    const snap = await s.hub.snapshot(id);
+    const label = `Восстановлен блок из версии ${rev.number}`;
+    const created = await tx(s.db, async (q) => {
+      const title = (await getPage(q, id))!.title;
+      const r = await createRevision(q, { pageId: id, kind: 'restore', title, state: snap.state, content: res.json, seqUpto: res.seq, authors: [user.id], createdBy: user.id, label, restoredFrom: rev.id });
+      await q.query(`insert into page_events (org_id, page_id, actor_id, type, data) values ($1, $2, $3, 'restored-block', $4)`, [user.orgId, id, user.id, { blockId, revisionNumber: rev.number, mode, newRevision: r.number, preRestoreRevision: pre.number }]);
+      await audit(q, actorOf(req), { action: 'page.block_restore', targetType: 'page', targetId: id, details: { blockId, revision: rev.number, mode, newRevision: r.number, preRestoreRevision: pre.number } });
+      return r;
     });
-    return { ok: true, mode };
+    s.bus.emit({ type: 'page-restored', orgId: user.orgId, pageId: id, actorId: user.id, actorName: user.name, label, preRestoreRevisionId: pre.id, preRestoreNumber: pre.number });
+    return { ok: true, mode, revision: created, preRestore: pre };
   });
 
   // ------------------------------------------------------------ publishing workflow
@@ -321,4 +421,12 @@ async function publish(s: Services, req: any, pageId: string, userId: string, la
   });
   s.bus.emit({ type: 'page-changed', orgId: user.orgId, pageId, fields: ['status'] });
   return { revisionId: rev.id, number: rev.number };
+}
+
+/** Adds display labels (owner names) to property changes. */
+async function labelProps(q: Queryable, changes: PropChange[]): Promise<PropChange[]> {
+  const ids = changes.filter((c) => c.field === 'ownerId').flatMap((c) => [c.before, c.after]).filter((x): x is string => typeof x === 'string');
+  if (!ids.length) return changes;
+  const names = new Map((await q.query('select id, name from users where id = any($1::uuid[])', [ids])).rows.map((r) => [r.id, r.name]));
+  return changes.map((c) => (c.field === 'ownerId' ? { ...c, beforeLabel: c.before ? names.get(c.before as string) ?? '—' : '—', afterLabel: c.after ? names.get(c.after as string) ?? '—' : '—' } : c));
 }

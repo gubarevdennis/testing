@@ -11,9 +11,11 @@ import { CalloutView, FileView, EmbedView, PageLinkView, PageMentionView, Mermai
 import { ClientBlockIds } from './extensions/blockIds';
 import { BlockOps } from './extensions/blockOps';
 import { StableSelection } from './extensions/stableSelection';
+import { ViewIdentity } from './extensions/viewIdentity';
 import { TableRepair } from './extensions/tableRepair';
 import { Uploads } from './extensions/uploads';
 import { SmartPaste } from './extensions/paste';
+import { codeHighlightPlugin } from './extensions/codeHighlight';
 import { PasteOptions } from './extensions/pasteOptions';
 import { slashExtension, mentionExtension, pageLinkExtension, emojiExtension } from './extensions/suggest';
 import { FindInPage } from './extensions/find';
@@ -51,6 +53,15 @@ export function clientExtensions(o: ClientExtensionOptions): AnyExtension[] {
     if (ext.name === 'inlineMath') return ext.configure({ onClick: (node: any, pos: number) => o.onMathClick('inline', pos, node.attrs.latex) });
     if (ext.name === 'blockMath') return ext.configure({ onClick: (node: any, pos: number) => o.onMathClick('block', pos, node.attrs.latex) });
     const view = VIEWS[ext.name];
+    if (ext.name === 'codeBlock')
+      // the stock lowlight plugin walks the whole document twice per keystroke: incremental highlighting instead (PERF-D1)
+      return ext.extend({
+        addNodeView: () => ReactNodeViewRenderer(view),
+        addProseMirrorPlugins() {
+          const base = (this.parent?.() ?? []).filter((pl: any) => !String(pl.key).startsWith('lowlight$'));
+          return [...base, codeHighlightPlugin(this.name)];
+        },
+      });
     if (!view) return ext;
     return ext.extend({ addNodeView: () => ReactNodeViewRenderer(view) });
   });
@@ -58,6 +69,7 @@ export function clientExtensions(o: ClientExtensionOptions): AnyExtension[] {
     ...schema,
     Collaboration.configure({ document: o.doc, field: FRAGMENT_NAME }),
     StableSelection,
+    ViewIdentity,
     TableRepair.configure({ provider: o.provider }),
     Placeholder.configure({
       includeChildren: true,

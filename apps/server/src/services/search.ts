@@ -62,6 +62,8 @@ export interface SearchParams {
   from?: string | null;
   to?: string | null;
   in?: 'all' | 'text' | 'images' | 'files';
+  /** Only pages carrying this tag (case-insensitive). */
+  tag?: string | null;
   limit: number;
   offset: number;
   /** Internal: skip the "did you mean" lookup (used when verifying a suggestion). */
@@ -105,6 +107,7 @@ export async function search(q: Queryable, user: AuthUser, p: SearchParams) {
   if (user.kind === 'guest') add('s.page_id = any(?::uuid[])', await guestSearchScope(q, user));
   if (p.status) add('pg.status = ?', p.status);
   if (p.authorId) add('pg.created_by = ?', p.authorId);
+  if (p.tag) add(`exists (select 1 from unnest(pg.tags) t where lower(t) = lower(?))`, p.tag);
   if (p.from) add('pg.content_updated_at >= ?', p.from);
   if (p.to) add('pg.content_updated_at <= ?', p.to);
   if (p.in === 'images') filters.push(`(to_tsvector('russian', s.ocr) || to_tsvector('english', s.ocr)) @@ query.tq`);
@@ -162,6 +165,8 @@ export async function search(q: Queryable, user: AuthUser, p: SearchParams) {
               (to_tsvector('russian', s.files || ' ' || s.file_text) || to_tsvector('english', s.file_text)) @@ query.tq as in_files,
               (to_tsvector('russian', s.comments) || to_tsvector('english', s.comments)) @@ query.tq as in_comments,
               to_tsvector('russian', s.properties) @@ query.tq as in_props,
+              (to_tsvector('russian', s.tags) || to_tsvector('simple', s.tags)) @@ query.tq as in_tags,
+              (to_tsvector('russian', s.headings) || to_tsvector('english', s.headings)) @@ query.tq as in_headings,
               case when (to_tsvector('russian', s.ocr) || to_tsvector('english', s.ocr)) @@ query.tq then ts_headline('russian', s.ocr, query.tq, 'MaxFragments=1, MaxWords=16, StartSel=<<, StopSel=>>') end as snip_ocr
          from search_index s, query where s.org_id = $1 and s.page_id = any($${ts.params.length + 2}::uuid[])`,
       [user.orgId, ...ts.params, ids],
@@ -183,7 +188,7 @@ export async function search(q: Queryable, user: AuthUser, p: SearchParams) {
       space: spaceNames.get(r.space_id) ?? null,
       path: crumbs.filter((c) => c.page_id === r.page_id).map((c) => (crumbAccess.get(c.id)?.actions.view ? c.title : '…')),
       snippet: (r.publishedOnly ? d.snip_pub : d.snip_live) || null,
-      matchedIn: [d.in_title && 'title', (r.m_live || r.m_pub) && 'text', d.in_ocr && 'image', d.in_files && 'file', d.in_comments && 'comment', d.in_props && 'properties', !r.m_live && !r.m_pub && r.sim > 0.45 && 'fuzzy'].filter(Boolean),
+      matchedIn: [d.in_title && 'title', (r.m_live || r.m_pub) && 'text', d.in_ocr && 'image', d.in_files && 'file', d.in_headings && 'heading', d.in_tags && 'tag', d.in_comments && 'comment', d.in_props && 'properties', !r.m_live && !r.m_pub && r.sim > 0.45 && 'fuzzy'].filter(Boolean),
       ocrSnippet: d.snip_ocr ?? null,
       blockId,
       publishedVersion: r.publishedOnly,

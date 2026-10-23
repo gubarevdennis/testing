@@ -105,10 +105,20 @@ export interface BlockInfo {
   index: number;
 }
 
+/** JSON with sorted object keys: content read back from jsonb (revisions) has a different key order than live content. */
+function stableStringify(v: unknown): string {
+  if (Array.isArray(v)) return '[' + v.map(stableStringify).join(',') + ']';
+  if (v && typeof v === 'object') {
+    const o = v as Record<string, unknown>;
+    return '{' + Object.keys(o).filter((k) => o[k] !== undefined).sort().map((k) => JSON.stringify(k) + ':' + stableStringify(o[k])).join(',') + '}';
+  }
+  return JSON.stringify(v) ?? 'null';
+}
+
 function fingerprint(n: PMNode): string {
   const { content: _content, ...rest } = n;
-  const own = TEXTBLOCKS.has(n.type) ? JSON.stringify(n.content ?? []) : '';
-  return JSON.stringify(rest) + own;
+  const own = TEXTBLOCKS.has(n.type) ? stableStringify(n.content ?? []) : '';
+  return stableStringify(rest) + own;
 }
 
 /** Flat list of blocks with ids, in document order. */

@@ -23,6 +23,7 @@ export async function searchCommentRoutes(app: FastifyInstance, s: Services) {
         from: z.string().datetime({ offset: true }).optional(),
         to: z.string().datetime({ offset: true }).optional(),
         in: z.enum(['all', 'text', 'images', 'files']).optional(),
+        tag: z.string().min(1).max(60).optional(),
         limit: z.coerce.number().int().min(1).max(100).default(20),
         offset: z.coerce.number().int().min(0).max(5000).default(0),
       }),

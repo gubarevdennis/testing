@@ -1,9 +1,11 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import { getKbSchema } from '@kb/shared';
-import { parse, requireUser, type Services } from '../app.js';
+import { getKbSchema, markdownToDoc, sanitizeDocUrls, findUnsafeUrls, type PMNode } from '@kb/shared';
+import { actorOf, parse, requireUser, type Services } from '../app.js';
 import { requirePage } from '../acl/engine.js';
 import { badRequest, notFound } from '../lib/errors.js';
+import { tx } from '../db/pool.js';
+import { createPage, getPage } from '../services/pages.js';
 
 /**
  * Conflict copies: when another author deletes or moves a block that this user was editing concurrently,
@@ -52,7 +54,8 @@ export async function conflictRoutes(app: FastifyInstance, s: Services) {
   app.post('/api/v1/pages/:id/conflicts/:cid/resolve', async (req) => {
     const user = requireUser(req);
     const { id, cid } = parse(z.object({ id: z.string().uuid(), cid: z.coerce.number().int() }), req.params);
-    const { resolution } = parse(z.object({ resolution: z.enum(['restored', 'dismissed']) }), req.body);
+    // restored = "keep mine", dismissed = "accept the server version", both = "keep both" (R-COLLAB-036)
+    const { resolution } = parse(z.object({ resolution: z.enum(['restored', 'dismissed', 'both']) }), req.body);
     await requirePage(s.db, user, id, 'edit');
     const r = await s.db.query(
       `update page_events set data = data || jsonb_build_object('resolution', $3::text, 'resolvedAt', now(), 'resolvedBy', $4::text)
@@ -61,5 +64,52 @@ export async function conflictRoutes(app: FastifyInstance, s: Services) {
     );
     if (!r.rowCount) throw notFound();
     return { ok: true };
+  });
+
+  /**
+   * "Keep both" for a non-mergeable change of a whole document (R-COLLAB-036): the server refused the local version
+   * (schema/validation) or the page went away, so the local version is stored as a NEW page next to it instead of
+   * being lost or forced in. The client sends its document as JSON and/or Markdown; JSON is used when it passes the
+   * server schema and URL checks after sanitising, otherwise the Markdown rendering (always valid) — said in the reply.
+   */
+  app.post('/api/v1/pages/:id/conflict-copy', async (req) => {
+    const user = requireUser(req);
+    const { id } = parse(z.object({ id: z.string().uuid() }), req.params);
+    const body = parse(z.object({ content: z.record(z.string(), z.unknown()).optional(), markdown: z.string().max(5_000_000).optional(), title: z.string().max(500).optional() }), req.body);
+    if (!body.content && body.markdown === undefined) throw badRequest('Нет содержимого для копии');
+    await requirePage(s.db, user, id, 'view', { allowDeleted: true });
+    const page = (await getPage(s.db, id))!;
+    let content: PMNode | null = null;
+    let source: 'json' | 'markdown' = 'json';
+    if (body.content && JSON.stringify(body.content).length < 5_000_000) {
+      try {
+        const clean = sanitizeDocUrls(body.content as unknown as PMNode).doc;
+        getKbSchema().nodeFromJSON(clean).check();
+        if (!findUnsafeUrls(clean).length) content = clean;
+      } catch {
+        content = null;
+      }
+    }
+    if (!content) {
+      if (body.markdown === undefined) throw badRequest('Версия не соответствует структуре документа — пришлите её в Markdown');
+      content = sanitizeDocUrls(markdownToDoc(body.markdown).doc).doc;
+      source = 'markdown';
+    }
+    const title = (body.title ?? `${page.title || 'Без названия'} — моя версия (конфликт)`).slice(0, 500);
+    // Next to the original when it is still there and the user may create pages there; otherwise in the personal space.
+    const created = await tx(s.db, async (q) => {
+      const parentOk = !page.deleted_at && (page.parent_id ? !!(await requirePage(q, user, page.parent_id, 'create').catch(() => null)) : true);
+      const me = (await q.query(`select id from spaces where kind = 'personal' and owner_user_id = $1 and deleted_at is null limit 1`, [user.id])).rows[0];
+      const target = parentOk ? { spaceId: page.space_id, parentId: page.parent_id, afterId: page.id } : { spaceId: me?.id ?? page.space_id, parentId: null };
+      try {
+        return (await createPage(q, user, actorOf(req), { ...target, title, content })).page;
+      } catch (e) {
+        if (!me || target.spaceId === me.id) throw e;
+        return (await createPage(q, user, actorOf(req), { spaceId: me.id, parentId: null, title, content })).page;
+      }
+    });
+    await s.db.query(`insert into page_events (org_id, page_id, actor_id, type, data) values ($1, $2, $3, 'conflict_copy', $4)`, [user.orgId, id, user.id, { blockId: null, block: null, reason: 'document', copyPageId: created.id, source, resolution: 'both', resolvedAt: new Date().toISOString() }]);
+    s.bus.emit({ type: 'tree-changed', orgId: user.orgId, spaceId: created.space_id });
+    return { page: { id: created.id, title: created.title, spaceId: created.space_id }, source };
   });
 }

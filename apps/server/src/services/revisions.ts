@@ -1,4 +1,4 @@
-import { collectBlocks, docToPlainText, type PMNode } from '@kb/shared';
+import { collectBlocks, docToPlainText, CONTENT_SCHEMA_VERSION, type PMNode } from '@kb/shared';
 import { diffWordsWithSpace } from 'diff';
 import * as Y from 'yjs';
 import type { Queryable } from '../db/pool.js';
@@ -29,6 +29,32 @@ export function summarize(before: PMNode | null, after: PMNode): RevisionSummary
   return { added: added.length, removed: removed.length, changed: changed.length, blocks: { added: added.slice(0, 200), removed: removed.slice(0, 200), changed: changed.slice(0, 200) } };
 }
 
+/**
+ * Page properties captured with every revision (V16-S11): versions are compared and restored by properties too,
+ * not only by text. Access rights are deliberately NOT part of it — a restore never rolls ACLs back (ACL-173).
+ */
+export interface RevisionProps {
+  title: string;
+  icon: string | null;
+  cover: unknown;
+  status: string;
+  ownerId: string | null;
+  tags: string[];
+  properties: Record<string, unknown>;
+  locked: boolean;
+  wide: boolean;
+  reviewDueAt: string | null;
+}
+
+/** Fields of RevisionProps that a restore may bring back (status/locking are workflow state, not content). */
+export const RESTORABLE_PROPS = ['icon', 'cover', 'ownerId', 'tags', 'properties', 'wide', 'reviewDueAt'] as const;
+
+export async function currentProps(q: Queryable, pageId: string): Promise<RevisionProps | null> {
+  const p = (await q.query(`select title, icon, cover, status, owner_id, tags, properties, locked, wide, to_char(review_due_at, 'YYYY-MM-DD') as review_due_at from pages where id = $1`, [pageId])).rows[0];
+  if (!p) return null;
+  return { title: p.title, icon: p.icon ?? null, cover: p.cover ?? null, status: p.status, ownerId: p.owner_id ?? null, tags: p.tags ?? [], properties: p.properties ?? {}, locked: !!p.locked, wide: !!p.wide, reviewDueAt: p.review_due_at ?? null };
+}
+
 export async function createRevision(
   q: Queryable,
   args: { pageId: string; kind: RevisionKind; title: string; state: Uint8Array; content: PMNode; seqUpto: number; authors: string[]; createdBy: string | null; label?: string | null; restoredFrom?: string | null },
@@ -36,12 +62,53 @@ export async function createRevision(
   const prev = await q.query('select number, content from page_revisions where page_id = $1 order by number desc limit 1', [args.pageId]);
   const number = (prev.rows[0]?.number ?? 0) + 1;
   const summary = summarize(prev.rows[0]?.content ?? null, args.content);
+  const props = await currentProps(q, args.pageId);
+  if (props) props.title = args.title;
+  const schemaVersion = (await q.query('select content_schema_version from pages where id = $1', [args.pageId])).rows[0]?.content_schema_version ?? CONTENT_SCHEMA_VERSION;
   const r = await q.query(
-    `insert into page_revisions (page_id, number, kind, label, title, state, content, seq_upto, authors, summary, created_by, restored_from)
-     values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) returning id, number, created_at`,
-    [args.pageId, number, args.kind, args.label ?? null, args.title, Buffer.from(args.state), args.content, args.seqUpto, args.authors, summary, args.createdBy, args.restoredFrom ?? null],
+    `insert into page_revisions (page_id, number, kind, label, title, state, content, seq_upto, authors, summary, created_by, restored_from, props, content_schema_version)
+     values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) returning id, number, created_at`,
+    [args.pageId, number, args.kind, args.label ?? null, args.title, Buffer.from(args.state), args.content, args.seqUpto, args.authors, summary, args.createdBy, args.restoredFrom ?? null, props, schemaVersion],
   );
   return r.rows[0] as { id: string; number: number; created_at: Date };
+}
+
+export interface PropChange {
+  field: keyof RevisionProps;
+  before: unknown;
+  after: unknown;
+  /** Display values (owner names instead of ids), filled by the route. */
+  beforeLabel?: string;
+  afterLabel?: string;
+  /** Per-key changes of custom properties / tags. */
+  items?: Array<{ key: string; before: unknown; after: unknown; status: 'added' | 'removed' | 'changed' }>;
+}
+
+const same = (a: unknown, b: unknown) => JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
+
+/** Property-level comparison of two revision snapshots. `null` snapshots (revisions older than the feature) compare only the title. */
+export function diffProps(before: Partial<RevisionProps> | null, after: Partial<RevisionProps> | null): PropChange[] {
+  if (!before || !after) return [];
+  const out: PropChange[] = [];
+  const fields: Array<keyof RevisionProps> = ['icon', 'cover', 'status', 'ownerId', 'tags', 'properties', 'locked', 'wide', 'reviewDueAt'];
+  for (const f of fields) {
+    if (same(before[f], after[f])) continue;
+    const c: PropChange = { field: f, before: before[f] ?? null, after: after[f] ?? null };
+    if (f === 'properties') {
+      const a = (before.properties ?? {}) as Record<string, unknown>;
+      const b = (after.properties ?? {}) as Record<string, unknown>;
+      c.items = [...new Set([...Object.keys(a), ...Object.keys(b)])]
+        .filter((k) => !same(a[k], b[k]))
+        .map((k) => ({ key: k, before: a[k] ?? null, after: b[k] ?? null, status: !(k in a) ? 'added' : !(k in b) ? 'removed' : 'changed' }));
+    }
+    if (f === 'tags') {
+      const a = new Set(before.tags ?? []);
+      const b = new Set(after.tags ?? []);
+      c.items = [...[...b].filter((t) => !a.has(t)).map((t) => ({ key: t, before: null, after: t, status: 'added' as const })), ...[...a].filter((t) => !b.has(t)).map((t) => ({ key: t, before: t, after: null, status: 'removed' as const }))];
+    }
+    out.push(c);
+  }
+  return out;
 }
 
 export interface BlockDiff {
