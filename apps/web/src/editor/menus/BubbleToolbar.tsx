@@ -5,7 +5,7 @@ import { CellSelection } from '@tiptap/pm/tables';
 import { useEffect, useRef, useState } from 'react';
 import { useEditorState } from '@tiptap/react';
 import {
-  Bold, Italic, Underline, Strikethrough, Code, Link2, Baseline, ChevronDown, AlignLeft, AlignCenter, AlignRight, AlignJustify, MessageSquarePlus, Subscript, Superscript, RemoveFormatting, Type, Heading1, Heading2, Heading3, List, ListOrdered, ListChecks, Quote, Code2, Info, Check, X, ExternalLink, Unlink, MoreHorizontal, Sigma,
+  Bold, Italic, Underline, Strikethrough, Code, Link2, Baseline, ChevronDown, AlignLeft, AlignCenter, AlignRight, AlignJustify, MessageSquarePlus, Subscript, Superscript, RemoveFormatting, Type, Heading1, Heading2, Heading3, List, ListOrdered, ListChecks, Quote, Code2, Info, Check, X, ExternalLink, Unlink, MoreHorizontal, Sigma, Footprints,
 } from 'lucide-react';
 import { Tooltip } from '../../components/ui/Tooltip';
 import { Menu } from '../../components/ui/Menu';
@@ -13,6 +13,7 @@ import { TEXT_COLORS, HIGHLIGHTS } from '../palette';
 import { FONT_SIZES, FONT_FAMILIES, sanitizeHref } from '@kb/shared';
 import { convertToCodeBlock, type CodeConversionLoss } from '../convert';
 import { confirm } from '../../components/ui/Confirm';
+import { insertFootnote } from '../extensions/footnotes';
 
 /** Converting to code removes formatting: ask first, explaining what will be lost (R-EDITOR-067). */
 function confirmCodeLoss(loss: CodeConversionLoss) {
@@ -226,6 +227,7 @@ export function BubbleToolbar({ editor, onComment }: { editor: Editor; onComment
               { separator: true },
               { id: 'sub', label: 'Нижний индекс', icon: <Subscript size={15} />, checked: f.sub, onSelect: () => editor.chain().focus().toggleSubscript().run() },
               { id: 'sup', label: 'Верхний индекс', icon: <Superscript size={15} />, checked: f.sup, onSelect: () => editor.chain().focus().toggleSuperscript().run() },
+              { id: 'footnote', label: 'Сноска (Ctrl+Alt+F)', icon: <Footprints size={15} />, onSelect: () => insertFootnote(editor) },
               {
                 id: 'math',
                 label: 'Формула из выделения',

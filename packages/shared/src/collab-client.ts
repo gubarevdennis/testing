@@ -10,6 +10,7 @@
  *  - 'error'      needs user attention (rejected change, page deleted, access revoked)
  */
 import * as Y from 'yjs';
+import { CONTENT_SCHEMA_VERSION } from './editor/version.js';
 import * as awarenessProtocol from 'y-protocols/awareness';
 import { MSG, CLOSE, encodeClient, decodeServer, type PresenceUser } from './collab-protocol.js';
 import { HttpTunnelSocket, type HttpTunnelOptions } from './collab-http.js';
@@ -53,8 +54,17 @@ export interface CollabProviderOptions {
   httpFallback?: HttpTunnelOptions;
   /** Consecutive WebSocket failures (never opened or never synced) before switching to the HTTP channel. */
   fallbackAfterFailures?: number;
-  /** An opened channel that does not deliver SYNC within this time is treated as broken. */
+  /** An opened channel that does not deliver SYNC within this time is treated as broken; so is a WebSocket whose
+   * handshake does not complete within this time (a path that accepts TCP but never answers). */
   syncTimeoutMs?: number;
+  /**
+   * Liveness of an idle WebSocket (QA26-20: Wi-Fi→LTE switch, NAT/proxy timeouts, sleeping laptop): a PING goes out
+   * every `pingIntervalMs`; if nothing at all arrives from the server within `pongTimeoutMs` after it, the connection
+   * is considered dead and replaced at once — without this an idle replica on a silently dead link would keep showing
+   * "connected" and miss everyone else's edits until the OS gives up on TCP (minutes).
+   */
+  pingIntervalMs?: number;
+  pongTimeoutMs?: number;
   /**
    * Backpressure: at most this many operations / bytes are in flight (sent, not yet acknowledged), and nothing
    * more is written while the socket's own send buffer holds more than `maxBufferedBytes`.
@@ -65,6 +75,7 @@ export interface CollabProviderOptions {
   /**
    * Content schema version this client's editor writes (CONTENT_SCHEMA_VERSION of its build). The server refuses
    * edits of an outdated client to a migrated document instead of merging old and new formats (R-COLLAB-037).
+   * Default: CONTENT_SCHEMA_VERSION of the shared package this client is built with.
    */
   schemaVersion?: number;
   /** Delay before re-sending operations the server could not take yet (server older than the client). */
@@ -102,7 +113,8 @@ export class CollabProvider {
   private retry = 0;
   private reconnectTimer: any = null;
   private ackTimer: any = null;
-  private pingTimer: any = null;
+  /** Abandons the current connection immediately (no closing handshake over a dead link) and reconnects. */
+  private dropCurrent: (() => void) | null = null;
   private destroyed = false;
   private fatal = false;
   private message: string | undefined;
@@ -117,7 +129,7 @@ export class CollabProvider {
   transport: CollabTransport = 'ws';
 
   constructor(opts: CollabProviderOptions) {
-    this.opts = { batchMs: 80, ackTimeoutMs: 15_000, backoff: { minMs: 500, maxMs: 30_000 }, fallbackAfterFailures: 2, syncTimeoutMs: 10_000, maxInflightOps: 32, maxInflightBytes: 4 * 1024 * 1024, maxBufferedBytes: 1024 * 1024, ...opts };
+    this.opts = { batchMs: 80, ackTimeoutMs: 15_000, backoff: { minMs: 500, maxMs: 30_000 }, fallbackAfterFailures: 2, syncTimeoutMs: 10_000, pingIntervalMs: 25_000, pongTimeoutMs: 10_000, maxInflightOps: 32, maxInflightBytes: 4 * 1024 * 1024, maxBufferedBytes: 1024 * 1024, ...opts };
     this.doc = opts.doc;
     this.awareness = opts.awareness ?? new awarenessProtocol.Awareness(this.doc);
     this.doc.on('update', this.onDocUpdate);
@@ -290,15 +302,20 @@ export class CollabProvider {
       sentAny = true;
       this.ws.send(encodeClient({ type: MSG.UPDATE, opId, update: p.update }));
     }
-    if (sentAny) this.armAckTimer();
+    // New sends do not restart the clock: it measures the oldest unacknowledged operation. (Restarting it on every
+    // send meant that a user typing more often than ackTimeoutMs on a dead link was never reconnected.)
+    if (sentAny && !this.ackTimer) this.armAckTimer();
   }
 
+  /** (Re)starts the acknowledgement deadline; called when progress is made (ACK) or the first operation goes out. */
   private armAckTimer() {
     if (this.ackTimer) clearTimeout(this.ackTimer);
+    this.ackTimer = null;
     if (![...this.pending.values()].some((p) => p.sent)) return;
     this.ackTimer = setTimeout(() => {
+      this.ackTimer = null;
       // No acknowledgement in time: treat the connection as broken; everything will be re-sent after reconnect.
-      this.ws?.close();
+      this.dropCurrent?.();
     }, this.opts.ackTimeoutMs);
   }
 
@@ -329,15 +346,49 @@ export class CollabProvider {
     this.ws = ws;
     this.synced = false;
     let gotSync = false;
+    let lastRx = Date.now();
+    let pingTimer: any = null;
+    let pongTimer: any = null;
+    // A broken connection is detached at once: a closing handshake over a dead link can take tens of seconds, and
+    // until onclose runs nothing would be re-sent. The late close event of this socket is ignored (this.ws !== ws).
+    const dead = () => {
+      if (this.ws !== ws) return;
+      try {
+        if (typeof ws.terminate === 'function') ws.terminate();
+        else ws.close();
+      } catch {
+        /* already closed */
+      }
+      ws.onclose?.({ code: 1006, reason: 'timeout' });
+    };
+    this.dropCurrent = dead;
+    // TCP accepted but the handshake never completes (stalled proxy, half-open path after a network switch).
+    const openTimer = setTimeout(() => ws.readyState === 0 && dead(), this.opts.syncTimeoutMs);
+    const stopTimers = () => {
+      clearInterval(pingTimer);
+      clearTimeout(pongTimer);
+      clearTimeout(openTimer);
+    };
     this.setStatus();
     ws.onopen = () => {
-      ws.send(encodeClient({ type: MSG.HELLO, stateVector: Y.encodeStateVector(this.doc), ...(this.opts.schemaVersion !== undefined ? { schemaVersion: this.opts.schemaVersion } : {}) }));
-      this.pingTimer = setInterval(() => ws.readyState === 1 && ws.send(encodeClient({ type: MSG.PING })), 25_000);
+      clearTimeout(openTimer);
+      // a client always declares the content schema it writes (default: the schema of this build)
+      ws.send(encodeClient({ type: MSG.HELLO, stateVector: Y.encodeStateVector(this.doc), schemaVersion: this.opts.schemaVersion ?? CONTENT_SCHEMA_VERSION }));
+      pingTimer = setInterval(() => {
+        if (ws.readyState !== 1) return;
+        const sentAt = Date.now();
+        ws.send(encodeClient({ type: MSG.PING }));
+        // The HTTP channel has its own request timeouts; liveness by PONG applies to WebSocket.
+        if (this.transport !== 'ws') return;
+        clearTimeout(pongTimer);
+        pongTimer = setTimeout(() => lastRx < sentAt && dead(), this.opts.pongTimeoutMs);
+      }, this.opts.pingIntervalMs);
       // An intermediary may accept the upgrade and then swallow frames: no SYNC in time = broken channel.
       if (this.syncTimer) clearTimeout(this.syncTimer);
-      this.syncTimer = setTimeout(() => this.ws === ws && !this.synced && ws.close(), this.opts.syncTimeoutMs);
+      this.syncTimer = setTimeout(() => this.ws === ws && !this.synced && dead(), this.opts.syncTimeoutMs);
     };
     const prevOnMessage = (buf: Uint8Array) => {
+      lastRx = Date.now();
       if (!gotSync && this.ws === ws) {
         gotSync = true;
         this.retry = 0;
@@ -347,10 +398,14 @@ export class CollabProvider {
     };
     ws.onmessage = (ev: { data: ArrayBuffer | Uint8Array }) => prevOnMessage(new Uint8Array(ev.data as ArrayBuffer));
     ws.onclose = (ev: { code: number; reason?: string }) => {
-      clearInterval(this.pingTimer);
-      if (this.ackTimer) clearTimeout(this.ackTimer);
-      if (this.syncTimer) clearTimeout(this.syncTimer);
+      stopTimers();
+      // only the current connection owns the shared timers (a late close of an abandoned socket must not clear
+      // the timers of its replacement)
       if (this.ws !== ws) return;
+      if (this.ackTimer) clearTimeout(this.ackTimer);
+      this.ackTimer = null;
+      if (this.syncTimer) clearTimeout(this.syncTimer);
+      this.dropCurrent = null;
       this.ws = null;
       this.synced = false;
       // a WebSocket that never got as far as SYNC counts towards switching to the HTTP channel
@@ -537,6 +592,10 @@ export class CollabProvider {
 
   disconnect() {
     if (this.reconnectTimer) clearTimeout(this.reconnectTimer);
+    if (this.ackTimer) clearTimeout(this.ackTimer);
+    this.ackTimer = null;
+    if (this.syncTimer) clearTimeout(this.syncTimer);
+    this.dropCurrent = null;
     const ws = this.ws;
     this.ws = null;
     this.synced = false;

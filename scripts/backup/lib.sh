@@ -10,6 +10,27 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 log() { printf '%s [%s] %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "${LOG_TAG:-kb-backup}" "$*" >&2; }
 die() { log "ERROR: $*"; exit 1; }
 
+# Secrets-manager integration (same convention as the server, apps/server/src/lib/secret-files.ts): VAR_FILE names a
+# file holding VAR (Docker/Kubernetes secrets, Vault Agent templates, systemd LoadCredential). One trailing newline
+# is dropped; both VAR and VAR_FILE with different values, or an empty/unreadable file, is an error. Values are never
+# printed.
+file_env() {
+  local var="$1" fvar="${1}_FILE" path val
+  path="${!fvar:-}"
+  [[ -n "$path" ]] || return 0
+  [[ -r "$path" ]] || die "$fvar: cannot read $path"
+  val="$(cat -- "$path")" # command substitution drops trailing newlines
+  [[ -n "$val" ]] || die "$fvar: $path is empty"
+  if [[ -n "${!var:-}" && "${!var}" != "$val" ]]; then die "both $var and $fvar are set; use one of them"; fi
+  printf -v "$var" '%s' "$val"
+  export "${var?}"
+}
+for _kb_secret in DATABASE_URL BACKUP_DATABASE_URL TARGET_DATABASE_URL VERIFY_ADMIN_URL TARGET_ADMIN_URL BASEBACKUP_URL \
+  PGPASSWORD KB_BACKUP_PASSPHRASE AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY; do
+  file_env "$_kb_secret"
+done
+unset _kb_secret
+
 need() {
   local c
   for c in "$@"; do command -v "$c" >/dev/null 2>&1 || die "required command not found: $c"; done

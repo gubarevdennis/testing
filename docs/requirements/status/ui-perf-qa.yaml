@@ -96,9 +96,9 @@
   evidence: 'tests/e2e/ui-p0-interaction.spec.ts "R-UI-059, R-UI-008, E224: …" (position in viewport, ArrowDown focus, Esc + focus return, outside click)'
   note: nested submenus not exercised
 - id: R-QA-005
-  status: partial
-  evidence: tests/resilience/crash-restart.test.ts, db-connection-loss.test.ts; tests/integration/collab.test.ts offline/pending store/conflict; tests/e2e/editor.spec.ts offline
-  note: timeouts and partial storage failure not covered
+  status: done
+  evidence: 'Network outage 1/30/300 s, high RTT + packet loss, Wi-Fi→LTE switch, DB unreachable, double tab, reordered/duplicated frames at the TCP/WebSocket level against the real server process (tests/resilience/network-faults.test.ts, exact text of every replica and the server, honest status); timeouts: acknowledgement timeout, connect (SYN) timeout, PING/PONG liveness (network-faults Wi-Fi/LTE, collab-p0 sleeping laptop); server restart (crash-restart.test.ts, multi-instance.test.ts SIGKILL with failover); tab reload/close (tests/e2e/collab-p0-offline.spec.ts); conflict (collab.test.ts AT-77, tests/e2e/conflict.spec.ts); partial storage failure (storage-failure.test.ts, tests/e2e/collab-p0-storage.spec.ts)'
+  note: ''
 - id: R-QA-006
   status: partial
   evidence: 'docs/TEST_MATRIX.md (generated, with last result per test) links docs/qa/ACTION_MATRIX.md: every component/action id with its tests; critical paths without a test are listed explicitly'
@@ -459,9 +459,9 @@
   evidence: tests/e2e/a11y.spec.ts pixel baselines (2 screens, threshold 1%); tests/e2e/visual.spec.ts overflow checks at 6 widths × 2 themes
   note: baselines not at all widths and themes
 - id: R-QA-021
-  status: partial
-  evidence: crash-restart (SIGKILL), db-connection-loss, collab offline/restart, AT-77 delete/edit conflict, two contexts in CO
-  note: no 1/30/300 s outage profile, no local-storage-full, no server-disk-full
+  status: done
+  evidence: 'tests/resilience/network-faults.test.ts: outages of 1, 30 and 300 s while both editors keep typing (154+78 edits in the 300 s case, recovery 18.8 s after the network returned), 0 lost/duplicated, status never "saved" with pending edits; DB unreachable 10 s (connections reset, refused); double tab behind a 20 s outage; WS server restart: crash-restart.test.ts (SIGKILL) and multi-instance.test.ts; DB restart: db-connection-loss.test.ts + network-faults DB outage; delete/edit conflict: collab.test.ts AT-77, tests/e2e/conflict.spec.ts; local storage full: tests/e2e/collab-p0-storage.spec.ts, tests/unit/collab-client.test.ts; server disk full: storage-failure.test.ts (ENOSPC), collab-p0-storage persist failure'
+  note: ''
 - id: AT-80
   status: partial
   evidence: tests/e2e/a11y.spec.ts axe audit (light theme); tokens.css dual theme
@@ -955,9 +955,9 @@
   evidence: components/ImageViewer.tsx CSS transform
   note: no requestAnimationFrame batching; gesture latency/fps not measured
 - id: R-QA-034
-  status: partial
-  evidence: collab.test.ts randomised convergence; tests/integration/qa-invariants.test.ts (HTTP fallback, offline-reconnect, concurrent editor); scripts/load/collab-load.mjs 20 editors on 5 pages, 0 lost/duplicated
-  note: no partition/reorder/duplicate injection; 20-editor run is manual
+  status: done
+  evidence: 'Convergence without loss of anything acknowledged under: partition (outages 1/30/300 s), latency (RTT 300 ms + jitter), loss (5 %, retransmission delay), reorder and duplicate (10 % duplicated, 15 % swapped frames) — tests/resilience/network-faults.test.ts; 2/5/20 editors (collab-p0.test.ts); randomised/property tests (collab.test.ts, qa-invariants.test.ts); several instances with SIGKILL failover (multi-instance.test.ts); load (scripts/load/collab-load.mjs) and 2-hour soak with periodic integrity checks (scripts/load/soak.mjs, docs/PERFORMANCE.md «Soak»); recovery from snapshot+log (crash-restart, backup-restore, dr-drill)'
+  note: 'Load and soak run nightly in .github/workflows/nightly-load.yml (not yet executed on GitHub)'
 - id: R-PROCESS-047
   status: process
   evidence: this assessment
@@ -1050,12 +1050,12 @@
   note: no mapping of the 12 trials to tests
 - id: R-QA-038
   status: partial
-  evidence: unit/integration/E2E/property/chaos present
-  note: no component/contract tests; load test exists (scripts/load) but is not in CI
+  evidence: 'unit/integration/API/E2E/property; chaos: tests/resilience/network-faults.test.ts (TCP fault proxy), multi-instance.test.ts (instance kill); load scripts/load/collab-load.mjs; soak scripts/load/soak.mjs (2 h run, docs/PERFORMANCE.md); both nightly in .github/workflows/nightly-load.yml'
+  note: 'No component/contract tests; the nightly load/soak workflow has not run on GitHub yet; regression test per defect is a process rule (docs/qa/DEFECTS.md)'
 - id: R-PROCESS-052
   status: missing
-  evidence: n/a
-  note: no gate checklist; no pilot, load, a11y audit, manual UX check
+  evidence: 'Process artefact: docs/PILOT_PLAN.md (scope, 4-week schedule, entry gate with evidence per item, success criteria K1–K10, monitoring, feedback loop, cut-over and fallback plan, stop criteria, sign-off protocol)'
+  note: 'The pilot (test operation with employees) has not been carried out; closes with the signed protocol of docs/PILOT_PLAN.md §9'
 - id: R-PROCESS-053
   status: partial
   evidence: 'scripts/release-gate.py (requirements, restore drill, action coverage, run results, defects) defines «готово»'

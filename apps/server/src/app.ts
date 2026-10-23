@@ -156,7 +156,8 @@ export async function buildApp(base: Omit<Services, 'hub' | 'bus' | 'metrics' | 
     req.correlationId = String(req.id);
     reply.header('x-correlation-id', req.correlationId);
     const auth = req.headers.authorization;
-    if (auth?.startsWith('Bearer ')) {
+    // /metrics has its own bearer token (METRICS_TOKEN, checked in routes/health.ts); it is not an API token.
+    if (auth?.startsWith('Bearer ') && req.url.split('?')[0] !== '/metrics') {
       const user = await lookupApiToken(base.db, auth.slice(7).trim());
       if (!user) throw unauthorized('Недействительный токен API');
       req.user = user;

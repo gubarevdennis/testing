@@ -146,7 +146,7 @@ async function renderPublic(s: Services, link: LinkRow, token: string, pageId: s
   for (const id of linked) if (await inScope(s.db, link, id)) reachable.add(id);
   const canDownload = link.allow_download && policy.allowDownload;
   walk(content, (n) => {
-    if (n.type === 'image' && n.attrs) n.attrs.src = n.attrs.attachmentId ? `${base}/files/${n.attrs.attachmentId}` : /^https:\/\//.test(String(n.attrs.src ?? '')) ? n.attrs.src : null;
+    if ((n.type === 'image' || n.type === 'inlineImage') && n.attrs) n.attrs.src = n.attrs.attachmentId ? `${base}/files/${n.attrs.attachmentId}` : /^https:\/\//.test(String(n.attrs.src ?? '')) ? n.attrs.src : null;
     if ((n.type === 'fileBlock' || n.type === 'embed') && n.attrs) n.attrs.href = n.attrs.attachmentId && canDownload ? `${base}/files/${n.attrs.attachmentId}?download=1` : '#';
     if ((n.type === 'pageLink' || n.type === 'pageMention') && n.attrs && !reachable.has(String(n.attrs.pageId))) n.attrs.title = 'Страница недоступна по ссылке';
   });

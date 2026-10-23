@@ -10,6 +10,7 @@ import { yXmlFragmentToProsemirrorJSON } from '@tiptap/y-tiptap';
 import { openCollab, useSyncState, type CollabSession } from '../sync/collab';
 import { clientExtensions } from './clientExtensions';
 import { BubbleToolbar } from './menus/BubbleToolbar';
+import { FootnotesList } from './FootnotesList';
 import { BlockHandle, TouchBlockActions } from './menus/BlockHandle';
 import { TableToolbar } from './menus/TableToolbar';
 import { PasteOptionsMenu } from './menus/PasteOptionsMenu';
@@ -119,7 +120,9 @@ export function PageEditor(p: Props) {
   }, [p.pageId, p.generation, epoch]);
   if (!session || !ready) return <EditorSkeleton />;
   // Non-mergeable rejection of this device's changes: comparison dialog with three choices (R-COLLAB-036).
-  const docConflict = !!fatal && DOC_CONFLICT_CODES.includes(fatal.code);
+  // A page moved to the trash is a conflict only when this device still has changes the server has not taken; a reader
+  // or an editor whose work is all saved just sees the banner (the page can be restored from the trash) (QA-E3).
+  const docConflict = !!fatal && DOC_CONFLICT_CODES.includes(fatal.code) && (fatal.code !== 'deleted' || session.provider.pendingCount() > 0);
   return (
     <>
       {docConflict && conflictOpen && (
@@ -483,6 +486,7 @@ function EditorInner(p: Props & { session: CollabSession }) {
               }}
             />
           )}
+          <FootnotesList editor={editor} />
           {p.canEdit && <BubbleToolbar editor={editor} onComment={() => requestComment()} />}
           {p.canEdit && <TableToolbar editor={editor} />}
           {p.canEdit && <PasteOptionsMenu editor={editor} />}

@@ -92,7 +92,7 @@ export async function importRemoteImages(editor: Editor, srcs: string[], pageId:
   if (!done.size || editor.isDestroyed) return;
   const tr = editor.state.tr;
   editor.state.doc.descendants((node, pos) => {
-    if (node.type.name !== 'image' || node.attrs.attachmentId) return;
+    if ((node.type.name !== 'image' && node.type.name !== 'inlineImage') || node.attrs.attachmentId) return;
     const a = done.get(String(node.attrs.src));
     if (a) tr.setNodeMarkup(pos, undefined, { ...node.attrs, src: a.contentUrl, attachmentId: a.id, naturalWidth: a.width, naturalHeight: a.height }, node.marks);
   });

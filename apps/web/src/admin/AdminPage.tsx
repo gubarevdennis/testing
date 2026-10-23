@@ -61,7 +61,7 @@ export default function AdminPage() {
       </p>
       <nav className="tabs admin-tabs" aria-label="Разделы администрирования">
         {sections.map((s) => (
-          <NavLink key={s.path} to={s.path} className="tab admin-tab">
+          <NavLink key={s.path} to={`/admin/${s.path}`} className="tab admin-tab">
             {s.icon}
             <span>{s.label}</span>
           </NavLink>
@@ -70,11 +70,14 @@ export default function AdminPage() {
       <div className="admin-body">
         <ErrorBoundary>
           <Routes>
-            <Route index element={<Navigate to={sections[0].path} replace />} />
+            {/* absolute targets (here and in the tabs above): this page is a splat route (/admin/*), where a relative one
+                resolves against the current URL — a tab click from /admin/users went to /admin/users/groups (still the
+                users section) and the "*" fallback appended forever (/admin/settings/audit/audit/…, QA-A4) */}
+            <Route index element={<Navigate to={`/admin/${sections[0].path}`} replace />} />
             {sections.map((s) => (
               <Route key={s.path} path={s.path + '/*'} element={s.element} />
             ))}
-            <Route path="*" element={<Navigate to={sections[0].path} replace />} />
+            <Route path="*" element={<Navigate to={`/admin/${sections[0].path}`} replace />} />
           </Routes>
         </ErrorBoundary>
       </div>

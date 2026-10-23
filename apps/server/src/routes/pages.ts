@@ -4,6 +4,7 @@ import { tx, type Queryable } from '../db/pool.js';
 import { actorOf, parse, requireUser, type Services } from '../app.js';
 import { accessForPages, requirePage, pageAccess, usersWithAction, type AuthUser, type PageAccess } from '../acl/engine.js';
 import { createPage, movePage, previewMove, trashPage, restorePage, duplicatePage, purgePages, getPage, type PageRow } from '../services/pages.js';
+import { copyContentAttachments } from '../services/attachment-copy.js';
 import { breadcrumbs, filterVisible, visibleChildren, pagesWithExplicitGrants } from '../services/tree.js';
 import { audit } from '../services/audit.js';
 import { orgSettings } from '../services/org.js';
@@ -133,7 +134,15 @@ export async function pageRoutes(app: FastifyInstance, s: Services) {
         icon = icon ?? t.icon;
         title = title ?? t.default_title ?? t.name;
       }
-      return createPage(q, user, actorOf(req), { ...body, title, icon, content, properties });
+      // Pictures and files of a template become attachments of the new page (R-MEDIA-007, D-39): its readers see them
+      // whatever happens to the page the template was made from. Same rule as paste: the user may download them there.
+      let authors: string[] = [];
+      if (body.templateId) authors = (await q.query('select created_by from templates where id = $1 union select created_by from template_versions where template_id = $1', [body.templateId])).rows.map((r) => r.created_by).filter(Boolean);
+      // template assets (no page, created by the template's authors) are part of the template: copyable by its users
+      const files = content ? await copyContentAttachments(q, user, content, null, { actor: actorOf(req), trusted: (a) => !a.page_id && authors.includes(a.created_by) }) : null;
+      const created = await createPage(q, user, actorOf(req), { ...body, title, icon, content: files?.doc ?? content, properties });
+      if (files?.copied.size && created.created) await q.query('update attachments set page_id = $2 where id = any($1::uuid[]) and page_id is null', [[...files.copied.values()], created.page.id]);
+      return created;
     });
     const acc = (await pageAccess(s.db, user, result.page.id))!;
     s.bus.emit({ type: 'tree-changed', orgId: user.orgId, spaceId: result.page.space_id });

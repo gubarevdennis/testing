@@ -12,6 +12,9 @@ test.skip(process.env.KB_PERF_PROFILE !== '1', 'profiling aid: KB_PERF_PROFILE=1
 test.setTimeout(600_000);
 
 const BLOCKS = Number(process.env.KB_PERF_BLOCKS ?? 700);
+const CPU_RATE = Number(process.env.KB_PERF_CPU_RATE ?? 1);
+/** KB_PERF_TARGET=cell types into a cell of the 200×4 table (5 000-block document) instead of a paragraph. */
+const TARGET = process.env.KB_PERF_TARGET ?? 'paragraph';
 
 test('profile typing', async ({ page }) => {
   // which React components render while typing (a minimal DevTools hook: fibers that performed work in a commit)
@@ -78,7 +81,7 @@ test('profile typing', async ({ page }) => {
   await expect(editor(page)).toBeVisible({ timeout: 120_000 });
   await page.waitForFunction(() => (window as any).__kbEditor, undefined, { timeout: 120_000 });
   const n = Math.floor(BLOCKS * 0.43);
-  const target = editor(page).locator('p', { hasText: new RegExp(`^П${n} `) });
+  const target = TARGET === 'cell' ? editor(page).locator('td', { hasText: /^R120C2 / }) : editor(page).locator('p', { hasText: new RegExp(`^П${n} `) });
   await target.scrollIntoViewIfNeeded();
   await caretToEnd(page, target);
   await page.waitForTimeout(1500);
@@ -101,14 +104,22 @@ test('profile typing', async ({ page }) => {
   const cdp = await page.context().newCDPSession(page);
   await cdp.send('Profiler.enable');
   await cdp.send('Profiler.setSamplingInterval', { interval: 100 });
+  if (CPU_RATE !== 1) await cdp.send('Emulation.setCPUThrottlingRate', { rate: CPU_RATE });
   await cdp.send('Profiler.start');
   await startLatencyProbe(page);
   await page.evaluate(() => ((window as any).__kbCount = true));
   await page.keyboard.type('the quick brown fox jumps over the lazy dog '.repeat(3), { delay: 100 });
   const { samples } = await readLatency(page);
   const { profile } = (await cdp.send('Profiler.stop')) as any;
+  if (CPU_RATE !== 1) await cdp.send('Emulation.setCPUThrottlingRate', { rate: 1 });
   const s = stats(samples);
-  journal('profile-typing', { blocks: BLOCKS, ...s });
+  // main-thread JS time per keystroke (sampled, excludes idle/program/gc): less sensitive to a busy shared machine than latency
+  const fnOf = new Map<number, string>(profile.nodes.map((nd: any) => [nd.id, nd.callFrame.functionName]));
+  const busy = (profile.samples as number[]).reduce((acc: number, sid: number, i: number) => {
+    const fn = fnOf.get(sid);
+    return fn === '(idle)' || fn === '(program)' || fn === '(garbage collector)' ? acc : acc + (profile.timeDeltas[i] ?? 0) / 1000;
+  }, 0);
+  journal('profile-typing', { blocks: BLOCKS, cpuRate: CPU_RATE, target: TARGET, ...s, jsMsPerKey: Math.round((busy / Math.max(1, samples.length)) * 10) / 10 });
   mkdirSync('test-results/perf', { recursive: true });
   writeFileSync(`test-results/perf/typing-${BLOCKS}.cpuprofile`, JSON.stringify(profile));
   // self time per function

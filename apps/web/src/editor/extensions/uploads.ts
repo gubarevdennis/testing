@@ -3,6 +3,7 @@ import { useUploadState } from '../../lib/uploadState';
 import { Plugin, PluginKey } from '@tiptap/pm/state';
 import type { Node as PMNode } from '@tiptap/pm/model';
 import { uploadFile, isImageFile, type AttachmentDto } from '../../lib/uploads';
+import { ingestFiles } from '@kb/shared';
 import { saveUpload, loadUpload, dropUpload, patchUpload, uploadsForPage } from '../../lib/pendingUploads';
 
 /**
@@ -53,17 +54,15 @@ export function getUploadItem(id: string): UploadItem | undefined {
   return items.get(id);
 }
 
-/** Alt text from the file name ("Схема_склада.png" → "Схема склада"); generic clipboard names → "Изображение". */
-export function altFromName(name: string): string {
-  const base = name.replace(/\.[a-z0-9]{1,5}$/i, '').replace(/[_]+/g, ' ').trim();
-  if (!base || /^(image|img|clipboard|screenshot|pasted|blob|изображение)[\s\d-]*$/i.test(base)) return 'Изображение';
-  return base.slice(0, 200);
-}
+/** Alt text from the file name — shared with the import pipeline (R-IMPORT-021). */
+export { altFromName } from '@kb/shared';
 
+/** Upload block of a pasted / dropped / chosen file: the node the shared pipeline builds for a file (ingestFiles). */
 function placeholderNode(file: File, id: string) {
-  return isImageFile(file)
-    ? { type: 'image', attrs: { uploadId: id, alt: altFromName(file.name || '') } }
-    : { type: 'fileBlock', attrs: { uploadId: id, name: file.name || 'Файл', size: file.size, mime: file.type || null, view: 'compact' } };
+  const node = ingestFiles([{ name: file.name, type: file.type, size: file.size }], () => ({ uploadId: id })).doc.content![0];
+  if (node.type === 'image' && !isImageFile(file)) return { type: 'fileBlock', attrs: { uploadId: id, name: file.name || 'Файл', size: file.size, mime: file.type || null, view: 'compact' } };
+  const { id: _blockId, ...attrs } = node.attrs ?? {};
+  return { type: node.type, attrs };
 }
 
 /** Inserts blocks at a block boundary: replaces an empty paragraph, otherwise goes after the current text block. */
@@ -95,6 +94,8 @@ export function findUploadNode(doc: PMNode, id: string): { node: PMNode; pos: nu
 function attachmentAttrs(node: PMNode, a: AttachmentDto) {
   if (node.type.name === 'image')
     return { ...node.attrs, uploadId: null, src: a.contentUrl, attachmentId: a.id, naturalWidth: a.width, naturalHeight: a.height, width: node.attrs.width ?? (a.width && a.width > 720 ? null : a.width) };
+  // a picture in a line of text keeps its size in the line (its natural size only when small)
+  if (node.type.name === 'inlineImage') return { ...node.attrs, uploadId: null, src: a.contentUrl, attachmentId: a.id, naturalWidth: a.width, naturalHeight: a.height, width: node.attrs.width ?? (a.width && a.width > 200 ? 200 : a.width) };
   return { ...node.attrs, uploadId: null, attachmentId: a.id, name: a.filename, size: a.size, mime: a.mime };
 }
 

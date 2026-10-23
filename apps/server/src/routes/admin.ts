@@ -107,6 +107,9 @@ export async function adminRoutes(app: FastifyInstance, s: Services) {
     const parsed = Papa.parse<Record<string, string>>(body.csv.replace(/^﻿/, ''), { header: true, skipEmptyLines: true, delimiter: '' });
     const groups = (await s.db.query('select id, name from groups where org_id = $1 and deleted_at is null', [admin.orgId])).rows;
     const existing = new Set((await s.db.query('select lower(email) e from users where org_id = $1', [admin.orgId])).rows.map((r) => r.e));
+    // the same address twice in one file: the first row wins, the repeat is reported instead of failing the whole
+    // import on the unique email constraint (QA-A2)
+    const seen = new Set<string>();
     const rows = parsed.data.map((r, i) => {
       const email = (r.email ?? r.Email ?? r['почта'] ?? '').trim().toLowerCase();
       const name = (r.name ?? r.Name ?? r['имя'] ?? r['ФИО'] ?? '').trim();
@@ -116,6 +119,8 @@ export async function adminRoutes(app: FastifyInstance, s: Services) {
       if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) problems.push('некорректный email');
       if (!name) problems.push('нет имени');
       if (existing.has(email)) problems.push('уже существует');
+      else if (email && seen.has(email)) problems.push('повторяется в файле');
+      if (email) seen.add(email);
       if (dept && !group) problems.push(`подразделение «${dept}» не найдено`);
       return { line: i + 2, email, name, title: (r.title ?? r['должность'] ?? '').trim() || null, groupId: group?.id ?? null, problems };
     });

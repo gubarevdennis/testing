@@ -81,7 +81,7 @@ services:
     build:
       context: ..
       dockerfile: Dockerfile
-    image: kb:latest
+    image: ${KB_IMAGE:-kb:latest}   # set by the CD pipeline (scripts/deploy/deploy.sh)
     restart: unless-stopped
     depends_on:
       postgres:
@@ -101,7 +101,7 @@ services:
 
   # Logical backups (pg_dump + object store, checksums, retention) + periodic restore verification.
   backup:
-    image: kb:latest
+    image: ${KB_IMAGE:-kb:latest}   # set by the CD pipeline (scripts/deploy/deploy.sh)
     restart: unless-stopped
     depends_on:
       postgres:

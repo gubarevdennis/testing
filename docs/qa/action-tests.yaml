@@ -87,3 +87,283 @@ mappings:
     tests:
       - test: 'tests/e2e/qa-crawl.spec.ts › QA26-01, QA26-04, R-UI-026: every route rendered as owner exposes only named controls; runtime inventory recorded'
     note: the crawl opens the route by its address and records every control on it
+  # qa-admin-*.spec.ts: labels with a dynamic part or an ambiguous name («Импорт») the locator matcher cannot credit
+  - action: admin/AnalysisReport/polzovateli-v-arhive-naydeno-v-sisteme-ne-nayden
+    tests:
+      - test: 'tests/e2e/qa-admin-access.spec.ts › R-ARCHIVE-006 restore from archive: analysis report («Пользователи в архиве: …») before any change, restore into a new isolated space, then «Отчёт» → «Отчёт о восстановлении»'
+        states: [cancel]
+    note: 'the test expands the summary «Пользователи в архиве: N (найдено в системе: N, не найдено: 0)» (a regex locator) and checks the listed users before restoring'
+  - action: admin/ImportDialog/importirovat
+    tests:
+      - test: 'tests/e2e/qa-admin-users.spec.ts › R-QA-004 «Импорт CSV»: empty input disabled; check error explained; preview marks bad rows; «Импортировать пользователей?» cancel creates nothing, confirm creates only valid rows'
+        states: [empty, cancel, error, double-click]
+      - test: 'tests/e2e/qa-admin-users.spec.ts › QA-A2 (fixed): «Импорт CSV» with the same email twice in the file flags the repeat in the preview and imports the address once instead of failing the whole import'
+    note: 'the button is «Импортировать (N)» with the number of valid rows; the test presses «Импортировать (2)» / «Импортировать (1)» and checks one request and the created users'
+  - action: space/PagesTab/import
+    tests:
+      - test: 'tests/e2e/qa-admin-spaces.spec.ts › R-SPACE-001 «Импорт» from a space (header and the empty pages tab) opens the import for that space'
+    note: '«Импорт» of the empty pages tab, addressed inside .empty-state'
+  - action: space/SpacePage/import
+    tests:
+      - test: 'tests/e2e/qa-admin-spaces.spec.ts › R-SPACE-001 «Импорт» from a space (header and the empty pages tab) opens the import for that space'
+    note: '«Импорт» of the space header, addressed inside .space-actions'
+  - action: page/RestoreDialog/vosstanovit-versiyu
+    tests:
+      - test: 'tests/e2e/qa-editor-history.spec.ts › R-HISTORY-002, QA26-03: «Восстановить версию N?»…'
+        states: [cancel, error, offline, double-click]
+    note: 'dialog title is «Восстановить версию {N}?» (regex in the test)'
+  - action: page/HistoryPanel/confirm.vosstanovit-sostoyanie-na-etot-moment
+    tests:
+      - test: 'tests/e2e/qa-editor-history.spec.ts › R-HISTORY-026: «Восстановить состояние на этот момент?»…'
+        states: [cancel, error]
+    note: 'editor QA wave (QA26-01/03), docs/qa/defects.yaml QA-E*'
+  - action: page/DiffView/confirm.vernut-udalennyy-blok-iz-versii
+    tests:
+      - test: 'tests/e2e/qa-editor-history.spec.ts › R-HISTORY-013: «Сравнить с текущей»…'
+        states: [cancel]
+    note: 'dialog title carries the version number'
+  - action: page/RevisionDetail/zakryt-prosmotr-versii
+    tests:
+      - test: 'tests/e2e/qa-editor-history.spec.ts › R-HISTORY-013: «Сравнить с текущей»…'
+    note: 'editor QA wave (QA26-01/03), docs/qa/defects.yaml QA-E*'
+  - action: page/HistoryPanel/zakryt-istoriyu
+    tests:
+      - test: 'tests/e2e/qa-editor-history.spec.ts › R-HISTORY-013: «Сравнить с текущей»…'
+    note: 'editor QA wave (QA26-01/03), docs/qa/defects.yaml QA-E*'
+  - action: page/HistoryPanel/k-spisku-versiy
+    tests:
+      - test: 'tests/e2e/qa-editor-history.spec.ts › R-HISTORY, R-UI-068 (phone)…'
+    note: 'shown only on a narrow screen (Pixel 7 context)'
+  - action: common/useEvents/otkryt-versiyu
+    tests:
+      - test: 'tests/e2e/qa-editor-history.spec.ts › R-HISTORY-014: a co-author sees «Открыть версию N»…'
+        states: [no-permission]
+    note: 'toast action of the co-author (second account)'
+  - action: page/ThreadCard/del
+    tests:
+      - test: 'tests/e2e/qa-editor-history.spec.ts › R-COMMENTS-005, QA26-03: «Удалить» a comment…'
+        states: [cancel, error, offline, no-permission]
+    note: 'editor QA wave (QA26-01/03), docs/qa/defects.yaml QA-E*'
+  - action: page/ThreadCard/confirm.udalit-kommentariy
+    tests:
+      - test: 'tests/e2e/qa-editor-history.spec.ts › R-COMMENTS-005, QA26-03: «Удалить» a comment…'
+        states: [cancel, error, offline]
+    note: 'editor QA wave (QA26-01/03), docs/qa/defects.yaml QA-E*'
+  - action: page/ThreadCard/confirm.udalit-kommentariy.udalit
+    tests:
+      - test: 'tests/e2e/qa-editor-history.spec.ts › R-COMMENTS-005, QA26-03: «Удалить» a comment…'
+        states: [error, offline]
+    note: 'editor QA wave (QA26-01/03), docs/qa/defects.yaml QA-E*'
+  - action: editor/BubbleToolbar/right
+    tests:
+      - test: 'tests/e2e/qa-editor-toolbars.spec.ts › R-EDITOR, QA26-07: bubble «Ещё»…'
+        states: [empty, undo, no-permission]
+    note: 'menuitemcheckbox in the bubble «Ещё» menu'
+  - action: editor/BubbleToolbar/clear
+    tests:
+      - test: 'tests/e2e/qa-editor-toolbars.spec.ts › R-EDITOR, QA26-07: bubble «Ещё»…'
+        states: [undo, no-permission]
+    note: 'editor QA wave (QA26-01/03), docs/qa/defects.yaml QA-E*'
+  - action: editor/TableToolbar/mrup
+    tests:
+      - test: 'tests/e2e/qa-editor-toolbars.spec.ts › R-TABLE-003, QA26-07: table…'
+        states: [empty, undo]
+    note: '«at the edge nothing moves» is the empty state'
+  - action: editor/TableToolbar/mcright
+    tests:
+      - test: 'tests/e2e/qa-editor-toolbars.spec.ts › R-TABLE-003, QA26-07: table…'
+        states: [undo]
+    note: 'editor QA wave (QA26-01/03), docs/qa/defects.yaml QA-E*'
+  - action: editor/TableToolbar/del
+    tests:
+      - test: 'tests/e2e/qa-editor-toolbars.spec.ts › R-TABLE-003, QA26-07: table…'
+        states: [undo]
+    note: 'editor QA wave (QA26-01/03), docs/qa/defects.yaml QA-E*'
+  - action: editor/LoadedImageView/po-pravomu-krayu
+    tests:
+      - test: 'tests/e2e/qa-editor-toolbars.spec.ts › R-MEDIA, QA26-07: image toolbar…'
+    note: 'editor QA wave (QA26-01/03), docs/qa/defects.yaml QA-E*'
+  - action: editor/LoadedImageView/udalit
+    tests:
+      - test: 'tests/e2e/qa-editor-toolbars.spec.ts › R-MEDIA, QA26-07: image toolbar…'
+        states: [undo]
+    note: 'editor QA wave (QA26-01/03), docs/qa/defects.yaml QA-E*'
+  - action: editor/suggest/new
+    tests:
+      - test: 'tests/e2e/qa-editor-toolbars.spec.ts › R-EDITOR-031: «[[»…'
+        states: [cancel, error, offline]
+    note: 'editor QA wave (QA26-01/03), docs/qa/defects.yaml QA-E*'
+  - action: editor/BlockConflictHost/konflikt-pravok
+    tests:
+      - test: 'tests/e2e/qa-editor-conflicts.spec.ts › R-COLLAB-036: «Конфликт правок»…'
+        states: [cancel, conflict, offline]
+    note: 'editor QA wave (QA26-01/03), docs/qa/defects.yaml QA-E*'
+  - action: editor/DocConflictDialog/stranica-udalena-poka-vy-ee-redaktirovali
+    tests:
+      - test: 'tests/e2e/qa-editor-conflicts.spec.ts › R-COLLAB-036: «Страница удалена, пока вы её редактировали»…'
+        states: [conflict]
+      - test: 'tests/e2e/qa-editor-conflicts.spec.ts › QA-E3 (fixed): offline edits…'
+        states: [offline]
+      - test: 'tests/e2e/qa-editor-conflicts.spec.ts › QA-E3: a reader whose page…'
+        states: [no-permission]
+    note: 'editor QA wave (QA26-01/03), docs/qa/defects.yaml QA-E*'
+  - action: editor/DocConflictDialog/sohranit-lokalnuyu-kopiyu
+    tests:
+      - test: 'tests/e2e/qa-editor-conflicts.spec.ts › R-COLLAB-036: «Страница удалена, пока вы её редактировали»…'
+    note: 'editor QA wave (QA26-01/03), docs/qa/defects.yaml QA-E*'
+  - action: editor/DocConflictDialog/sohranit-moyu-versiyu-kak-novuyu-stranicu
+    tests:
+      - test: 'tests/e2e/qa-editor-conflicts.spec.ts › R-COLLAB-036: «Страница удалена, пока вы её редактировали»…'
+        states: [error]
+      - test: 'tests/e2e/qa-editor-conflicts.spec.ts › QA-E3 (fixed): offline edits…'
+        states: [offline]
+    note: 'editor QA wave (QA26-01/03), docs/qa/defects.yaml QA-E*'
+  - action: shell/Sidebar/reset
+    tests:
+      - test: 'tests/e2e/qa-editor-shell.spec.ts › R-UI-026: profile menu…'
+    note: 'editor QA wave (QA26-01/03), docs/qa/defects.yaml QA-E*'
+  - action: shell/Sidebar/import
+    tests:
+      - test: 'tests/e2e/qa-editor-shell.spec.ts › R-UI-026: profile menu…'
+    note: 'editor QA wave (QA26-01/03), docs/qa/defects.yaml QA-E*'
+  - action: shell/Sidebar/korzina
+    tests:
+      - test: 'tests/e2e/qa-editor-shell.spec.ts › R-UI-026: profile menu…'
+    note: 'editor QA wave (QA26-01/03), docs/qa/defects.yaml QA-E*'
+  - action: shell/Sidebar/confirm.est-neotpravlennye-izmeneniya
+    tests:
+      - test: 'tests/e2e/qa-editor-shell.spec.ts › R-COLLAB-040: «Выйти»…'
+        states: [cancel, offline]
+    note: 'the collaboration channel is blocked (routeWebSocket), changes stay on the device'
+  - action: shell/Sidebar/confirm.est-neotpravlennye-izmeneniya.vyyti
+    tests:
+      - test: 'tests/e2e/qa-editor-shell.spec.ts › R-COLLAB-040: «Выйти»…'
+        states: [offline]
+    note: 'editor QA wave (QA26-01/03), docs/qa/defects.yaml QA-E*'
+  - action: shell/QuickSwitcher/c-import
+    tests:
+      - test: 'tests/e2e/qa-editor-shell.spec.ts › R-SEARCH-010: quick switcher…'
+        states: [cancel, empty]
+    note: 'editor QA wave (QA26-01/03), docs/qa/defects.yaml QA-E*'
+  - action: shell/QuickSwitcher/c-trash
+    tests:
+      - test: 'tests/e2e/qa-editor-shell.spec.ts › R-SEARCH-010: quick switcher…'
+    note: 'editor QA wave (QA26-01/03), docs/qa/defects.yaml QA-E*'
+  - action: shell/TreeRow/sozdat-pervuyu-stranicu
+    tests:
+      - test: 'tests/e2e/qa-editor-shell.spec.ts › R-TREE-002: an empty space…'
+        states: [empty, error, double-click, loading]
+    note: 'editor QA wave (QA26-01/03), docs/qa/defects.yaml QA-E*'
+  - action: shell/TreeRow/novaya-stranica-v
+    tests:
+      - test: 'tests/e2e/qa-editor-shell.spec.ts › R-TREE-002: an empty space…'
+        states: [no-permission]
+    note: 'editor QA wave (QA26-01/03), docs/qa/defects.yaml QA-E*'
+  - action: shell/SidebarTree/spacemenu.new
+    tests:
+      - test: 'tests/e2e/qa-editor-shell.spec.ts › R-TREE-002: an empty space…'
+        states: [no-permission]
+    note: 'editor QA wave (QA26-01/03), docs/qa/defects.yaml QA-E*'
+  - action: search/AuthorFilter/sbrosit-avtora
+    tests:
+      - test: 'tests/e2e/qa-editor-shell.spec.ts › R-SEARCH-008: search filters…'
+    note: 'editor QA wave (QA26-01/03), docs/qa/defects.yaml QA-E*'
+  - action: search/SearchPage/sbrosit-filtry
+    tests:
+      - test: 'tests/e2e/qa-editor-shell.spec.ts › R-SEARCH-008: search filters…'
+    note: 'editor QA wave (QA26-01/03), docs/qa/defects.yaml QA-E*'
+  - action: search/SearchPage/sbrosit
+    tests:
+      - test: 'tests/e2e/qa-editor-shell.spec.ts › R-SEARCH-008: search filters…'
+    note: 'tag filter reset'
+  - action: search/SearchPage/sbrosit-filtry~2
+    tests:
+      - test: 'tests/e2e/qa-editor-shell.spec.ts › R-SEARCH-008: search filters…'
+        states: [empty]
+    note: 'the reset inside the no-results tips'
+  - action: page/PageError/zapros-otpravlen
+    tests:
+      - test: 'tests/e2e/qa-editor-shell.spec.ts › R-ACCESS-021: a page without access…'
+        states: [error, double-click, loading, no-permission]
+    note: 'editor QA wave (QA26-01/03), docs/qa/defects.yaml QA-E*'
+  # qa-admin-*.spec.ts: «нет прав» — the test signs in a less privileged account and checks the control is absent
+  - action: admin/EmergencyAccess/otklonit
+    tests:
+      - test: 'tests/e2e/qa-admin-access.spec.ts › R-ACL-056 no permission: an auditor sees emergency requests and public links read-only — no «Утвердить», «Отклонить», «Отозвать»'
+        states: [no-permission]
+    note: 'the auditor sees the request rows and the link table without action buttons'
+  - action: admin/EmergencyAccess/otozvat
+    tests:
+      - test: 'tests/e2e/qa-admin-access.spec.ts › R-ACL-056 no permission: an auditor sees emergency requests and public links read-only — no «Утвердить», «Отклонить», «Отозвать»'
+        states: [no-permission]
+    note: 'the auditor sees the request rows and the link table without action buttons'
+  - action: admin/PublicLinksAdmin/otozvat
+    tests:
+      - test: 'tests/e2e/qa-admin-access.spec.ts › R-ACL-056 no permission: an auditor sees emergency requests and public links read-only — no «Утвердить», «Отклонить», «Отозвать»'
+        states: [no-permission]
+    note: 'the auditor sees the request rows and the link table without action buttons'
+  - action: admin/ReportDialog/otchet-o-vosstanovlenii
+    tests:
+      - test: 'tests/e2e/qa-admin-access.spec.ts › R-ARCHIVE-006 restore: a server error while checking the archive is explained and the dialog can be cancelled; a non-admin has no backups section'
+        states: [no-permission]
+    note: 'an HR administrator has no «Резервные копии и архив» section and the archives API answers 403'
+  - action: admin/OrgSettingsSection/sohranit
+    tests:
+      - test: 'tests/e2e/qa-admin-org.spec.ts › QA-A4 (fixed) no permission: an auditor opening /admin/settings lands on the audit log once (no redirect loop); no organisation settings; the settings API refuses'
+        states: [no-permission]
+    note: 'the auditor has no organisation settings section; PATCH /api/v1/admin/settings is refused'
+  - action: admin/UsersSection/import-csv
+    tests:
+      - test: 'tests/e2e/qa-admin-users.spec.ts › R-QA-004 no permission: an employee sees «Нет доступа к администрированию»; an HR admin («Администратор персонала») creates users but cannot pick «Роль в организации»'
+        states: [no-permission]
+    note: 'an employee gets «Нет доступа к администрированию» and 403 from the users API'
+  - action: admin/UsersSection/resend
+    tests:
+      - test: 'tests/e2e/qa-admin-users.spec.ts › R-QA-004 no permission: an employee sees «Нет доступа к администрированию»; an HR admin («Администратор персонала») creates users but cannot pick «Роль в организации»'
+        states: [no-permission]
+    note: 'an employee gets «Нет доступа к администрированию» and 403 from the users API'
+  - action: admin/UsersSection/revoke-invite
+    tests:
+      - test: 'tests/e2e/qa-admin-users.spec.ts › R-QA-004 no permission: an employee sees «Нет доступа к администрированию»; an HR admin («Администратор персонала») creates users but cannot pick «Роль в организации»'
+        states: [no-permission]
+    note: 'an employee gets «Нет доступа к администрированию» and 403 from the users API'
+  - action: admin/ImportDialog/importirovat
+    tests:
+      - test: 'tests/e2e/qa-admin-users.spec.ts › R-QA-004 no permission: an employee sees «Нет доступа к администрированию»; an HR admin («Администратор персонала») creates users but cannot pick «Роль в организации»'
+        states: [no-permission]
+    note: 'an employee gets «Нет доступа к администрированию» and 403 from the users API'
+  - action: trash/TrashPage/udalit-navsegda-prostranstvo
+    tests:
+      - test: 'tests/e2e/qa-admin-spaces.spec.ts › R-TRASH-006 «Удалить навсегда пространство «…»»: typed name required; cancel keeps it in the trash; server error keeps it; confirm purges it; a space manager without admin role cannot purge'
+        states: [no-permission]
+    note: 'a space manager without an administrative role sees the space in the trash without «Удалить навсегда»'
+  - action: page/LegalHold/snyat-uderzhanie
+    tests:
+      - test: 'tests/e2e/qa-admin-page-panels.spec.ts › R-HISTORY-015 legal hold: «Установить юридическое удержание» needs a reason, cancel changes nothing, server error keeps it unset; «Снять удержание» releases it; an editor without admin role cannot set it'
+        states: [no-permission]
+    note: 'an editor sees the hold without «Снять удержание»'
+  - action: page/LegalHold/ustanovit-yuridicheskoe-uderzhanie
+    tests:
+      - test: 'tests/e2e/qa-admin-page-panels.spec.ts › R-HISTORY-015 legal hold: «Установить юридическое удержание» needs a reason, cancel changes nothing, server error keeps it unset; «Снять удержание» releases it; an editor without admin role cannot set it'
+        states: [no-permission]
+    note: 'an editor sees the hold without «Снять удержание»'
+  - action: page/ShareDialog/uroven-dostupa
+    tests:
+      - test: 'tests/e2e/qa-admin-page-panels.spec.ts › R-ACL-040 no permission: a viewer asks for more rights — «Зачем нужен доступ (необязательно)» and «Отправить запрос»; a double click sends one request and the owner gets one notification'
+        states: [no-permission]
+    note: 'a viewer sees the access dialog without «Выдать доступ» or management controls'
+  - action: page/ShareDialog/obschiy-dostup
+    tests:
+      - test: 'tests/e2e/qa-admin-page-panels.spec.ts › R-ACL-040 no permission: a viewer asks for more rights — «Зачем нужен доступ (необязательно)» and «Отправить запрос»; a double click sends one request and the owner gets one notification'
+        states: [no-permission]
+    note: 'a viewer sees the access dialog without «Выдать доступ» or management controls'
+  - action: page/ShareDialog/ubrat-dostup
+    tests:
+      - test: 'tests/e2e/qa-admin-page-panels.spec.ts › R-ACL-040 no permission: a viewer asks for more rights — «Зачем нужен доступ (необязательно)» and «Отправить запрос»; a double click sends one request and the owner gets one notification'
+        states: [no-permission]
+    note: 'a viewer sees the access dialog without «Выдать доступ» or management controls'
+  - action: page/ShareDialog/nasledovat-prava
+    tests:
+      - test: 'tests/e2e/qa-admin-page-panels.spec.ts › R-ACL-040 no permission: a viewer asks for more rights — «Зачем нужен доступ (необязательно)» and «Отправить запрос»; a double click sends one request and the owner gets one notification'
+        states: [no-permission]
+    note: 'a viewer sees the access dialog without «Выдать доступ» or management controls'

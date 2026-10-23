@@ -1081,10 +1081,9 @@
   status: done
   evidence: tests/integration/collab-p0.test.ts (2, 5 and 20 editors …; одна ячейка; перемещения/удаление), tests/integration/collab.test.ts (restore, изменение прав в сессии)
 - id: QA26-20
-  status: partial
-  evidence: tests/integration/collab-p0.test.ts (высокий RTT/джиттер/обрывы, истечение сессии, спящий ноутбук), tests/e2e/collab-p0-offline.spec.ts (закрытие вкладки, перезагрузка, смена сети offline→online),
-    tests/resilience/crash-restart.test.ts, tests/integration/collab.test.ts (повторная доставка, рестарт сервера)
-  note: Не проверены смена ведущего узла БД/экземпляра под нагрузкой и реальная смена Wi-Fi/LTE (ограничение окружения)
+  status: done
+  evidence: 'tests/resilience/network-faults.test.ts (TCP-level, real server process, production client timings): network outages 1/30/300 s, RTT 300 ms + 5 % loss, Wi-Fi→LTE switch (silently dead connection + new client address: idle replica reconnects by PING/PONG within 35 s, typed edit re-sent once), DB unreachable, double tab, reordered/duplicated frames — exact text, 0 lost/duplicated, "saved" never shown with pending edits; tests/resilience/multi-instance.test.ts (application node failover: SIGKILL of an instance while typing, clients move through the balancer, nothing lost); tests/integration/collab-p0.test.ts (session expiry, sleeping laptop, jitter); tests/e2e/collab-p0-offline.spec.ts (tab close, reload, offline→online); crash-restart.test.ts (server restart, lost ACK re-delivery without duplicate); conflict copies (collab-p0-editing.spec.ts)'
+  note: 'A real PostgreSQL primary switchover (Patroni) was emulated as connection loss + reconnect, not run with a replica'
 - id: R-PAGE-033
   status: done
   evidence: apps/server/src/services/pages.ts#createPage (наследование), tests/e2e/editor.spec.ts

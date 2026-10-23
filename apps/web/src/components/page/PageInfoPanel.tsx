@@ -270,7 +270,8 @@ function PropertiesEditor({ page }: { page: PageDto }) {
   const [newValue, setNewValue] = useState('');
   const [busy, setBusy] = useState(false);
 
-  const save = async (changes: Record<string, unknown>) => {
+  /** Saves the changes; true when they reached the server. */
+  const save = async (changes: Record<string, unknown>): Promise<boolean> => {
     setBusy(true);
     try {
       const r = await patch<{ undoEventId: string | null }>(`/api/v1/pages/${page.id}`, { properties: changes, expectedVersion: page.version });
@@ -280,9 +281,11 @@ function PropertiesEditor({ page }: { page: PageDto }) {
         for (const k of Object.keys(changes)) delete n[k];
         return n;
       });
+      return true;
     } catch (e) {
       if (e instanceof ApiError && e.code === 'version_conflict') toast.error('Свойства только что изменил другой пользователь — показаны актуальные значения. Повторите правку.');
       else toast.error(e instanceof ApiError ? e.message : 'Не удалось сохранить свойство');
+      return false;
     } finally {
       setBusy(false);
       qc.invalidateQueries({ queryKey: ['page', page.id] });
@@ -304,9 +307,12 @@ function PropertiesEditor({ page }: { page: PageDto }) {
   const add = () => {
     const k = newKey.trim();
     if (!k) return;
-    void save({ [k]: newValue.trim() });
-    setNewKey('');
-    setNewValue('');
+    // the typed key and value stay for a retry when saving fails (QA-A7)
+    void save({ [k]: newValue.trim() }).then((ok) => {
+      if (!ok) return;
+      setNewKey('');
+      setNewValue('');
+    });
   };
 
   if (!keys.length && !canEdit) return null;

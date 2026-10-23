@@ -5,6 +5,7 @@ import { get, post, del } from '../api/client';
 import { useMe } from '../state/session';
 import { confirm } from '../components/ui/Confirm';
 import { toast } from '../components/ui/Toast';
+import { useInFlight } from '../hooks/useInFlight';
 import { LEVEL_LABEL, fullTime } from '../lib/format';
 import { Badge, Empty, ErrorState, LoadingRows, SectionHeader, UserPicker, errMsg, roleOf, useDebounced, type DirectoryUser, type AdminUser } from './common';
 
@@ -332,25 +333,34 @@ function EmergencyAccess({ canAct }: { canAct: boolean }) {
       setBusy(false);
     }
   };
-  const decide = async (r: Emergency, approve: boolean) => {
-    if (!(await confirm({ title: approve ? 'Утвердить экстренный доступ?' : 'Отклонить запрос?', body: approve ? `${r.requested_by_name} получит доступ только для чтения на ${r.duration_hours} ч. Владелец материала получит уведомление; действие попадёт в журнал аудита.` : 'Запрос будет отклонён и записан в журнал аудита.', confirmLabel: approve ? 'Утвердить' : 'Отклонить', danger: !approve }))) return;
-    try {
+  // one decision / revocation at a time: a second click while the first is in flight would hit an already decided
+  // request and report «not found» after the success (QA-A5)
+  const once = useInFlight();
+  const [acting, setActing] = useState<string | null>(null);
+  const act = (r: Emergency, fn: () => Promise<void>) =>
+    once(async () => {
+      setActing(r.id);
+      try {
+        await fn();
+      } catch (e) {
+        toast.error(errMsg(e));
+      } finally {
+        setActing(null);
+      }
+    });
+  const decide = (r: Emergency, approve: boolean) =>
+    act(r, async () => {
+      if (!(await confirm({ title: approve ? 'Утвердить экстренный доступ?' : 'Отклонить запрос?', body: approve ? `${r.requested_by_name} получит доступ только для чтения на ${r.duration_hours} ч. Владелец материала получит уведомление; действие попадёт в журнал аудита.` : 'Запрос будет отклонён и записан в журнал аудита.', confirmLabel: approve ? 'Утвердить' : 'Отклонить', danger: !approve }))) return;
       await post(`/api/v1/admin/emergency-access/${r.id}/decide`, { approve });
       toast.success(approve ? 'Экстренный доступ утверждён' : 'Запрос отклонён');
-      refresh();
-    } catch (e) {
-      toast.error(errMsg(e));
-    }
-  };
-  const revoke = async (r: Emergency) => {
-    try {
+      await refresh();
+    });
+  const revoke = (r: Emergency) =>
+    act(r, async () => {
       await post(`/api/v1/admin/emergency-access/${r.id}/revoke`, {});
       toast.success('Экстренный доступ отозван');
-      refresh();
-    } catch (e) {
-      toast.error(errMsg(e));
-    }
-  };
+      await refresh();
+    });
   return (
     <div className="col" style={{ gap: 12 }}>
       <p className="muted small">
@@ -419,18 +429,18 @@ function EmergencyAccess({ canAct }: { canAct: boolean }) {
                   <td className="admin-cell-actions">
                     {canAct && r.status === 'pending' && r.requested_by !== me.user.id && (
                       <>
-                        <button className="btn sm primary" onClick={() => decide(r, true)}>
+                        <button className="btn sm primary" disabled={acting === r.id} onClick={() => decide(r, true)}>
                           Утвердить
                         </button>{' '}
-                        <button className="btn sm" onClick={() => decide(r, false)}>
+                        <button className="btn sm" disabled={acting === r.id} onClick={() => decide(r, false)}>
                           Отклонить
                         </button>
                       </>
                     )}
                     {canAct && r.status === 'pending' && r.requested_by === me.user.id && <span className="small muted">ждёт другого администратора</span>}
                     {canAct && r.status === 'approved' && (
-                      <button className="btn sm" onClick={() => revoke(r)}>
-                        Отозвать
+                      <button className="btn sm" disabled={acting === r.id} aria-busy={acting === r.id} onClick={() => revoke(r)}>
+                        {acting === r.id && <span className="spinner" />} Отозвать
                       </button>
                     )}
                   </td>

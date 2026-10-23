@@ -5,6 +5,7 @@ import { get, patch, post, put, del } from '../api/client';
 import { Dialog } from '../components/ui/Dialog';
 import { confirm } from '../components/ui/Confirm';
 import { toast } from '../components/ui/Toast';
+import { useInFlight } from '../hooks/useInFlight';
 import { Avatar } from '../components/Avatar';
 import { relTime, fullTime } from '../lib/format';
 import { type AdminGroup, type DirectoryUser, Badge, Empty, ErrorState, LoadingRows, SectionHeader, StatusBadge, UserPicker, errMsg, toIso, useGroups } from './common';
@@ -225,6 +226,8 @@ function GroupDialog({ group, kind, initialParent, all, onClose, onSaved }: { gr
     },
     onError: (e) => setError(errMsg(e)),
   });
+  const once = useInFlight();
+  const submit = () => once(() => m.mutateAsync());
   const dirty = name !== (group?.name ?? '') || description !== (group?.description ?? '');
   return (
     <Dialog
@@ -237,7 +240,7 @@ function GroupDialog({ group, kind, initialParent, all, onClose, onSaved }: { gr
           <button className="btn" onClick={onClose}>
             Отмена
           </button>
-          <button className="btn primary" disabled={!name.trim() || m.isPending} aria-busy={m.isPending} onClick={() => m.mutate()}>
+          <button className="btn primary" disabled={!name.trim() || m.isPending} aria-busy={m.isPending} onClick={submit}>
             {m.isPending && <span className="spinner" />} {group ? 'Сохранить' : 'Создать'}
           </button>
         </>
@@ -248,7 +251,7 @@ function GroupDialog({ group, kind, initialParent, all, onClose, onSaved }: { gr
         style={{ gap: 14 }}
         onSubmit={(e) => {
           e.preventDefault();
-          if (name.trim()) m.mutate();
+          if (name.trim()) submit();
         }}
       >
         {error && (

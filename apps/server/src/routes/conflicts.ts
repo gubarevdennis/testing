@@ -7,6 +7,7 @@ import { requirePage } from '../acl/engine.js';
 import { badRequest, notFound } from '../lib/errors.js';
 import { tx } from '../db/pool.js';
 import { createPage, getPage } from '../services/pages.js';
+import { copyContentAttachments } from '../services/attachment-copy.js';
 
 /**
  * Conflict copies: when another author deletes or moves a block that this user was editing concurrently,
@@ -105,11 +106,17 @@ export async function conflictRoutes(app: FastifyInstance, s: Services) {
       const parentOk = !page.deleted_at && (page.parent_id ? !!(await requirePage(q, user, page.parent_id, 'create').catch(() => null)) : true);
       const me = (await q.query(`select id from spaces where kind = 'personal' and owner_user_id = $1 and deleted_at is null limit 1`, [user.id])).rows[0];
       const target = parentOk ? { spaceId: page.space_id, parentId: page.parent_id, afterId: page.id } : { spaceId: me?.id ?? page.space_id, parentId: null };
+      // the copy's pictures and files are its own (D-39): readers of the copy must not depend on the original page
+      const files = await copyContentAttachments(q, user, content, null, { actor: actorOf(req) });
+      const own = async <P extends { id: string }>(p: P): Promise<P> => {
+        if (files.copied.size) await q.query('update attachments set page_id = $2 where id = any($1::uuid[]) and page_id is null', [[...files.copied.values()], p.id]);
+        return p;
+      };
       try {
-        return (await createPage(q, user, actorOf(req), { ...target, title, content })).page;
+        return await own((await createPage(q, user, actorOf(req), { ...target, title, content: files.doc })).page);
       } catch (e) {
         if (!me || target.spaceId === me.id) throw e;
-        return (await createPage(q, user, actorOf(req), { spaceId: me.id, parentId: null, title, content })).page;
+        return await own((await createPage(q, user, actorOf(req), { spaceId: me.id, parentId: null, title, content: files.doc })).page);
       }
     });
     await s.db.query(`insert into page_events (org_id, page_id, actor_id, type, data) values ($1, $2, $3, 'conflict_copy', $4)`, [user.orgId, id, user.id, { blockId: null, block: null, reason: 'document', copyPageId: created.id, source, resolution: 'both', resolvedAt: new Date().toISOString() }]);

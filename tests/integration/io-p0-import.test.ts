@@ -78,7 +78,7 @@ describe('DOCX structure mapping (IMPORT P0)', () => {
     // TOC field → live TOC block; headings are real headings with stable anchors (block ids).
     expect(doc.content[0].type).toBe('toc');
     const headings = find(doc, (n) => n.type === 'heading');
-    expect(headings.map((h) => h.attrs.level)).toEqual([1, 2, 3, 2, 4, 5, 6, 3]); // Heading 1–6 (+ «Сноски»)
+    expect(headings.map((h) => h.attrs.level)).toEqual([1, 2, 3, 2, 4, 5, 6]); // Heading 1–6 (notes are footnotes, no «Сноски» section)
     // Separators: Word's bordered empty paragraph becomes a horizontal rule.
     expect(find(doc, (n) => n.type === 'horizontalRule').length).toBe(1);
     expect(headings.every((h) => typeof h.attrs.id === 'string' && h.attrs.id.length > 8)).toBe(true);
@@ -96,12 +96,13 @@ describe('DOCX structure mapping (IMPORT P0)', () => {
     const ul = doc.content.find((b: any) => b.type === 'bulletList');
     expect(ul.content[0].content.find((c: any) => c.type === 'bulletList').content[0].content.find((c: any) => c.type === 'bulletList')).toBeTruthy();
 
-    // Footnotes: reference stays in the text as superscript [1]; the note text is in a «Сноски» section.
-    const ref = find(doc, (n) => n.type === 'text' && n.text === '[1]')[0];
-    expect(ref.marks.map((m: any) => m.type)).toContain('superscript');
-    const notesIdx = doc.content.findIndex((b: any) => b.type === 'heading' && textOf(b) === 'Сноски');
-    expect(notesIdx).toBeGreaterThan(0);
-    expect(textOf(doc.content[notesIdx + 1])).toMatch(/^Примечание 1:/);
+    // Footnotes (R-EDITOR-038, D-36): Word footnotes become footnote nodes at their reference, carrying the note text;
+    // no «[1]» markers and no separate «Сноски» section remain.
+    const notes = find(doc, (n) => n.type === 'footnote');
+    expect(notes.length).toBeGreaterThan(0);
+    expect(textOf(notes[0])).toMatch(/^Примечание 1:/);
+    expect(find(doc, (n) => n.type === 'text' && /^\[\d+\]$/.test(n.text ?? '')).length).toBe(0);
+    expect(doc.content.some((b: any) => b.type === 'heading' && textOf(b) === 'Сноски')).toBe(false);
 
     // Captions and alt text belong to the image; images are stored assets of the page, in document order.
     const imgs = find(doc, (n) => n.type === 'image');
@@ -166,10 +167,11 @@ describe('reference corpus accuracy (R-IMPORT-019)', () => {
         const acc = charAccuracy(ref, docToPlainText(doc));
         const structure = actualStructure(doc);
         expect(structure, `${format} #${i + 1}: structure`).toEqual(expectedStructure(spec, format));
-        // Every simplification is reported (footnotes, headers/footers, TOC, merged cells) — no silent loss.
+        // Every simplification is reported (headers/footers, TOC, merged cells) — no silent loss. Footnotes are not a
+        // simplification any more (footnote nodes, D-36): Markdown [^n] needs no notice; Word notes are still listed.
         const codes = job.preview.files[0].warnings.map((w: any) => w.code);
-        expect(codes).toContain('footnotes');
-        if (format === 'docx') expect(codes).toContain('header-footer');
+        expect(structure.footnotes).toBeGreaterThan(0);
+        if (format === 'docx') expect(codes).toEqual(expect.arrayContaining(['footnotes', 'header-footer']));
         rows.push({ file: `${i + 1}.${format}`, accuracy: acc, structure: true });
         refChars += ref.replace(/\s+/g, ' ').length;
         matched += acc * ref.replace(/\s+/g, ' ').length;
@@ -201,7 +203,7 @@ describe('import → edit → export chains (SC-13, SC-15)', () => {
     expect(v.errors).toEqual([]);
     expect(v.stats.tables).toBe(2);
     expect(v.stats.images).toBe(1);
-    expect(v.stats.numberedParagraphs).toBe(9); // 8 list items + the «Сноски» list
+    expect(v.stats.numberedParagraphs).toBe(8); // 8 list items (notes are Word footnotes, not a list)
     expect(v.stats.headings).toBeGreaterThanOrEqual(4);
     expect(v.stats.hyperlinks).toBe(2);
     // LibreOffice opens it and reads the edited text.
@@ -215,7 +217,8 @@ describe('import → edit → export chains (SC-13, SC-15)', () => {
     // Re-import of the exported file gives the same structure (editable structure kept, not flattened).
     const { pageId: again } = await importOne(org.owner, 'sc13-export.docx', docx);
     const after = actualStructure(await content(org.owner, again));
-    expect({ ...after, footnotes: 0, headings: after.headings.slice(1) }).toEqual({ ...before, footnotes: 0, headings: before.headings.slice(1) });
+    // footnotes survive the DOCX round trip as Word footnotes
+    expect({ ...after, headings: after.headings.slice(1) }).toEqual({ ...before, headings: before.headings.slice(1) });
   }, 180_000);
 
   it('Markdown ZIP with a GFM table, task list, code and relative images → import → ZIP export → every relative link resolves locally → re-import gives the same content (SC-15, R-EXPORT-002, R-IMPORT-010)', async () => {

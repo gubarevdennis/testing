@@ -18,6 +18,7 @@ import { ensureBlockIds, hasMergedCells, walk } from './json.js';
 import { sanitizeHref } from './url.js';
 import { newId } from './ids.js';
 import { type CalloutVariant } from './nodes/callout.js';
+import { toFootnoteContent } from './footnotes.js';
 
 export interface ConversionWarning {
   code: string;
@@ -77,6 +78,8 @@ export function docToMarkdown(doc: PMNode, opts: ToMarkdownOptions = {}): { mark
     warnings.push({ code, message, blockId });
   };
   const useMarkers = opts.markers !== false;
+  /** Footnote definitions in reference order ([^1], [^2] …), written after the body. */
+  const footnoteDefs: Md[] = [];
   const pageHref = opts.pageHref ?? ((id: string, b?: string | null) => `/p/${id}${b ? '#' + b : ''}`);
 
   const markEq = (a: PMMark, b: PMMark) => a.type === b.type && JSON.stringify(a.attrs ?? {}) === JSON.stringify(b.attrs ?? {});
@@ -99,6 +102,21 @@ export function docToMarkdown(doc: PMNode, opts: ToMarkdownOptions = {}): { mark
           { type: 'link', url: pageHref(n.attrs?.pageId, n.attrs?.blockId), children: [{ type: 'text', value: n.attrs?.title || 'Страница' }] },
         ];
         if (useMarkers) out.push(marker({ t: 'pageMention', pageId: n.attrs?.pageId, blockId: n.attrs?.blockId ?? undefined }));
+        return out;
+      }
+      case 'footnote': {
+        const id = String(footnoteDefs.length + 1);
+        // reserve the number first: a footnote inside the note text (flattened on import) must not take it
+        const def: Md = { type: 'footnoteDefinition', identifier: id, label: id, children: [] };
+        footnoteDefs.push(def);
+        def.children = [para(phrasing((n.content ?? []).map((c) => (c.type === 'hardBreak' ? { type: 'text', text: ' ' } : c))))];
+        return [{ type: 'footnoteReference', identifier: id, label: id }];
+      }
+      case 'inlineImage': {
+        const a = n.attrs ?? {};
+        const href = (a.attachmentId && opts.assetHref?.(a.attachmentId, n)) || a.src || '';
+        const out: Md[] = [{ type: 'image', url: href, alt: a.alt ?? '', title: a.title || null }];
+        if (useMarkers) out.push(marker({ t: 'image', inline: true, width: a.width ?? undefined, valign: a.valign && a.valign !== 'baseline' ? a.valign : undefined, attachmentId: a.attachmentId ?? undefined }));
         return out;
       }
       default:
@@ -375,6 +393,7 @@ export function docToMarkdown(doc: PMNode, opts: ToMarkdownOptions = {}): { mark
   const children: Md[] = [];
   if (opts.frontMatter && Object.keys(opts.frontMatter).length) children.push({ type: 'yaml', value: YAML.stringify(opts.frontMatter).trim() });
   children.push(...blocks(doc.content ?? []));
+  children.push(...footnoteDefs);
 
   walk(doc, (n) => {
     if (n.marks?.some((m) => m.type === 'comment')) warn('comments-dropped', 'Комментарии не входят в переносимое содержимое Markdown (хранятся в системе)');
@@ -400,6 +419,8 @@ export interface FromMarkdownOptions {
   resolveLink?: (href: string) => { pageId: string; blockId?: string | null } | null;
   /** Convert raw HTML (tables, figures, unknown blocks) to document nodes. Absent => kept as code block with warning. */
   htmlToNodes?: (html: string) => PMNode[];
+  /** A leading H1 becomes the title and leaves the body (files: default true). A paste keeps it in the content. */
+  extractTitle?: boolean;
 }
 
 export interface FromMarkdownResult {
@@ -410,6 +431,9 @@ export interface FromMarkdownResult {
 }
 
 const KB_MARKER = /^<!--kb:(.*)-->$/s;
+
+/** Inline conversion result: an inline node, or a block lifted out of its paragraph (images carry their inline form). */
+type Item = PMNode | { lift: PMNode; inline?: PMNode; force?: 'inline' | 'block' | null };
 
 function parseMarker(value: string): Record<string, any> | string | null {
   const m = KB_MARKER.exec(value.trim());
@@ -441,7 +465,8 @@ export function markdownToDoc(markdown: string, opts: FromMarkdownOptions = {}):
     (n.children ?? []).forEach(collect);
   };
   collect(tree);
-  const footnoteOrder: string[] = [];
+  const usedFootnotes = new Map<string, number>();
+  const footnoteStack = new Set<string>();
 
   type Mk = PMMark;
   const pid = () => ({ id: newId() });
@@ -494,9 +519,13 @@ export function markdownToDoc(markdown: string, opts: FromMarkdownOptions = {}):
     return null;
   }
 
-  /** Inline conversion. Returns inline nodes plus "block escapes" (images) that must be lifted out of the paragraph. */
-  function inline(children: Md[], marks: Mk[]): Array<PMNode | { lift: PMNode }> {
-    const out: Array<PMNode | { lift: PMNode }> = [];
+  /**
+   * Inline conversion. Returns inline nodes plus "block escapes" (files, page links, embeds; images that are not part of a
+   * line of text) that must be lifted out of the paragraph. An image carries its inline form too: the paragraph decides
+   * (`placeImages`) — in a line of text it is an inline image, alone it is a block image; our own marker forces either.
+   */
+  function inline(children: Md[], marks: Mk[]): Item[] {
+    const out: Item[] = [];
     const stack: Mk[] = [];
     const cur = () => [...marks, ...stack];
     for (let i = 0; i < children.length; i++) {
@@ -534,8 +563,18 @@ export function markdownToDoc(markdown: string, opts: FromMarkdownOptions = {}):
           break;
         case 'footnoteReference': {
           const idf = String(c.identifier).toLowerCase();
-          if (!footnoteOrder.includes(idf)) footnoteOrder.push(idf);
-          out.push(...text(`[${footnoteOrder.indexOf(idf) + 1}]`, [...cur(), { type: 'superscript' }]));
+          const def = footnotes.get(idf);
+          if (!def || footnoteStack.has(idf)) {
+            out.push(...text(`[^${c.label ?? c.identifier}]`, cur()));
+            break;
+          }
+          const seen = usedFootnotes.get(idf) ?? 0;
+          usedFootnotes.set(idf, seen + 1);
+          if (seen === 1) warn('footnote-repeated', 'Одна сноска упоминается в тексте несколько раз: текст сноски повторён у каждой ссылки');
+          footnoteStack.add(idf);
+          const content = toFootnoteContent(blocksFrom(def.children ?? []));
+          footnoteStack.delete(idf);
+          out.push(content.length ? { type: 'footnote', ...(cur().length ? { marks: cur().map((m) => ({ ...m })) } : {}), content } : { type: 'footnote' });
           break;
         }
         case 'linkReference':
@@ -574,7 +613,8 @@ export function markdownToDoc(markdown: string, opts: FromMarkdownOptions = {}):
           const asset = url ? opts.resolveAsset?.(url) : null;
           let src = asset?.src ?? null;
           if (!asset) {
-            const safe = /^https?:/i.test(url) ? sanitizeHref(url) : null;
+            // http(s) pictures and pictures of this instance (our own exports, conflict copies) keep their source
+            const safe = /^https?:/i.test(url) || /^\/api\/v1\/attachments\/[0-9a-f-]{36}\/content(\?[^\s]*)?$/i.test(url) ? sanitizeHref(url) : null;
             if (safe) src = safe;
             else warn('image-missing', `Изображение не найдено: ${url.slice(0, 120)} — вставлен текстовый заполнитель`);
           }
@@ -582,13 +622,14 @@ export function markdownToDoc(markdown: string, opts: FromMarkdownOptions = {}):
             out.push(...text(`[изображение: ${c.alt || url}]`, cur()));
             break;
           }
+          const attachmentId = asset?.attachmentId ?? m?.attachmentId ?? null;
           out.push({
             lift: {
               type: 'image',
               attrs: {
                 ...pid(),
                 src,
-                attachmentId: asset?.attachmentId ?? m?.attachmentId ?? null,
+                attachmentId,
                 alt: c.alt ?? '',
                 caption: c.title ?? '',
                 title: null,
@@ -598,6 +639,8 @@ export function markdownToDoc(markdown: string, opts: FromMarkdownOptions = {}):
                 naturalHeight: null,
               },
             },
+            inline: { type: 'inlineImage', attrs: { src, attachmentId, alt: c.alt ?? '', title: c.title || null, width: m?.width ?? null, valign: m?.valign ?? 'baseline', naturalWidth: null, naturalHeight: null } },
+            force: m?.t === 'image' ? (m.inline ? 'inline' : 'block') : null,
           });
           break;
         }
@@ -652,7 +695,7 @@ export function markdownToDoc(markdown: string, opts: FromMarkdownOptions = {}):
     return mergeTextMarksCleanup(out);
   }
 
-  function mergeTextMarksCleanup(nodes: Array<PMNode | { lift: PMNode }>): Array<PMNode | { lift: PMNode }> {
+  function mergeTextMarksCleanup(nodes: Item[]): Item[] {
     // Normalise marks: textStyle without attributes is dropped; duplicates removed.
     for (const n of nodes) {
       if ('type' in n && n.marks) {
@@ -668,6 +711,17 @@ export function markdownToDoc(markdown: string, opts: FromMarkdownOptions = {}):
       }
     }
     return nodes;
+  }
+
+  /** Images in a line of text (other text or several pictures in the same paragraph) stay inline; a lone picture is a block. */
+  function placeImages(items: Item[]): Item[] {
+    const pictures = items.filter((x) => 'lift' in x && x.inline).length;
+    const hasText = items.some((x) => !('lift' in x) && x.type !== 'hardBreak' && (x.type !== 'text' || !!x.text?.trim()));
+    return items.map((x) => {
+      if (!('lift' in x) || !x.inline) return x;
+      const asInline = x.force === 'inline' || (x.force !== 'block' && (hasText || pictures > 1));
+      return asInline ? x.inline : x;
+    });
   }
 
   function markerLinkNode(m: Record<string, any>, url: string, label: string): PMNode {
@@ -698,7 +752,7 @@ export function markdownToDoc(markdown: string, opts: FromMarkdownOptions = {}):
 
   /** Splits inline content into a sequence of paragraphs and lifted blocks (images, files). */
   function paragraphBlocks(children: Md[], wrapper: 'paragraph' | 'heading' = 'paragraph', attrs: Record<string, any> = {}): PMNode[] {
-    const items = inline(children, []);
+    const items = placeImages(inline(children, []));
     const out: PMNode[] = [];
     let buf: PMNode[] = [];
     const flush = (force = false) => {
@@ -738,7 +792,7 @@ export function markdownToDoc(markdown: string, opts: FromMarkdownOptions = {}):
       content: rows.map((r: Md, ri: number) => ({
         type: 'tableRow',
         content: r.children.map((cell: Md, ci: number) => {
-          const inl = inline(cell.children ?? [], []);
+          const inl = placeImages(inline(cell.children ?? [], []));
           const lifted = inl.filter((x) => 'lift' in x).map((x) => (x as { lift: PMNode }).lift);
           const inlineNodes = trimInline(inl.filter((x) => !('lift' in x)) as PMNode[]);
           return {
@@ -949,18 +1003,14 @@ export function markdownToDoc(markdown: string, opts: FromMarkdownOptions = {}):
   }
 
   let content = blocksFrom(tree.children ?? []);
-  if (footnoteOrder.length) {
-    warn('footnotes', 'Сноски преобразованы в нумерованный раздел «Сноски» в конце документа');
-    content.push({ type: 'heading', attrs: { ...pid(), level: 3 }, content: [{ type: 'text', text: 'Сноски' }] });
-    content.push({
-      type: 'orderedList',
-      attrs: { ...pid(), start: 1, type: null },
-      content: footnoteOrder.map((idf) => {
-        const def = footnotes.get(idf);
-        const inner = def ? blocksFrom(def.children ?? []) : [];
-        return { type: 'listItem', attrs: pid(), content: inner.length && inner[0].type === 'paragraph' ? inner : [{ type: 'paragraph', attrs: pid() }, ...inner] };
-      }),
-    });
+  // Definitions nobody references are kept as text at the end (never dropped silently).
+  const unused = [...footnotes.entries()].filter(([idf]) => !usedFootnotes.has(idf));
+  if (unused.length) {
+    warn('footnote-unused', `Сноски без ссылок в тексте (${unused.length}) сохранены абзацами в конце документа`);
+    for (const [, def] of unused) {
+      const inner = toFootnoteContent(blocksFrom(def.children ?? []));
+      content.push({ type: 'paragraph', attrs: pid(), content: [{ type: 'text', text: `[^${def.label ?? def.identifier}] ` }, ...inner] });
+    }
   }
 
   // Title: front matter title, else a leading H1 (which is then removed from the body).
@@ -970,10 +1020,10 @@ export function markdownToDoc(markdown: string, opts: FromMarkdownOptions = {}):
   if (fm && typeof fm.title === 'string') {
     title = fm.title;
     // Our own exports repeat the title as H1 for human readers: drop it so round trips are stable.
-    if (leadingH1 && leadingH1 === fm.title.trim()) content = content.slice(1);
+    if (leadingH1 && leadingH1 === fm.title.trim() && opts.extractTitle !== false) content = content.slice(1);
   } else if (content[0]?.type === 'heading' && content[0].attrs?.level === 1) {
     title = (content[0].content ?? []).map((x) => x.text ?? '').join('').trim() || null;
-    if (title) content = content.slice(1);
+    if (title && opts.extractTitle !== false) content = content.slice(1);
   }
   if (!content.length) content = [{ type: 'paragraph', attrs: pid() }];
   const doc = ensureBlockIds({ type: 'doc', content });

@@ -1,0 +1,215 @@
+name: Deploy
+
+# Continuous delivery (R-OPS-022, R-OPS-003; docs/OPERATIONS.md §3.1):
+#   test   — type check, lint, unit + integration tests on PostgreSQL 16, build
+#   image  — container image (Dockerfile), SBOM (SPDX, Syft), vulnerability scan (Trivy: HIGH/CRITICAL with a fix
+#            available fail the run), push to the registry from secrets
+#   deploy — protected GitHub environment (staging / production: required reviewers are set in the repository
+#            settings), scripts/deploy/deploy.sh: backup → migrations → switch → readiness gate → smoke tests,
+#            automatic rollback (down migrations with the new image + previous image) on any failure.
+# Dry run (default for manual runs, and automatic when the registry or target secrets are not configured): everything
+# up to the scanned image runs for real; push and deploy only print what they would do. No secret is needed.
+#
+# Secrets: REGISTRY (e.g. ghcr.io/corp), REGISTRY_USERNAME, REGISTRY_PASSWORD; per environment: DEPLOY_SSH_TARGET
+# (user@host), DEPLOY_SSH_KEY, DEPLOY_KNOWN_HOSTS, SMOKE_EMAIL, SMOKE_PASSWORD. Variables (per environment):
+# PUBLIC_URL, COMPOSE_DIR (directory with docker-compose.yml and .env on the host), SMOKE_PAGE_ID.
+# Application secrets (SECRET_KEY, DATABASE_URL, …) never pass through the pipeline: they live on the target host as
+# files (<VAR>_FILE: Docker secrets / Vault Agent templates) or in its deploy/.env.
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Target environment
+        type: choice
+        options: [staging, production]
+        default: staging
+      dry_run:
+        description: 'Dry run (build, scan; no push, no deploy)'
+        type: boolean
+        default: true
+      image_tag:
+        description: 'Image tag (default: short commit SHA)'
+        type: string
+        required: false
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-${{ inputs.environment || 'staging' }}
+  cancel-in-progress: false
+
+env:
+  IMAGE_NAME: kb
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: kb
+          POSTGRES_PASSWORD: kb
+          POSTGRES_DB: kb
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U kb" --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      TEST_ADMIN_DATABASE_URL: postgres://kb:kb@localhost:5432/postgres
+      DATABASE_URL: postgres://kb:kb@localhost:5432/kb
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Type check
+        run: npm run typecheck
+      - name: Lint
+        run: npm run lint
+      - name: Unit tests
+        run: npm run test:unit
+      - name: Integration tests (real PostgreSQL)
+        run: npm run test:integration
+      - name: Build
+        run: npm run build
+
+  image:
+    needs: test
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image: ${{ steps.ref.outputs.image }}
+      dry_run: ${{ steps.mode.outputs.dry_run }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Mode (dry run without registry secrets)
+        id: mode
+        env:
+          REGISTRY: ${{ secrets.REGISTRY }}
+          REQUESTED_DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
+        run: |
+          if [ "$REQUESTED_DRY_RUN" = "true" ] || [ -z "$REGISTRY" ]; then
+            echo "dry_run=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::Dry run: the image is built, described (SBOM) and scanned but not pushed or deployed"
+          else
+            echo "dry_run=false" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Image reference
+        id: ref
+        env:
+          REGISTRY: ${{ secrets.REGISTRY }}
+          TAG_INPUT: ${{ inputs.image_tag }}
+        run: |
+          tag="${TAG_INPUT:-${GITHUB_REF_NAME}}"
+          case "$GITHUB_REF" in refs/tags/*) ;; *) tag="${TAG_INPUT:-$(git rev-parse --short=12 HEAD)}" ;; esac
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "image=${REGISTRY:-local}/${IMAGE_NAME}:${tag}" >> "$GITHUB_OUTPUT"
+      - uses: docker/setup-buildx-action@v3
+      - name: Build image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile
+          load: true
+          push: false
+          tags: ${{ steps.ref.outputs.image }}
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.version=${{ steps.ref.outputs.tag }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: SBOM (SPDX JSON, Syft)
+        uses: anchore/sbom-action@v0
+        with:
+          image: ${{ steps.ref.outputs.image }}
+          format: spdx-json
+          output-file: sbom.spdx.json
+          upload-artifact: false
+      - name: Vulnerability scan (Trivy; HIGH/CRITICAL with a fix fail the release)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: ${{ steps.ref.outputs.image }}
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: '1'
+          format: table
+          output: trivy-report.txt
+      - name: Scan report in the job summary
+        if: always()
+        run: |
+          { echo '### Image scan'; echo '```'; head -c 60000 trivy-report.txt 2>/dev/null || echo 'no report'; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: image-sbom-and-scan
+          path: |
+            sbom.spdx.json
+            trivy-report.txt
+          retention-days: 90
+      - name: Registry login
+        if: steps.mode.outputs.dry_run != 'true'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ secrets.REGISTRY }}
+          username: ${{ secrets.REGISTRY_USERNAME }}
+          password: ${{ secrets.REGISTRY_PASSWORD }}
+      - name: Push image (skipped in a dry run)
+        if: steps.mode.outputs.dry_run != 'true' && !inputs.dry_run
+        env:
+          IMAGE: ${{ steps.ref.outputs.image }}
+        run: docker push "$IMAGE"
+
+  deploy:
+    needs: [image]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    environment:
+      name: ${{ inputs.environment || 'staging' }}
+      url: ${{ vars.PUBLIC_URL }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Smoke-test dependencies
+        run: npm ci && npx tsc -b packages/shared
+      - name: SSH access to the target (skipped in a dry run)
+        if: needs.image.outputs.dry_run != 'true'
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/id_ed25519 && chmod 600 ~/.ssh/id_ed25519
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
+      - name: Deploy with backup, migrations, readiness gate, smoke tests and automatic rollback (scripts/deploy/deploy.sh)
+        env:
+          DRY_RUN: ${{ needs.image.outputs.dry_run == 'true' && '1' || '0' }}
+          DEPLOY_DRIVER: compose
+          DEPLOY_SSH: ${{ secrets.DEPLOY_SSH_TARGET }}
+          COMPOSE_DIR: ${{ vars.COMPOSE_DIR }}
+          DEPLOY_HEALTH_URL: ${{ vars.PUBLIC_URL }}
+          SMOKE_EMAIL: ${{ secrets.SMOKE_EMAIL }}
+          SMOKE_PASSWORD: ${{ secrets.SMOKE_PASSWORD }}
+          SMOKE_PAGE_ID: ${{ vars.SMOKE_PAGE_ID }}
+          DEPLOY_REPORT: deploy-report.json
+          IMAGE: ${{ needs.image.outputs.image }}
+        run: bash scripts/deploy/deploy.sh --image "$IMAGE"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: deploy-report-${{ inputs.environment || 'staging' }}
+          path: deploy-report.json
+          retention-days: 90

@@ -1,4 +1,5 @@
 import { resolve } from 'node:path';
+import { loadSecretFiles } from './lib/secret-files.js';
 
 function env(name: string, def?: string): string {
   const v = process.env[name];
@@ -64,6 +65,8 @@ export interface Config {
 }
 
 export function loadConfig(overrides: Partial<Config> = {}): Config {
+  // <VAR>_FILE (Docker/Kubernetes secrets, Vault Agent templates, systemd credentials) → <VAR>; see lib/secret-files.ts.
+  loadSecretFiles(process.env);
   const nodeEnv = env('NODE_ENV', 'development') as Config['env'];
   const dataDir = resolve(env('KB_DATA_DIR', '.data'));
   const cfg: Config = {

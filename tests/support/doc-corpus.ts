@@ -236,8 +236,10 @@ export function expectedText(spec: DocSpec, format: 'docx' | 'md'): string {
           b.runs
             .map((r) => {
               if (!r.footnote) return r.text;
+              // a footnote is a node carrying its note at the reference (D-36); plain text shows it in brackets
               notes.push(r.footnote);
-              return `${r.text}[${++n}]`;
+              n++;
+              return `${r.text} [${r.footnote}]`;
             })
             .join(''),
         );
@@ -262,7 +264,7 @@ export function expectedText(spec: DocSpec, format: 'docx' | 'md'): string {
         break;
     }
   }
-  if (notes.length) parts.push('Сноски', ...notes);
+  void n;
   if (format === 'docx' && (spec.header || spec.footer)) parts.push('Колонтитулы исходного документа', ...[spec.header, spec.footer].filter((x): x is string => !!x));
   return parts.join('\n');
 }
@@ -308,7 +310,6 @@ export function expectedStructure(spec: DocSpec, format: 'docx' | 'md'): Structu
     }
     if (b.kind === 'internal-link') c.links++;
   }
-  if (c.footnotes) c.headings[2]++; // «Сноски» section heading
   return c;
 }
 
@@ -330,7 +331,7 @@ export function actualStructure(doc: any): StructureCounts {
       if (n.attrs?.caption) c.captions++;
     }
     if (n.type === 'text' && (n.marks ?? []).some((m: any) => m.type === 'link')) c.links++;
-    if (n.type === 'text' && /\[\d+\]$/.test(n.text ?? '') && (n.marks ?? []).some((m: any) => m.type === 'superscript')) c.footnotes++;
+    if (n.type === 'footnote') c.footnotes++;
     let notes = inNotes;
     for (const ch of n.content ?? []) {
       if (ch.type === 'heading' && (ch.content ?? []).map((t: any) => t.text).join('') === 'Сноски') notes = true;

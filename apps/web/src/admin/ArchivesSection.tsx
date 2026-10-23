@@ -4,6 +4,7 @@ import { Archive, Download, Upload } from 'lucide-react';
 import { ApiError, api, get, post, upload } from '../api/client';
 import { Dialog } from '../components/ui/Dialog';
 import { toast } from '../components/ui/Toast';
+import { useInFlight } from '../hooks/useInFlight';
 import { fileSize, fullTime, relTime } from '../lib/format';
 import { Badge, Empty, ErrorState, LoadingRows, SectionHeader, downloadBlob, errMsg, num } from './common';
 
@@ -224,6 +225,9 @@ function ExportDialog({ onClose, onCreated }: { onClose: () => void; onCreated: 
       } else setError({ msg: errMsg(e) });
     },
   });
+  // a second activation before react-query reports «pending» would start a second full export (QA-A1)
+  const once = useInFlight();
+  const submit = () => once(() => m.mutateAsync());
   const opt = (k: keyof typeof opts, label: string, hint?: string) => (
     <label className="checkbox admin-check-hint">
       <input type="checkbox" checked={opts[k]} onChange={(e) => setOpts((o) => ({ ...o, [k]: e.target.checked }))} />
@@ -244,7 +248,7 @@ function ExportDialog({ onClose, onCreated }: { onClose: () => void; onCreated: 
           <button className="btn" onClick={onClose}>
             Отмена
           </button>
-          <button className="btn primary" disabled={!password || !ack || m.isPending} aria-busy={m.isPending} onClick={() => m.mutate()}>
+          <button className="btn primary" disabled={!password || !ack || m.isPending} aria-busy={m.isPending} onClick={submit}>
             {m.isPending && <span className="spinner" />} Создать архив
           </button>
         </>
@@ -255,7 +259,7 @@ function ExportDialog({ onClose, onCreated }: { onClose: () => void; onCreated: 
         style={{ gap: 14 }}
         onSubmit={(e) => {
           e.preventDefault();
-          if (password && ack) m.mutate();
+          if (password && ack) submit();
         }}
       >
         <div className="alert warning">Архив содержит все материалы организации, включая личные пространства сотрудников. Храните его в защищённом месте. Пароли, токены и ключи в архив не включаются.</div>
@@ -443,6 +447,7 @@ function RestoreDialog({ jobId: initialJob, onClose, onChanged }: { jobId?: stri
     },
   });
   const busy = progress !== null || commit.isPending;
+  const onceCommit = useInFlight();
 
   let body;
   let footer;
@@ -519,7 +524,7 @@ function RestoreDialog({ jobId: initialJob, onClose, onChanged }: { jobId?: stri
           {a?.ok ? 'Отмена' : 'Закрыть'}
         </button>
         {a?.ok && (
-          <button className="btn danger solid" disabled={!password || !ack || busy || (targetMode === 'into-space' && !targetSpace)} aria-busy={commit.isPending} onClick={() => commit.mutate()}>
+          <button className="btn danger solid" disabled={!password || !ack || busy || (targetMode === 'into-space' && !targetSpace)} aria-busy={commit.isPending} onClick={() => onceCommit(() => commit.mutateAsync())}>
             {commit.isPending && <span className="spinner" />} Восстановить
           </button>
         )}

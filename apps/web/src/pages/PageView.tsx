@@ -43,13 +43,17 @@ export default function PageView() {
         <EditorSkeleton />
       </div>
     );
-  if (page.isError || !page.data) return <PageError error={page.error} pageId={pageId!} retry={() => page.refetch()} />;
+  // offline, a failed first attempt leaves the query pending with its retry paused (networkMode offlineFirst): the
+  // reason is in failureReason, not error — without it the page said «Не удалось открыть страницу» and nothing else (QA-A10)
+  if (page.isError || !page.data) return <PageError error={page.error ?? page.failureReason} pageId={pageId!} retry={() => page.refetch()} />;
   const block = params.get('block') ?? (location.hash ? decodeURIComponent(location.hash.slice(1)) : null);
   return <PageLoaded key={page.data.page.id} page={page.data.page} crumbs={page.data.breadcrumbs} block={block} justCreated={!!(location.state as any)?.justCreated} offline={'offline' in page.data && !!page.data.offline} />;
 }
 
 function PageError({ error, pageId, retry }: { error: unknown; pageId: string; retry(): void }) {
   const [sent, setSent] = useState(false);
+  // disabled while the request is in flight: a double click used to send two requests and notify the owners twice (QA-A6)
+  const [sending, setSending] = useState(false);
   const notFound = error instanceof ApiError && (error.status === 404 || error.status === 403);
   const offline = error instanceof ApiError && error.isNetwork;
   return (
@@ -65,12 +69,15 @@ function PageError({ error, pageId, retry }: { error: unknown; pageId: string; r
           {notFound && (
             <button
               className="btn primary"
-              disabled={sent}
-              onClick={() =>
+              disabled={sent || sending}
+              aria-busy={sending}
+              onClick={() => {
+                setSending(true);
                 post('/api/v1/access-requests', { resourceType: 'page', resourceId: pageId, level: 'view' })
                   .then(() => (setSent(true), toast.success('Запрос отправлен владельцу страницы')))
                   .catch((e) => toast.error(e.message))
-              }
+                  .finally(() => setSending(false));
+              }}
             >
               {sent ? 'Запрос отправлен' : 'Запросить доступ'}
             </button>

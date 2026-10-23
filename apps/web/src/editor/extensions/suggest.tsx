@@ -139,9 +139,12 @@ export function pageLinkExtension(createChild: (title: string) => Promise<{ id: 
           title: `Создать вложенную страницу «${q}»`,
           icon: createElement(Plus, { size: 15 }),
           run: async (e: Editor, rg: Range) => {
+            const typed = e.state.doc.textBetween(rg.from, rg.to);
             e.chain().focus().deleteRange(rg).run();
             const p = await createChild(q);
             if (p) e.chain().focus().insertContent([{ type: 'pageMention', attrs: { pageId: p.id, title: p.title } }, { type: 'text', text: ' ' }]).run();
+            // the page could not be created (server error, offline): the typed «[[title» comes back for a retry (QA-E2)
+            else if (typed) e.chain().focus().insertContent({ type: 'text', text: typed }).run();
           },
         });
       return items;

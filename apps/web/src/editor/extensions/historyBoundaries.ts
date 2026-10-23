@@ -15,7 +15,7 @@ const isMac = () => typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(n
 
 const key = new PluginKey<{ structural: boolean }>('kbHistoryBoundaries');
 
-/** Text entry: replace steps that stay inside text blocks and insert only text / inline nodes / plain paragraphs. */
+/** Text entry: replace steps that stay inside text blocks (or a footnote's text) and insert only text / inline nodes / plain paragraphs. */
 export function isTextEntry(tr: Transaction): boolean {
   return tr.steps.every((step, i) => {
     if (!(step instanceof ReplaceStep)) return false;
@@ -30,7 +30,8 @@ export function isTextEntry(tr: Transaction): boolean {
     });
     if (!plain) return false;
     const doc = tr.docs[i];
-    return doc.resolve(from).parent.isTextblock && doc.resolve(to).parent.isTextblock;
+    // inline content: text blocks and the text of a footnote (typed in its own small editor)
+    return doc.resolve(from).parent.inlineContent && doc.resolve(to).parent.inlineContent;
   });
 }
 

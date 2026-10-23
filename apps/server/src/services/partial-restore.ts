@@ -14,7 +14,7 @@
 import type pg from 'pg';
 import * as Y from 'yjs';
 import { randomUUID } from 'node:crypto';
-import { walk, keyBetween, docToPlainText, type PMNode } from '@kb/shared';
+import { walk, keyBetween, docToPlainText, migrateContent, CONTENT_SCHEMA_VERSION, type PMNode } from '@kb/shared';
 import type { Tx } from '../db/pool.js';
 import { jsonToUpdate, updateToJson, ydocToJson, titleOf } from '../collab/ydoc.js';
 import { createRevision, diffDocs } from './revisions.js';
@@ -48,13 +48,15 @@ export interface PartialRestorePreview {
 
 /** Document of a page in the SOURCE database: snapshot + journal (unflushed acknowledged edits included). */
 async function sourceDoc(src: pg.Pool | pg.PoolClient, pageId: string): Promise<{ json: PMNode; title: string } | null> {
-  const st = (await src.query('select snapshot, snapshot_seq, content from doc_state where page_id = $1', [pageId])).rows[0];
+  const st = (await src.query('select d.snapshot, d.snapshot_seq, d.content, p.content_schema_version from doc_state d left join pages p on p.id = d.page_id where d.page_id = $1', [pageId])).rows[0];
   if (!st) return null;
   const doc = new Y.Doc({ gc: true });
   if (st.snapshot) Y.applyUpdate(doc, st.snapshot);
   const ups = (await src.query('select update from doc_updates where page_id = $1 and seq > $2 order by seq', [pageId, st.snapshot_seq])).rows;
   for (const u of ups) Y.applyUpdate(doc, u.update);
-  const json = st.snapshot || ups.length ? ydocToJson(doc) : (st.content as PMNode);
+  const raw = st.snapshot || ups.length ? ydocToJson(doc) : (st.content as PMNode);
+  // a backup of an older release holds content of an older schema: brought up to the current one (D-28)
+  const json = migrateContent(raw, Math.min(Number(st.content_schema_version ?? 1), CONTENT_SCHEMA_VERSION)).doc;
   return { json, title: titleOf(doc) };
 }
 
@@ -129,8 +131,8 @@ export async function applyPartialRestore(live: pg.Pool, src: pg.Pool, scope: Pa
   const insertPage = async (p: { id: string; spaceId: string; parentId: string | null; title: string; icon: string | null; properties: any; status: string }, content: PMNode) => {
     const last = (await q.query(`select sort_key from pages where space_id = $1 and parent_id is not distinct from $2 order by sort_key collate "C" desc limit 1`, [p.spaceId, p.parentId])).rows[0]?.sort_key ?? null;
     await q.query(
-      `insert into pages (id, org_id, space_id, parent_id, sort_key, title, icon, status, properties, owner_id, created_by, updated_by) values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $10, $10)`,
-      [p.id, user.org_id, p.spaceId, p.parentId, keyBetween(last, null), p.title, p.icon, p.status, p.properties ?? {}, user.id],
+      `insert into pages (id, org_id, space_id, parent_id, sort_key, title, icon, status, properties, owner_id, created_by, updated_by, content_schema_version) values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $10, $10, $11)`,
+      [p.id, user.org_id, p.spaceId, p.parentId, keyBetween(last, null), p.title, p.icon, p.status, p.properties ?? {}, user.id, CONTENT_SCHEMA_VERSION],
     );
     await insertAncestors(q, p.id, p.parentId);
     const update = jsonToUpdate(content, p.title);

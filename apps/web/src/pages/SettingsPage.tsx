@@ -29,7 +29,9 @@ export default function SettingsPage() {
       <p className="page-sub">Личные настройки, безопасность учётной записи и доступ для интеграций.</p>
       <nav className="tabs admin-tabs" aria-label="Разделы настроек">
         {tabs.map((t) => (
-          <NavLink key={t.path} to={t.path} className="tab admin-tab">
+          // absolute targets: the page is a splat route (/settings/*), where a relative link resolves against the current
+          // tab (/settings/sessions → /settings/sessions/security, then «*» redirected forever — QA-A8)
+          <NavLink key={t.path} to={`/settings/${t.path}`} className="tab admin-tab">
             {t.icon}
             <span>{t.label}</span>
           </NavLink>
@@ -37,13 +39,13 @@ export default function SettingsPage() {
       </nav>
       <div className="admin-body">
         <Routes>
-          <Route index element={<Navigate to="profile" replace />} />
+          <Route index element={<Navigate to="/settings/profile" replace />} />
           <Route path="profile" element={<ProfileTab />} />
           <Route path="appearance" element={<AppearanceTab />} />
           <Route path="security" element={<SecurityTab />} />
           <Route path="sessions" element={<SessionsTab />} />
           {me.user.kind === 'employee' && <Route path="tokens" element={<TokensTab />} />}
-          <Route path="*" element={<Navigate to="profile" replace />} />
+          <Route path="*" element={<Navigate to="/settings/profile" replace />} />
         </Routes>
       </div>
     </div>

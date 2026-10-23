@@ -296,6 +296,12 @@ export class CollabHub {
     const buffer = (data: Buffer, isBinary: boolean) => isBinary && early.push(new Uint8Array(data));
     ws.on('message', buffer);
     const acc = await pageAccess(this.pool, user, pageId);
+    // A page moved to the trash while this client was offline: say so (not "not found"), so the editor can offer to keep
+    // its unsent changes as a new page — the same choice as when the page is trashed during a live session (QA-E3).
+    if (acc?.deleted && acc.actions.view) {
+      this.sendError(ws, 'deleted', 'Страница перемещена в корзину', CLOSE.ACCESS_REVOKED);
+      return;
+    }
     if (!acc || !acc.actions.view || acc.deleted) {
       this.sendError(ws, 'not_found', 'Страница не найдена или нет доступа', CLOSE.NOT_FOUND);
       return;
@@ -328,6 +334,12 @@ export class CollabHub {
         this.log.error({ err, pageId }, 'document schema migration failed');
         conn.canEdit = false;
       }
+    }
+    // The client may have gone while access was checked and the document loaded: its close event has already fired, so
+    // registering it now would leave a ghost connection forever (shown in presence, the document never unloaded) (QA-E4).
+    if (ws.readyState !== ws.OPEN) {
+      if (live.conns.size === 0 && !live.idleTimer) live.idleTimer = setTimeout(() => void this.unload(live), IDLE_UNLOAD_MS);
+      return;
     }
     live.conns.add(conn);
     this.metrics.collabConnections.inc();

@@ -464,9 +464,10 @@ export async function restoreArchive(s: Services, q: Tx, orgId: string, actor: A
     const id = map(p.id)!;
     const content = upgrade(JSON.parse(entries.get(`metadata/content/${p.id}.json`)?.toString('utf8') ?? 'null') ?? { type: 'doc', content: [{ type: 'paragraph' }] });
     await q.query(
-      `insert into pages (id, org_id, space_id, parent_id, sort_key, title, icon, cover, status, inherit_permissions, locked, wide, properties, owner_id, created_by, updated_by, created_at, review_due_at)
-       values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $15, $16, $17)`,
-      [id, orgId, map(p.space_id), map(p.parent_id), p.sort_key, p.title, p.icon, p.cover, p.status, p.inherit_permissions, p.locked, p.wide, p.properties ?? {}, um(p.owner_id), um(p.created_by), p.created_at, p.review_due_at],
+      `insert into pages (id, org_id, space_id, parent_id, sort_key, title, icon, cover, status, inherit_permissions, locked, wide, properties, owner_id, created_by, updated_by, created_at, review_due_at, content_schema_version)
+       values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $15, $16, $17, $18)`,
+      // the content was migrated above: it is in the current schema
+      [id, orgId, map(p.space_id), map(p.parent_id), p.sort_key, p.title, p.icon, p.cover, p.status, p.inherit_permissions, p.locked, p.wide, p.properties ?? {}, um(p.owner_id), um(p.created_by), p.created_at, p.review_due_at, CONTENT_SCHEMA_VERSION],
     );
     await insertAncestors(q, id, map(p.parent_id));
     const update = jsonToUpdate(content, p.title);

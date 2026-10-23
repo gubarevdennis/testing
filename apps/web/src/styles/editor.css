@@ -384,3 +384,41 @@ body.kb-block-dragging, body.kb-block-dragging * { cursor: grabbing !important; 
 .ocr-low { background: var(--warning-soft); text-decoration: underline wavy var(--warning); text-underline-offset: 3px; }
 .ocr-provenance { font-size: var(--fs-sm); }
 .touch-block-actions { position: fixed; right: 16px; bottom: calc(76px + env(safe-area-inset-bottom)); z-index: calc(var(--z-sticky) + 3); width: 48px; height: 48px; border-radius: 50%; border: 1px solid var(--border-strong); background: var(--surface); color: var(--text); box-shadow: var(--shadow-2); display: grid; place-items: center; }
+
+/* ---------------------------------------------------------------- footnotes (R-EDITOR-038, D-36) */
+/* numbering = document order of the references: a CSS counter, never stored */
+.kb-editor, .kb-static { counter-reset: kb-fn; }
+.kb-footnote { position: relative; display: inline; }
+.kb-footnote-ref { counter-increment: kb-fn; cursor: pointer; color: var(--accent-strong, var(--accent)); font-weight: 600; font-size: 0.72em; line-height: 0; vertical-align: super; padding: 0 1px; border-radius: 3px; user-select: none; }
+.kb-footnote-ref::before { content: counter(kb-fn); }
+.kb-footnote.is-empty .kb-footnote-ref { color: var(--warning, #b5540e); }
+.kb-footnote.ProseMirror-selectednode { outline: none; }
+.kb-footnote.ProseMirror-selectednode .kb-footnote-ref { background: color-mix(in srgb, var(--accent) 18%, transparent); outline: 2px solid color-mix(in srgb, var(--accent) 60%, transparent); }
+.kb-footnote-popover { position: absolute; left: 0; top: 1.6em; z-index: 20; display: block; width: min(420px, calc(100vw - 32px)); padding: 6px 8px 8px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-md); box-shadow: var(--shadow-2); font-size: var(--fs-sm); font-weight: normal; line-height: 1.5; color: var(--text); white-space: normal; cursor: auto; text-align: left; }
+.kb-footnote-head { display: flex; align-items: center; gap: 6px; color: var(--text-2); font-size: 12px; margin-bottom: 4px; }
+.kb-footnote-head > span:first-child { flex: 1; font-weight: 600; }
+.kb-footnote-body { display: block; }
+.kb-footnote-editor { display: block; min-height: 1.5em; padding: 4px 6px; border: 1px solid var(--border-input, var(--border)); border-radius: var(--r-sm, 6px); outline: none; white-space: pre-wrap; }
+.kb-footnote-editor:focus { border-color: var(--accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 25%, transparent); }
+.kb-footnote-editor:empty::before { content: 'Текст сноски'; color: var(--text-3, var(--text-2)); }
+.kb-footnotes-list { margin: 32px 0 8px; padding-top: 8px; border-top: 1px solid var(--border); font-size: var(--fs-sm); color: var(--text-2); }
+.kb-footnotes-title { font-size: var(--fs-sm); font-weight: 600; margin: 0 0 4px; color: var(--text-2); }
+.kb-footnotes-list ol { margin: 0; padding-left: 28px; }
+.kb-footnotes-list li { padding: 2px 4px; border-radius: 4px; transition: background var(--t-fast); }
+.kb-footnotes-list li.is-flash { background: color-mix(in srgb, var(--accent) 16%, transparent); }
+.kb-fn-text { all: unset; cursor: pointer; white-space: pre-wrap; color: var(--text); }
+.kb-fn-text:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
+.kb-footnotes-list .kb-fn-back { vertical-align: baseline; }
+/* static renderings (previews, published versions) */
+.kb-static sup.kb-fn-ref a { text-decoration: none; }
+.kb-static section.kb-footnotes { border-top: 1px solid var(--border); margin-top: 16px; padding-top: 6px; font-size: var(--fs-sm); color: var(--text-2); }
+
+/* ---------------------------------------------------------------- pictures in a line of text (R-MEDIA-007, D-37) */
+.kb-inline-image-wrap { position: relative; display: inline-block; line-height: 0; max-width: 100%; }
+.kb-inline-image { max-width: 100%; height: auto; border-radius: 2px; cursor: default; }
+.kb-inline-image-wrap.is-selected .kb-inline-image { outline: 2px solid var(--accent); outline-offset: 1px; }
+.kb-inline-image-pending, .kb-inline-image-error { line-height: normal; font-size: 0.85em; color: var(--text-2); background: var(--soft, var(--surface-2)); border-radius: 4px; padding: 0 4px; }
+.kb-resize.inline { top: auto; bottom: -4px; right: -6px; left: auto; width: 10px; height: 10px; margin: 0; border-radius: 50%; cursor: nwse-resize; opacity: 1; }
+.kb-inline-toolbar { top: auto; bottom: calc(100% + 8px); line-height: normal; }
+.kb-inline-image-edit { display: inline-flex; margin-left: 4px; }
+.kb-inline-image-edit .input { width: 260px; height: 28px; font-size: 13px; }

@@ -6,8 +6,9 @@
  * SCHEMA_MIGRATIONS; documents of older versions (archives, imports, stored content) are upgraded step by step.
  */
 import type { PMNode, PMMark } from './json.js';
-import { CONTENT_SCHEMA_VERSION } from './extensions.js';
+import { CONTENT_SCHEMA_VERSION } from './version.js';
 import { sanitizeHref } from './url.js';
+import { migrateLegacyFootnotes } from './footnotes.js';
 
 export interface SchemaMigration {
   from: number;
@@ -16,8 +17,12 @@ export interface SchemaMigration {
   migrate(doc: PMNode): PMNode;
 }
 
-/** Registered migrations in order. Version 1 is the initial schema, so the list is empty for now. */
-export const SCHEMA_MIGRATIONS: SchemaMigration[] = [];
+/**
+ * Registered migrations in order. Version 1 is the initial schema.
+ *  1 → 2 (D-36): footnote and inline image nodes added (new node types: version-1 documents stay valid); the legacy
+ *        «Сноски» section that importers of version 1 produced is turned into real footnotes when unambiguous.
+ */
+export const SCHEMA_MIGRATIONS: SchemaMigration[] = [{ from: 1, to: 2, description: 'Сноски и изображения в строке', migrate: migrateLegacyFootnotes }];
 
 export class SchemaVersionError extends Error {
   constructor(
@@ -90,7 +95,7 @@ export function findUnsafeUrls(doc: PMNode): Array<{ node: string; attr: string;
   visit(doc, (n) => {
     for (const m of n.marks ?? []) if (m.type === 'link' && isDangerousUrl(m.attrs?.href)) out.push({ node: 'link', attr: 'href', value: String(m.attrs?.href) });
     const a = n.attrs ?? {};
-    if (n.type === 'image' && isDangerousUrl(a.src, 'image')) out.push({ node: 'image', attr: 'src', value: String(a.src) });
+    if ((n.type === 'image' || n.type === 'inlineImage') && isDangerousUrl(a.src, 'image')) out.push({ node: n.type, attr: 'src', value: String(a.src) });
     if (n.type === 'embed' && isDangerousUrl(a.url)) out.push({ node: 'embed', attr: 'url', value: String(a.url) });
     if (n.type === 'fileBlock' && isDangerousUrl(a.href)) out.push({ node: 'fileBlock', attr: 'href', value: String(a.href) });
   });
@@ -119,7 +124,7 @@ export function sanitizeDocUrls(doc: PMNode): { doc: PMNode; changed: number } {
     }
     const a = n.attrs;
     if (!a) return;
-    if (n.type === 'image' && a.src != null) {
+    if ((n.type === 'image' || n.type === 'inlineImage') && a.src != null) {
       const src = safeImageSrc(a.src) ?? (a.attachmentId ? `/api/v1/attachments/${a.attachmentId}/content` : null);
       if (src !== a.src) {
         changed++;

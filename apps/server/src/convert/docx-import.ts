@@ -106,8 +106,10 @@ async function inspectDocxParts(buf: Buffer): Promise<DocxParts> {
   // footnotes.xml always holds the separator and continuation-separator pseudo-notes.
   // eslint-disable-next-line security/detect-non-literal-regexp -- `tag` is a literal ('footnote' | 'endnote') at both call sites
   const realNotes = (xml: string | undefined, tag: string) => (xml?.match(new RegExp(`<w:${tag}\\b(?![^>]*w:type="(?:separator|continuationSeparator|continuationNotice)")`, 'g')) ?? []).length;
-  const notes = realNotes(foot, 'footnote') + realNotes(parts.get('word/endnotes.xml'), 'endnote');
-  if (notes) w.push({ code: 'footnotes', message: `Сноски (${notes}) перенесены в раздел «Сноски» в конце статьи; в тексте — надстрочные номера [n].` });
+  const footnotes = realNotes(foot, 'footnote');
+  const endnotes = realNotes(parts.get('word/endnotes.xml'), 'endnote');
+  if (footnotes) w.push({ code: 'footnotes', message: `Сноски Word (${footnotes}) импортированы как сноски статьи: ссылка в тексте, текст сноски — в самой сноске, нумерация автоматическая.` });
+  if (endnotes) w.push({ code: 'endnotes', message: `Концевые сноски Word (${endnotes}) импортированы как обычные сноски статьи (в базе знаний один вид сносок; нумерация общая).` });
   const headerFooter: string[] = [];
   for (const [name, xml] of [...parts].sort(([a], [b]) => (a.includes('header') === b.includes('header') ? a.localeCompare(b) : a.includes('header') ? -1 : 1))) if (/^word\/(header|footer)\d*\.xml$/.test(name)) for (const t of partParagraphs(xml)) if (!headerFooter.includes(t)) headerFooter.push(t);
   if (/<w:headerReference\b|<w:footerReference\b/.test(doc) && headerFooter.length) w.push({ code: 'header-footer', message: 'Колонтитулы перенесены в свёрнутый блок «Колонтитулы исходного документа» в конце статьи.' });
@@ -122,7 +124,8 @@ const stripTags = (h: string) => h.replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' 
 /**
  * Structural post-processing of mammoth's HTML (R-IMPORT-007/025/026/027/034):
  * bookmarks on headings become block anchors (internal links are re-pointed to them), the Word TOC field becomes a
- * live TOC block, captions become image captions, footnote references become [n] and the notes a «Сноски» section.
+ * live TOC block, captions become image captions. Footnotes/endnotes (mammoth: <sup><a href="#footnote-1">) are left to
+ * the shared HTML pipeline, which turns them into footnote nodes like any other HTML footnotes (D-36, D-38).
  */
 export function restructureDocxHtml(html: string, opts: { hasToc: boolean }): string {
   // 1. Bookmarks: <h2><a id="_Toc1"></a><a id="x"></a>Text</h2> → <h2 data-block-id="uuid">Text</h2>; "#x" → "#uuid".
@@ -146,12 +149,7 @@ export function restructureDocxHtml(html: string, opts: { hasToc: boolean }): st
   html = html.replace(/<p>(<img [^>]*\/?>)<\/p><p class="kb-caption">([\s\S]*?)<\/p>/g, (_m, img: string, cap: string) => `<figure>${img}<figcaption>${stripTags(cap)}</figcaption></figure>`);
   html = html.replace(/<p class="kb-caption">([\s\S]*?)<\/p><p>(<img [^>]*\/?>)<\/p>/g, (_m, cap: string, img: string) => `<figure>${img}<figcaption>${stripTags(cap)}</figcaption></figure>`);
   html = html.replace(/<p class="kb-caption">/g, '<p>'); // table captions etc. stay as text
-  // 4. Footnotes/endnotes: references → superscript [n]; the trailing note lists get a heading.
-  html = html.replace(/<sup><a href="#(?:footnote|endnote)-\d+" id="(?:footnote|endnote)-ref-\d+">(\[\d+\])<\/a><\/sup>/g, '<sup>$1</sup>');
-  html = html.replace(/\s*<a href="#(?:footnote|endnote)-ref-\d+">↑<\/a>/g, '');
-  html = html.replace(/<ol><li id="footnote-/, '<h3>Сноски</h3><ol><li id="footnote-');
-  html = html.replace(/<ol><li id="endnote-/, '<h3>Концевые сноски</h3><ol><li id="endnote-');
-  // 5. Separators marked by preprocessDocx.
+  // 4. Separators marked by preprocessDocx.
   html = html.split(`<p>${HR_MARKER}</p>`).join('<hr />');
   return html;
 }

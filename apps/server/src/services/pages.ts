@@ -3,6 +3,8 @@ import type { Queryable, Tx } from '../db/pool.js';
 import { badRequest, conflict, forbidden, notFound, unprocessable } from '../lib/errors.js';
 import { audit, type AuditActor } from './audit.js';
 import { jsonToUpdate, updateToJson } from '../collab/ydoc.js';
+import { schemaRegistry } from '../collab/schema-registry.js';
+import { copyContentAttachments } from './attachment-copy.js';
 import { docToPlainText, countWords } from '@kb/shared';
 import { moveImpact, type MoveImpact } from './move-impact.js';
 import { diffAudience, hypotheticalAudience, pageAudience, requirePage, requireSpace, bumpAclEpoch, type AuthUser, type AudienceDiff } from '../acl/engine.js';
@@ -112,8 +114,8 @@ export async function initDocument(q: Queryable, pageId: string, title: string, 
     [pageId, Buffer.from(update), normalized, text],
   );
   await q.query(
-    `insert into page_revisions (page_id, number, kind, title, state, content, seq_upto, authors, created_by) values ($1, 1, $2, $3, $4, $5, 1, $6, $7)`,
-    [pageId, kind, title, Buffer.from(update), normalized, userId ? [userId] : [], userId],
+    `insert into page_revisions (page_id, number, kind, title, state, content, seq_upto, authors, created_by, content_schema_version) values ($1, 1, $2, $3, $4, $5, 1, $6, $7, $8)`,
+    [pageId, kind, title, Buffer.from(update), normalized, userId ? [userId] : [], userId, schemaRegistry().version],
   );
   await q.query('update pages set word_count = $2, content_updated_at = now() where id = $1', [pageId, countWords(text)]);
   await enqueue(q, 'index-page', { pageId });
@@ -169,9 +171,10 @@ export async function createPage(q: Tx, user: AuthUser, actor: AuditActor, input
   const sortKey = await placementKey(q, spaceId, parentId, { beforeId: input.beforeId, afterId: input.afterId, position: input.position });
   const title = (input.title ?? '').slice(0, 500);
   const r = await q.query(
-    `insert into pages (id, org_id, space_id, parent_id, sort_key, title, icon, properties, owner_id, created_by, updated_by, create_request_id, collection_id, status)
-     values (coalesce($12::uuid, gen_random_uuid()), $1, $2, $3, $4, $5, $6, $7, $8, $8, $8, $9, $10, $11) returning *`,
-    [user.orgId, spaceId, parentId, sortKey, title, input.icon ?? null, input.properties ?? {}, user.id, input.requestId ?? null, input.collectionId ?? null, input.status ?? 'draft', input.id ?? null],
+    `insert into pages (id, org_id, space_id, parent_id, sort_key, title, icon, properties, owner_id, created_by, updated_by, create_request_id, collection_id, status, content_schema_version)
+     values (coalesce($12::uuid, gen_random_uuid()), $1, $2, $3, $4, $5, $6, $7, $8, $8, $8, $9, $10, $11, $13) returning *`,
+    // new content is written in the current schema (D-28): it must not be "migrated" again on first open
+    [user.orgId, spaceId, parentId, sortKey, title, input.icon ?? null, input.properties ?? {}, user.id, input.requestId ?? null, input.collectionId ?? null, input.status ?? 'draft', input.id ?? null, schemaRegistry().version],
   );
   const page = r.rows[0] as PageRow;
   await insertAncestors(q, page.id, parentId);
@@ -465,7 +468,11 @@ export async function duplicatePage(q: Tx, user: AuthUser, actor: AuditActor, pa
     const newParent = page_id === pageId ? parentId : idMap.get(p.parent_id!) ?? null;
     if (page_id !== pageId && !newParent) continue;
     const content = (await q.query('select content from doc_state where page_id = $1', [page_id])).rows[0]?.content ?? emptyDoc();
-    const attMap = await copyAttachments(q, user, page_id, access.get(page_id)!.actions.download);
+    const own = await copyAttachments(q, user, page_id, access.get(page_id)!.actions.download);
+    // files the content references from OTHER pages (pasted earlier without a copy, synced in…) become the copy's own as
+    // well — the same rule as paste and move (services/attachment-copy.ts): access to the copy never depends on the source
+    const foreign = await copyContentAttachments(q, user, content, null, { actor, already: own });
+    const attMap = foreign.copied;
     const doc = remapAttachments(structuredClone(content), attMap);
     // fresh block ids so block links stay unambiguous
     walk(doc, (n) => {

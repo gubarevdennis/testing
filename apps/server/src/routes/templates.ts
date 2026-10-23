@@ -4,6 +4,7 @@ import { tx, type Queryable } from '../db/pool.js';
 import { actorOf, parse, requireUser, type Services } from '../app.js';
 import { accessForSpaces, isOrgAdmin, requirePage, requireSpace } from '../acl/engine.js';
 import { audit } from '../services/audit.js';
+import { copyContentAttachments } from '../services/attachment-copy.js';
 import { TEMPLATES } from '../templates/library.js';
 import { badRequest, forbidden, notFound } from '../lib/errors.js';
 import { getKbSchema, ensureBlockIds, walk, type PMNode } from '@kb/shared';
@@ -104,6 +105,8 @@ export async function templateRoutes(app: FastifyInstance, s: Services) {
     }
     if (body.pageId) getKbSchema().nodeFromJSON(ensureBlockIds(structuredClone(content))).check();
     const t = await tx(s.db, async (q) => {
+      // the template's pictures and files become its own assets (independent of the source page, D-39)
+      content = (await copyContentAttachments(q, user, content, null, { actor: actorOf(req) })).doc;
       const r = (await q.query(`insert into templates (org_id, space_id, name, description, category, icon, content, properties, required_properties, created_by, default_title) values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) returning *`, [user.orgId, body.spaceId ?? null, body.name, body.description, body.category, body.icon ?? page.icon, content, page.properties ?? {}, body.requiredProperties ?? [], user.id, body.title?.trim() || null])).rows[0];
       await q.query('insert into template_versions (template_id, version, content, properties, created_by) values ($1, 1, $2, $3, $4)', [r.id, content, page.properties ?? {}, user.id]);
       await audit(q, actorOf(req), { action: 'template.create', targetType: 'template', targetId: r.id, details: { name: body.name, spaceId: body.spaceId ?? null, source: body.pageId ? 'page' : 'content', pageId: body.pageId ?? null } });
@@ -127,6 +130,7 @@ export async function templateRoutes(app: FastifyInstance, s: Services) {
       content = stripIds((await s.hub.snapshot(body.fromPageId)).json);
     }
     await tx(s.db, async (q) => {
+      if (body.fromPageId) content = (await copyContentAttachments(q, user, content, null, { actor: actorOf(req) })).doc;
       await q.query(
         `update templates set name = coalesce($2, name), description = coalesce($3, description), category = coalesce($4, category), icon = coalesce($5, icon), published = coalesce($6, published), content = $7, version = version + $8, updated_at = now() where id = $1`,
         [id, body.name ?? null, body.description ?? null, body.category ?? null, body.icon ?? null, body.published ?? null, content, body.fromPageId ? 1 : 0],

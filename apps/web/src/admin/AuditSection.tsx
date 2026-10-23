@@ -207,7 +207,7 @@ export function AuditSection() {
 
       {q.isLoading ? (
         <LoadingRows rows={8} />
-      ) : q.isError ? (
+      ) : q.isError && !events.length ? (
         <ErrorState error={q.error} onRetry={() => q.refetch()} />
       ) : !events.length ? (
         <Empty icon={<ScrollText size={32} />} title={filtered ? 'Нет событий по заданным условиям' : 'Журнал пуст'}>
@@ -278,6 +278,12 @@ export function AuditSection() {
               </tbody>
             </table>
           </div>
+          {/* a failed next page keeps the rows already loaded; «Загрузить ещё» retries it (QA-A3) */}
+          {q.isError && (
+            <div className="alert error" role="alert">
+              {q.isFetchNextPageError ? 'Не удалось загрузить следующую страницу журнала.' : 'Не удалось обновить журнал.'} {errMsg(q.error)}
+            </div>
+          )}
           <div className="row admin-pager">
             <span className="muted small grow">Показано: {num(events.length)}</span>
             {q.hasNextPage && (

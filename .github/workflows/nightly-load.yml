@@ -1,0 +1,67 @@
+name: Nightly load and soak
+
+# Load (scripts/load/collab-load.mjs) and soak (scripts/load/soak.mjs) runs on a clean PostgreSQL 16 every night
+# (QA26-25, R-QA-038). Both fail the run on any lost, duplicated or resurrected acknowledged edit; the soak also fails
+# on a memory, file-descriptor or DB-connection leak (thresholds in the script, same as the alerts in
+# deploy/monitoring/prometheus-alerts.yml). Reports are kept as artifacts; compare them with docs/PERFORMANCE.md.
+# A shared CI runner gives trends and leak detection, not the latency figures of the reference stand.
+
+on:
+  schedule:
+    - cron: '17 1 * * *'
+  workflow_dispatch:
+    inputs:
+      soak_minutes:
+        description: Soak duration, minutes
+        type: number
+        default: 60
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nightly-load
+  cancel-in-progress: false
+
+jobs:
+  load-and-soak:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: kb
+          POSTGRES_PASSWORD: kb
+          POSTGRES_DB: kb
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U kb" --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      TEST_ADMIN_DATABASE_URL: postgres://kb:kb@localhost:5432/postgres
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx tsc -b packages/shared
+      - name: Load (20 readers + 5 editors, 2 min)
+        run: node --import tsx --conditions=development scripts/load/collab-load.mjs --readers 20 --editors 5 --pages 5 --duration 120 --db kb_load_ci --data .load-data
+      - name: Soak (6 editors + 10 readers, integrity checks, leak slopes)
+        env:
+          SOAK_MINUTES: ${{ inputs.soak_minutes || 60 }}
+        run: node --import tsx --conditions=development scripts/load/soak.mjs --duration "$((SOAK_MINUTES * 60))" --editors 6 --readers 10 --pages 3 --db kb_soak_ci --data .soak-data
+      - name: Summary
+        if: always()
+        run: |
+          for f in test-results/soak/*.md; do [ -f "$f" ] && cat "$f" >> "$GITHUB_STEP_SUMMARY"; done
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: load-and-soak
+          path: |
+            test-results/load/
+            test-results/soak/
+          retention-days: 30

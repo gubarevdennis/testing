@@ -30,6 +30,8 @@ export function createMetrics() {
     collabReconnects: new client.Counter({ name: 'kb_collab_reconnects_total', help: 'Collaboration WebSocket reconnects (same session and page within 2 minutes of a disconnect)', registers: [registry] }),
     importFiles: new client.Counter({ name: 'kb_import_files_total', help: 'Files analysed for import by format and result (ok, warning, error, rejected)', labelNames: ['format', 'status'], registers: [registry] }),
     ocrSeconds: new client.Histogram({ name: 'kb_ocr_duration_seconds', help: 'OCR recognition time per image', labelNames: ['status'], buckets: [0.5, 1, 2, 5, 10, 20, 30, 60, 120, 300], registers: [registry] }),
+    // Connection-leak detection (soak test, QA26-25): the pool must never sit at its limit with waiters.
+    dbPoolConnections: new client.Gauge({ name: 'kb_db_pool_connections', help: 'PostgreSQL pool connections of this instance by state (total, idle, waiting clients)', labelNames: ['state'], registers: [registry] }),
     // Antivirus (SEC-L3): scan outcomes and clamd reachability; alert KbAntivirusDown / KbAntivirusScanErrors.
     antivirusScans: new client.Counter({ name: 'kb_antivirus_scans_total', help: 'Antivirus scans by result (clean, infected, error = no verdict, file refused)', labelNames: ['result'], registers: [registry] }),
     antivirusUp: new client.Gauge({
@@ -42,6 +44,7 @@ export function createMetrics() {
         else this.set(v);
       },
     }),
+    dbPoolMax: new client.Gauge({ name: 'kb_db_pool_max', help: 'Configured PostgreSQL pool size of this instance (DB_POOL_SIZE)', registers: [registry] }),
   };
   return m;
 }

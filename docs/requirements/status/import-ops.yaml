@@ -45,8 +45,8 @@
   note: 'Measured at drill scale (hundreds of MB); large-volume RTO is an extrapolation in docs/BACKUP_RESTORE.md §6 to be re-measured on the target infrastructure'
 - id: R-OPS-003
   status: partial
-  evidence: 'Health /healthz,/readyz (db, storage, migrations) and /metrics of the real process in production mode, JSON logs with caller correlation id and no passwords/SECRET_KEY (tests/integration/ops-delivery.test.ts); OTLP traces (tests/integration/io-p0-ops.test.ts); 36 alerts, every metric exported and runbook present (io-p0-ops.test.ts); backup/restore/PITR/DR drill (tests/resilience/*); migrations + rollback (tests/resilience/migrations.test.ts, migrations-fresh.test.ts); CI .github/workflows/ci.yml; secrets only from env (ops-delivery.test.ts); runbooks docs/OPERATIONS.md §7'
-  note: 'No CD/deploy pipeline (needs target infrastructure); no secrets manager integration (env/EnvironmentFile only)'
+  evidence: 'Health /healthz,/readyz and /metrics of the real process in production mode, JSON logs without secrets (tests/integration/ops-delivery.test.ts); OTLP traces (io-p0-ops.test.ts); alert rules checked by promtool (45 rules) with unit tests of the leak alerts (deploy/monitoring/leak-alerts.test.yml) and metric/runbook consistency (io-p0-ops.test.ts); backup/restore/PITR/DR drill (tests/resilience/*); migrations + rollback (migrations*.test.ts); CI .github/workflows/ci.yml; CD .github/workflows/deploy.yml (actionlint-clean: test → image + SBOM + Trivy scan → registry push → protected environment → scripts/deploy/deploy.sh: backup before migrations, migrations, readiness gate, smoke tests scripts/deploy/smoke.mjs, automatic rollback with down migrations + previous image; every branch tested in tests/integration/deploy-pipeline.test.ts with the real server, dry run without secrets); secrets manager integration: <VAR>_FILE for every secret of the server, CLI, backup scripts and smoke tests (tests/unit/secret-files.test.ts, tests/integration/ops-secrets.test.ts: production server started from SECRET_KEY_FILE/DATABASE_URL_FILE/METRICS_TOKEN_FILE, no value in the log); runbooks docs/OPERATIONS.md §2.1, §3.1, §7'
+  note: 'The CD workflow has not run on GitHub yet: building the image, SBOM and Trivy scan were not executed (no Docker daemon in the development container), registry/target secrets and environment reviewers must be configured by the customer; first real run = closing evidence'
 - id: R-OPS-004
   status: done
   evidence: 'Same guard as R-OPS-001 (BackupRequiredError) + SchemaTooNewError; tests/resilience/migrations.test.ts: pending migrations … refused until a fresh full backup is recorded; backup.sh unlocks them, the CLI enforces it too'
@@ -704,8 +704,8 @@
   note: No operations passport with supported document/attachment sizes, editor counts, load profiles
 - id: R-OPS-022
   status: partial
-  evidence: 'Deployment without secrets in the repository (tests/integration/ops-delivery.test.ts: no keys/tokens in any file, env.example placeholders only, compose takes every secret from ${VAR}, production refuses missing/short SECRET_KEY); migrations + rollback on a fresh DB (tests/resilience/migrations-fresh.test.ts) and with data (migrations.test.ts); health/readiness/metrics/logs (ops-delivery.test.ts), traces + alerts (io-p0-ops.test.ts); backups + restore tests (dr-drill, pitr, backup-restore); audit chain; runbooks docs/OPERATIONS.md'
-  note: 'Missing from the kit: CD pipeline, operations/limitations passport; other kit items (help, templates, browsers, data schema, sync protocol, report) assessed under their own requirements'
+  evidence: 'Deployment without secrets in the repository (ops-delivery.test.ts); secrets from files/secret managers (<VAR>_FILE, ops-secrets.test.ts); CD pipeline .github/workflows/deploy.yml + scripts/deploy/deploy.sh with backup-before-migrate, migrations, readiness gate, smoke tests and automatic rollback (tests/integration/deploy-pipeline.test.ts, dry run without secrets); migrations + rollback (migrations-fresh.test.ts, migrations.test.ts); health/readiness/metrics/logs/traces/alerts; backups + restore tests (dr-drill, pitr, backup-restore); audit chain; runbooks docs/OPERATIONS.md (§3.1 delivery, §7.11 failed rollback); pilot/launch plan docs/PILOT_PLAN.md'
+  note: 'Missing from the kit: operations/limitations passport; the CD workflow has not yet run against a real registry/target (see R-OPS-003); other kit items assessed under their own requirements'
 - id: OPS-001
   status: done
   evidence: Migrations auto-applied at start under advisory lock (server.ts → migrateUp); every test DB and production smoke run (node apps/server/dist/main.js) installs without manual SQL
@@ -736,8 +736,8 @@
   note: Repeat on target infrastructure
 - id: QA26-25
   status: partial
-  evidence: tests/resilience/* (crash, DB loss, storage failure, backup drill), CI runs them
-  note: No load/soak/stress test protocols
+  evidence: 'Protocols: load (scripts/load/collab-load.mjs, docs/PERFORMANCE.md), soak 2 h with integrity checks and leak slopes (scripts/load/soak.mjs, docs/PERFORMANCE.md «Soak»), fault tolerance (tests/resilience/network-faults.test.ts, multi-instance.test.ts, crash-restart, db-connection-loss, storage-failure), restore drills (docs/drills/), migrations + rollback, CD rollback (deploy-pipeline.test.ts), observability + leak alerts (promtool-tested), logs without secrets (ops-delivery, ops-secrets)'
+  note: 'No stress-to-failure protocol; soak ran 2 h in the development container (24 h run on the pilot stand, docs/PILOT_PLAN.md §3)'
 - id: QA26-26
   status: process
   evidence: —

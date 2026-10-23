@@ -375,6 +375,10 @@ const PRINT_CSS = `
   figure.kb-image[data-align="left"] { text-align: left; } figure.kb-image[data-align="right"] { text-align: right; }
   figure img { max-width: 100%; height: auto; }
   figcaption { color: var(--muted); font-size: .9em; }
+  img.kb-inline-image { max-width: 100%; height: auto; }
+  sup.kb-fn-ref a { text-decoration: none; } sup.kb-fn-ref { line-height: 0; }
+  section.kb-footnotes { border-top: 1px solid var(--border); margin-top: 2em; padding-top: .5em; font-size: .9em; color: #4A5260; }
+  section.kb-footnotes a.kb-fn-back { text-decoration: none; }
   .kb-callout { border-radius: 10px; padding: 12px 16px; margin: 1em 0; background: #EAF1FB; page-break-inside: avoid; }
   .kb-callout[data-variant="tip"] { background: #E8F6EE; } .kb-callout[data-variant="warning"] { background: #FDF3E1; }
   .kb-callout[data-variant="error"] { background: #FBEAEA; } .kb-callout[data-variant="important"] { background: #F3ECFB; }
@@ -394,7 +398,7 @@ export async function standaloneHtml(s: Services, title: string, doc: PMNode, as
   if (opts.inlineImages) {
     const tasks: Promise<void>[] = [];
     walk(d, (n) => {
-      if (n.type === 'image') {
+      if (n.type === 'image' || n.type === 'inlineImage') {
         const a = n.attrs?.attachmentId ? assets.get(n.attrs.attachmentId) : null;
         if (a)
           tasks.push(

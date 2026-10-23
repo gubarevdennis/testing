@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { tx } from '../db/pool.js';
 import { actorOf, parse, requireUser, type Services } from '../app.js';
 import { requirePage } from '../acl/engine.js';
-import { audit } from '../services/audit.js';
+import { copyAttachmentRecord } from '../services/attachment-copy.js';
 import { notFound } from '../lib/errors.js';
 import { attachmentDto, loadAttachment } from './attachments.js';
 
@@ -16,7 +16,8 @@ const uuid = z.string().uuid();
  *
  * Rights: the user must be allowed to download the file on its page (D-32: taking a file elsewhere is a download — a
  * reader without the download right cannot spread it this way) and to edit the target page. Otherwise 404 / 403 and the
- * client keeps the original reference (which B's readers simply cannot open).
+ * client keeps the original reference (which B's readers simply cannot open). The copying itself is shared with page
+ * duplication and template instantiation (services/attachment-copy.ts, D-39).
  */
 export async function attachmentCopyRoutes(app: FastifyInstance, s: Services) {
   app.post('/api/v1/attachments/:id/copy', async (req) => {
@@ -28,19 +29,11 @@ export async function attachmentCopyRoutes(app: FastifyInstance, s: Services) {
     const version = async (attachmentId: string) =>
       (await s.db.query(`select v.* from attachment_versions v where v.attachment_id = $1 and v.version = (select current_version from attachments where id = $1)`, [attachmentId])).rows[0];
     if (src.page_id === pageId) return { attachment: attachmentDto(src, await version(id)), copied: false };
-    const v = await version(id);
-    if (!v) throw notFound('Версия файла не найдена');
     const copy = await tx(s.db, async (q) => {
-      const a = (await q.query(`insert into attachments (org_id, page_id, kind, filename, created_by) values ($1, $2, $3, $4, $5) returning *`, [user.orgId, pageId, src.kind, src.filename, user.id])).rows[0];
-      const nv = (
-        await q.query(
-          `insert into attachment_versions (attachment_id, version, blob_sha256, size, mime, filename, width, height, created_by) values ($1, 1, $2, $3, $4, $5, $6, $7, $8) returning *`,
-          [a.id, v.blob_sha256, v.size, v.mime, v.filename, v.width, v.height, user.id],
-        )
-      ).rows[0];
-      await audit(q, actorOf(req), { action: 'attachment.copy', targetType: 'attachment', targetId: a.id, details: { from: id, fromPageId: src.page_id, pageId, sha256: v.blob_sha256 } });
+      const c = await copyAttachmentRecord(q, user, src, pageId, actorOf(req));
+      if (!c) throw notFound('Версия файла не найдена');
       await q.query(`insert into outbox (topic, payload) values ('index-page', $1)`, [{ pageId }]);
-      return { a: (await q.query('select * from attachments where id = $1', [a.id])).rows[0], v: nv };
+      return { a: c.attachment, v: c.version };
     });
     return { attachment: attachmentDto(copy.a, copy.v), copied: true };
   });

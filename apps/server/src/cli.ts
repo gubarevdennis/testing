@@ -14,6 +14,8 @@ try {
     case 'migrate':
       if (sub === 'down') log(`rolled back: ${(await migrateDown(db, Number(rest[0] ?? 1), log)).join(', ') || 'nothing'}`);
       else if (sub === 'status') console.table(await migrationStatus(db));
+      // number of migrations this release would apply (used by scripts/deploy/deploy.sh to plan a rollback)
+      else if (sub === 'pending') console.log(String((await migrationStatus(db)).filter((m) => !m.applied).length));
       else {
         // Backup-before-migration guard (R-OPS-004); --skip-backup-check is a deliberate, logged override
         // (restore.sh uses it: a database restored from a backup is itself the backup).

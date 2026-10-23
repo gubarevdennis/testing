@@ -7,6 +7,8 @@ import type * as Y from 'yjs';
 import { createSchemaExtensions, FRAGMENT_NAME } from '@kb/shared';
 import type { CollabProvider } from '@kb/shared';
 import { ImageView } from './nodeviews/ImageView';
+import { InlineImageView } from './nodeviews/InlineImageView';
+import { FootnoteView, insertFootnote } from './extensions/footnotes';
 import { CalloutView, FileView, EmbedView, PageLinkView, PageMentionView, MermaidView, TocView, SyncedBlockView, CollectionBlockView, CodeBlockView } from './nodeviews/blocks';
 import { ClientBlockIds } from './extensions/blockIds';
 import { BlockOps } from './extensions/blockOps';
@@ -26,6 +28,7 @@ import type { CommandContext } from './commands';
 
 const VIEWS: Record<string, any> = {
   image: ImageView,
+  inlineImage: InlineImageView,
   callout: CalloutView,
   fileBlock: FileView,
   embed: EmbedView,
@@ -55,6 +58,14 @@ export function clientExtensions(o: ClientExtensionOptions): AnyExtension[] {
     if (ext.name === 'inlineMath') return ext.configure({ onClick: (node: any, pos: number) => o.onMathClick('inline', pos, node.attrs.latex) });
     if (ext.name === 'blockMath') return ext.configure({ onClick: (node: any, pos: number) => o.onMathClick('block', pos, node.attrs.latex) });
     const view = VIEWS[ext.name];
+    if (ext.name === 'footnote')
+      // a plain ProseMirror node view with its own small editor for the note text (no React per reference)
+      return ext.extend({
+        addNodeView: () => (props: any) => new FootnoteView({ editor: props.editor, node: props.node, getPos: props.getPos, view: props.view }),
+        addKeyboardShortcuts() {
+          return { 'Mod-Alt-f': () => insertFootnote(this.editor), 'Mod-Alt-а': () => insertFootnote(this.editor) };
+        },
+      });
     if (ext.name === 'codeBlock')
       // the stock lowlight plugin walks the whole document twice per keystroke: incremental highlighting instead (PERF-D1)
       return ext.extend({

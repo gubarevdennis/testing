@@ -15,6 +15,7 @@
 | `deploy/nginx.conf` | TLS, WebSocket (`/api/v1/collab`, `/api/v1/events`), лимиты загрузки, заголовки безопасности. |
 | `deploy/systemd/kb.service`, `kb-backup.service`, `kb-backup.timer` | Установка без контейнеров. |
 | `deploy/monitoring/prometheus-alerts.yml`, `grafana-dashboard.json` | Алерты (32 правила) и дашборд. |
+| `.github/workflows/deploy.yml`, `scripts/deploy/deploy.sh`, `scripts/deploy/smoke.mjs` | Конвейер доставки: образ, SBOM, сканирование, резервная копия перед миграциями, проверка готовности, smoke-тесты, автоматический откат (§3.1). |
 | `scripts/backup/*` | `backup.sh`, `restore.sh`, `verify-backup.sh`, `restore-objects.sh`, `wal-archive.sh`/`wal-restore.sh`, `backup-loop.sh`, `check-docs.mjs`. |
 
 ## 1. Установка
@@ -81,6 +82,45 @@ sudo systemctl daemon-reload && sudo systemctl enable --now kb kb-backup.timer
   предельное время вердикта. Метрики `kb_antivirus_up`, `kb_antivirus_scans_total{result}`. Этапы импорта (upload, scan, detect, parse, normalize, media, validate, preview, commit, index)
   записываются в задание (`GET /api/v1/imports/:id` → `progress.stages`) и в журнал (`msg: import stage`).
 
+### 2.1 Секреты: файлы и менеджер секретов
+
+Каждую секретную переменную можно передать файлом: `<VAR>_FILE=/путь` вместо `<VAR>=значение`
+(`apps/server/src/lib/secret-files.ts`). Так работают Docker/Swarm secrets (`/run/secrets/…`), секреты Kubernetes
+(том), шаблоны Vault Agent / External Secrets / SOPS на tmpfs и `LoadCredential=` systemd. Значение не попадает в
+окружение контейнера, `docker inspect`, unit-файлы и историю оболочки.
+
+| Где | Переменные с поддержкой `_FILE` |
+|---|---|
+| Сервер и CLI | `SECRET_KEY`, `DATABASE_URL`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`, `OIDC_CLIENT_SECRET`, `METRICS_TOKEN`, `OTEL_EXPORTER_OTLP_HEADERS` |
+| Скрипты резервного копирования (`scripts/backup/lib.sh`) | `DATABASE_URL`, `BACKUP_DATABASE_URL`, `TARGET_DATABASE_URL`, `VERIFY_ADMIN_URL`, `TARGET_ADMIN_URL`, `BASEBACKUP_URL`, `PGPASSWORD`, `KB_BACKUP_PASSPHRASE`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` |
+| Smoke-тесты (`scripts/deploy/smoke.mjs`) | `SMOKE_PASSWORD` |
+| Образ PostgreSQL | `POSTGRES_PASSWORD_FILE` (поддерживается самим образом) |
+
+Правила: одна завершающая строка `\n` отбрасывается; пустой или нечитаемый файл, файл больше 64 КБ, а также
+одновременно заданные `VAR` и `VAR_FILE` с разными значениями останавливают запуск с сообщением, где названы
+переменная и путь. Само значение в сообщения и журналы не попадает. Файл читается при старте: после ротации
+перезапустите процесс (Vault Agent `exec`, rollout в Kubernetes); сессии пользователей переживают перезапуск.
+Проверено тестами `tests/unit/secret-files.test.ts` (правила, скрипты бэкапа) и `tests/integration/ops-secrets.test.ts`
+(сервер в `NODE_ENV=production` запускается с `SECRET_KEY_FILE`, `DATABASE_URL_FILE`, `METRICS_TOKEN_FILE`;
+`/metrics` требует токен из файла; ни одно значение не появляется в журнале).
+
+Пример для Docker Compose (секреты на хосте в каталоге `secrets/`, права 0400):
+
+```yaml
+services:
+  app:
+    environment:
+      SECRET_KEY_FILE: /run/secrets/kb_secret_key
+      DATABASE_URL_FILE: /run/secrets/kb_database_url
+    secrets: [kb_secret_key, kb_database_url]
+secrets:
+  kb_secret_key: { file: ./secrets/secret_key }
+  kb_database_url: { file: ./secrets/database_url }
+```
+
+Vault Agent: шаблон `{{ with secret "kv/data/kb" }}{{ .Data.data.secret_key }}{{ end }}` → `/vault/secrets/secret_key`,
+`SECRET_KEY_FILE=/vault/secrets/secret_key`; в `template` укажите `exec`/`command`, перезапускающий сервис при ротации.
+
 ## 3. Обновление, миграции и откат
 
 Миграции (`apps/server/migrations/NNNN_*.sql`, секции `-- migrate:up` / `-- migrate:down`) применяются
@@ -120,6 +160,43 @@ sudo systemctl daemon-reload && sudo systemctl enable --now kb kb-backup.timer
 * **Если down-миграция теряет данные или не удалась:** восстановите копию, сделанную на шаге 1, в новую БД
   (`restore.sh`) и переключите `DATABASE_URL`. Изменения после копии восстанавливаются через PITR (WAL).
 
+### 3.1 Конвейер доставки (CD)
+
+`.github/workflows/deploy.yml` (ручной запуск с выбором окружения или тег `v*`):
+
+1. **test** — типы, линтер, unit и интеграционные тесты на PostgreSQL 16, сборка.
+2. **image** — образ из `Dockerfile`, SBOM в формате SPDX (Syft) и сканирование уязвимостей (Trivy). Уязвимости HIGH
+   и CRITICAL, для которых есть исправление, останавливают выпуск. SBOM и отчёт сохраняются как артефакт на 90 дней.
+   Образ отправляется в реестр из секретов `REGISTRY`, `REGISTRY_USERNAME`, `REGISTRY_PASSWORD`.
+3. **deploy** — защищённое окружение GitHub (`staging` / `production`). Обязательные согласующие для `production`
+   задаются в настройках репозитория: Settings → Environments → Required reviewers. Шаг запускает
+   `scripts/deploy/deploy.sh`:
+   * план: сколько миграций применит новый образ (`cli migrate pending`);
+   * **резервная копия до любых изменений** (`backup.sh` с `BACKUP_RECORD=1`). Если копия не создана, выпуск
+     останавливается (код 2). Сервер дополнительно проверяет копию сам (`MIGRATION_REQUIRE_BACKUP`);
+   * миграции новым образом → переключение сервиса → **проверка готовности** (`/readyz` = 200 `READY_STABLE` раз
+     подряд за `READY_TIMEOUT_S`) → **smoke-тесты** `scripts/deploy/smoke.mjs`: health, readiness, оболочка SPA с
+     заголовками безопасности, отказ анонимному API, вход служебной учётной записью, пространства, содержимое
+     страницы, синхронизация по WebSocket только на чтение, выход;
+   * **автоматический откат** при сбое любого шага после резервной копии. Миграции этого выпуска откатываются
+     **новым** образом: в нём есть секции down, а старая версия отказывается работать на более новой схеме.
+     Затем возвращается предыдущий образ и снова проходят проверка готовности и smoke-тесты (код 3).
+     `ROLLBACK_MIGRATIONS=none` оставляет схему, если миграции выпуска обратно совместимы (expand/contract).
+     Если не удался сам откат, скрипт завершается с кодом 4 (см. [7.11](#runbook-deploy-rollback)).
+   * Отчёт `deploy-report.json` (шаги, длительности, результат) сохраняется как артефакт.
+
+**Пробный прогон.** Ручной запуск по умолчанию идёт с `dry_run: true`. Прогон переключается в пробный режим и
+автоматически, если секреты реестра не заданы. В пробном режиме образ собирается и проверяется по-настоящему, а
+отправка в реестр и выкатка только печатают свои команды. Секреты не нужны. Локально:
+`scripts/deploy/deploy.sh --image reg/kb:1.2.3 --previous reg/kb:1.2.2 --dry-run`.
+
+Драйверы `deploy.sh`: `compose` (Docker Compose на хосте, локально или через `ssh $DEPLOY_SSH`; образ задаётся через
+`KB_IMAGE` в `deploy/docker-compose.yml`) и `hooks` (каждый шаг — команда из окружения, для Kubernetes/Nomad/systemd).
+Логику шагов, порядок, проверки и все ветки отката проверяет `tests/integration/deploy-pipeline.test.ts` с реальным
+сервером в роли «хорошего» образа: успешный выпуск, образ без готовности, образ, не прошедший smoke-тесты, сбой
+резервной копии, сбой миграции, пробный прогон. Workflow проверен `actionlint`.
+Секреты приложения через конвейер **не проходят**: они лежат на целевом хосте (`deploy/.env` или файлы `_FILE`, §2.1).
+
 ## 4. Масштабирование
 
 * Приложение не хранит состояния между запросами. Документы координируются через PostgreSQL: журнал
@@ -133,6 +210,20 @@ sudo systemctl daemon-reload && sudo systemctl enable --now kb kb-backup.timer
   соединения.
 * Файлы: `fs` на общем томе (NFS с fsync) или S3-совместимое хранилище, если экземпляров больше одного.
 * Graceful shutdown занимает до 30 с: в compose `stop_grace_period: 40s`, в systemd `TimeoutStopSec=45`.
+* **Привязка страницы к экземпляру** (`deploy/nginx.conf`, upstream `kb_collab`: `hash $kb_collab_key consistent` по
+  id страницы). Содержимое корректно на любом экземпляре, но присутствие и курсоры хаб хранит в памяти экземпляра.
+  HTTP-туннель резервного канала тоже живёт в памяти экземпляра, который его открыл. Поэтому все запросы страницы
+  (WebSocket, открытие туннеля, `send`, `poll`) должны попадать на один экземпляр. Для этого URL туннеля содержат id
+  страницы: `/api/v1/collab/:pageId/tunnel/:id/…`. При отказе экземпляра nginx переносит его страницы на соседний,
+  остальные страницы остаются на месте. Без привязки (round-robin) правки не теряются, но каждый видит только
+  соавторов своего экземпляра, а туннель через несколько экземпляров не работает.
+* Проверено тестом `tests/resilience/multi-instance.test.ts`: два процесса на одной БД и общем каталоге объектов,
+  балансировщик (round-robin и хеш по странице, проверка здоровья, повтор на соседний). Проверяется:
+  * совместная правка редакторами разных экземпляров;
+  * события дерева и страниц и файл, загруженный через другой экземпляр;
+  * SIGKILL экземпляра во время набора: клиенты переключаются, ни одна правка не потеряна и не задвоена,
+    вернувшийся экземпляр снова принимает трафик;
+  * с привязкой: полный список присутствия до и после отказа, HTTP-туннель через балансировщик.
 
 ## 5. Мониторинг и алерты
 
@@ -172,6 +263,7 @@ sudo systemctl daemon-reload && sudo systemctl enable --now kb kb-backup.timer
 | Совместное редактирование | сбои фиксации, p99 фиксации > 500 мс, отклонённые правки, неотправленные изменения клиентов старше 5 мин, ошибки браузеров |
 | Фоновые задачи | очередь > 100, доля ошибок > 20 %, отставание индекса > 1000, ошибки целостности |
 | Бэкап | копия старше 26 ч (из приложения и с хоста бэкапа), нет ни одной копии, проверка восстановления старше 8 дней, сбой или задержка архивации WAL, файлы не синхронизируются > 10 мин (`KbObjectSyncStale`), внешняя копия старше 15 мин (`KbOffsiteCopyStale`), базовая копия старше 26 ч (`KbBaseBackupStale`), проверка PITR старше 35 дней (`KbPitrVerificationTooOld`) |
+| Ресурсы и утечки | рост RSS > 15 МБ/ч и кучи V8 > 10 МБ/ч 6 ч подряд (`KbMemoryLeakSuspected`, `KbHeapLeakSuspected`), дескрипторы > 80 % лимита и рост > 20/ч (`KbFileDescriptorsHigh`, `KbFileDescriptorLeak`), ожидание соединения пула БД (`KbDbPoolExhausted`), пул занят 15 мин (`KbDbPoolSaturated`); метрики `kb_db_pool_connections{state}`, `kb_db_pool_max`. Пороги выбраны по soak-тесту (`docs/PERFORMANCE.md`, раздел «Soak»), модульные тесты правил — `promtool test rules deploy/monitoring/leak-alerts.test.yml` |
 | Инфраструктура (node/postgres_exporter) | PostgreSQL down, соединения > 85 %, долгая транзакция, диск < 15 %, прогноз заполнения диска за сутки, хост down |
 
 Каждый алерт несёт `owner` (ops/dba/dev) и ссылку `runbook` на раздел ниже. Дашборд
@@ -359,6 +451,21 @@ sudo systemctl daemon-reload && sudo systemctl enable --now kb kb-backup.timer
 3. Долгие транзакции (`KbPostgresLongTransaction`).
 4. Активные импорт, OCR и экспорт в очереди. Если задачи тяжёлые, вынесите воркеры на отдельные экземпляры.
 
+<a id="runbook-leak"></a>
+### 7.7.1 Утечка памяти, дескрипторов или соединений (`KbMemoryLeakSuspected`, `KbHeapLeakSuspected`, `KbFileDescriptor*`, `KbDbPool*`)
+
+* Сравните наклон с нагрузкой: при постоянной нагрузке RSS и куча выходят на плато в первый час (soak-тест,
+  `docs/PERFORMANCE.md`). Если рост совпадает с ростом `kb_collab_documents`/`kb_collab_connections`, это нагрузка,
+  а не утечка.
+* Дескрипторы: `ls -l /proc/<pid>/fd | awk '{print $NF}' | sort | uniq -c | sort -rn | head` (сокеты, файлы
+  объектов, временные файлы импорта).
+* Пул БД: `select state, wait_event, now() - query_start, left(query, 80) from pg_stat_activity where datname = 'kb'`.
+  Долгие `idle in transaction` означают незакрытую транзакцию (ошибка в коде). Ожидающие клиенты при свободном
+  `max_connections` значат, что `DB_POOL_SIZE` мал для нагрузки.
+* Снимок кучи для разработчиков: перезапустите один экземпляр с `NODE_OPTIONS=--heapsnapshot-signal=SIGUSR2`, через
+  час нагрузки отправьте `kill -USR2 <pid>`. Снимок `.heapsnapshot` появится в рабочем каталоге.
+* Временная мера — плановый перезапуск экземпляров по одному (graceful shutdown не теряет правок, §3).
+
 <a id="runbook-backup"></a>
 ### 7.8 Резервная копия не создаётся или не проверяется
 
@@ -409,3 +516,15 @@ PITR — в [`scripts/backup/wal-archive.md`](../scripts/backup/wal-archive.md).
 * Копии защищены от администратора приложения: у роли `kb_backup` отдельные учётные данные, а том или бакет
   копий недоступен приложению. Проверьте целостность аудита (`/api/v1/audit/verify`).
 * При подозрении на порчу данных восстановитесь на момент до инцидента (PITR) в отдельный контур и сравните.
+
+<a id="runbook-deploy-rollback"></a>
+### 7.11 Выпуск не откатился автоматически (`deploy.sh` завершился с кодом 4)
+
+* Прочитайте `deploy-report.json` (артефакт workflow): какой шаг отката не удался.
+* `rollback-migrations` не удался: старый образ на новой схеме не запустится (`SchemaTooNewError`). Варианты:
+  1. исправить причину и повторить `migrate down N` новым образом;
+  2. восстановить копию, сделанную на шаге `backup` этого же выпуска, в **новую** БД (`scripts/backup/restore.sh`),
+     направить на неё `DATABASE_URL` и выкатить предыдущий образ. Изменения после копии восстанавливаются через
+     PITR ([BACKUP_RESTORE.md](BACKUP_RESTORE.md) §4.2).
+* `rollback-ready` или `rollback-smoke` не прошли на предыдущем образе: проблема не в выпуске (БД, хранилище, сеть).
+  Действуйте по [7.1](#runbook-app-down)–[7.4](#runbook-storage).

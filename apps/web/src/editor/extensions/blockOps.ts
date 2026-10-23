@@ -249,6 +249,17 @@ function resetTypeAtStart(editor: Editor): boolean {
 /** Keyboard resize of a selected image (R-EDITOR-052): ±10 % of the text width, 80 px at least, never wider than the text. */
 export function resizeSelectedImage(editor: Editor, dir: -1 | 1): boolean {
   const sel = editor.state.selection;
+  if (sel instanceof NodeSelection && sel.node.type.name === 'inlineImage') {
+    // a picture in a line of text: ±25 % of its size, 12 px at least (R-MEDIA-012)
+    const container = editor.view.dom.clientWidth || 720;
+    const cur = (sel.node.attrs.width as number | null) ?? Math.min((sel.node.attrs.naturalWidth as number | null) ?? 48, container);
+    const next = Math.max(12, Math.min(container, Math.round(cur * (dir > 0 ? 1.25 : 0.8))));
+    if (next === cur) return true;
+    const tr = editor.state.tr.setNodeMarkup(sel.from, undefined, { ...sel.node.attrs, width: next });
+    tr.setSelection(NodeSelection.create(tr.doc, sel.from));
+    dispatchAtomic(editor, tr);
+    return true;
+  }
   if (!(sel instanceof NodeSelection) || sel.node.type.name !== 'image' || sel.node.attrs.align === 'full') return false;
   const container = editor.view.dom.clientWidth || 720;
   const natural = sel.node.attrs.naturalWidth as number | null;

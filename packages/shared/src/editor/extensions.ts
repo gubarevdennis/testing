@@ -13,13 +13,13 @@ import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight';
 import { createLowlight, common } from 'lowlight';
 import { Callout } from './nodes/callout.js';
 import { Columns, Column } from './nodes/columns.js';
-import { ImageBlock, FileBlock, Embed } from './nodes/media.js';
+import { ImageBlock, InlineImage, FileBlock, Embed } from './nodes/media.js';
+import { Footnote } from './nodes/footnote.js';
 import { PageLink, PageMention, UserMention, CommentMark } from './nodes/links.js';
 import { Mermaid, TableOfContentsBlock, SyncedBlock, CollectionView } from './nodes/special.js';
 import { sanitizeHref } from './url.js';
 
-/** Version of the canonical document schema. Bump together with a migration in packages/shared/src/editor/migrations.ts (SCHEMA_MIGRATIONS). */
-export const CONTENT_SCHEMA_VERSION = 1;
+export { CONTENT_SCHEMA_VERSION } from './version.js';
 
 /** Block node types that carry a stable `id` attribute (anchors, comments, history, block links). */
 export const BLOCK_TYPES = [
@@ -185,6 +185,8 @@ export function createSchemaExtensions(): AnyExtension[] {
     Columns,
     Column,
     ImageBlock,
+    InlineImage,
+    Footnote,
     FileBlock,
     Embed,
     PageLink,

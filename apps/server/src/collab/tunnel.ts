@@ -12,6 +12,11 @@ const IDLE_CLOSE_MS = 60_000;
  */
 export class HttpTunnel extends EventEmitter {
   readonly id = randomUUID();
+  // the readyState constants of a `ws` WebSocket: the hub compares readyState with ws.OPEN
+  readonly CONNECTING = 0;
+  readonly OPEN = 1;
+  readonly CLOSING = 2;
+  readonly CLOSED = 3;
   readyState = 1;
   /** Server → client frames not yet confirmed by the client (a poll response may be lost in transit). */
   private outbox: Array<{ seq: number; buf: Buffer }> = [];

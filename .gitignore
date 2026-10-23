@@ -13,3 +13,5 @@ scratch/
 .e2e-web/
 .e2e-*/
 __pycache__/
+.soak-data*/
+.load-data/

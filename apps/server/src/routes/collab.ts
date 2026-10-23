@@ -77,30 +77,37 @@ export async function collabRoutes(app: FastifyInstance, s: Services) {
 
   // live editing produces many small requests: own (higher) limit instead of the global per-session API limit
   const tunnelRate = { rateLimit: { max: 3000, timeWindow: '1 minute' } };
-  app.post('/api/v1/collab/tunnel/:id/send', { bodyLimit: 16 * 1024 * 1024, config: tunnelRate }, async (req) => {
-    const t = tunnelOf(req);
-    const { frames } = parse(z.object({ frames: z.array(z.string().max(15 * 1024 * 1024)).max(256) }), req.body);
-    if (!t.deliver(frames.map((f) => Buffer.from(f, 'base64')))) return { ok: false, closed: true };
-    return { ok: true };
-  });
+  // A tunnel lives in the memory of the instance that opened it. The page-scoped form of its URLs
+  // (/api/v1/collab/:pageId/tunnel/:id/…, used by current clients) lets a load balancer route every request of a page
+  // — WebSocket, tunnel open, send, poll — to the same instance (deploy/nginx.conf: hash by page id); the short form
+  // is kept for clients loaded before the upgrade.
+  for (const base of ['/api/v1/collab/tunnel', '/api/v1/collab/:pageId/tunnel']) registerTunnelRoutes(base);
+  function registerTunnelRoutes(base: string) {
+    app.post(`${base}/:id/send`, { bodyLimit: 16 * 1024 * 1024, config: tunnelRate }, async (req) => {
+      const t = tunnelOf(req);
+      const { frames } = parse(z.object({ frames: z.array(z.string().max(15 * 1024 * 1024)).max(256) }), req.body);
+      if (!t.deliver(frames.map((f) => Buffer.from(f, 'base64')))) return { ok: false, closed: true };
+      return { ok: true };
+    });
 
-  app.get('/api/v1/collab/tunnel/:id/poll', { config: tunnelRate }, async (req, reply) => {
-    const t = tunnelOf(req);
-    const { after } = parse(z.object({ after: z.coerce.number().int().min(0).default(0) }), req.query);
-    // the client went away mid-poll (connection closed before the response): stop waiting
-    const onGone = () => !reply.raw.writableEnded && t.cancelPoll();
-    reply.raw.once('close', onGone);
-    try {
-      return await t.poll(after);
-    } finally {
-      reply.raw.off('close', onGone);
-    }
-  });
+    app.get(`${base}/:id/poll`, { config: tunnelRate }, async (req, reply) => {
+      const t = tunnelOf(req);
+      const { after } = parse(z.object({ after: z.coerce.number().int().min(0).default(0) }), req.query);
+      // the client went away mid-poll (connection closed before the response): stop waiting
+      const onGone = () => !reply.raw.writableEnded && t.cancelPoll();
+      reply.raw.once('close', onGone);
+      try {
+        return await t.poll(after);
+      } finally {
+        reply.raw.off('close', onGone);
+      }
+    });
 
-  app.delete('/api/v1/collab/tunnel/:id', async (req) => {
-    tunnelOf(req).close(1000, 'client');
-    return { ok: true };
-  });
+    app.delete(`${base}/:id`, async (req) => {
+      tunnelOf(req).close(1000, 'client');
+      return { ok: true };
+    });
+  }
 
   // Test-only fault injection (storage failure of the document journal); absent in production.
   if (s.cfg.env !== 'production') {

@@ -2,14 +2,14 @@ import yauzl from 'yauzl';
 import { writeFile, rm } from 'node:fs/promises';
 import { join, posix } from 'node:path';
 import { randomUUID, createHash } from 'node:crypto';
-import { markdownToDoc, rowsToTable, walk, ensureBlockIds, docToPlainText, type PMNode, type ConversionWarning } from '@kb/shared';
+import { walk, docToPlainText, type PMNode, type ConversionWarning } from '@kb/shared';
 import type { Services } from '../app.js';
 import type { Tx } from '../db/pool.js';
 import { blobKey } from '../storage/blob-store.js';
 import { scanFile } from './antivirus.js';
 import { inspectFile, registerBlob, makeImageDerivatives, sanitizeSvgFile, safeFilename, type InspectResult } from './attachments.js';
 import { docxToDoc } from '../convert/docx-import.js';
-import { htmlToDoc, htmlToNodes } from '../convert/html.js';
+import { htmlToDoc, importMarkdown, importText, importRows, storeEmbeddedImages } from '../convert/html.js';
 import { parseCsv, parseXlsx, sheetPreview, normalizeDate, normalizeNumber, inferTypes, applyRange, type Sheet } from '../convert/tabular.js';
 import { createPage, assertDepth, trashPage } from './pages.js';
 import { requirePage, requireSpace, type AuthUser } from '../acl/engine.js';
@@ -233,8 +233,8 @@ export async function analyzeImport(s: Services, files: Array<{ filename: string
       } else if (lower.endsWith('.md') || lower.endsWith('.markdown') || lower.endsWith('.txt')) {
         const text = f.data.toString('utf8');
         const res = lower.endsWith('.txt')
-          ? { doc: textToDoc(text), title: null, frontMatter: null, warnings: [] as ConversionWarning[] }
-          : markdownToDoc(text, { htmlToNodes, resolveAsset: () => null });
+          ? importText(text) // the same conversion as a plain-text paste (R-IMPORT-021)
+          : importMarkdown(text, { resolveAsset: () => null });
         await addSource(f.filename, f.data);
         report.warnings.push(...res.warnings);
         const p = planPage(res.doc, (res.frontMatter?.title as string) ?? res.title ?? stripExt(f.filename), null, f.filename);
@@ -244,6 +244,7 @@ export async function analyzeImport(s: Services, files: Array<{ filename: string
       } else if (lower.endsWith('.html') || lower.endsWith('.htm')) {
         const html = f.data.toString('utf8');
         const res = htmlToDoc(html);
+        await storeEmbeddedImages(res, addAsset); // embedded pictures become page attachments, as on paste
         await addSource(f.filename, f.data);
         report.warnings.push(...res.warnings, { code: 'html-sanitized', message: 'HTML очищен: скрипты, стили и внешние ресурсы удалены' });
         const title = /<title>([^<]*)<\/title>/i.exec(html)?.[1]?.trim();
@@ -285,11 +286,6 @@ export async function analyzeImport(s: Services, files: Array<{ filename: string
 
 function stripExt(n: string) {
   return n.replace(/\.[^.]+$/, '').replace(/[_-]+/g, ' ').trim() || 'Импортированный документ';
-}
-
-function textToDoc(text: string): PMNode {
-  const paras = text.replace(/\r\n?/g, '\n').split(/\n{2,}/);
-  return ensureBlockIds({ type: 'doc', content: paras.map((p) => ({ type: 'paragraph', ...(p.trim() ? { content: p.split('\n').flatMap((l, i) => [...(i ? [{ type: 'hardBreak' }] : []), ...(l ? [{ type: 'text', text: l }] : [])]) } : {}) })) });
 }
 
 function frontMatterProps(fm: Record<string, unknown>): Record<string, unknown> {
@@ -365,7 +361,7 @@ async function planMarkdownZip(entries: Map<string, Buffer>, plan: ImportPlan, a
       return p;
     };
     const assetsInFile: Array<{ href: string; path: string }> = [];
-    // Pre-scan to upload assets (markdownToDoc is synchronous).
+    // Pre-scan to upload assets (the Markdown conversion is synchronous).
     const text = entries.get(f)!.toString('utf8').replace(/^﻿/, '');
     // CommonMark allows <angle-bracketed destinations> with spaces ("![](<img/схема сети.png>)").
     // Link text allows one level of [nested] brackets; `[^\]]*` here was quadratic on "[[[[…" (SAST/ReDoS finding).
@@ -377,8 +373,7 @@ async function planMarkdownZip(entries: Map<string, Buffer>, plan: ImportPlan, a
     }
     const resolved = new Map<string, PlannedAsset>();
     for (const a of assetsInFile) if (!resolved.has(a.path)) resolved.set(a.path, await addAsset(entries.get(a.path)!, posix.basename(a.path)));
-    const res = markdownToDoc(text, {
-      htmlToNodes,
+    const res = importMarkdown(text, {
       resolveAsset: (href) => {
         const p = resolvePath(href);
         const a = p ? resolved.get(p) : undefined;
@@ -646,7 +641,7 @@ export async function commitTabular(s: Services, q: Tx, user: AuthUser, actor: A
   const data = opts.header ? sh.rows.slice(1) : sh.rows;
   const title = opts.title || stripExt(plan.tabular!.file);
   if (opts.as === 'table') {
-    const table = rowsToTable([header, ...data], true);
+    const table = importRows([header, ...data], true); // the same conversion as a pasted cell range
     if (target.mode === 'append' && target.pageId) return { table, appendTo: target.pageId };
     if (target.parentId) await requirePage(q, user, target.parentId, 'create');
     const { page } = await createPage(q, user, actor, { spaceId: target.spaceId, parentId: target.parentId, title, content: { type: 'doc', content: [table] }, revisionKind: 'import' });

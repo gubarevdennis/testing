@@ -43,6 +43,9 @@ export function inlineText(node: PMNode): string {
   if (node.type === 'mention') return '@' + (node.attrs?.label ?? '');
   if (node.type === 'pageMention') return node.attrs?.title ?? '';
   if (node.type === 'inlineMath') return node.attrs?.latex ?? '';
+  if (node.type === 'inlineImage') return '';
+  // the note text belongs to the paragraph (search, history compare, plain-text copy) but stays separable from it
+  if (node.type === 'footnote') return ' [' + (node.content ?? []).map(inlineText).join('').replace(/\n/g, ' ') + ']';
   return (node.content ?? []).map(inlineText).join('');
 }
 
@@ -173,6 +176,18 @@ export function extractPageRefs(doc: PMNode): string[] {
     }
   });
   return [...ids];
+}
+
+/** Footnotes of a document in reading order (numbering = index + 1). */
+export function collectFootnotes(doc: PMNode): Array<{ number: number; text: string; node: PMNode }> {
+  const out: Array<{ number: number; text: string; node: PMNode }> = [];
+  walk(doc, (n) => {
+    if (n.type === 'footnote') {
+      out.push({ number: out.length + 1, text: (n.content ?? []).map(inlineText).join(''), node: n });
+      return false;
+    }
+  });
+  return out;
 }
 
 export function extractAttachmentIds(doc: PMNode): string[] {

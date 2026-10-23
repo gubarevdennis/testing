@@ -1,17 +1,17 @@
 # Action inventory (QA26-01, QA26-04). Generated from apps/web/src and docs/qa/runtime-controls.json.
 generated_by: node --import tsx scripts/qa/inventory.ts (do not edit by hand)
 summary:
-  total: 1032
-  critical: 293
+  total: 1029
+  critical: 294
   by_kind:
-    button: 399
-    command: 32
+    button: 412
+    command: 33
     dialog: 71
-    input: 107
-    link: 53
+    input: 108
+    link: 54
     menu: 16
-    menu-item: 111
-    option: 67
+    menu-item: 112
+    option: 47
     route: 24
     runtime: 22
     select: 54
@@ -23,7 +23,7 @@ summary:
     app: 14
     auth: 13
     common: 40
-    editor: 219
+    editor: 216
     help: 10
     home: 12
     import: 39
@@ -38,24 +38,24 @@ summary:
     ui: 12
   runtime:
     controls_recorded: 1148
-    static_actions_seen: 225
+    static_actions_seen: 226
     runtime_only_added: 22
     select_option_values_skipped: 33
-  dynamic_unnamed: 65
+  dynamic_unnamed: 66
 dynamic_unnamed:
-  - tab apps/web/src/admin/AccessSection.tsx:615
+  - tab apps/web/src/admin/AccessSection.tsx:625
   - link apps/web/src/admin/AdminPage.tsx:64
-  - button apps/web/src/admin/ArchivesSection.tsx:285
-  - button apps/web/src/admin/ArchivesSection.tsx:539
-  - button apps/web/src/admin/GroupsSection.tsx:88
-  - button apps/web/src/admin/GroupsSection.tsx:140
-  - button apps/web/src/admin/GroupsSection.tsx:286
+  - button apps/web/src/admin/ArchivesSection.tsx:289
+  - button apps/web/src/admin/ArchivesSection.tsx:544
+  - button apps/web/src/admin/GroupsSection.tsx:89
+  - button apps/web/src/admin/GroupsSection.tsx:141
+  - button apps/web/src/admin/GroupsSection.tsx:289
   - toggle apps/web/src/admin/OrgSettingsSection.tsx:123
   - input apps/web/src/admin/OrgSettingsSection.tsx:134
-  - button apps/web/src/admin/UsersSection.tsx:564
-  - button apps/web/src/admin/UsersSection.tsx:750
-  - button apps/web/src/admin/UsersSection.tsx:917
-  - toggle apps/web/src/admin/UsersSection.tsx:1102
+  - button apps/web/src/admin/UsersSection.tsx:567
+  - button apps/web/src/admin/UsersSection.tsx:753
+  - button apps/web/src/admin/UsersSection.tsx:920
+  - toggle apps/web/src/admin/UsersSection.tsx:1105
   - input apps/web/src/admin/common.tsx:208
   - select apps/web/src/admin/common.tsx:290
   - link apps/web/src/components/DocPreview.tsx:63
@@ -69,39 +69,40 @@ dynamic_unnamed:
   - button apps/web/src/components/page/ExportDialog.tsx:192
   - button apps/web/src/components/page/PublishBar.tsx:146
   - input apps/web/src/components/page/PublishBar.tsx:318
-  - select apps/web/src/components/page/directory.tsx:91
-  - option apps/web/src/components/page/directory.tsx:128
+  - select apps/web/src/components/page/directory.tsx:105
+  - option apps/web/src/components/page/directory.tsx:142
   - button apps/web/src/components/space/SpaceAccess.tsx:56
   - button apps/web/src/components/space/SpaceAccess.tsx:222
   - menu-item apps/web/src/components/ui/Menu.tsx:147
   - link apps/web/src/components/ui/Toast.tsx:51
   - button apps/web/src/components/ui/Toast.tsx:65
-  - button apps/web/src/editor/Editor.tsx:525
-  - button apps/web/src/editor/menus/BubbleToolbar.tsx:113
-  - button apps/web/src/editor/menus/BubbleToolbar.tsx:170
+  - button apps/web/src/editor/Editor.tsx:529
+  - button apps/web/src/editor/menus/BubbleToolbar.tsx:114
+  - button apps/web/src/editor/menus/BubbleToolbar.tsx:171
   - button apps/web/src/editor/menus/PasteOptionsMenu.tsx:34
   - option apps/web/src/editor/menus/SuggestionList.tsx:61
   - button apps/web/src/editor/menus/TableToolbar.tsx:42
+  - button apps/web/src/editor/nodeviews/InlineImageView.tsx:123
   - link apps/web/src/editor/nodeviews/blocks.tsx:205
   - link apps/web/src/editor/nodeviews/blocks.tsx:218
   - button apps/web/src/help/HelpCenter.tsx:90
   - option apps/web/src/layout/QuickSwitcher.tsx:114
-  - button apps/web/src/layout/Sidebar.tsx:102
+  - button apps/web/src/layout/Sidebar.tsx:103
   - button apps/web/src/layout/SidebarTree.tsx:512
   - button apps/web/src/layout/SidebarTree.tsx:554
   - input apps/web/src/layout/treeActions.tsx:174
   - button apps/web/src/pages/ImportPage.tsx:416
-  - button apps/web/src/pages/PageView.tsx:273
+  - button apps/web/src/pages/PageView.tsx:280
   - option apps/web/src/pages/SearchPage.tsx:124
   - button apps/web/src/pages/SearchPage.tsx:125
   - button apps/web/src/pages/SearchPage.tsx:327
   - link apps/web/src/pages/SearchPage.tsx:442
-  - link apps/web/src/pages/SettingsPage.tsx:32
-  - toggle apps/web/src/pages/SettingsPage.tsx:217
-  - toggle apps/web/src/pages/SettingsPage.tsx:229
-  - input apps/web/src/pages/SettingsPage.tsx:295
-  - toggle apps/web/src/pages/SpacePage.tsx:71
-  - tab apps/web/src/pages/SpacePage.tsx:521
+  - link apps/web/src/pages/SettingsPage.tsx:34
+  - toggle apps/web/src/pages/SettingsPage.tsx:219
+  - toggle apps/web/src/pages/SettingsPage.tsx:231
+  - input apps/web/src/pages/SettingsPage.tsx:297
+  - toggle apps/web/src/pages/SpacePage.tsx:72
+  - tab apps/web/src/pages/SpacePage.tsx:522
   - select apps/web/src/pages/TemplatesPage.tsx:76
   - select apps/web/src/pages/TemplatesPage.tsx:89
   - button apps/web/src/pages/TemplatesPage.tsx:173
@@ -245,7 +246,7 @@ actions:
     screen: admin
     component: CheckAccess
     label: Документ (ссылка, ID или название)
-    source: apps/web/src/admin/AccessSection.tsx:76
+    source: apps/web/src/admin/AccessSection.tsx:77
     critical: false
     seen:
       - /admin/access
@@ -255,14 +256,14 @@ actions:
     component: CheckAccess
     label: Без названия
     dynamic: true
-    source: apps/web/src/admin/AccessSection.tsx:91
+    source: apps/web/src/admin/AccessSection.tsx:92
     critical: false
   - id: admin/AccessMatrix/filtr-po-imeni
     kind: input
     screen: admin
     component: AccessMatrix
     label: Фильтр по имени
-    source: apps/web/src/admin/AccessSection.tsx:231
+    source: apps/web/src/admin/AccessSection.tsx:232
     critical: false
   - id: admin/EmergencyAccess/confirm.utverdit-ekstrennyy-dostup
     kind: dialog
@@ -271,7 +272,7 @@ actions:
     label: Утвердить экстренный доступ?
     aliases:
       - Отклонить запрос?
-    source: apps/web/src/admin/AccessSection.tsx:336
+    source: apps/web/src/admin/AccessSection.tsx:353
     confirm: true
     critical: true
   - id: admin/EmergencyAccess/confirm.utverdit-ekstrennyy-dostup.utverdit
@@ -281,7 +282,7 @@ actions:
     label: Утвердить
     aliases:
       - Отклонить
-    source: apps/web/src/admin/AccessSection.tsx:336
+    source: apps/web/src/admin/AccessSection.tsx:353
     confirm: true
     critical: true
   - id: admin/EmergencyAccess/dokument-ssylka-ili-id
@@ -289,56 +290,56 @@ actions:
     screen: admin
     component: EmergencyAccess
     label: Документ (ссылка или ID)
-    source: apps/web/src/admin/AccessSection.tsx:364
+    source: apps/web/src/admin/AccessSection.tsx:374
     critical: false
   - id: admin/EmergencyAccess/osnovanie-ne-menee-20-simvolov
     kind: input
     screen: admin
     component: EmergencyAccess
     label: Основание (не менее 20 символов)
-    source: apps/web/src/admin/AccessSection.tsx:368
+    source: apps/web/src/admin/AccessSection.tsx:378
     critical: false
   - id: admin/EmergencyAccess/srok
     kind: select
     screen: admin
     component: EmergencyAccess
     label: Срок
-    source: apps/web/src/admin/AccessSection.tsx:372
+    source: apps/web/src/admin/AccessSection.tsx:382
     critical: false
   - id: admin/EmergencyAccess/otpravit-zapros
     kind: button
     screen: admin
     component: EmergencyAccess
     label: Отправить запрос
-    source: apps/web/src/admin/AccessSection.tsx:381
+    source: apps/web/src/admin/AccessSection.tsx:391
     critical: true
   - id: admin/EmergencyAccess/utverdit
     kind: button
     screen: admin
     component: EmergencyAccess
     label: Утвердить
-    source: apps/web/src/admin/AccessSection.tsx:422
+    source: apps/web/src/admin/AccessSection.tsx:432
     critical: false
   - id: admin/EmergencyAccess/otklonit
     kind: button
     screen: admin
     component: EmergencyAccess
     label: Отклонить
-    source: apps/web/src/admin/AccessSection.tsx:425
+    source: apps/web/src/admin/AccessSection.tsx:435
     critical: true
   - id: admin/EmergencyAccess/otozvat
     kind: button
     screen: admin
     component: EmergencyAccess
     label: Отозвать
-    source: apps/web/src/admin/AccessSection.tsx:432
+    source: apps/web/src/admin/AccessSection.tsx:442
     critical: true
   - id: admin/PublicLinksAdmin/confirm.otozvat-publichnuyu-ssylku
     kind: dialog
     screen: admin
     component: PublicLinksAdmin
     label: Отозвать публичную ссылку?
-    source: apps/web/src/admin/AccessSection.tsx:463
+    source: apps/web/src/admin/AccessSection.tsx:473
     confirm: true
     critical: true
   - id: admin/PublicLinksAdmin/confirm.otozvat-publichnuyu-ssylku.otozvat
@@ -346,7 +347,7 @@ actions:
     screen: admin
     component: PublicLinksAdmin
     label: Отозвать
-    source: apps/web/src/admin/AccessSection.tsx:463
+    source: apps/web/src/admin/AccessSection.tsx:473
     confirm: true
     critical: true
   - id: admin/PublicLinksAdmin/otozvat
@@ -354,14 +355,14 @@ actions:
     screen: admin
     component: PublicLinksAdmin
     label: Отозвать
-    source: apps/web/src/admin/AccessSection.tsx:508
+    source: apps/web/src/admin/AccessSection.tsx:518
     critical: true
   - id: admin/Offboarding/sotrudnik
     kind: select
     screen: admin
     component: Offboarding
     label: Сотрудник
-    source: apps/web/src/admin/AccessSection.tsx:555
+    source: apps/web/src/admin/AccessSection.tsx:565
     critical: false
     seen:
       - /admin/access
@@ -371,21 +372,21 @@ actions:
     screen: admin
     component: Offboarding
     label: Политика
-    source: apps/web/src/admin/AccessSection.tsx:566
+    source: apps/web/src/admin/AccessSection.tsx:576
     critical: false
   - id: admin/Offboarding/predprosmotr
     kind: button
     screen: admin
     component: Offboarding
     label: Предпросмотр
-    source: apps/web/src/admin/AccessSection.tsx:579
+    source: apps/web/src/admin/AccessSection.tsx:589
     critical: false
   - id: admin/Offboarding/primenit
     kind: button
     screen: admin
     component: Offboarding
     label: Применить
-    source: apps/web/src/admin/AccessSection.tsx:582
+    source: apps/web/src/admin/AccessSection.tsx:592
     critical: false
     seen:
       - /admin/audit
@@ -394,7 +395,7 @@ actions:
     screen: admin
     component: AccessSection
     label: Проверить доступ
-    source: apps/web/src/admin/AccessSection.tsx:602
+    source: apps/web/src/admin/AccessSection.tsx:612
     critical: false
     seen:
       - /admin/access
@@ -403,7 +404,7 @@ actions:
     screen: admin
     component: AccessSection
     label: Матрица доступа
-    source: apps/web/src/admin/AccessSection.tsx:603
+    source: apps/web/src/admin/AccessSection.tsx:613
     critical: false
     seen:
       - /admin/access
@@ -412,7 +413,7 @@ actions:
     screen: admin
     component: AccessSection
     label: Экстренный доступ
-    source: apps/web/src/admin/AccessSection.tsx:604
+    source: apps/web/src/admin/AccessSection.tsx:614
     critical: false
     seen:
       - /admin/access
@@ -421,7 +422,7 @@ actions:
     screen: admin
     component: AccessSection
     label: Публичные ссылки
-    source: apps/web/src/admin/AccessSection.tsx:605
+    source: apps/web/src/admin/AccessSection.tsx:615
     critical: false
     seen:
       - /admin/access
@@ -431,7 +432,7 @@ actions:
     screen: admin
     component: AccessSection
     label: "Увольнение: личные материалы"
-    source: apps/web/src/admin/AccessSection.tsx:606
+    source: apps/web/src/admin/AccessSection.tsx:616
     critical: false
   - id: admin/AccessSection/tab-data
     kind: tab
@@ -439,7 +440,7 @@ actions:
     component: AccessSection
     label: "{…}"
     dynamic: true
-    source: apps/web/src/admin/AccessSection.tsx:615
+    source: apps/web/src/admin/AccessSection.tsx:625
     data_driven: true
     critical: false
   - id: admin/AdminPage/route.admin-users
@@ -608,7 +609,7 @@ actions:
     screen: admin
     component: ArchivesSection
     label: Восстановить из архива
-    source: apps/web/src/admin/ArchivesSection.tsx:114
+    source: apps/web/src/admin/ArchivesSection.tsx:115
     critical: true
     seen:
       - /admin/archives
@@ -617,7 +618,7 @@ actions:
     screen: admin
     component: ArchivesSection
     label: Создать архив
-    source: apps/web/src/admin/ArchivesSection.tsx:117
+    source: apps/web/src/admin/ArchivesSection.tsx:118
     critical: true
     seen:
       - /admin/archives
@@ -626,7 +627,7 @@ actions:
     screen: admin
     component: ArchivesSection
     label: Скачать
-    source: apps/web/src/admin/ArchivesSection.tsx:170
+    source: apps/web/src/admin/ArchivesSection.tsx:171
     no_permission: Срок хранения для скачивания (72 ч) истёк — сформируйте заново
     critical: false
   - id: admin/ArchivesSection/prodolzhit
@@ -634,14 +635,14 @@ actions:
     screen: admin
     component: ArchivesSection
     label: Продолжить
-    source: apps/web/src/admin/ArchivesSection.tsx:175
+    source: apps/web/src/admin/ArchivesSection.tsx:176
     critical: false
   - id: admin/ArchivesSection/otchet
     kind: button
     screen: admin
     component: ArchivesSection
     label: Отчёт
-    source: apps/web/src/admin/ArchivesSection.tsx:180
+    source: apps/web/src/admin/ArchivesSection.tsx:181
     critical: false
   - id: admin/ExportDialog/x
     kind: toggle
@@ -649,7 +650,7 @@ actions:
     component: ExportDialog
     label: "{…} — {…}"
     dynamic: true
-    source: apps/web/src/admin/ArchivesSection.tsx:229
+    source: apps/web/src/admin/ArchivesSection.tsx:233
     critical: false
     seen:
       - /
@@ -658,21 +659,21 @@ actions:
     screen: admin
     component: ExportDialog
     label: Архив организации
-    source: apps/web/src/admin/ArchivesSection.tsx:237
+    source: apps/web/src/admin/ArchivesSection.tsx:241
     critical: true
   - id: admin/ExportDialog/otmena
     kind: button
     screen: admin
     component: ExportDialog
     label: Отмена
-    source: apps/web/src/admin/ArchivesSection.tsx:244
+    source: apps/web/src/admin/ArchivesSection.tsx:248
     critical: false
   - id: admin/ExportDialog/sozdat-arhiv
     kind: button
     screen: admin
     component: ExportDialog
     label: Создать архив
-    source: apps/web/src/admin/ArchivesSection.tsx:247
+    source: apps/web/src/admin/ArchivesSection.tsx:251
     critical: true
     seen:
       - /admin/archives
@@ -681,21 +682,21 @@ actions:
     screen: admin
     component: ExportDialog
     label: Страницы, пространства и файлы
-    source: apps/web/src/admin/ArchivesSection.tsx:270
+    source: apps/web/src/admin/ArchivesSection.tsx:274
     critical: false
   - id: admin/ExportDialog/vash-parol
     kind: input
     screen: admin
     component: ExportDialog
     label: Ваш пароль
-    source: apps/web/src/admin/ArchivesSection.tsx:279
+    source: apps/web/src/admin/ArchivesSection.tsx:283
     critical: true
   - id: admin/ExportDialog/ya-podtverzhdayu-vygruzku-vseh-dannyh-organizaci
     kind: toggle
     screen: admin
     component: ExportDialog
     label: Я подтверждаю выгрузку всех данных организации
-    source: apps/web/src/admin/ArchivesSection.tsx:283
+    source: apps/web/src/admin/ArchivesSection.tsx:287
     critical: false
   - id: admin/ExportDialog/button-data
     kind: button
@@ -703,7 +704,7 @@ actions:
     component: ExportDialog
     label: "{…}"
     dynamic: true
-    source: apps/web/src/admin/ArchivesSection.tsx:285
+    source: apps/web/src/admin/ArchivesSection.tsx:289
     data_driven: true
     critical: false
   - id: admin/AnalysisReport/polzovateli-v-arhive-naydeno-v-sisteme-ne-nayden
@@ -712,77 +713,77 @@ actions:
     component: AnalysisReport
     label: "Пользователи в архиве: {…} (найдено в системе: , не найдено: {…} )"
     dynamic: true
-    source: apps/web/src/admin/ArchivesSection.tsx:326
+    source: apps/web/src/admin/ArchivesSection.tsx:330
     critical: true
   - id: admin/RestoreDialog/gotovo
     kind: button
     screen: admin
     component: RestoreDialog
     label: Готово
-    source: apps/web/src/admin/ArchivesSection.tsx:452
+    source: apps/web/src/admin/ArchivesSection.tsx:457
     critical: false
   - id: admin/RestoreDialog/obedinit-s-organizaciey-prostranstva-arhiva
     kind: toggle
     screen: admin
     component: RestoreDialog
     label: Объединить с организацией (пространства архива)
-    source: apps/web/src/admin/ArchivesSection.tsx:470
+    source: apps/web/src/admin/ArchivesSection.tsx:475
     critical: false
   - id: admin/RestoreDialog/v-novoe-izolirovannoe-prostranstvo-vidno-tolko-v
     kind: toggle
     screen: admin
     component: RestoreDialog
     label: В новое изолированное пространство (видно только вам)
-    source: apps/web/src/admin/ArchivesSection.tsx:473
+    source: apps/web/src/admin/ArchivesSection.tsx:478
     critical: false
   - id: admin/RestoreDialog/nazvanie-novogo-prostranstva
     kind: input
     screen: admin
     component: RestoreDialog
     label: Название нового пространства
-    source: apps/web/src/admin/ArchivesSection.tsx:476
+    source: apps/web/src/admin/ArchivesSection.tsx:481
     critical: false
   - id: admin/RestoreDialog/v-suschestvuyuschee-prostranstvo
     kind: toggle
     screen: admin
     component: RestoreDialog
     label: В существующее пространство
-    source: apps/web/src/admin/ArchivesSection.tsx:479
+    source: apps/web/src/admin/ArchivesSection.tsx:484
     critical: false
   - id: admin/RestoreDialog/prostranstvo-dlya-vosstanovleniya
     kind: select
     screen: admin
     component: RestoreDialog
     label: Пространство для восстановления
-    source: apps/web/src/admin/ArchivesSection.tsx:482
+    source: apps/web/src/admin/ArchivesSection.tsx:487
     critical: false
   - id: admin/RestoreDialog/vash-parol
     kind: input
     screen: admin
     component: RestoreDialog
     label: Ваш пароль
-    source: apps/web/src/admin/ArchivesSection.tsx:506
+    source: apps/web/src/admin/ArchivesSection.tsx:511
     critical: true
   - id: admin/RestoreDialog/ya-proveril-otchet-i-podtverzhdayu-vosstanovleni
     kind: toggle
     screen: admin
     component: RestoreDialog
     label: Я проверил отчёт и подтверждаю восстановление
-    source: apps/web/src/admin/ArchivesSection.tsx:510
+    source: apps/web/src/admin/ArchivesSection.tsx:515
     critical: false
   - id: admin/RestoreDialog/otmena
     kind: button
     screen: admin
     component: RestoreDialog
     label: Отмена
-    source: apps/web/src/admin/ArchivesSection.tsx:518
+    source: apps/web/src/admin/ArchivesSection.tsx:523
     critical: false
   - id: admin/RestoreDialog/vosstanovit
     kind: button
     screen: admin
     component: RestoreDialog
     label: Восстановить
-    source: apps/web/src/admin/ArchivesSection.tsx:522
+    source: apps/web/src/admin/ArchivesSection.tsx:527
     critical: true
     seen:
       - /trash
@@ -792,7 +793,7 @@ actions:
     component: RestoreDialog
     label: "{…}"
     dynamic: true
-    source: apps/web/src/admin/ArchivesSection.tsx:539
+    source: apps/web/src/admin/ArchivesSection.tsx:544
     data_driven: true
     critical: false
   - id: admin/RestoreDialog/otmena~2
@@ -800,14 +801,14 @@ actions:
     screen: admin
     component: RestoreDialog
     label: Отмена
-    source: apps/web/src/admin/ArchivesSection.tsx:554
+    source: apps/web/src/admin/ArchivesSection.tsx:559
     critical: false
   - id: admin/RestoreDialog/proverit-arhiv
     kind: button
     screen: admin
     component: RestoreDialog
     label: Проверить архив
-    source: apps/web/src/admin/ArchivesSection.tsx:557
+    source: apps/web/src/admin/ArchivesSection.tsx:562
     critical: true
   - id: admin/RestoreDialog/rezultat-vosstanovleniya
     kind: dialog
@@ -816,28 +817,28 @@ actions:
     label: Результат восстановления
     aliases:
       - Восстановление из архива
-    source: apps/web/src/admin/ArchivesSection.tsx:564
+    source: apps/web/src/admin/ArchivesSection.tsx:569
     critical: true
   - id: admin/ReportDialog/otchet-o-vosstanovlenii
     kind: dialog
     screen: admin
     component: ReportDialog
     label: Отчёт о восстановлении
-    source: apps/web/src/admin/ArchivesSection.tsx:576
+    source: apps/web/src/admin/ArchivesSection.tsx:581
     critical: true
   - id: admin/ReportDialog/zakryt
     kind: button
     screen: admin
     component: ReportDialog
     label: Закрыть
-    source: apps/web/src/admin/ArchivesSection.tsx:582
+    source: apps/web/src/admin/ArchivesSection.tsx:587
     critical: false
   - id: admin/ReportDialog/otchet-predvaritelnoy-proverki
     kind: button
     screen: admin
     component: ReportDialog
     label: Отчёт предварительной проверки
-    source: apps/web/src/admin/ArchivesSection.tsx:601
+    source: apps/web/src/admin/ArchivesSection.tsx:606
     critical: false
   - id: admin/AuditSection/csv
     kind: button
@@ -943,7 +944,7 @@ actions:
     screen: admin
     component: AuditSection
     label: Загрузить ещё
-    source: apps/web/src/admin/AuditSection.tsx:284
+    source: apps/web/src/admin/AuditSection.tsx:290
     critical: true
   - id: admin/ExpiringSection/confirm.otozvat-dostup-seychas
     kind: dialog
@@ -1021,7 +1022,7 @@ actions:
     component: GroupsSection
     label: Удалить «{…}»?
     dynamic: true
-    source: apps/web/src/admin/GroupsSection.tsx:50
+    source: apps/web/src/admin/GroupsSection.tsx:51
     confirm: true
     critical: true
   - id: admin/GroupsSection/confirm.udalit.udalit
@@ -1029,7 +1030,7 @@ actions:
     screen: admin
     component: GroupsSection
     label: Удалить
-    source: apps/web/src/admin/GroupsSection.tsx:50
+    source: apps/web/src/admin/GroupsSection.tsx:51
     confirm: true
     critical: true
     seen:
@@ -1041,7 +1042,7 @@ actions:
     label: Свернуть
     aliases:
       - Развернуть
-    source: apps/web/src/admin/GroupsSection.tsx:82
+    source: apps/web/src/admin/GroupsSection.tsx:83
     critical: false
     seen:
       - /
@@ -1071,7 +1072,7 @@ actions:
     component: GroupsSection
     label: "{…}"
     dynamic: true
-    source: apps/web/src/admin/GroupsSection.tsx:88
+    source: apps/web/src/admin/GroupsSection.tsx:89
     data_driven: true
     critical: false
   - id: admin/GroupsSection/gruppa
@@ -1079,7 +1080,7 @@ actions:
     screen: admin
     component: GroupsSection
     label: Группа
-    source: apps/web/src/admin/GroupsSection.tsx:105
+    source: apps/web/src/admin/GroupsSection.tsx:106
     critical: true
     seen:
       - /admin/audit
@@ -1089,7 +1090,7 @@ actions:
     screen: admin
     component: GroupsSection
     label: Отдел
-    source: apps/web/src/admin/GroupsSection.tsx:108
+    source: apps/web/src/admin/GroupsSection.tsx:109
     critical: false
     seen:
       - /admin/groups
@@ -1098,7 +1099,7 @@ actions:
     screen: admin
     component: GroupsSection
     label: Поиск групп
-    source: apps/web/src/admin/GroupsSection.tsx:127
+    source: apps/web/src/admin/GroupsSection.tsx:128
     critical: false
   - id: admin/GroupsSection/button-data
     kind: button
@@ -1106,7 +1107,7 @@ actions:
     component: GroupsSection
     label: "{…}"
     dynamic: true
-    source: apps/web/src/admin/GroupsSection.tsx:140
+    source: apps/web/src/admin/GroupsSection.tsx:141
     data_driven: true
     critical: false
   - id: admin/GroupDialog/izmenit
@@ -1118,21 +1119,21 @@ actions:
       - Новый отдел
       - Новая группа
     dynamic: true
-    source: apps/web/src/admin/GroupsSection.tsx:230
+    source: apps/web/src/admin/GroupsSection.tsx:233
     critical: true
   - id: admin/GroupDialog/otmena
     kind: button
     screen: admin
     component: GroupDialog
     label: Отмена
-    source: apps/web/src/admin/GroupsSection.tsx:237
+    source: apps/web/src/admin/GroupsSection.tsx:240
     critical: false
   - id: admin/GroupDialog/sohranit
     kind: button
     screen: admin
     component: GroupDialog
     label: Сохранить
-    source: apps/web/src/admin/GroupsSection.tsx:240
+    source: apps/web/src/admin/GroupsSection.tsx:243
     critical: true
     seen:
       - /admin/settings
@@ -1142,21 +1143,21 @@ actions:
     screen: admin
     component: GroupDialog
     label: Название
-    source: apps/web/src/admin/GroupsSection.tsx:261
+    source: apps/web/src/admin/GroupsSection.tsx:264
     critical: false
   - id: admin/GroupDialog/opisanie
     kind: input
     screen: admin
     component: GroupDialog
     label: Описание
-    source: apps/web/src/admin/GroupsSection.tsx:265
+    source: apps/web/src/admin/GroupsSection.tsx:268
     critical: false
   - id: admin/GroupDialog/vhodit-v-otdel
     kind: select
     screen: admin
     component: GroupDialog
     label: Входит в отдел
-    source: apps/web/src/admin/GroupsSection.tsx:270
+    source: apps/web/src/admin/GroupsSection.tsx:273
     critical: false
   - id: admin/GroupDialog/button-data
     kind: button
@@ -1164,7 +1165,7 @@ actions:
     component: GroupDialog
     label: "{…}"
     dynamic: true
-    source: apps/web/src/admin/GroupsSection.tsx:286
+    source: apps/web/src/admin/GroupsSection.tsx:289
     data_driven: true
     critical: false
   - id: admin/GroupDetail/confirm.isklyuchit-uchastnika
@@ -1172,7 +1173,7 @@ actions:
     screen: admin
     component: GroupDetail
     label: Исключить участника?
-    source: apps/web/src/admin/GroupsSection.tsx:317
+    source: apps/web/src/admin/GroupsSection.tsx:320
     confirm: true
     critical: true
   - id: admin/GroupDetail/confirm.isklyuchit-uchastnika.isklyuchit
@@ -1180,7 +1181,7 @@ actions:
     screen: admin
     component: GroupDetail
     label: Исключить
-    source: apps/web/src/admin/GroupsSection.tsx:317
+    source: apps/web/src/admin/GroupsSection.tsx:320
     confirm: true
     critical: false
   - id: admin/GroupDetail/nazad
@@ -1188,28 +1189,28 @@ actions:
     screen: admin
     component: GroupDetail
     label: ← Назад
-    source: apps/web/src/admin/GroupsSection.tsx:338
+    source: apps/web/src/admin/GroupsSection.tsx:341
     critical: false
   - id: admin/GroupDetail/podotdel
     kind: button
     screen: admin
     component: GroupDetail
     label: Подотдел
-    source: apps/web/src/admin/GroupsSection.tsx:351
+    source: apps/web/src/admin/GroupsSection.tsx:354
     critical: false
   - id: admin/GroupDetail/izmenit
     kind: button
     screen: admin
     component: GroupDetail
     label: Изменить
-    source: apps/web/src/admin/GroupsSection.tsx:355
+    source: apps/web/src/admin/GroupsSection.tsx:358
     critical: false
   - id: admin/GroupDetail/udalit
     kind: button
     screen: admin
     component: GroupDetail
     label: Удалить
-    source: apps/web/src/admin/GroupsSection.tsx:358
+    source: apps/web/src/admin/GroupsSection.tsx:361
     critical: true
     seen:
       - /p/:pageId
@@ -1218,7 +1219,7 @@ actions:
     screen: admin
     component: GroupDetail
     label: Роль
-    source: apps/web/src/admin/GroupsSection.tsx:378
+    source: apps/web/src/admin/GroupsSection.tsx:381
     critical: true
     seen:
       - /admin/users
@@ -1227,14 +1228,14 @@ actions:
     screen: admin
     component: GroupDetail
     label: До (необязательно)
-    source: apps/web/src/admin/GroupsSection.tsx:385
+    source: apps/web/src/admin/GroupsSection.tsx:388
     critical: false
   - id: admin/GroupDetail/dobavit
     kind: button
     screen: admin
     component: GroupDetail
     label: Добавить
-    source: apps/web/src/admin/GroupsSection.tsx:387
+    source: apps/web/src/admin/GroupsSection.tsx:390
     critical: false
     seen:
       - /admin/users
@@ -1244,7 +1245,7 @@ actions:
     component: GroupDetail
     label: Роль {…}
     dynamic: true
-    source: apps/web/src/admin/GroupsSection.tsx:430
+    source: apps/web/src/admin/GroupsSection.tsx:433
     critical: true
   - id: admin/GroupDetail/isklyuchit
     kind: button
@@ -1252,7 +1253,7 @@ actions:
     component: GroupDetail
     label: Исключить {…}
     dynamic: true
-    source: apps/web/src/admin/GroupsSection.tsx:442
+    source: apps/web/src/admin/GroupsSection.tsx:445
     critical: false
   - id: admin/HealthSection/obnovit
     kind: button
@@ -1361,7 +1362,7 @@ actions:
     screen: admin
     component: UsersSection
     label: Изменить профиль и роль
-    source: apps/web/src/admin/UsersSection.tsx:100
+    source: apps/web/src/admin/UsersSection.tsx:101
     critical: true
     seen:
       - /admin/users
@@ -1370,7 +1371,7 @@ actions:
     screen: admin
     component: UsersSection
     label: Перевести в другой отдел…
-    source: apps/web/src/admin/UsersSection.tsx:102
+    source: apps/web/src/admin/UsersSection.tsx:103
     critical: false
     seen:
       - /admin/users
@@ -1379,21 +1380,21 @@ actions:
     screen: admin
     component: UsersSection
     label: Отправить приглашение повторно
-    source: apps/web/src/admin/UsersSection.tsx:105
+    source: apps/web/src/admin/UsersSection.tsx:106
     critical: true
   - id: admin/UsersSection/revoke-invite
     kind: menu-item
     screen: admin
     component: UsersSection
     label: Отозвать приглашение
-    source: apps/web/src/admin/UsersSection.tsx:113
+    source: apps/web/src/admin/UsersSection.tsx:114
     critical: true
   - id: admin/UsersSection/confirm.otozvat-priglashenie
     kind: dialog
     screen: admin
     component: UsersSection
     label: Отозвать приглашение?
-    source: apps/web/src/admin/UsersSection.tsx:118
+    source: apps/web/src/admin/UsersSection.tsx:119
     confirm: true
     critical: true
   - id: admin/UsersSection/confirm.otozvat-priglashenie.otozvat
@@ -1401,7 +1402,7 @@ actions:
     screen: admin
     component: UsersSection
     label: Отозвать
-    source: apps/web/src/admin/UsersSection.tsx:118
+    source: apps/web/src/admin/UsersSection.tsx:119
     confirm: true
     critical: true
   - id: admin/UsersSection/reset
@@ -1409,7 +1410,7 @@ actions:
     screen: admin
     component: UsersSection
     label: Сбросить пароль
-    source: apps/web/src/admin/UsersSection.tsx:124
+    source: apps/web/src/admin/UsersSection.tsx:125
     critical: true
     seen:
       - /admin/users
@@ -1418,7 +1419,7 @@ actions:
     screen: admin
     component: UsersSection
     label: Сбросить пароль?
-    source: apps/web/src/admin/UsersSection.tsx:128
+    source: apps/web/src/admin/UsersSection.tsx:129
     confirm: true
     critical: true
   - id: admin/UsersSection/confirm.sbrosit-parol.sbrosit-parol
@@ -1426,7 +1427,7 @@ actions:
     screen: admin
     component: UsersSection
     label: Сбросить пароль
-    source: apps/web/src/admin/UsersSection.tsx:128
+    source: apps/web/src/admin/UsersSection.tsx:129
     confirm: true
     critical: true
     seen:
@@ -1436,7 +1437,7 @@ actions:
     screen: admin
     component: UsersSection
     label: Завершить все сеансы
-    source: apps/web/src/admin/UsersSection.tsx:137
+    source: apps/web/src/admin/UsersSection.tsx:138
     critical: true
     seen:
       - /admin/users
@@ -1445,7 +1446,7 @@ actions:
     screen: admin
     component: UsersSection
     label: Завершить все сеансы?
-    source: apps/web/src/admin/UsersSection.tsx:141
+    source: apps/web/src/admin/UsersSection.tsx:142
     confirm: true
     critical: true
   - id: admin/UsersSection/confirm.zavershit-vse-seansy.zavershit-seansy
@@ -1453,7 +1454,7 @@ actions:
     screen: admin
     component: UsersSection
     label: Завершить сеансы
-    source: apps/web/src/admin/UsersSection.tsx:141
+    source: apps/web/src/admin/UsersSection.tsx:142
     confirm: true
     critical: true
   - id: admin/UsersSection/suspend
@@ -1461,7 +1462,7 @@ actions:
     screen: admin
     component: UsersSection
     label: Приостановить доступ…
-    source: apps/web/src/admin/UsersSection.tsx:146
+    source: apps/web/src/admin/UsersSection.tsx:147
     no_permission: Нельзя отключить себя
     critical: true
     seen:
@@ -1471,14 +1472,14 @@ actions:
     screen: admin
     component: UsersSection
     label: Восстановить доступ
-    source: apps/web/src/admin/UsersSection.tsx:149
+    source: apps/web/src/admin/UsersSection.tsx:150
     critical: true
   - id: admin/UsersSection/confirm.vosstanovit-dostup
     kind: dialog
     screen: admin
     component: UsersSection
     label: Восстановить доступ?
-    source: apps/web/src/admin/UsersSection.tsx:153
+    source: apps/web/src/admin/UsersSection.tsx:154
     confirm: true
     critical: true
   - id: admin/UsersSection/confirm.vosstanovit-dostup.vosstanovit
@@ -1486,7 +1487,7 @@ actions:
     screen: admin
     component: UsersSection
     label: Восстановить
-    source: apps/web/src/admin/UsersSection.tsx:153
+    source: apps/web/src/admin/UsersSection.tsx:154
     confirm: true
     critical: true
     seen:
@@ -1496,7 +1497,7 @@ actions:
     screen: admin
     component: UsersSection
     label: Деактивировать (увольнение)…
-    source: apps/web/src/admin/UsersSection.tsx:159
+    source: apps/web/src/admin/UsersSection.tsx:160
     no_permission: Нельзя отключить себя
     critical: true
     seen:
@@ -1506,7 +1507,7 @@ actions:
     screen: admin
     component: UsersSection
     label: Импорт CSV
-    source: apps/web/src/admin/UsersSection.tsx:172
+    source: apps/web/src/admin/UsersSection.tsx:173
     critical: true
     seen:
       - /admin/users
@@ -1515,7 +1516,7 @@ actions:
     screen: admin
     component: UsersSection
     label: Добавить
-    source: apps/web/src/admin/UsersSection.tsx:175
+    source: apps/web/src/admin/UsersSection.tsx:176
     critical: false
     seen:
       - /admin/users
@@ -1524,7 +1525,7 @@ actions:
     screen: admin
     component: UsersSection
     label: Поиск пользователей
-    source: apps/web/src/admin/UsersSection.tsx:184
+    source: apps/web/src/admin/UsersSection.tsx:185
     critical: false
     seen:
       - /admin/users
@@ -1533,7 +1534,7 @@ actions:
     screen: admin
     component: UsersSection
     label: Статус
-    source: apps/web/src/admin/UsersSection.tsx:186
+    source: apps/web/src/admin/UsersSection.tsx:187
     critical: false
     seen:
       - /admin/users
@@ -1542,7 +1543,7 @@ actions:
     screen: admin
     component: UsersSection
     label: Тип
-    source: apps/web/src/admin/UsersSection.tsx:194
+    source: apps/web/src/admin/UsersSection.tsx:195
     critical: false
     seen:
       - /admin/users
@@ -1551,7 +1552,7 @@ actions:
     screen: admin
     component: UsersSection
     label: Роль
-    source: apps/web/src/admin/UsersSection.tsx:199
+    source: apps/web/src/admin/UsersSection.tsx:200
     critical: true
     seen:
       - /admin/users
@@ -1560,7 +1561,7 @@ actions:
     screen: admin
     component: UsersSection
     label: Отдел или группа
-    source: apps/web/src/admin/UsersSection.tsx:208
+    source: apps/web/src/admin/UsersSection.tsx:209
     critical: false
     seen:
       - /admin/users
@@ -1570,7 +1571,7 @@ actions:
     component: UsersSection
     label: Действия с пользователем {…}
     dynamic: true
-    source: apps/web/src/admin/UsersSection.tsx:293
+    source: apps/web/src/admin/UsersSection.tsx:294
     critical: false
     seen:
       - /admin/users
@@ -1580,77 +1581,77 @@ actions:
     component: UsersSection
     label: "Действия: {…}"
     dynamic: true
-    source: apps/web/src/admin/UsersSection.tsx:298
+    source: apps/web/src/admin/UsersSection.tsx:299
     critical: false
   - id: admin/UsersSection/gotovo
     kind: button
     screen: admin
     component: UsersSection
     label: Готово
-    source: apps/web/src/admin/UsersSection.tsx:324
+    source: apps/web/src/admin/UsersSection.tsx:325
     critical: false
   - id: admin/UsersSection/ssylka
     kind: input
     screen: admin
     component: UsersSection
     label: Ссылка
-    source: apps/web/src/admin/UsersSection.tsx:331
+    source: apps/web/src/admin/UsersSection.tsx:332
     critical: false
   - id: admin/CreateUserDialog/polzovatel-sozdan
     kind: dialog
     screen: admin
     component: CreateUserDialog
     label: Пользователь создан
-    source: apps/web/src/admin/UsersSection.tsx:391
+    source: apps/web/src/admin/UsersSection.tsx:394
     critical: false
   - id: admin/CreateUserDialog/dobavit-esche
     kind: button
     screen: admin
     component: CreateUserDialog
     label: Добавить ещё
-    source: apps/web/src/admin/UsersSection.tsx:397
+    source: apps/web/src/admin/UsersSection.tsx:400
     critical: false
   - id: admin/CreateUserDialog/gotovo
     kind: button
     screen: admin
     component: CreateUserDialog
     label: Готово
-    source: apps/web/src/admin/UsersSection.tsx:408
+    source: apps/web/src/admin/UsersSection.tsx:411
     critical: false
   - id: admin/CreateUserDialog/ssylka-priglashenie
     kind: input
     screen: admin
     component: CreateUserDialog
     label: Ссылка-приглашение
-    source: apps/web/src/admin/UsersSection.tsx:420
+    source: apps/web/src/admin/UsersSection.tsx:423
     critical: false
   - id: admin/CreateUserDialog/novyy-polzovatel
     kind: dialog
     screen: admin
     component: CreateUserDialog
     label: Новый пользователь
-    source: apps/web/src/admin/UsersSection.tsx:441
+    source: apps/web/src/admin/UsersSection.tsx:444
     critical: false
   - id: admin/CreateUserDialog/otmena
     kind: button
     screen: admin
     component: CreateUserDialog
     label: Отмена
-    source: apps/web/src/admin/UsersSection.tsx:450
+    source: apps/web/src/admin/UsersSection.tsx:453
     critical: false
   - id: admin/CreateUserDialog/sozdat
     kind: button
     screen: admin
     component: CreateUserDialog
     label: Создать
-    source: apps/web/src/admin/UsersSection.tsx:453
+    source: apps/web/src/admin/UsersSection.tsx:456
     critical: true
   - id: admin/CreateUserDialog/sotrudnik
     kind: toggle
     screen: admin
     component: CreateUserDialog
     label: Сотрудник
-    source: apps/web/src/admin/UsersSection.tsx:474
+    source: apps/web/src/admin/UsersSection.tsx:477
     critical: false
     seen:
       - /admin/access
@@ -1660,7 +1661,7 @@ actions:
     screen: admin
     component: CreateUserDialog
     label: Гость
-    source: apps/web/src/admin/UsersSection.tsx:477
+    source: apps/web/src/admin/UsersSection.tsx:480
     critical: false
     seen:
       - /admin/users
@@ -1669,21 +1670,21 @@ actions:
     screen: admin
     component: CreateUserDialog
     label: Имя и фамилия *
-    source: apps/web/src/admin/UsersSection.tsx:483
+    source: apps/web/src/admin/UsersSection.tsx:486
     critical: false
   - id: admin/CreateUserDialog/email
     kind: input
     screen: admin
     component: CreateUserDialog
     label: Email *
-    source: apps/web/src/admin/UsersSection.tsx:487
+    source: apps/web/src/admin/UsersSection.tsx:490
     critical: false
   - id: admin/CreateUserDialog/dolzhnost
     kind: input
     screen: admin
     component: CreateUserDialog
     label: Должность
-    source: apps/web/src/admin/UsersSection.tsx:491
+    source: apps/web/src/admin/UsersSection.tsx:494
     critical: false
     seen:
       - /settings/profile
@@ -1692,28 +1693,28 @@ actions:
     screen: admin
     component: CreateUserDialog
     label: Роль в организации
-    source: apps/web/src/admin/UsersSection.tsx:496
+    source: apps/web/src/admin/UsersSection.tsx:499
     critical: true
   - id: admin/CreateUserDialog/dostup-deystvuet-do
     kind: input
     screen: admin
     component: CreateUserDialog
     label: Доступ действует до *
-    source: apps/web/src/admin/UsersSection.tsx:508
+    source: apps/web/src/admin/UsersSection.tsx:511
     critical: true
   - id: admin/CreateUserDialog/srok-dostupa-neobyazatelno
     kind: input
     screen: admin
     component: CreateUserDialog
     label: Срок доступа (необязательно)
-    source: apps/web/src/admin/UsersSection.tsx:519
+    source: apps/web/src/admin/UsersSection.tsx:522
     critical: true
   - id: admin/CreateUserDialog/filtr-grupp
     kind: input
     screen: admin
     component: CreateUserDialog
     label: Фильтр групп
-    source: apps/web/src/admin/UsersSection.tsx:525
+    source: apps/web/src/admin/UsersSection.tsx:528
     critical: false
   - id: admin/CreateUserDialog/otdel
     kind: toggle
@@ -1721,35 +1722,35 @@ actions:
     component: CreateUserDialog
     label: "{…} отдел"
     dynamic: true
-    source: apps/web/src/admin/UsersSection.tsx:530
+    source: apps/web/src/admin/UsersSection.tsx:533
     critical: false
   - id: admin/CreateUserDialog/osnovnoy-otdel
     kind: select
     screen: admin
     component: CreateUserDialog
     label: Основной отдел
-    source: apps/web/src/admin/UsersSection.tsx:544
+    source: apps/web/src/admin/UsersSection.tsx:547
     critical: false
   - id: admin/CreateUserDialog/sozdat-ssylku-priglashenie-sotrudnik-sam-zadast
     kind: toggle
     screen: admin
     component: CreateUserDialog
     label: Создать ссылку-приглашение (сотрудник сам задаст пароль)
-    source: apps/web/src/admin/UsersSection.tsx:557
+    source: apps/web/src/admin/UsersSection.tsx:560
     critical: true
   - id: admin/CreateUserDialog/zadat-parol-vruchnuyu
     kind: toggle
     screen: admin
     component: CreateUserDialog
     label: Задать пароль вручную
-    source: apps/web/src/admin/UsersSection.tsx:560
+    source: apps/web/src/admin/UsersSection.tsx:563
     critical: true
   - id: admin/CreateUserDialog/parol
     kind: input
     screen: admin
     component: CreateUserDialog
     label: Пароль
-    source: apps/web/src/admin/UsersSection.tsx:562
+    source: apps/web/src/admin/UsersSection.tsx:565
     critical: true
   - id: admin/CreateUserDialog/button-data
     kind: button
@@ -1757,7 +1758,7 @@ actions:
     component: CreateUserDialog
     label: "{…}"
     dynamic: true
-    source: apps/web/src/admin/UsersSection.tsx:564
+    source: apps/web/src/admin/UsersSection.tsx:567
     data_driven: true
     critical: false
   - id: admin/ImportDialog/propuschennye-stroki
@@ -1766,35 +1767,35 @@ actions:
     component: ImportDialog
     label: Пропущенные строки ( {…} )
     dynamic: true
-    source: apps/web/src/admin/UsersSection.tsx:650
+    source: apps/web/src/admin/UsersSection.tsx:653
     critical: false
   - id: admin/ImportDialog/kopirovat-ssylki
     kind: button
     screen: admin
     component: ImportDialog
     label: Копировать ссылки
-    source: apps/web/src/admin/UsersSection.tsx:666
+    source: apps/web/src/admin/UsersSection.tsx:669
     critical: false
   - id: admin/ImportDialog/skachat-csv
     kind: button
     screen: admin
     component: ImportDialog
     label: Скачать CSV
-    source: apps/web/src/admin/UsersSection.tsx:669
+    source: apps/web/src/admin/UsersSection.tsx:672
     critical: false
   - id: admin/ImportDialog/gotovo
     kind: button
     screen: admin
     component: ImportDialog
     label: Готово
-    source: apps/web/src/admin/UsersSection.tsx:674
+    source: apps/web/src/admin/UsersSection.tsx:677
     critical: false
   - id: admin/ImportDialog/nazad-k-dannym
     kind: button
     screen: admin
     component: ImportDialog
     label: Назад к данным
-    source: apps/web/src/admin/UsersSection.tsx:722
+    source: apps/web/src/admin/UsersSection.tsx:725
     critical: false
   - id: admin/ImportDialog/importirovat
     kind: button
@@ -1802,14 +1803,14 @@ actions:
     component: ImportDialog
     label: Импортировать ( {…} )
     dynamic: true
-    source: apps/web/src/admin/UsersSection.tsx:725
+    source: apps/web/src/admin/UsersSection.tsx:728
     critical: true
   - id: admin/ImportDialog/confirm.importirovat-polzovateley
     kind: dialog
     screen: admin
     component: ImportDialog
     label: Импортировать пользователей?
-    source: apps/web/src/admin/UsersSection.tsx:730
+    source: apps/web/src/admin/UsersSection.tsx:733
     confirm: true
     critical: true
   - id: admin/ImportDialog/confirm.importirovat-polzovateley.importirovat
@@ -1817,7 +1818,7 @@ actions:
     screen: admin
     component: ImportDialog
     label: Импортировать
-    source: apps/web/src/admin/UsersSection.tsx:730
+    source: apps/web/src/admin/UsersSection.tsx:733
     confirm: true
     critical: true
   - id: admin/ImportDialog/button-data
@@ -1826,7 +1827,7 @@ actions:
     component: ImportDialog
     label: "{…}"
     dynamic: true
-    source: apps/web/src/admin/UsersSection.tsx:750
+    source: apps/web/src/admin/UsersSection.tsx:753
     data_driven: true
     critical: false
   - id: admin/ImportDialog/ili-vstavte-soderzhimoe
@@ -1834,35 +1835,35 @@ actions:
     screen: admin
     component: ImportDialog
     label: или вставьте содержимое
-    source: apps/web/src/admin/UsersSection.tsx:754
+    source: apps/web/src/admin/UsersSection.tsx:757
     critical: false
   - id: admin/ImportDialog/otmena
     kind: button
     screen: admin
     component: ImportDialog
     label: Отмена
-    source: apps/web/src/admin/UsersSection.tsx:760
+    source: apps/web/src/admin/UsersSection.tsx:763
     critical: false
   - id: admin/ImportDialog/proverit
     kind: button
     screen: admin
     component: ImportDialog
     label: Проверить
-    source: apps/web/src/admin/UsersSection.tsx:763
+    source: apps/web/src/admin/UsersSection.tsx:766
     critical: false
   - id: admin/ImportDialog/import-sotrudnikov-iz-csv
     kind: dialog
     screen: admin
     component: ImportDialog
     label: Импорт сотрудников из CSV
-    source: apps/web/src/admin/UsersSection.tsx:770
+    source: apps/web/src/admin/UsersSection.tsx:773
     critical: true
   - id: admin/EditUserDialog/confirm.naznachit-administrativnuyu-rol
     kind: dialog
     screen: admin
     component: EditUserDialog
     label: Назначить административную роль?
-    source: apps/web/src/admin/UsersSection.tsx:817
+    source: apps/web/src/admin/UsersSection.tsx:820
     confirm: true
     critical: true
   - id: admin/EditUserDialog/confirm.naznachit-administrativnuyu-rol.naznachit
@@ -1870,7 +1871,7 @@ actions:
     screen: admin
     component: EditUserDialog
     label: Назначить
-    source: apps/web/src/admin/UsersSection.tsx:817
+    source: apps/web/src/admin/UsersSection.tsx:820
     confirm: true
     critical: false
   - id: admin/EditUserDialog/izmenit
@@ -1879,21 +1880,21 @@ actions:
     component: EditUserDialog
     label: "Изменить: {…}"
     dynamic: true
-    source: apps/web/src/admin/UsersSection.tsx:824
+    source: apps/web/src/admin/UsersSection.tsx:827
     critical: false
   - id: admin/EditUserDialog/otmena
     kind: button
     screen: admin
     component: EditUserDialog
     label: Отмена
-    source: apps/web/src/admin/UsersSection.tsx:832
+    source: apps/web/src/admin/UsersSection.tsx:835
     critical: false
   - id: admin/EditUserDialog/sohranit
     kind: button
     screen: admin
     component: EditUserDialog
     label: Сохранить
-    source: apps/web/src/admin/UsersSection.tsx:835
+    source: apps/web/src/admin/UsersSection.tsx:838
     critical: true
     seen:
       - /admin/settings
@@ -1903,14 +1904,14 @@ actions:
     screen: admin
     component: EditUserDialog
     label: Имя
-    source: apps/web/src/admin/UsersSection.tsx:867
+    source: apps/web/src/admin/UsersSection.tsx:870
     critical: false
   - id: admin/EditUserDialog/dolzhnost
     kind: input
     screen: admin
     component: EditUserDialog
     label: Должность
-    source: apps/web/src/admin/UsersSection.tsx:871
+    source: apps/web/src/admin/UsersSection.tsx:874
     critical: false
     seen:
       - /settings/profile
@@ -1919,21 +1920,21 @@ actions:
     screen: admin
     component: EditUserDialog
     label: Роль в организации
-    source: apps/web/src/admin/UsersSection.tsx:876
+    source: apps/web/src/admin/UsersSection.tsx:879
     critical: true
   - id: admin/EditUserDialog/osnovnoy-otdel
     kind: select
     screen: admin
     component: EditUserDialog
     label: Основной отдел
-    source: apps/web/src/admin/UsersSection.tsx:889
+    source: apps/web/src/admin/UsersSection.tsx:892
     critical: false
   - id: admin/EditUserDialog/dostup-deystvuet-do
     kind: input
     screen: admin
     component: EditUserDialog
     label: Доступ действует до
-    source: apps/web/src/admin/UsersSection.tsx:914
+    source: apps/web/src/admin/UsersSection.tsx:917
     critical: true
   - id: admin/EditUserDialog/button-data
     kind: button
@@ -1941,7 +1942,7 @@ actions:
     component: EditUserDialog
     label: "{…}"
     dynamic: true
-    source: apps/web/src/admin/UsersSection.tsx:917
+    source: apps/web/src/admin/UsersSection.tsx:920
     data_driven: true
     critical: false
   - id: admin/StatusDialog/deaktivirovat
@@ -1952,35 +1953,35 @@ actions:
     aliases:
       - Приостановить доступ {…}?
     dynamic: true
-    source: apps/web/src/admin/UsersSection.tsx:947
+    source: apps/web/src/admin/UsersSection.tsx:950
     critical: true
   - id: admin/StatusDialog/otmena
     kind: button
     screen: admin
     component: StatusDialog
     label: Отмена
-    source: apps/web/src/admin/UsersSection.tsx:954
+    source: apps/web/src/admin/UsersSection.tsx:957
     critical: false
   - id: admin/StatusDialog/deaktivirovat~2
     kind: button
     screen: admin
     component: StatusDialog
     label: Деактивировать
-    source: apps/web/src/admin/UsersSection.tsx:957
+    source: apps/web/src/admin/UsersSection.tsx:960
     critical: true
   - id: admin/StatusDialog/prichina-popadet-v-zhurnal-audita
     kind: input
     screen: admin
     component: StatusDialog
     label: Причина (попадёт в журнал аудита)
-    source: apps/web/src/admin/UsersSection.tsx:1011
+    source: apps/web/src/admin/UsersSection.tsx:1014
     critical: false
   - id: admin/StatusDialog/ya-ponimayu-posledstviya
     kind: toggle
     screen: admin
     component: StatusDialog
     label: Я понимаю последствия
-    source: apps/web/src/admin/UsersSection.tsx:1014
+    source: apps/web/src/admin/UsersSection.tsx:1017
     critical: false
   - id: admin/TransferDialog/perevod
     kind: dialog
@@ -1988,28 +1989,28 @@ actions:
     component: TransferDialog
     label: "Перевод: {…}"
     dynamic: true
-    source: apps/web/src/admin/UsersSection.tsx:1069
+    source: apps/web/src/admin/UsersSection.tsx:1072
     critical: false
   - id: admin/TransferDialog/otmena
     kind: button
     screen: admin
     component: TransferDialog
     label: Отмена
-    source: apps/web/src/admin/UsersSection.tsx:1077
+    source: apps/web/src/admin/UsersSection.tsx:1080
     critical: false
   - id: admin/TransferDialog/sravnit-dostupy
     kind: button
     screen: admin
     component: TransferDialog
     label: Сравнить доступы
-    source: apps/web/src/admin/UsersSection.tsx:1080
+    source: apps/web/src/admin/UsersSection.tsx:1083
     critical: true
   - id: admin/TransferDialog/primenit
     kind: button
     screen: admin
     component: TransferDialog
     label: Применить
-    source: apps/web/src/admin/UsersSection.tsx:1083
+    source: apps/web/src/admin/UsersSection.tsx:1086
     critical: false
     seen:
       - /admin/audit
@@ -2019,7 +2020,7 @@ actions:
     component: TransferDialog
     label: "{…}"
     dynamic: true
-    source: apps/web/src/admin/UsersSection.tsx:1102
+    source: apps/web/src/admin/UsersSection.tsx:1105
     data_driven: true
     critical: false
   - id: admin/TransferDialog/otdel
@@ -2028,7 +2029,7 @@ actions:
     component: TransferDialog
     label: "{…} отдел"
     dynamic: true
-    source: apps/web/src/admin/UsersSection.tsx:1116
+    source: apps/web/src/admin/UsersSection.tsx:1119
     critical: false
   - id: admin/TransferDialog/sdelat-osnovnym-otdelom
     kind: toggle
@@ -2036,7 +2037,7 @@ actions:
     component: TransferDialog
     label: Сделать « {…} » основным отделом
     dynamic: true
-    source: apps/web/src/admin/UsersSection.tsx:1126
+    source: apps/web/src/admin/UsersSection.tsx:1129
     critical: false
   - id: admin/ErrorState/povtorit
     kind: button
@@ -2193,7 +2194,7 @@ actions:
     screen: common
     component: ViewerInner
     label: Уменьшить
-    source: apps/web/src/components/ImageViewer.tsx:282
+    source: apps/web/src/components/ImageViewer.tsx:284
     critical: false
   - id: common/ViewerInner/x
     kind: button
@@ -2201,63 +2202,63 @@ actions:
     component: ViewerInner
     label: "{…} %"
     dynamic: true
-    source: apps/web/src/components/ImageViewer.tsx:286
+    source: apps/web/src/components/ImageViewer.tsx:288
     critical: false
   - id: common/ViewerInner/uvelichit
     kind: button
     screen: common
     component: ViewerInner
     label: Увеличить
-    source: apps/web/src/components/ImageViewer.tsx:290
+    source: apps/web/src/components/ImageViewer.tsx:292
     critical: false
   - id: common/ViewerInner/vpisat-v-ekran
     kind: button
     screen: common
     component: ViewerInner
     label: Вписать в экран
-    source: apps/web/src/components/ImageViewer.tsx:295
+    source: apps/web/src/components/ImageViewer.tsx:297
     critical: false
   - id: common/ViewerInner/povernut
     kind: button
     screen: common
     component: ViewerInner
     label: Повернуть
-    source: apps/web/src/components/ImageViewer.tsx:300
+    source: apps/web/src/components/ImageViewer.tsx:302
     critical: false
   - id: common/ViewerInner/otkryt-original
     kind: link
     screen: common
     component: ViewerInner
     label: Открыть оригинал
-    source: apps/web/src/components/ImageViewer.tsx:307
+    source: apps/web/src/components/ImageViewer.tsx:309
     critical: false
   - id: common/ViewerInner/skachat
     kind: link
     screen: common
     component: ViewerInner
     label: Скачать
-    source: apps/web/src/components/ImageViewer.tsx:312
+    source: apps/web/src/components/ImageViewer.tsx:314
     critical: false
   - id: common/ViewerInner/zakryt
     kind: button
     screen: common
     component: ViewerInner
     label: Закрыть
-    source: apps/web/src/components/ImageViewer.tsx:319
+    source: apps/web/src/components/ImageViewer.tsx:321
     critical: false
   - id: common/ViewerInner/predyduschee-izobrazhenie
     kind: button
     screen: common
     component: ViewerInner
     label: Предыдущее изображение
-    source: apps/web/src/components/ImageViewer.tsx:354
+    source: apps/web/src/components/ImageViewer.tsx:356
     critical: false
   - id: common/ViewerInner/sleduyuschee-izobrazhenie
     kind: button
     screen: common
     component: ViewerInner
     label: Следующее изображение
-    source: apps/web/src/components/ImageViewer.tsx:357
+    source: apps/web/src/components/ImageViewer.tsx:359
     critical: false
   - id: common/MoveDialog/peremestit
     kind: dialog
@@ -2986,7 +2987,7 @@ actions:
     screen: page
     component: PropertiesEditor
     label: Отменить
-    source: apps/web/src/components/page/PageInfoPanel.tsx:277
+    source: apps/web/src/components/page/PageInfoPanel.tsx:278
     critical: false
     seen:
       - /settings/profile
@@ -2996,7 +2997,7 @@ actions:
     component: PropertiesEditor
     label: Свойство «{…}»
     dynamic: true
-    source: apps/web/src/components/page/PageInfoPanel.tsx:335
+    source: apps/web/src/components/page/PageInfoPanel.tsx:341
     critical: false
   - id: page/PropertiesEditor/udalit-svoystvo
     kind: button
@@ -3004,35 +3005,35 @@ actions:
     component: PropertiesEditor
     label: Удалить свойство «{…}»
     dynamic: true
-    source: apps/web/src/components/page/PageInfoPanel.tsx:349
+    source: apps/web/src/components/page/PageInfoPanel.tsx:355
     critical: true
   - id: page/PropertiesEditor/nazvanie-novogo-svoystva
     kind: input
     screen: page
     component: PropertiesEditor
     label: Название нового свойства
-    source: apps/web/src/components/page/PageInfoPanel.tsx:371
+    source: apps/web/src/components/page/PageInfoPanel.tsx:377
     critical: false
   - id: page/PropertiesEditor/znachenie-novogo-svoystva
     kind: input
     screen: page
     component: PropertiesEditor
     label: Значение нового свойства
-    source: apps/web/src/components/page/PageInfoPanel.tsx:372
+    source: apps/web/src/components/page/PageInfoPanel.tsx:378
     critical: false
   - id: page/PropertiesEditor/dobavit-svoystvo
     kind: button
     screen: page
     component: PropertiesEditor
     label: Добавить свойство
-    source: apps/web/src/components/page/PageInfoPanel.tsx:373
+    source: apps/web/src/components/page/PageInfoPanel.tsx:379
     critical: false
   - id: page/LegalHold/snyat-uderzhanie
     kind: button
     screen: page
     component: LegalHold
     label: Снять удержание
-    source: apps/web/src/components/page/PageInfoPanel.tsx:413
+    source: apps/web/src/components/page/PageInfoPanel.tsx:419
     critical: true
   - id: page/LegalHold/ustanovit-yuridicheskoe-uderzhanie
     kind: dialog
@@ -3041,28 +3042,28 @@ actions:
     label: Установить юридическое удержание
     aliases:
       - Снять юридическое удержание
-    source: apps/web/src/components/page/PageInfoPanel.tsx:418
+    source: apps/web/src/components/page/PageInfoPanel.tsx:424
     critical: true
   - id: page/LegalHold/otmena
     kind: button
     screen: page
     component: LegalHold
     label: Отмена
-    source: apps/web/src/components/page/PageInfoPanel.tsx:424
+    source: apps/web/src/components/page/PageInfoPanel.tsx:430
     critical: false
   - id: page/LegalHold/ustanovit
     kind: button
     screen: page
     component: LegalHold
     label: Установить
-    source: apps/web/src/components/page/PageInfoPanel.tsx:427
+    source: apps/web/src/components/page/PageInfoPanel.tsx:433
     critical: false
   - id: page/LegalHold/osnovanie
     kind: input
     screen: page
     component: LegalHold
     label: Основание
-    source: apps/web/src/components/page/PageInfoPanel.tsx:442
+    source: apps/web/src/components/page/PageInfoPanel.tsx:448
     critical: false
   - id: page/PublicLinksSection/confirm.otozvat-publichnuyu-ssylku
     kind: dialog
@@ -3383,105 +3384,105 @@ actions:
     component: ShareDialog
     label: "Доступ: {…}"
     dynamic: true
-    source: apps/web/src/components/page/ShareDialog.tsx:319
+    source: apps/web/src/components/page/ShareDialog.tsx:324
     critical: true
   - id: page/ShareDialog/skopirovat-ssylku
     kind: button
     screen: page
     component: ShareDialog
     label: Скопировать ссылку
-    source: apps/web/src/components/page/ShareDialog.tsx:326
+    source: apps/web/src/components/page/ShareDialog.tsx:331
     critical: false
   - id: page/ShareDialog/gotovo
     kind: button
     screen: page
     component: ShareDialog
     label: Готово
-    source: apps/web/src/components/page/ShareDialog.tsx:330
+    source: apps/web/src/components/page/ShareDialog.tsx:335
     critical: false
   - id: page/ShareDialog/povtorit
     kind: button
     screen: page
     component: ShareDialog
     label: Повторить
-    source: apps/web/src/components/page/ShareDialog.tsx:340
+    source: apps/web/src/components/page/ShareDialog.tsx:345
     critical: false
   - id: page/ShareDialog/ubrat
     kind: button
     screen: page
     component: ShareDialog
     label: Убрать
-    source: apps/web/src/components/page/ShareDialog.tsx:360
+    source: apps/web/src/components/page/ShareDialog.tsx:365
     critical: false
   - id: page/ShareDialog/uroven-dostupa
     kind: select
     screen: page
     component: ShareDialog
     label: Уровень доступа
-    source: apps/web/src/components/page/ShareDialog.tsx:373
+    source: apps/web/src/components/page/ShareDialog.tsx:379
     critical: true
   - id: page/ShareDialog/dostup-do
     kind: input
     screen: page
     component: ShareDialog
     label: Доступ до
-    source: apps/web/src/components/page/ShareDialog.tsx:381
+    source: apps/web/src/components/page/ShareDialog.tsx:387
     critical: true
   - id: page/ShareDialog/vydat-dostup
     kind: button
     screen: page
     component: ShareDialog
     label: Выдать доступ
-    source: apps/web/src/components/page/ShareDialog.tsx:383
+    source: apps/web/src/components/page/ShareDialog.tsx:389
     critical: true
   - id: page/ShareDialog/skryt-parametry
     kind: button
     screen: page
     component: ShareDialog
     label: Скрыть параметры
-    source: apps/web/src/components/page/ShareDialog.tsx:390
+    source: apps/web/src/components/page/ShareDialog.tsx:396
     critical: false
   - id: page/ShareDialog/dostup-s
     kind: input
     screen: page
     component: ShareDialog
     label: Доступ с
-    source: apps/web/src/components/page/ShareDialog.tsx:400
+    source: apps/web/src/components/page/ShareDialog.tsx:406
     critical: true
   - id: page/ShareDialog/osnovanie-dostupa
     kind: input
     screen: page
     component: ShareDialog
     label: Основание доступа
-    source: apps/web/src/components/page/ShareDialog.tsx:403
+    source: apps/web/src/components/page/ShareDialog.tsx:409
     critical: true
   - id: page/ShareDialog/zapretit-skachivanie-vlozheniy
     kind: toggle
     screen: page
     component: ShareDialog
     label: Запретить скачивание вложений
-    source: apps/web/src/components/page/ShareDialog.tsx:405
+    source: apps/web/src/components/page/ShareDialog.tsx:411
     critical: false
   - id: page/ShareDialog/zapretit-eksport
     kind: toggle
     screen: page
     component: ShareDialog
     label: Запретить экспорт
-    source: apps/web/src/components/page/ShareDialog.tsx:408
+    source: apps/web/src/components/page/ShareDialog.tsx:414
     critical: false
   - id: page/ShareDialog/mozhet-delitsya-stranicey-dlya-redaktirovaniya
     kind: toggle
     screen: page
     component: ShareDialog
     label: Может делиться страницей (для редактирования)
-    source: apps/web/src/components/page/ShareDialog.tsx:411
+    source: apps/web/src/components/page/ShareDialog.tsx:417
     critical: false
   - id: page/ShareDialog/obschiy-dostup
     kind: select
     screen: page
     component: ShareDialog
     label: Общий доступ
-    source: apps/web/src/components/page/ShareDialog.tsx:444
+    source: apps/web/src/components/page/ShareDialog.tsx:450
     critical: true
   - id: page/ShareDialog/uroven-dostupa~2
     kind: select
@@ -3489,7 +3490,7 @@ actions:
     component: ShareDialog
     label: "Уровень доступа: {…}"
     dynamic: true
-    source: apps/web/src/components/page/ShareDialog.tsx:478
+    source: apps/web/src/components/page/ShareDialog.tsx:488
     critical: true
   - id: page/ShareDialog/ubrat-dostup
     kind: button
@@ -3497,56 +3498,56 @@ actions:
     component: ShareDialog
     label: "Убрать доступ: {…}"
     dynamic: true
-    source: apps/web/src/components/page/ShareDialog.tsx:486
+    source: apps/web/src/components/page/ShareDialog.tsx:496
     critical: true
   - id: page/ShareDialog/nasledovat-prava
     kind: toggle
     screen: page
     component: ShareDialog
     label: Наследовать права
-    source: apps/web/src/components/page/ShareDialog.tsx:500
+    source: apps/web/src/components/page/ShareDialog.tsx:510
     critical: true
   - id: page/ShareDialog/pochemu-u-polzovatelya-est-dostup
     kind: button
     screen: page
     component: ShareDialog
     label: Почему у пользователя есть доступ?
-    source: apps/web/src/components/page/ShareDialog.tsx:545
+    source: apps/web/src/components/page/ShareDialog.tsx:555
     critical: true
   - id: page/ShareDialog/zaprosit-bolshe-prav
     kind: button
     screen: page
     component: ShareDialog
     label: Запросить больше прав
-    source: apps/web/src/components/page/ShareDialog.tsx:550
+    source: apps/web/src/components/page/ShareDialog.tsx:560
     critical: false
   - id: page/AccessRequest/nuzhnyy-uroven
     kind: select
     screen: page
     component: AccessRequest
     label: Нужный уровень
-    source: apps/web/src/components/page/ShareDialog.tsx:655
+    source: apps/web/src/components/page/ShareDialog.tsx:665
     critical: false
   - id: page/AccessRequest/zachem-nuzhen-dostup-neobyazatelno
     kind: input
     screen: page
     component: AccessRequest
     label: Зачем нужен доступ (необязательно)
-    source: apps/web/src/components/page/ShareDialog.tsx:665
+    source: apps/web/src/components/page/ShareDialog.tsx:675
     critical: true
   - id: page/AccessRequest/otpravit-zapros
     kind: button
     screen: page
     component: AccessRequest
     label: Отправить запрос
-    source: apps/web/src/components/page/ShareDialog.tsx:668
+    source: apps/web/src/components/page/ShareDialog.tsx:678
     critical: true
   - id: page/SharePresets/confirm.ostavit-dostup-tolko-vam
     kind: dialog
     screen: page
     component: SharePresets
     label: Оставить доступ только вам?
-    source: apps/web/src/components/page/ShareDialog.tsx:706
+    source: apps/web/src/components/page/ShareDialog.tsx:716
     confirm: true
     critical: true
   - id: page/SharePresets/confirm.ostavit-dostup-tolko-vam.tolko-ya
@@ -3554,7 +3555,7 @@ actions:
     screen: page
     component: SharePresets
     label: Только я
-    source: apps/web/src/components/page/ShareDialog.tsx:706
+    source: apps/web/src/components/page/ShareDialog.tsx:716
     confirm: true
     critical: false
   - id: page/SharePresets/tolko-ya
@@ -3562,7 +3563,7 @@ actions:
     screen: page
     component: SharePresets
     label: Только я
-    source: apps/web/src/components/page/ShareDialog.tsx:740
+    source: apps/web/src/components/page/ShareDialog.tsx:750
     critical: false
   - id: page/SharePresets/otdel
     kind: button
@@ -3570,14 +3571,14 @@ actions:
     component: SharePresets
     label: "Отдел: {…}"
     dynamic: true
-    source: apps/web/src/components/page/ShareDialog.tsx:744
+    source: apps/web/src/components/page/ShareDialog.tsx:754
     critical: false
   - id: page/SharePresets/vsya-kompaniya
     kind: button
     screen: page
     component: SharePresets
     label: Вся компания
-    source: apps/web/src/components/page/ShareDialog.tsx:748
+    source: apps/web/src/components/page/ShareDialog.tsx:758
     critical: false
   - id: page/DirectoryPicker/select-data
     kind: select
@@ -3585,7 +3586,7 @@ actions:
     component: DirectoryPicker
     label: "{…}"
     dynamic: true
-    source: apps/web/src/components/page/directory.tsx:91
+    source: apps/web/src/components/page/directory.tsx:105
     data_driven: true
     critical: false
   - id: page/DirectoryPicker/option-data
@@ -3594,7 +3595,7 @@ actions:
     component: DirectoryPicker
     label: "{…}"
     dynamic: true
-    source: apps/web/src/components/page/directory.tsx:128
+    source: apps/web/src/components/page/directory.tsx:142
     data_driven: true
     critical: false
   - id: space/SpaceAccess/project
@@ -3772,7 +3773,7 @@ actions:
     screen: space
     component: SpaceMembersEditor
     label: Открыть пространство всей организации?
-    source: apps/web/src/components/space/SpaceAccess.tsx:259
+    source: apps/web/src/components/space/SpaceAccess.tsx:273
     confirm: true
     critical: false
   - id: space/SpaceMembersEditor/confirm.otkryt-prostranstvo-vsey-organizacii.otkryt-vsem
@@ -3780,7 +3781,7 @@ actions:
     screen: space
     component: SpaceMembersEditor
     label: Открыть всем
-    source: apps/web/src/components/space/SpaceAccess.tsx:259
+    source: apps/web/src/components/space/SpaceAccess.tsx:273
     confirm: true
     critical: false
   - id: space/SpaceMembersEditor/confirm.ponizit-sobstvennyy-dostup
@@ -3788,7 +3789,7 @@ actions:
     screen: space
     component: SpaceMembersEditor
     label: Понизить собственный доступ?
-    source: apps/web/src/components/space/SpaceAccess.tsx:291
+    source: apps/web/src/components/space/SpaceAccess.tsx:305
     confirm: true
     critical: true
   - id: space/SpaceMembersEditor/confirm.ponizit-sobstvennyy-dostup.ponizit
@@ -3796,7 +3797,7 @@ actions:
     screen: space
     component: SpaceMembersEditor
     label: Понизить
-    source: apps/web/src/components/space/SpaceAccess.tsx:291
+    source: apps/web/src/components/space/SpaceAccess.tsx:305
     confirm: true
     critical: false
   - id: space/SpaceMembersEditor/confirm.ubrat-iz-prostranstva
@@ -3805,7 +3806,7 @@ actions:
     component: SpaceMembersEditor
     label: "Убрать из пространства: {…}?"
     dynamic: true
-    source: apps/web/src/components/space/SpaceAccess.tsx:303
+    source: apps/web/src/components/space/SpaceAccess.tsx:317
     confirm: true
     critical: false
   - id: space/SpaceMembersEditor/confirm.ubrat-iz-prostranstva.ubrat
@@ -3813,7 +3814,7 @@ actions:
     screen: space
     component: SpaceMembersEditor
     label: Убрать
-    source: apps/web/src/components/space/SpaceAccess.tsx:303
+    source: apps/web/src/components/space/SpaceAccess.tsx:317
     confirm: true
     critical: false
   - id: space/SpaceMembersEditor/ubrat
@@ -3821,35 +3822,35 @@ actions:
     screen: space
     component: SpaceMembersEditor
     label: Убрать
-    source: apps/web/src/components/space/SpaceAccess.tsx:326
+    source: apps/web/src/components/space/SpaceAccess.tsx:341
     critical: false
   - id: space/SpaceMembersEditor/uroven-dostupa
     kind: select
     screen: space
     component: SpaceMembersEditor
     label: Уровень доступа
-    source: apps/web/src/components/space/SpaceAccess.tsx:338
+    source: apps/web/src/components/space/SpaceAccess.tsx:353
     critical: true
   - id: space/SpaceMembersEditor/dostup-do
     kind: input
     screen: space
     component: SpaceMembersEditor
     label: Доступ до
-    source: apps/web/src/components/space/SpaceAccess.tsx:349
+    source: apps/web/src/components/space/SpaceAccess.tsx:364
     critical: true
   - id: space/SpaceMembersEditor/osnovanie-dostupa
     kind: input
     screen: space
     component: SpaceMembersEditor
     label: Основание доступа
-    source: apps/web/src/components/space/SpaceAccess.tsx:351
+    source: apps/web/src/components/space/SpaceAccess.tsx:366
     critical: true
   - id: space/SpaceMembersEditor/dobavit-v-prostranstvo
     kind: button
     screen: space
     component: SpaceMembersEditor
     label: Добавить в пространство
-    source: apps/web/src/components/space/SpaceAccess.tsx:353
+    source: apps/web/src/components/space/SpaceAccess.tsx:377
     critical: false
   - id: space/SpaceMembersEditor/uroven-dostupa~2
     kind: select
@@ -3857,7 +3858,7 @@ actions:
     component: SpaceMembersEditor
     label: "Уровень доступа: {…}"
     dynamic: true
-    source: apps/web/src/components/space/SpaceAccess.tsx:379
+    source: apps/web/src/components/space/SpaceAccess.tsx:403
     critical: true
   - id: space/SpaceMembersEditor/ubrat-dostup
     kind: button
@@ -3865,7 +3866,7 @@ actions:
     component: SpaceMembersEditor
     label: "Убрать доступ: {…}"
     dynamic: true
-    source: apps/web/src/components/space/SpaceAccess.tsx:387
+    source: apps/web/src/components/space/SpaceAccess.tsx:411
     critical: true
   - id: ui/ConfirmHost/otmena
     kind: button
@@ -4046,21 +4047,21 @@ actions:
     screen: editor
     component: PageEditor
     label: Разрешить
-    source: apps/web/src/editor/Editor.tsx:150
+    source: apps/web/src/editor/Editor.tsx:153
     critical: false
   - id: editor/FatalBanner/skachat-lokalnuyu-kopiyu-markdown
     kind: button
     screen: editor
     component: FatalBanner
     label: Скачать локальную копию (Markdown)
-    source: apps/web/src/editor/Editor.tsx:218
+    source: apps/web/src/editor/Editor.tsx:221
     critical: false
   - id: editor/EditorInner/nazvanie-stranicy
     kind: input
     screen: editor
     component: EditorInner
     label: Название страницы
-    source: apps/web/src/editor/Editor.tsx:446
+    source: apps/web/src/editor/Editor.tsx:449
     critical: false
     seen:
       - /p/:pageId
@@ -4069,7 +4070,7 @@ actions:
     screen: editor
     component: EditorInner
     label: Открыть
-    source: apps/web/src/editor/Editor.tsx:504
+    source: apps/web/src/editor/Editor.tsx:508
     critical: false
   - id: editor/EditorInner/button-data
     kind: button
@@ -4077,7 +4078,7 @@ actions:
     component: EditorInner
     label: "{…}"
     dynamic: true
-    source: apps/web/src/editor/Editor.tsx:525
+    source: apps/web/src/editor/Editor.tsx:529
     data_driven: true
     critical: false
   - id: editor/EditorInner/otkryt~2
@@ -4085,105 +4086,121 @@ actions:
     screen: editor
     component: EditorInner
     label: Открыть
-    source: apps/web/src/editor/Editor.tsx:558
+    source: apps/web/src/editor/Editor.tsx:562
     critical: false
   - id: editor/ReadOnlyCommentButton/kommentirovat
     kind: button
     screen: editor
     component: ReadOnlyCommentButton
     label: Комментировать
-    source: apps/web/src/editor/Editor.tsx:612
+    source: apps/web/src/editor/Editor.tsx:616
     critical: false
   - id: editor/FindBar/nayti-na-stranice
     kind: input
     screen: editor
     component: FindBar
     label: Найти на странице
-    source: apps/web/src/editor/Editor.tsx:634
+    source: apps/web/src/editor/Editor.tsx:638
     critical: false
   - id: editor/FindBar/predyduschee
     kind: button
     screen: editor
     component: FindBar
     label: Предыдущее
-    source: apps/web/src/editor/Editor.tsx:658
+    source: apps/web/src/editor/Editor.tsx:662
     critical: false
   - id: editor/FindBar/sleduyuschee
     kind: button
     screen: editor
     component: FindBar
     label: Следующее
-    source: apps/web/src/editor/Editor.tsx:661
+    source: apps/web/src/editor/Editor.tsx:665
     critical: false
   - id: editor/FindBar/zakryt-poisk
     kind: button
     screen: editor
     component: FindBar
     label: Закрыть поиск
-    source: apps/web/src/editor/Editor.tsx:664
+    source: apps/web/src/editor/Editor.tsx:668
     critical: false
   - id: editor/EmbedDialog/video-ili-ssylka
     kind: dialog
     screen: editor
     component: EmbedDialog
     label: Видео или ссылка
-    source: apps/web/src/editor/Editor.tsx:675
+    source: apps/web/src/editor/Editor.tsx:679
     critical: false
   - id: editor/EmbedDialog/otmena
     kind: button
     screen: editor
     component: EmbedDialog
     label: Отмена
-    source: apps/web/src/editor/Editor.tsx:681
+    source: apps/web/src/editor/Editor.tsx:685
     critical: false
   - id: editor/EmbedDialog/vstavit
     kind: button
     screen: editor
     component: EmbedDialog
     label: Вставить
-    source: apps/web/src/editor/Editor.tsx:684
+    source: apps/web/src/editor/Editor.tsx:688
     critical: false
   - id: editor/EmbedDialog/adres
     kind: input
     screen: editor
     component: EmbedDialog
     label: Адрес
-    source: apps/web/src/editor/Editor.tsx:692
+    source: apps/web/src/editor/Editor.tsx:696
     critical: false
   - id: editor/MathDialog/formula
     kind: dialog
     screen: editor
     component: MathDialog
     label: Формула
-    source: apps/web/src/editor/Editor.tsx:712
+    source: apps/web/src/editor/Editor.tsx:716
     critical: false
   - id: editor/MathDialog/otmena
     kind: button
     screen: editor
     component: MathDialog
     label: Отмена
-    source: apps/web/src/editor/Editor.tsx:718
+    source: apps/web/src/editor/Editor.tsx:722
     critical: false
   - id: editor/MathDialog/gotovo
     kind: button
     screen: editor
     component: MathDialog
     label: Готово
-    source: apps/web/src/editor/Editor.tsx:721
+    source: apps/web/src/editor/Editor.tsx:725
     critical: false
   - id: editor/MathDialog/formula-latex
     kind: input
     screen: editor
     component: MathDialog
     label: Формула LaTeX
-    source: apps/web/src/editor/Editor.tsx:728
+    source: apps/web/src/editor/Editor.tsx:732
     critical: false
   - id: editor/TouchInsertButton/vstavit-blok
     kind: button
     screen: editor
     component: TouchInsertButton
     label: Вставить блок
-    source: apps/web/src/editor/Editor.tsx:740
+    source: apps/web/src/editor/Editor.tsx:744
+    critical: false
+  - id: editor/FootnotesList/snoska-otkryt-u-ssylki-v-tekste
+    kind: button
+    screen: editor
+    component: FootnotesList
+    label: "Сноска {…}: открыть у ссылки в тексте"
+    dynamic: true
+    source: apps/web/src/editor/FootnotesList.tsx:65
+    critical: false
+  - id: editor/FootnotesList/vernutsya-k-ssylke-na-snosku
+    kind: button
+    screen: editor
+    component: FootnotesList
+    label: Вернуться к ссылке на сноску {…}
+    dynamic: true
+    source: apps/web/src/editor/FootnotesList.tsx:68
     critical: false
   - id: editor/ImageUrlDialog/izobrazhenie-po-ssylke
     kind: dialog
@@ -4271,7 +4288,7 @@ actions:
     screen: editor
     component: commands
     label: Текст
-    source: apps/web/src/editor/commands.tsx:32
+    source: apps/web/src/editor/commands.tsx:33
     keywords: text paragraph текст абзац обычный
     critical: false
   - id: editor/commands/h1
@@ -4279,7 +4296,7 @@ actions:
     screen: editor
     component: commands
     label: Заголовок 1
-    source: apps/web/src/editor/commands.tsx:33
+    source: apps/web/src/editor/commands.tsx:34
     shortcut: "#"
     keywords: h1 heading title заголовок большой
     critical: false
@@ -4288,7 +4305,7 @@ actions:
     screen: editor
     component: commands
     label: Заголовок 2
-    source: apps/web/src/editor/commands.tsx:34
+    source: apps/web/src/editor/commands.tsx:35
     shortcut: "##"
     keywords: h2 heading subtitle заголовок средний
     critical: false
@@ -4297,7 +4314,7 @@ actions:
     screen: editor
     component: commands
     label: Заголовок 3
-    source: apps/web/src/editor/commands.tsx:35
+    source: apps/web/src/editor/commands.tsx:36
     shortcut: "###"
     keywords: h3 heading заголовок малый
     critical: false
@@ -4306,7 +4323,7 @@ actions:
     screen: editor
     component: commands
     label: Заголовок 4
-    source: apps/web/src/editor/commands.tsx:36
+    source: apps/web/src/editor/commands.tsx:37
     shortcut: "####"
     keywords: h4 heading заголовок четвёртого уровня
     critical: false
@@ -4315,7 +4332,7 @@ actions:
     screen: editor
     component: commands
     label: Заголовок 5
-    source: apps/web/src/editor/commands.tsx:37
+    source: apps/web/src/editor/commands.tsx:38
     shortcut: "#####"
     keywords: h5 heading заголовок пятого уровня
     critical: false
@@ -4324,7 +4341,7 @@ actions:
     screen: editor
     component: commands
     label: Заголовок 6
-    source: apps/web/src/editor/commands.tsx:38
+    source: apps/web/src/editor/commands.tsx:39
     shortcut: "######"
     keywords: h6 heading заголовок шестого уровня
     critical: false
@@ -4333,7 +4350,7 @@ actions:
     screen: editor
     component: commands
     label: Вводный абзац
-    source: apps/web/src/editor/commands.tsx:39
+    source: apps/web/src/editor/commands.tsx:40
     keywords: lead intro вводный лид крупный
     critical: false
   - id: editor/commands/bullet
@@ -4341,7 +4358,7 @@ actions:
     screen: editor
     component: commands
     label: Маркированный список
-    source: apps/web/src/editor/commands.tsx:40
+    source: apps/web/src/editor/commands.tsx:41
     shortcut: "-"
     keywords: bullet list ul список маркеры точки
     critical: false
@@ -4350,7 +4367,7 @@ actions:
     screen: editor
     component: commands
     label: Нумерованный список
-    source: apps/web/src/editor/commands.tsx:41
+    source: apps/web/src/editor/commands.tsx:42
     shortcut: "1."
     keywords: number ordered ol список нумерация
     critical: false
@@ -4359,7 +4376,7 @@ actions:
     screen: editor
     component: commands
     label: Чек-лист
-    source: apps/web/src/editor/commands.tsx:42
+    source: apps/web/src/editor/commands.tsx:43
     shortcut: "[]"
     keywords: todo task checklist чеклист задачи галочки
     critical: false
@@ -4370,7 +4387,7 @@ actions:
     screen: editor
     component: commands
     label: Раскрывающийся блок
-    source: apps/web/src/editor/commands.tsx:43
+    source: apps/web/src/editor/commands.tsx:44
     shortcut: ">"
     keywords: toggle details collapse раскрывающийся свернуть спойлер
     critical: false
@@ -4379,7 +4396,7 @@ actions:
     screen: editor
     component: commands
     label: Таблица
-    source: apps/web/src/editor/commands.tsx:44
+    source: apps/web/src/editor/commands.tsx:45
     keywords: table grid таблица сетка
     critical: false
   - id: editor/commands/callout
@@ -4387,7 +4404,7 @@ actions:
     screen: editor
     component: commands
     label: Выделенный блок
-    source: apps/web/src/editor/commands.tsx:45
+    source: apps/web/src/editor/commands.tsx:46
     shortcut: "!info"
     keywords: callout note info warning tip выноска заметка предупреждение совет важно
     critical: false
@@ -4396,7 +4413,7 @@ actions:
     screen: editor
     component: commands
     label: Цитата
-    source: apps/web/src/editor/commands.tsx:46
+    source: apps/web/src/editor/commands.tsx:47
     shortcut: '"'
     keywords: quote blockquote цитата
     critical: false
@@ -4405,7 +4422,7 @@ actions:
     screen: editor
     component: commands
     label: Блок кода
-    source: apps/web/src/editor/commands.tsx:47
+    source: apps/web/src/editor/commands.tsx:48
     shortcut: "```"
     keywords: code snippet код программа
     critical: false
@@ -4414,7 +4431,7 @@ actions:
     screen: editor
     component: commands
     label: Разделитель
-    source: apps/web/src/editor/commands.tsx:48
+    source: apps/web/src/editor/commands.tsx:49
     shortcut: ---
     keywords: divider hr line separator разделитель линия
     critical: false
@@ -4423,7 +4440,7 @@ actions:
     screen: editor
     component: commands
     label: Две колонки
-    source: apps/web/src/editor/commands.tsx:49
+    source: apps/web/src/editor/commands.tsx:50
     keywords: columns layout колонки столбцы две
     critical: false
   - id: editor/commands/cols3
@@ -4431,7 +4448,7 @@ actions:
     screen: editor
     component: commands
     label: Три колонки
-    source: apps/web/src/editor/commands.tsx:50
+    source: apps/web/src/editor/commands.tsx:51
     keywords: columns layout колонки столбцы три
     critical: false
   - id: editor/commands/image
@@ -4439,7 +4456,7 @@ actions:
     screen: editor
     component: commands
     label: Изображение
-    source: apps/web/src/editor/commands.tsx:51
+    source: apps/web/src/editor/commands.tsx:52
     keywords: image picture photo screenshot изображение картинка фото скриншот
     critical: false
   - id: editor/commands/image-url
@@ -4447,7 +4464,7 @@ actions:
     screen: editor
     component: commands
     label: Изображение по ссылке
-    source: apps/web/src/editor/commands.tsx:52
+    source: apps/web/src/editor/commands.tsx:53
     keywords: image url link picture изображение ссылка адрес картинка интернет
     critical: false
   - id: editor/commands/file
@@ -4455,7 +4472,7 @@ actions:
     screen: editor
     component: commands
     label: Файл
-    source: apps/web/src/editor/commands.tsx:53
+    source: apps/web/src/editor/commands.tsx:54
     keywords: file attachment pdf docx файл вложение документ
     critical: false
     seen:
@@ -4465,7 +4482,7 @@ actions:
     screen: editor
     component: commands
     label: Видео или ссылка
-    source: apps/web/src/editor/commands.tsx:54
+    source: apps/web/src/editor/commands.tsx:55
     keywords: video embed youtube rutube видео встроить ссылка
     critical: false
   - id: editor/commands/subpage
@@ -4473,7 +4490,7 @@ actions:
     screen: editor
     component: commands
     label: Вложенная страница
-    source: apps/web/src/editor/commands.tsx:55
+    source: apps/web/src/editor/commands.tsx:56
     keywords: page subpage child страница вложенная подстраница
     critical: false
   - id: editor/commands/pagelink
@@ -4481,7 +4498,7 @@ actions:
     screen: editor
     component: commands
     label: Ссылка на страницу
-    source: apps/web/src/editor/commands.tsx:56
+    source: apps/web/src/editor/commands.tsx:57
     shortcut: "[["
     keywords: link page mention ссылка страница
     critical: false
@@ -4490,7 +4507,7 @@ actions:
     screen: editor
     component: commands
     label: Упоминание
-    source: apps/web/src/editor/commands.tsx:57
+    source: apps/web/src/editor/commands.tsx:58
     shortcut: "@"
     keywords: mention user person упоминание сотрудник
     critical: false
@@ -4499,7 +4516,7 @@ actions:
     screen: editor
     component: commands
     label: Оглавление
-    source: apps/web/src/editor/commands.tsx:58
+    source: apps/web/src/editor/commands.tsx:59
     keywords: toc contents оглавление содержание
     critical: false
   - id: editor/commands/synced
@@ -4507,7 +4524,7 @@ actions:
     screen: editor
     component: commands
     label: Синхронизированный блок
-    source: apps/web/src/editor/commands.tsx:59
+    source: apps/web/src/editor/commands.tsx:60
     keywords: synced block reuse синхронизированный повтор вставка блока
     critical: false
   - id: editor/commands/collection
@@ -4515,15 +4532,24 @@ actions:
     screen: editor
     component: commands
     label: Реестр (база данных)
-    source: apps/web/src/editor/commands.tsx:60
+    source: apps/web/src/editor/commands.tsx:61
     keywords: database collection registry реестр база таблица данных
+    critical: false
+  - id: editor/commands/footnote
+    kind: command
+    screen: editor
+    component: commands
+    label: Сноска
+    source: apps/web/src/editor/commands.tsx:62
+    shortcut: Ctrl+Alt+F
+    keywords: footnote note reference сноска примечание ссылка источник
     critical: false
   - id: editor/commands/math
     kind: command
     screen: editor
     component: commands
     label: Формула
-    source: apps/web/src/editor/commands.tsx:61
+    source: apps/web/src/editor/commands.tsx:63
     keywords: math formula latex katex формула уравнение
     critical: false
   - id: editor/commands/mermaid
@@ -4531,7 +4557,7 @@ actions:
     screen: editor
     component: commands
     label: Схема (Mermaid)
-    source: apps/web/src/editor/commands.tsx:62
+    source: apps/web/src/editor/commands.tsx:64
     keywords: diagram mermaid flowchart схема диаграмма процесс
     critical: false
   - id: editor/commands/emoji
@@ -4539,7 +4565,7 @@ actions:
     screen: editor
     component: commands
     label: Эмодзи
-    source: apps/web/src/editor/commands.tsx:63
+    source: apps/web/src/editor/commands.tsx:65
     shortcut: ":"
     keywords: emoji smile эмодзи смайлик
     critical: false
@@ -4726,7 +4752,7 @@ actions:
     screen: editor
     component: BubbleToolbar
     label: Преобразовать в блок кода?
-    source: apps/web/src/editor/menus/BubbleToolbar.tsx:19
+    source: apps/web/src/editor/menus/BubbleToolbar.tsx:20
     confirm: true
     critical: false
   - id: editor/BubbleToolbar/confirm.preobrazovat-v-blok-koda.preobrazovat
@@ -4734,7 +4760,7 @@ actions:
     screen: editor
     component: BubbleToolbar
     label: Преобразовать
-    source: apps/web/src/editor/menus/BubbleToolbar.tsx:19
+    source: apps/web/src/editor/menus/BubbleToolbar.tsx:20
     confirm: true
     critical: false
   - id: editor/BubbleToolbar/p
@@ -4742,14 +4768,14 @@ actions:
     screen: editor
     component: BubbleToolbar
     label: Текст
-    source: apps/web/src/editor/menus/BubbleToolbar.tsx:71
+    source: apps/web/src/editor/menus/BubbleToolbar.tsx:72
     critical: false
   - id: editor/BubbleToolbar/h1
     kind: menu-item
     screen: editor
     component: BubbleToolbar
     label: Заголовок 1
-    source: apps/web/src/editor/menus/BubbleToolbar.tsx:72
+    source: apps/web/src/editor/menus/BubbleToolbar.tsx:73
     shortcut: Mod+Alt+1
     critical: false
   - id: editor/BubbleToolbar/h2
@@ -4757,7 +4783,7 @@ actions:
     screen: editor
     component: BubbleToolbar
     label: Заголовок 2
-    source: apps/web/src/editor/menus/BubbleToolbar.tsx:73
+    source: apps/web/src/editor/menus/BubbleToolbar.tsx:74
     shortcut: Mod+Alt+2
     critical: false
   - id: editor/BubbleToolbar/h3
@@ -4765,7 +4791,7 @@ actions:
     screen: editor
     component: BubbleToolbar
     label: Заголовок 3
-    source: apps/web/src/editor/menus/BubbleToolbar.tsx:74
+    source: apps/web/src/editor/menus/BubbleToolbar.tsx:75
     shortcut: Mod+Alt+3
     critical: false
   - id: editor/BubbleToolbar/ul
@@ -4773,7 +4799,7 @@ actions:
     screen: editor
     component: BubbleToolbar
     label: Маркированный список
-    source: apps/web/src/editor/menus/BubbleToolbar.tsx:75
+    source: apps/web/src/editor/menus/BubbleToolbar.tsx:76
     shortcut: Mod+Shift+8
     critical: false
   - id: editor/BubbleToolbar/ol
@@ -4781,7 +4807,7 @@ actions:
     screen: editor
     component: BubbleToolbar
     label: Нумерованный список
-    source: apps/web/src/editor/menus/BubbleToolbar.tsx:76
+    source: apps/web/src/editor/menus/BubbleToolbar.tsx:77
     shortcut: Mod+Shift+7
     critical: false
   - id: editor/BubbleToolbar/todo
@@ -4789,7 +4815,7 @@ actions:
     screen: editor
     component: BubbleToolbar
     label: Чек-лист
-    source: apps/web/src/editor/menus/BubbleToolbar.tsx:77
+    source: apps/web/src/editor/menus/BubbleToolbar.tsx:78
     shortcut: Mod+Shift+9
     critical: false
     seen:
@@ -4799,21 +4825,21 @@ actions:
     screen: editor
     component: BubbleToolbar
     label: Цитата
-    source: apps/web/src/editor/menus/BubbleToolbar.tsx:78
+    source: apps/web/src/editor/menus/BubbleToolbar.tsx:79
     critical: false
   - id: editor/BubbleToolbar/code
     kind: menu-item
     screen: editor
     component: BubbleToolbar
     label: Блок кода
-    source: apps/web/src/editor/menus/BubbleToolbar.tsx:79
+    source: apps/web/src/editor/menus/BubbleToolbar.tsx:80
     critical: false
   - id: editor/BubbleToolbar/callout
     kind: menu-item
     screen: editor
     component: BubbleToolbar
     label: Выделенный блок
-    source: apps/web/src/editor/menus/BubbleToolbar.tsx:80
+    source: apps/web/src/editor/menus/BubbleToolbar.tsx:81
     critical: false
   - id: editor/BubbleToolbar/btn.button-data
     kind: button
@@ -4821,7 +4847,7 @@ actions:
     component: BubbleToolbar
     label: "{…}"
     dynamic: true
-    source: apps/web/src/editor/menus/BubbleToolbar.tsx:113
+    source: apps/web/src/editor/menus/BubbleToolbar.tsx:114
     data_driven: true
     critical: false
   - id: editor/BubbleToolbar/adres-ssylki
@@ -4829,14 +4855,14 @@ actions:
     screen: editor
     component: BubbleToolbar
     label: Адрес ссылки
-    source: apps/web/src/editor/menus/BubbleToolbar.tsx:140
+    source: apps/web/src/editor/menus/BubbleToolbar.tsx:141
     critical: false
   - id: editor/BubbleToolbar/tip-bloka
     kind: menu
     screen: editor
     component: BubbleToolbar
     label: Тип блока
-    source: apps/web/src/editor/menus/BubbleToolbar.tsx:166
+    source: apps/web/src/editor/menus/BubbleToolbar.tsx:167
     critical: false
   - id: editor/BubbleToolbar/button-data
     kind: button
@@ -4844,7 +4870,7 @@ actions:
     component: BubbleToolbar
     label: "{…}"
     dynamic: true
-    source: apps/web/src/editor/menus/BubbleToolbar.tsx:170
+    source: apps/web/src/editor/menus/BubbleToolbar.tsx:171
     data_driven: true
     critical: false
   - id: editor/BubbleToolbar/cvet
@@ -4852,140 +4878,147 @@ actions:
     screen: editor
     component: BubbleToolbar
     label: Цвет
-    source: apps/web/src/editor/menus/BubbleToolbar.tsx:182
+    source: apps/web/src/editor/menus/BubbleToolbar.tsx:183
     critical: false
   - id: editor/BubbleToolbar/c-default
     kind: menu-item
     screen: editor
     component: BubbleToolbar
     label: По умолчанию
-    source: apps/web/src/editor/menus/BubbleToolbar.tsx:186
+    source: apps/web/src/editor/menus/BubbleToolbar.tsx:187
     critical: false
   - id: editor/BubbleToolbar/h-none
     kind: menu-item
     screen: editor
     component: BubbleToolbar
     label: Без фона
-    source: apps/web/src/editor/menus/BubbleToolbar.tsx:189
+    source: apps/web/src/editor/menus/BubbleToolbar.tsx:190
     critical: false
   - id: editor/BubbleToolbar/cvet-teksta-i-fona
     kind: button
     screen: editor
     component: BubbleToolbar
     label: Цвет текста и фона
-    source: apps/web/src/editor/menus/BubbleToolbar.tsx:194
+    source: apps/web/src/editor/menus/BubbleToolbar.tsx:195
     critical: false
   - id: editor/BubbleToolbar/esche
     kind: menu
     screen: editor
     component: BubbleToolbar
     label: Ещё
-    source: apps/web/src/editor/menus/BubbleToolbar.tsx:201
+    source: apps/web/src/editor/menus/BubbleToolbar.tsx:202
     critical: false
   - id: editor/BubbleToolbar/left
     kind: menu-item
     screen: editor
     component: BubbleToolbar
     label: По левому краю
-    source: apps/web/src/editor/menus/BubbleToolbar.tsx:204
+    source: apps/web/src/editor/menus/BubbleToolbar.tsx:205
     critical: false
   - id: editor/BubbleToolbar/center
     kind: menu-item
     screen: editor
     component: BubbleToolbar
     label: По центру
-    source: apps/web/src/editor/menus/BubbleToolbar.tsx:205
+    source: apps/web/src/editor/menus/BubbleToolbar.tsx:206
     critical: false
   - id: editor/BubbleToolbar/right
     kind: menu-item
     screen: editor
     component: BubbleToolbar
     label: По правому краю
-    source: apps/web/src/editor/menus/BubbleToolbar.tsx:206
+    source: apps/web/src/editor/menus/BubbleToolbar.tsx:207
     critical: true
   - id: editor/BubbleToolbar/justify
     kind: menu-item
     screen: editor
     component: BubbleToolbar
     label: По ширине
-    source: apps/web/src/editor/menus/BubbleToolbar.tsx:207
+    source: apps/web/src/editor/menus/BubbleToolbar.tsx:208
     critical: false
   - id: editor/BubbleToolbar/size
     kind: option
     screen: editor
     component: BubbleToolbar
     label: Размер шрифта
-    source: apps/web/src/editor/menus/BubbleToolbar.tsx:209
+    source: apps/web/src/editor/menus/BubbleToolbar.tsx:210
     critical: false
   - id: editor/BubbleToolbar/sz-default
     kind: menu-item
     screen: editor
     component: BubbleToolbar
     label: По умолчанию
-    source: apps/web/src/editor/menus/BubbleToolbar.tsx:213
+    source: apps/web/src/editor/menus/BubbleToolbar.tsx:214
     critical: false
   - id: editor/BubbleToolbar/font
     kind: option
     screen: editor
     component: BubbleToolbar
     label: Шрифт
-    source: apps/web/src/editor/menus/BubbleToolbar.tsx:217
+    source: apps/web/src/editor/menus/BubbleToolbar.tsx:218
     critical: false
   - id: editor/BubbleToolbar/f-default
     kind: menu-item
     screen: editor
     component: BubbleToolbar
     label: Основной
-    source: apps/web/src/editor/menus/BubbleToolbar.tsx:221
+    source: apps/web/src/editor/menus/BubbleToolbar.tsx:222
     critical: false
   - id: editor/BubbleToolbar/f-serif
     kind: menu-item
     screen: editor
     component: BubbleToolbar
     label: С засечками
-    source: apps/web/src/editor/menus/BubbleToolbar.tsx:222
+    source: apps/web/src/editor/menus/BubbleToolbar.tsx:223
     critical: false
   - id: editor/BubbleToolbar/f-mono
     kind: menu-item
     screen: editor
     component: BubbleToolbar
     label: Моноширинный
-    source: apps/web/src/editor/menus/BubbleToolbar.tsx:223
+    source: apps/web/src/editor/menus/BubbleToolbar.tsx:224
     critical: false
   - id: editor/BubbleToolbar/sub
     kind: menu-item
     screen: editor
     component: BubbleToolbar
     label: Нижний индекс
-    source: apps/web/src/editor/menus/BubbleToolbar.tsx:227
+    source: apps/web/src/editor/menus/BubbleToolbar.tsx:228
     critical: false
   - id: editor/BubbleToolbar/sup
     kind: menu-item
     screen: editor
     component: BubbleToolbar
     label: Верхний индекс
-    source: apps/web/src/editor/menus/BubbleToolbar.tsx:228
+    source: apps/web/src/editor/menus/BubbleToolbar.tsx:229
+    critical: false
+  - id: editor/BubbleToolbar/footnote
+    kind: menu-item
+    screen: editor
+    component: BubbleToolbar
+    label: Сноска (Ctrl+Alt+F)
+    source: apps/web/src/editor/menus/BubbleToolbar.tsx:230
     critical: false
   - id: editor/BubbleToolbar/math
     kind: menu-item
     screen: editor
     component: BubbleToolbar
     label: Формула из выделения
-    source: apps/web/src/editor/menus/BubbleToolbar.tsx:229
+    source: apps/web/src/editor/menus/BubbleToolbar.tsx:231
     critical: false
   - id: editor/BubbleToolbar/clear
     kind: menu-item
     screen: editor
     component: BubbleToolbar
     label: Очистить форматирование
-    source: apps/web/src/editor/menus/BubbleToolbar.tsx:240
+    source: apps/web/src/editor/menus/BubbleToolbar.tsx:242
     critical: true
   - id: editor/BubbleToolbar/esche~2
     kind: button
     screen: editor
     component: BubbleToolbar
     label: Ещё
-    source: apps/web/src/editor/menus/BubbleToolbar.tsx:244
+    source: apps/web/src/editor/menus/BubbleToolbar.tsx:246
     critical: false
   - id: editor/PasteOptionsMenu/button-data
     kind: button
@@ -5212,28 +5245,28 @@ actions:
     screen: editor
     component: LoadedImageView
     label: По левому краю
-    source: apps/web/src/editor/nodeviews/ImageView.tsx:115
+    source: apps/web/src/editor/nodeviews/ImageView.tsx:128
     critical: false
   - id: editor/LoadedImageView/po-centru
     kind: button
     screen: editor
     component: LoadedImageView
     label: По центру
-    source: apps/web/src/editor/nodeviews/ImageView.tsx:120
+    source: apps/web/src/editor/nodeviews/ImageView.tsx:133
     critical: false
   - id: editor/LoadedImageView/po-pravomu-krayu
     kind: button
     screen: editor
     component: LoadedImageView
     label: По правому краю
-    source: apps/web/src/editor/nodeviews/ImageView.tsx:125
+    source: apps/web/src/editor/nodeviews/ImageView.tsx:138
     critical: true
   - id: editor/LoadedImageView/na-vsyu-shirinu
     kind: button
     screen: editor
     component: LoadedImageView
     label: На всю ширину
-    source: apps/web/src/editor/nodeviews/ImageView.tsx:130
+    source: apps/web/src/editor/nodeviews/ImageView.tsx:143
     critical: false
   - id: editor/LoadedImageView/x
     kind: button
@@ -5241,56 +5274,63 @@ actions:
     component: LoadedImageView
     label: "{…} %"
     dynamic: true
-    source: apps/web/src/editor/nodeviews/ImageView.tsx:136
+    source: apps/web/src/editor/nodeviews/ImageView.tsx:149
     critical: false
   - id: editor/LoadedImageView/podpis
     kind: button
     screen: editor
     component: LoadedImageView
     label: Подпись
-    source: apps/web/src/editor/nodeviews/ImageView.tsx:149
+    source: apps/web/src/editor/nodeviews/ImageView.tsx:162
     critical: false
   - id: editor/LoadedImageView/alternativnyy-tekst
     kind: button
     screen: editor
     component: LoadedImageView
     label: Альтернативный текст
-    source: apps/web/src/editor/nodeviews/ImageView.tsx:154
+    source: apps/web/src/editor/nodeviews/ImageView.tsx:167
     critical: false
   - id: editor/LoadedImageView/raspoznannyy-tekst-ocr
     kind: button
     screen: editor
     component: LoadedImageView
     label: Распознанный текст (OCR)
-    source: apps/web/src/editor/nodeviews/ImageView.tsx:160
+    source: apps/web/src/editor/nodeviews/ImageView.tsx:173
     critical: false
   - id: editor/LoadedImageView/zamenit
     kind: button
     screen: editor
     component: LoadedImageView
     label: Заменить
-    source: apps/web/src/editor/nodeviews/ImageView.tsx:167
+    source: apps/web/src/editor/nodeviews/ImageView.tsx:180
     critical: false
   - id: editor/LoadedImageView/otkryt-na-ves-ekran
     kind: button
     screen: editor
     component: LoadedImageView
     label: Открыть на весь экран
-    source: apps/web/src/editor/nodeviews/ImageView.tsx:173
+    source: apps/web/src/editor/nodeviews/ImageView.tsx:186
+    critical: false
+  - id: editor/LoadedImageView/v-stroku-teksta
+    kind: button
+    screen: editor
+    component: LoadedImageView
+    label: В строку текста
+    source: apps/web/src/editor/nodeviews/ImageView.tsx:192
     critical: false
   - id: editor/LoadedImageView/skachat-original
     kind: link
     screen: editor
     component: LoadedImageView
     label: Скачать оригинал
-    source: apps/web/src/editor/nodeviews/ImageView.tsx:179
+    source: apps/web/src/editor/nodeviews/ImageView.tsx:199
     critical: false
   - id: editor/LoadedImageView/udalit
     kind: button
     screen: editor
     component: LoadedImageView
     label: Удалить
-    source: apps/web/src/editor/nodeviews/ImageView.tsx:185
+    source: apps/web/src/editor/nodeviews/ImageView.tsx:205
     critical: true
     seen:
       - /p/:pageId
@@ -5299,21 +5339,111 @@ actions:
     screen: editor
     component: LoadedImageView
     label: Повторить
-    source: apps/web/src/editor/nodeviews/ImageView.tsx:196
+    source: apps/web/src/editor/nodeviews/ImageView.tsx:216
     critical: false
   - id: editor/LoadedImageView/alternativnyy-tekst~2
     kind: input
     screen: editor
     component: LoadedImageView
     label: Альтернативный текст
-    source: apps/web/src/editor/nodeviews/ImageView.tsx:234
+    source: apps/web/src/editor/nodeviews/ImageView.tsx:254
     critical: false
   - id: editor/LoadedImageView/podpis-k-izobrazheniyu
     kind: input
     screen: editor
     component: LoadedImageView
     label: Подпись к изображению
-    source: apps/web/src/editor/nodeviews/ImageView.tsx:239
+    source: apps/web/src/editor/nodeviews/ImageView.tsx:259
+    critical: false
+  - id: editor/InlineImageView/button-data
+    kind: button
+    screen: editor
+    component: InlineImageView
+    label: "{…}"
+    dynamic: true
+    source: apps/web/src/editor/nodeviews/InlineImageView.tsx:123
+    data_driven: true
+    critical: false
+  - id: editor/InlineImageView/1-1
+    kind: button
+    screen: editor
+    component: InlineImageView
+    label: 1:1
+    source: apps/web/src/editor/nodeviews/InlineImageView.tsx:127
+    critical: false
+  - id: editor/InlineImageView/po-bazovoy-linii
+    kind: button
+    screen: editor
+    component: InlineImageView
+    label: По базовой линии
+    source: apps/web/src/editor/nodeviews/InlineImageView.tsx:132
+    critical: false
+  - id: editor/InlineImageView/po-centru-stroki
+    kind: button
+    screen: editor
+    component: InlineImageView
+    label: По центру строки
+    source: apps/web/src/editor/nodeviews/InlineImageView.tsx:137
+    critical: false
+  - id: editor/InlineImageView/po-verhu-stroki
+    kind: button
+    screen: editor
+    component: InlineImageView
+    label: По верху строки
+    source: apps/web/src/editor/nodeviews/InlineImageView.tsx:142
+    critical: false
+  - id: editor/InlineImageView/alternativnyy-tekst
+    kind: button
+    screen: editor
+    component: InlineImageView
+    label: Альтернативный текст
+    source: apps/web/src/editor/nodeviews/InlineImageView.tsx:148
+    critical: false
+  - id: editor/InlineImageView/podpis
+    kind: button
+    screen: editor
+    component: InlineImageView
+    label: Подпись
+    source: apps/web/src/editor/nodeviews/InlineImageView.tsx:153
+    critical: false
+  - id: editor/InlineImageView/otkryt-na-ves-ekran
+    kind: button
+    screen: editor
+    component: InlineImageView
+    label: Открыть на весь экран
+    source: apps/web/src/editor/nodeviews/InlineImageView.tsx:158
+    critical: false
+  - id: editor/InlineImageView/skachat-original
+    kind: link
+    screen: editor
+    component: InlineImageView
+    label: Скачать оригинал
+    source: apps/web/src/editor/nodeviews/InlineImageView.tsx:164
+    critical: false
+  - id: editor/InlineImageView/sdelat-blokom
+    kind: button
+    screen: editor
+    component: InlineImageView
+    label: Сделать блоком
+    source: apps/web/src/editor/nodeviews/InlineImageView.tsx:170
+    critical: false
+  - id: editor/InlineImageView/udalit
+    kind: button
+    screen: editor
+    component: InlineImageView
+    label: Удалить
+    source: apps/web/src/editor/nodeviews/InlineImageView.tsx:175
+    critical: true
+    seen:
+      - /p/:pageId
+  - id: editor/InlineImageView/alternativnyy-tekst~2
+    kind: input
+    screen: editor
+    component: InlineImageView
+    label: Альтернативный текст
+    aliases:
+      - Подпись к изображению
+    source: apps/web/src/editor/nodeviews/InlineImageView.tsx:181
     critical: false
   - id: editor/UploadPlaceholder/povtorit
     kind: button
@@ -5485,146 +5615,6 @@ actions:
     component: CodeBlockView
     label: Скопировано
     source: apps/web/src/editor/nodeviews/blocks.tsx:466
-    critical: false
-  - id: editor/palette/text-colors.gray
-    kind: option
-    screen: editor
-    component: palette
-    label: Серый
-    source: apps/web/src/editor/palette.ts:6
-    critical: false
-  - id: editor/palette/text-colors.brown
-    kind: option
-    screen: editor
-    component: palette
-    label: Коричневый
-    source: apps/web/src/editor/palette.ts:7
-    critical: false
-  - id: editor/palette/text-colors.orange
-    kind: option
-    screen: editor
-    component: palette
-    label: Оранжевый
-    source: apps/web/src/editor/palette.ts:8
-    critical: false
-  - id: editor/palette/text-colors.yellow
-    kind: option
-    screen: editor
-    component: palette
-    label: Жёлтый
-    source: apps/web/src/editor/palette.ts:9
-    critical: false
-  - id: editor/palette/text-colors.green
-    kind: option
-    screen: editor
-    component: palette
-    label: Зелёный
-    source: apps/web/src/editor/palette.ts:10
-    critical: false
-  - id: editor/palette/text-colors.blue
-    kind: option
-    screen: editor
-    component: palette
-    label: Синий
-    source: apps/web/src/editor/palette.ts:11
-    critical: false
-  - id: editor/palette/text-colors.purple
-    kind: option
-    screen: editor
-    component: palette
-    label: Фиолетовый
-    source: apps/web/src/editor/palette.ts:12
-    critical: false
-  - id: editor/palette/text-colors.pink
-    kind: option
-    screen: editor
-    component: palette
-    label: Розовый
-    source: apps/web/src/editor/palette.ts:13
-    critical: false
-  - id: editor/palette/text-colors.red
-    kind: option
-    screen: editor
-    component: palette
-    label: Красный
-    source: apps/web/src/editor/palette.ts:14
-    critical: false
-  - id: editor/palette/text-colors.teal
-    kind: option
-    screen: editor
-    component: palette
-    label: Бирюзовый
-    source: apps/web/src/editor/palette.ts:15
-    critical: false
-  - id: editor/palette/highlights.gray
-    kind: option
-    screen: editor
-    component: palette
-    label: Серый фон
-    source: apps/web/src/editor/palette.ts:19
-    critical: false
-  - id: editor/palette/highlights.brown
-    kind: option
-    screen: editor
-    component: palette
-    label: Коричневый фон
-    source: apps/web/src/editor/palette.ts:20
-    critical: false
-  - id: editor/palette/highlights.orange
-    kind: option
-    screen: editor
-    component: palette
-    label: Оранжевый фон
-    source: apps/web/src/editor/palette.ts:21
-    critical: false
-  - id: editor/palette/highlights.yellow
-    kind: option
-    screen: editor
-    component: palette
-    label: Жёлтый фон
-    source: apps/web/src/editor/palette.ts:22
-    critical: false
-  - id: editor/palette/highlights.green
-    kind: option
-    screen: editor
-    component: palette
-    label: Зелёный фон
-    source: apps/web/src/editor/palette.ts:23
-    critical: false
-  - id: editor/palette/highlights.blue
-    kind: option
-    screen: editor
-    component: palette
-    label: Синий фон
-    source: apps/web/src/editor/palette.ts:24
-    critical: false
-  - id: editor/palette/highlights.purple
-    kind: option
-    screen: editor
-    component: palette
-    label: Фиолетовый фон
-    source: apps/web/src/editor/palette.ts:25
-    critical: false
-  - id: editor/palette/highlights.pink
-    kind: option
-    screen: editor
-    component: palette
-    label: Розовый фон
-    source: apps/web/src/editor/palette.ts:26
-    critical: false
-  - id: editor/palette/highlights.red
-    kind: option
-    screen: editor
-    component: palette
-    label: Красный фон
-    source: apps/web/src/editor/palette.ts:27
-    critical: false
-  - id: editor/palette/highlights.teal
-    kind: option
-    screen: editor
-    component: palette
-    label: Бирюзовый фон
-    source: apps/web/src/editor/palette.ts:28
     critical: false
   - id: help/HelpCenter/spravka
     kind: dialog
@@ -6123,7 +6113,7 @@ actions:
     component: Sidebar
     label: "{…}"
     dynamic: true
-    source: apps/web/src/layout/Sidebar.tsx:102
+    source: apps/web/src/layout/Sidebar.tsx:103
     data_driven: true
     critical: false
   - id: shell/Sidebar/skryt-bokovuyu-panel
@@ -6131,7 +6121,7 @@ actions:
     screen: shell
     component: Sidebar
     label: Скрыть боковую панель
-    source: apps/web/src/layout/Sidebar.tsx:113
+    source: apps/web/src/layout/Sidebar.tsx:114
     critical: false
     seen:
       - /
@@ -6160,14 +6150,14 @@ actions:
     screen: shell
     component: Sidebar
     label: Поиск ⌘K
-    source: apps/web/src/layout/Sidebar.tsx:120
+    source: apps/web/src/layout/Sidebar.tsx:121
     critical: false
   - id: shell/Sidebar/glavnaya
     kind: link
     screen: shell
     component: Sidebar
     label: Главная
-    source: apps/web/src/layout/Sidebar.tsx:123
+    source: apps/web/src/layout/Sidebar.tsx:124
     critical: false
     seen:
       - /
@@ -6197,7 +6187,7 @@ actions:
     component: Sidebar
     label: Входящие {…}
     dynamic: true
-    source: apps/web/src/layout/Sidebar.tsx:128
+    source: apps/web/src/layout/Sidebar.tsx:129
     critical: false
     seen:
       - /
@@ -6226,7 +6216,7 @@ actions:
     screen: shell
     component: Sidebar
     label: Новая страница
-    source: apps/web/src/layout/Sidebar.tsx:134
+    source: apps/web/src/layout/Sidebar.tsx:135
     critical: true
     seen:
       - /
@@ -6255,7 +6245,7 @@ actions:
     screen: shell
     component: Sidebar
     label: Новое пространство
-    source: apps/web/src/layout/Sidebar.tsx:138
+    source: apps/web/src/layout/Sidebar.tsx:139
     critical: false
     seen:
       - /
@@ -6284,7 +6274,7 @@ actions:
     screen: shell
     component: Sidebar
     label: Избранное
-    source: apps/web/src/layout/Sidebar.tsx:147
+    source: apps/web/src/layout/Sidebar.tsx:148
     critical: false
     seen:
       - /p/:pageId
@@ -6294,21 +6284,21 @@ actions:
     component: Sidebar
     label: Без названия
     dynamic: true
-    source: apps/web/src/layout/Sidebar.tsx:152
+    source: apps/web/src/layout/Sidebar.tsx:153
     critical: false
   - id: shell/Sidebar/povtorit
     kind: button
     screen: shell
     component: Sidebar
     label: Повторить
-    source: apps/web/src/layout/Sidebar.tsx:161
+    source: apps/web/src/layout/Sidebar.tsx:162
     critical: false
   - id: shell/Sidebar/shablony
     kind: link
     screen: shell
     component: Sidebar
     label: Шаблоны
-    source: apps/web/src/layout/Sidebar.tsx:174
+    source: apps/web/src/layout/Sidebar.tsx:175
     critical: false
     seen:
       - /
@@ -6337,7 +6327,7 @@ actions:
     screen: shell
     component: Sidebar
     label: Импорт
-    source: apps/web/src/layout/Sidebar.tsx:177
+    source: apps/web/src/layout/Sidebar.tsx:178
     critical: true
     seen:
       - /
@@ -6366,7 +6356,7 @@ actions:
     screen: shell
     component: Sidebar
     label: Корзина
-    source: apps/web/src/layout/Sidebar.tsx:180
+    source: apps/web/src/layout/Sidebar.tsx:181
     critical: true
     seen:
       - /
@@ -6395,7 +6385,7 @@ actions:
     screen: shell
     component: Sidebar
     label: Администрирование
-    source: apps/web/src/layout/Sidebar.tsx:184
+    source: apps/web/src/layout/Sidebar.tsx:185
     critical: false
     seen:
       - /
@@ -7124,42 +7114,42 @@ actions:
     screen: auth
     component: LoginPage
     label: Электронная почта
-    source: apps/web/src/pages/Auth.tsx:60
+    source: apps/web/src/pages/Auth.tsx:86
     critical: false
   - id: auth/LoginPage/parol
     kind: input
     screen: auth
     component: LoginPage
     label: Пароль
-    source: apps/web/src/pages/Auth.tsx:64
+    source: apps/web/src/pages/Auth.tsx:90
     critical: true
   - id: auth/LoginPage/kod-iz-prilozheniya-autentifikatora
     kind: input
     screen: auth
     component: LoginPage
     label: Код из приложения-аутентификатора
-    source: apps/web/src/pages/Auth.tsx:70
+    source: apps/web/src/pages/Auth.tsx:96
     critical: false
   - id: auth/LoginPage/podtverdit
     kind: button
     screen: auth
     component: LoginPage
     label: Подтвердить
-    source: apps/web/src/pages/Auth.tsx:79
+    source: apps/web/src/pages/Auth.tsx:105
     critical: true
   - id: auth/LoginPage/voyti-cherez-korporativnyy-sso
     kind: link
     screen: auth
     component: LoginPage
     label: Войти через корпоративный SSO
-    source: apps/web/src/pages/Auth.tsx:84
+    source: apps/web/src/pages/Auth.tsx:110
     critical: true
   - id: auth/SetupPage/nazvanie-organizacii
     kind: input
     screen: auth
     component: SetupPage
     label: Название организации
-    source: apps/web/src/pages/Auth.tsx:116
+    source: apps/web/src/pages/Auth.tsx:142
     critical: false
     seen:
       - /admin/settings
@@ -7168,42 +7158,42 @@ actions:
     screen: auth
     component: SetupPage
     label: Ваше имя
-    source: apps/web/src/pages/Auth.tsx:120
+    source: apps/web/src/pages/Auth.tsx:146
     critical: false
   - id: auth/SetupPage/elektronnaya-pochta
     kind: input
     screen: auth
     component: SetupPage
     label: Электронная почта
-    source: apps/web/src/pages/Auth.tsx:124
+    source: apps/web/src/pages/Auth.tsx:150
     critical: false
   - id: auth/SetupPage/parol
     kind: input
     screen: auth
     component: SetupPage
     label: Пароль
-    source: apps/web/src/pages/Auth.tsx:128
+    source: apps/web/src/pages/Auth.tsx:154
     critical: true
   - id: auth/SetupPage/sozdat-organizaciyu
     kind: button
     screen: auth
     component: SetupPage
     label: Создать организацию
-    source: apps/web/src/pages/Auth.tsx:132
+    source: apps/web/src/pages/Auth.tsx:158
     critical: true
   - id: auth/InvitePage/kak-k-vam-obraschatsya-neobyazatelno
     kind: input
     screen: auth
     component: InvitePage
     label: Как к вам обращаться (необязательно)
-    source: apps/web/src/pages/Auth.tsx:167
+    source: apps/web/src/pages/Auth.tsx:193
     critical: false
   - id: auth/InvitePage/novyy-parol
     kind: input
     screen: auth
     component: InvitePage
     label: Новый пароль
-    source: apps/web/src/pages/Auth.tsx:171
+    source: apps/web/src/pages/Auth.tsx:197
     critical: true
     seen:
       - /settings/security
@@ -7212,7 +7202,7 @@ actions:
     screen: auth
     component: InvitePage
     label: Продолжить
-    source: apps/web/src/pages/Auth.tsx:175
+    source: apps/web/src/pages/Auth.tsx:201
     critical: false
   - id: home/ErrorState/povtorit
     kind: button
@@ -7610,28 +7600,28 @@ actions:
     screen: page
     component: PageError
     label: Повторить
-    source: apps/web/src/pages/PageView.tsx:62
+    source: apps/web/src/pages/PageView.tsx:66
     critical: false
   - id: page/PageError/zapros-otpravlen
     kind: button
     screen: page
     component: PageError
     label: Запрос отправлен
-    source: apps/web/src/pages/PageView.tsx:66
+    source: apps/web/src/pages/PageView.tsx:70
     critical: true
   - id: page/PageError/na-glavnuyu
     kind: link
     screen: page
     component: PageError
     label: На главную
-    source: apps/web/src/pages/PageView.tsx:78
+    source: apps/web/src/pages/PageView.tsx:85
     critical: false
   - id: page/PageLoaded/otmenit
     kind: toast-action
     screen: page
     component: PageLoaded
     label: Отменить
-    source: apps/web/src/pages/PageView.tsx:159
+    source: apps/web/src/pages/PageView.tsx:166
     critical: false
     seen:
       - /settings/profile
@@ -7642,7 +7632,7 @@ actions:
     label: Убрать из избранного
     aliases:
       - Добавить в избранное
-    source: apps/web/src/pages/PageView.tsx:206
+    source: apps/web/src/pages/PageView.tsx:213
     critical: false
     seen:
       - /p/:pageId
@@ -7651,7 +7641,7 @@ actions:
     screen: page
     component: PageLoaded
     label: Копировать ссылку
-    source: apps/web/src/pages/PageView.tsx:207
+    source: apps/web/src/pages/PageView.tsx:214
     critical: false
     seen:
       - /
@@ -7680,7 +7670,7 @@ actions:
     screen: page
     component: PageLoaded
     label: Копировать страницу
-    source: apps/web/src/pages/PageView.tsx:208
+    source: apps/web/src/pages/PageView.tsx:215
     critical: false
     seen:
       - /p/:pageId
@@ -7689,7 +7679,7 @@ actions:
     screen: page
     component: PageLoaded
     label: История версий
-    source: apps/web/src/pages/PageView.tsx:220
+    source: apps/web/src/pages/PageView.tsx:227
     critical: true
     seen:
       - /p/:pageId
@@ -7698,7 +7688,7 @@ actions:
     screen: page
     component: PageLoaded
     label: Сведения о странице
-    source: apps/web/src/pages/PageView.tsx:221
+    source: apps/web/src/pages/PageView.tsx:228
     critical: false
     seen:
       - /p/:pageId
@@ -7707,7 +7697,7 @@ actions:
     screen: page
     component: PageLoaded
     label: Экспорт…
-    source: apps/web/src/pages/PageView.tsx:222
+    source: apps/web/src/pages/PageView.tsx:229
     no_permission: Экспорт запрещён политикой пространства или организации
     critical: true
     seen:
@@ -7717,7 +7707,7 @@ actions:
     screen: page
     component: PageLoaded
     label: Печать
-    source: apps/web/src/pages/PageView.tsx:223
+    source: apps/web/src/pages/PageView.tsx:230
     critical: false
     seen:
       - /p/:pageId
@@ -7726,7 +7716,7 @@ actions:
     screen: page
     component: PageLoaded
     label: Широкая страница
-    source: apps/web/src/pages/PageView.tsx:225
+    source: apps/web/src/pages/PageView.tsx:232
     no_permission: Нужно право на редактирование страницы — запросите его в «Поделиться»
     critical: false
     seen:
@@ -7738,7 +7728,7 @@ actions:
     label: Снять защиту от изменений
     aliases:
       - Защитить от изменений
-    source: apps/web/src/pages/PageView.tsx:226
+    source: apps/web/src/pages/PageView.tsx:233
     critical: false
     seen:
       - /p/:pageId
@@ -7747,7 +7737,7 @@ actions:
     screen: page
     component: PageLoaded
     label: Сохранить как шаблон
-    source: apps/web/src/pages/PageView.tsx:227
+    source: apps/web/src/pages/PageView.tsx:234
     no_permission: Нужно право на редактирование страницы — запросите его в «Поделиться»
     critical: true
     seen:
@@ -7757,7 +7747,7 @@ actions:
     screen: page
     component: PageLoaded
     label: Дублировать
-    source: apps/web/src/pages/PageView.tsx:229
+    source: apps/web/src/pages/PageView.tsx:236
     no_permission: Нет права создавать страницы в этом пространстве
     critical: true
     seen:
@@ -7787,7 +7777,7 @@ actions:
     screen: page
     component: PageLoaded
     label: Переместить в…
-    source: apps/web/src/pages/PageView.tsx:230
+    source: apps/web/src/pages/PageView.tsx:237
     no_permission: Перемещать страницу может только тот, у кого есть право изменять структуру (полный доступ к разделу)
     critical: true
     seen:
@@ -7817,7 +7807,7 @@ actions:
     screen: page
     component: PageLoaded
     label: Удалить
-    source: apps/web/src/pages/PageView.tsx:231
+    source: apps/web/src/pages/PageView.tsx:238
     no_permission: Удалять страницу может только пользователь с полным доступом (или включено юридическое удержание)
     critical: true
     seen:
@@ -7827,14 +7817,14 @@ actions:
     screen: page
     component: PageLoaded
     label: Не полностью личная
-    source: apps/web/src/pages/PageView.tsx:249
+    source: apps/web/src/pages/PageView.tsx:256
     critical: false
   - id: page/PageLoaded/podelitsya
     kind: button
     screen: page
     component: PageLoaded
     label: Поделиться
-    source: apps/web/src/pages/PageView.tsx:255
+    source: apps/web/src/pages/PageView.tsx:262
     critical: true
     seen:
       - /p/:pageId
@@ -7843,7 +7833,7 @@ actions:
     screen: page
     component: PageLoaded
     label: Комментарии
-    source: apps/web/src/pages/PageView.tsx:259
+    source: apps/web/src/pages/PageView.tsx:266
     critical: false
     seen:
       - /p/:pageId
@@ -7852,7 +7842,7 @@ actions:
     screen: page
     component: PageLoaded
     label: Избранное
-    source: apps/web/src/pages/PageView.tsx:264
+    source: apps/web/src/pages/PageView.tsx:271
     critical: false
     seen:
       - /p/:pageId
@@ -7861,7 +7851,7 @@ actions:
     screen: page
     component: PageLoaded
     label: Действия со страницей
-    source: apps/web/src/pages/PageView.tsx:268
+    source: apps/web/src/pages/PageView.tsx:275
     critical: false
     seen:
       - /p/:pageId
@@ -7871,7 +7861,7 @@ actions:
     component: PageLoaded
     label: "{…}"
     dynamic: true
-    source: apps/web/src/pages/PageView.tsx:273
+    source: apps/web/src/pages/PageView.tsx:280
     data_driven: true
     critical: false
   - id: page/PageLoaded/vosstanovit
@@ -7879,7 +7869,7 @@ actions:
     screen: page
     component: PageLoaded
     label: Восстановить
-    source: apps/web/src/pages/PageView.tsx:285
+    source: apps/web/src/pages/PageView.tsx:292
     critical: true
     seen:
       - /trash
@@ -7888,21 +7878,21 @@ actions:
     screen: page
     component: PageLoaded
     label: Скачать локальную копию
-    source: apps/web/src/pages/PageView.tsx:305
+    source: apps/web/src/pages/PageView.tsx:312
     critical: false
   - id: page/PageLoaded/izmenit-znachok
     kind: button
     screen: page
     component: PageLoaded
     label: Изменить значок
-    source: apps/web/src/pages/PageView.tsx:313
+    source: apps/web/src/pages/PageView.tsx:320
     critical: false
   - id: page/PageLoaded/dobavit-znachok
     kind: button
     screen: page
     component: PageLoaded
     label: Добавить значок
-    source: apps/web/src/pages/PageView.tsx:318
+    source: apps/web/src/pages/PageView.tsx:325
     critical: false
     seen:
       - /p/:pageId
@@ -7912,7 +7902,7 @@ actions:
     component: Breadcrumbs
     label: 📁 {…}
     dynamic: true
-    source: apps/web/src/pages/PageView.tsx:411
+    source: apps/web/src/pages/PageView.tsx:418
     critical: false
   - id: page/Breadcrumbs/bez-nazvaniya
     kind: link
@@ -7920,7 +7910,7 @@ actions:
     component: Breadcrumbs
     label: "{…} Без названия"
     dynamic: true
-    source: apps/web/src/pages/PageView.tsx:428
+    source: apps/web/src/pages/PageView.tsx:435
     critical: false
   - id: page/Backlinks/bez-nazvaniya
     kind: link
@@ -7928,7 +7918,7 @@ actions:
     component: Backlinks
     label: Без названия
     dynamic: true
-    source: apps/web/src/pages/PageView.tsx:474
+    source: apps/web/src/pages/PageView.tsx:481
     critical: false
   - id: search/SearchPage/pages
     kind: option
@@ -8127,7 +8117,7 @@ actions:
     component: SettingsPage
     label: "{…}"
     dynamic: true
-    source: apps/web/src/pages/SettingsPage.tsx:32
+    source: apps/web/src/pages/SettingsPage.tsx:34
     data_driven: true
     critical: false
   - id: settings/SettingsPage/route.settings-profile
@@ -8135,7 +8125,7 @@ actions:
     screen: settings
     component: SettingsPage
     label: /settings/profile
-    source: apps/web/src/pages/SettingsPage.tsx:41
+    source: apps/web/src/pages/SettingsPage.tsx:43
     route: /settings/profile
     critical: true
   - id: settings/SettingsPage/route.settings-appearance
@@ -8143,7 +8133,7 @@ actions:
     screen: settings
     component: SettingsPage
     label: /settings/appearance
-    source: apps/web/src/pages/SettingsPage.tsx:42
+    source: apps/web/src/pages/SettingsPage.tsx:44
     route: /settings/appearance
     critical: true
   - id: settings/SettingsPage/route.settings-security
@@ -8151,7 +8141,7 @@ actions:
     screen: settings
     component: SettingsPage
     label: /settings/security
-    source: apps/web/src/pages/SettingsPage.tsx:43
+    source: apps/web/src/pages/SettingsPage.tsx:45
     route: /settings/security
     critical: true
   - id: settings/SettingsPage/route.settings-sessions
@@ -8159,7 +8149,7 @@ actions:
     screen: settings
     component: SettingsPage
     label: /settings/sessions
-    source: apps/web/src/pages/SettingsPage.tsx:44
+    source: apps/web/src/pages/SettingsPage.tsx:46
     route: /settings/sessions
     critical: true
   - id: settings/SettingsPage/route.settings-tokens
@@ -8167,7 +8157,7 @@ actions:
     screen: settings
     component: SettingsPage
     label: /settings/tokens
-    source: apps/web/src/pages/SettingsPage.tsx:45
+    source: apps/web/src/pages/SettingsPage.tsx:47
     route: /settings/tokens
     critical: true
   - id: settings/ProfileForm/imya-i-familiya
@@ -8175,7 +8165,7 @@ actions:
     screen: settings
     component: ProfileForm
     label: Имя и фамилия
-    source: apps/web/src/pages/SettingsPage.tsx:146
+    source: apps/web/src/pages/SettingsPage.tsx:148
     critical: false
     seen:
       - /settings/profile
@@ -8184,7 +8174,7 @@ actions:
     screen: settings
     component: ProfileForm
     label: Должность
-    source: apps/web/src/pages/SettingsPage.tsx:151
+    source: apps/web/src/pages/SettingsPage.tsx:153
     critical: false
     seen:
       - /settings/profile
@@ -8193,7 +8183,7 @@ actions:
     screen: settings
     component: ProfileForm
     label: Отменить
-    source: apps/web/src/pages/SettingsPage.tsx:156
+    source: apps/web/src/pages/SettingsPage.tsx:158
     critical: false
     seen:
       - /settings/profile
@@ -8202,7 +8192,7 @@ actions:
     screen: settings
     component: ProfileForm
     label: Сохранить
-    source: apps/web/src/pages/SettingsPage.tsx:168
+    source: apps/web/src/pages/SettingsPage.tsx:170
     critical: true
     seen:
       - /admin/settings
@@ -8212,7 +8202,7 @@ actions:
     screen: settings
     component: AppearanceTab
     label: Как в системе
-    source: apps/web/src/pages/SettingsPage.tsx:204
+    source: apps/web/src/pages/SettingsPage.tsx:206
     critical: false
     seen:
       - /settings/appearance
@@ -8221,7 +8211,7 @@ actions:
     screen: settings
     component: AppearanceTab
     label: Светлая
-    source: apps/web/src/pages/SettingsPage.tsx:205
+    source: apps/web/src/pages/SettingsPage.tsx:207
     critical: false
     seen:
       - /settings/appearance
@@ -8230,7 +8220,7 @@ actions:
     screen: settings
     component: AppearanceTab
     label: Тёмная
-    source: apps/web/src/pages/SettingsPage.tsx:206
+    source: apps/web/src/pages/SettingsPage.tsx:208
     critical: false
     seen:
       - /settings/appearance
@@ -8240,7 +8230,7 @@ actions:
     component: AppearanceTab
     label: "{…}"
     dynamic: true
-    source: apps/web/src/pages/SettingsPage.tsx:217
+    source: apps/web/src/pages/SettingsPage.tsx:219
     data_driven: true
     critical: false
   - id: settings/AppearanceTab/toggle-data
@@ -8249,7 +8239,7 @@ actions:
     component: AppearanceTab
     label: "{…}"
     dynamic: true
-    source: apps/web/src/pages/SettingsPage.tsx:229
+    source: apps/web/src/pages/SettingsPage.tsx:231
     data_driven: true
     critical: false
   - id: settings/SecurityTab/input-data
@@ -8258,7 +8248,7 @@ actions:
     component: SecurityTab
     label: "{…}"
     dynamic: true
-    source: apps/web/src/pages/SettingsPage.tsx:295
+    source: apps/web/src/pages/SettingsPage.tsx:297
     data_driven: true
     critical: false
   - id: settings/SecurityTab/tekuschiy-parol
@@ -8266,7 +8256,7 @@ actions:
     screen: settings
     component: SecurityTab
     label: Текущий пароль
-    source: apps/web/src/pages/SettingsPage.tsx:298
+    source: apps/web/src/pages/SettingsPage.tsx:300
     critical: true
     seen:
       - /settings/security
@@ -8275,7 +8265,7 @@ actions:
     screen: settings
     component: SecurityTab
     label: Новый пароль
-    source: apps/web/src/pages/SettingsPage.tsx:303
+    source: apps/web/src/pages/SettingsPage.tsx:305
     critical: true
     seen:
       - /settings/security
@@ -8284,7 +8274,7 @@ actions:
     screen: settings
     component: SecurityTab
     label: Повторите пароль
-    source: apps/web/src/pages/SettingsPage.tsx:308
+    source: apps/web/src/pages/SettingsPage.tsx:310
     critical: true
     seen:
       - /settings/security
@@ -8293,7 +8283,7 @@ actions:
     screen: settings
     component: SecurityTab
     label: Изменить пароль
-    source: apps/web/src/pages/SettingsPage.tsx:314
+    source: apps/web/src/pages/SettingsPage.tsx:316
     critical: true
     seen:
       - /settings/security
@@ -8302,14 +8292,14 @@ actions:
     screen: settings
     component: MfaCard
     label: "123456"
-    source: apps/web/src/pages/SettingsPage.tsx:368
+    source: apps/web/src/pages/SettingsPage.tsx:370
     critical: false
   - id: settings/MfaCard/confirm.otklyuchit-dvuhfaktornuyu-autentifikaciyu
     kind: dialog
     screen: settings
     component: MfaCard
     label: Отключить двухфакторную аутентификацию?
-    source: apps/web/src/pages/SettingsPage.tsx:391
+    source: apps/web/src/pages/SettingsPage.tsx:393
     confirm: true
     critical: false
   - id: settings/MfaCard/confirm.otklyuchit-dvuhfaktornuyu-autentifikaciyu.otklyuchit
@@ -8317,7 +8307,7 @@ actions:
     screen: settings
     component: MfaCard
     label: Отключить
-    source: apps/web/src/pages/SettingsPage.tsx:391
+    source: apps/web/src/pages/SettingsPage.tsx:393
     confirm: true
     critical: false
   - id: settings/MfaCard/otklyuchit
@@ -8325,42 +8315,42 @@ actions:
     screen: settings
     component: MfaCard
     label: Отключить
-    source: apps/web/src/pages/SettingsPage.tsx:397
+    source: apps/web/src/pages/SettingsPage.tsx:399
     critical: false
   - id: settings/MfaCard/sekretnyy-klyuch
     kind: input
     screen: settings
     component: MfaCard
     label: Секретный ключ
-    source: apps/web/src/pages/SettingsPage.tsx:416
+    source: apps/web/src/pages/SettingsPage.tsx:418
     critical: false
   - id: settings/MfaCard/ssylka-otpauth
     kind: input
     screen: settings
     component: MfaCard
     label: Ссылка otpauth://
-    source: apps/web/src/pages/SettingsPage.tsx:417
+    source: apps/web/src/pages/SettingsPage.tsx:419
     critical: false
   - id: settings/MfaCard/otmena
     kind: button
     screen: settings
     component: MfaCard
     label: Отмена
-    source: apps/web/src/pages/SettingsPage.tsx:420
+    source: apps/web/src/pages/SettingsPage.tsx:422
     critical: false
   - id: settings/MfaCard/vklyuchit
     kind: button
     screen: settings
     component: MfaCard
     label: Включить
-    source: apps/web/src/pages/SettingsPage.tsx:423
+    source: apps/web/src/pages/SettingsPage.tsx:425
     critical: false
   - id: settings/MfaCard/nastroit
     kind: button
     screen: settings
     component: MfaCard
     label: Настроить
-    source: apps/web/src/pages/SettingsPage.tsx:431
+    source: apps/web/src/pages/SettingsPage.tsx:433
     critical: false
     seen:
       - /settings/security
@@ -8369,7 +8359,7 @@ actions:
     screen: settings
     component: SessionsTab
     label: Завершить сеанс?
-    source: apps/web/src/pages/SettingsPage.tsx:472
+    source: apps/web/src/pages/SettingsPage.tsx:474
     confirm: true
     critical: true
   - id: settings/SessionsTab/confirm.zavershit-seans.zavershit
@@ -8377,7 +8367,7 @@ actions:
     screen: settings
     component: SessionsTab
     label: Завершить
-    source: apps/web/src/pages/SettingsPage.tsx:472
+    source: apps/web/src/pages/SettingsPage.tsx:474
     confirm: true
     critical: true
     seen:
@@ -8387,7 +8377,7 @@ actions:
     screen: settings
     component: SessionsTab
     label: Завершить остальные
-    source: apps/web/src/pages/SettingsPage.tsx:490
+    source: apps/web/src/pages/SettingsPage.tsx:492
     critical: true
     seen:
       - /settings/sessions
@@ -8396,7 +8386,7 @@ actions:
     screen: settings
     component: SessionsTab
     label: Завершить остальные сеансы?
-    source: apps/web/src/pages/SettingsPage.tsx:495
+    source: apps/web/src/pages/SettingsPage.tsx:497
     confirm: true
     critical: true
   - id: settings/SessionsTab/confirm.zavershit-ostalnye-seansy.zavershit
@@ -8404,7 +8394,7 @@ actions:
     screen: settings
     component: SessionsTab
     label: Завершить
-    source: apps/web/src/pages/SettingsPage.tsx:495
+    source: apps/web/src/pages/SettingsPage.tsx:497
     confirm: true
     critical: true
     seen:
@@ -8414,7 +8404,7 @@ actions:
     screen: settings
     component: SessionsTab
     label: Завершить
-    source: apps/web/src/pages/SettingsPage.tsx:523
+    source: apps/web/src/pages/SettingsPage.tsx:525
     critical: true
     seen:
       - /settings/sessions
@@ -8424,7 +8414,7 @@ actions:
     component: TokensTab
     label: Отозвать токен «{…}»?
     dynamic: true
-    source: apps/web/src/pages/SettingsPage.tsx:551
+    source: apps/web/src/pages/SettingsPage.tsx:553
     confirm: true
     critical: true
   - id: settings/TokensTab/confirm.otozvat-token.otozvat
@@ -8432,7 +8422,7 @@ actions:
     screen: settings
     component: TokensTab
     label: Отозвать
-    source: apps/web/src/pages/SettingsPage.tsx:551
+    source: apps/web/src/pages/SettingsPage.tsx:553
     confirm: true
     critical: true
   - id: settings/TokensTab/token
@@ -8440,21 +8430,21 @@ actions:
     screen: settings
     component: TokensTab
     label: Токен
-    source: apps/web/src/pages/SettingsPage.tsx:588
+    source: apps/web/src/pages/SettingsPage.tsx:590
     critical: false
   - id: settings/TokensTab/ya-sohranil-token
     kind: button
     screen: settings
     component: TokensTab
     label: Я сохранил токен
-    source: apps/web/src/pages/SettingsPage.tsx:590
+    source: apps/web/src/pages/SettingsPage.tsx:592
     critical: true
   - id: settings/TokensTab/naznachenie
     kind: input
     screen: settings
     component: TokensTab
     label: Назначение
-    source: apps/web/src/pages/SettingsPage.tsx:616
+    source: apps/web/src/pages/SettingsPage.tsx:618
     critical: false
     seen:
       - /settings/tokens
@@ -8463,7 +8453,7 @@ actions:
     screen: settings
     component: TokensTab
     label: Срок действия, дней
-    source: apps/web/src/pages/SettingsPage.tsx:620
+    source: apps/web/src/pages/SettingsPage.tsx:622
     critical: false
     seen:
       - /settings/tokens
@@ -8472,7 +8462,7 @@ actions:
     screen: settings
     component: TokensTab
     label: Создать токен
-    source: apps/web/src/pages/SettingsPage.tsx:625
+    source: apps/web/src/pages/SettingsPage.tsx:627
     critical: true
     seen:
       - /settings/tokens
@@ -8481,14 +8471,14 @@ actions:
     screen: settings
     component: TokensTab
     label: Отозвать
-    source: apps/web/src/pages/SettingsPage.tsx:666
+    source: apps/web/src/pages/SettingsPage.tsx:668
     critical: true
   - id: space/ErrorState/povtorit
     kind: button
     screen: space
     component: ErrorState
     label: Повторить
-    source: apps/web/src/pages/SpacePage.tsx:54
+    source: apps/web/src/pages/SpacePage.tsx:55
     critical: false
   - id: space/Toggle/toggle-data
     kind: toggle
@@ -8496,7 +8486,7 @@ actions:
     component: Toggle
     label: "{…}"
     dynamic: true
-    source: apps/web/src/pages/SpacePage.tsx:71
+    source: apps/web/src/pages/SpacePage.tsx:72
     data_driven: true
     critical: false
   - id: space/PagesTab/novaya-stranica
@@ -8504,7 +8494,7 @@ actions:
     screen: space
     component: PagesTab
     label: Новая страница
-    source: apps/web/src/pages/SpacePage.tsx:113
+    source: apps/web/src/pages/SpacePage.tsx:114
     critical: true
     seen:
       - /
@@ -8533,7 +8523,7 @@ actions:
     screen: space
     component: PagesTab
     label: Шаблоны
-    source: apps/web/src/pages/SpacePage.tsx:116
+    source: apps/web/src/pages/SpacePage.tsx:117
     critical: false
     seen:
       - /
@@ -8562,7 +8552,7 @@ actions:
     screen: space
     component: PagesTab
     label: Импорт
-    source: apps/web/src/pages/SpacePage.tsx:119
+    source: apps/web/src/pages/SpacePage.tsx:120
     critical: true
     seen:
       - /
@@ -8592,14 +8582,14 @@ actions:
     component: PagesTab
     label: Без названия
     dynamic: true
-    source: apps/web/src/pages/SpacePage.tsx:133
+    source: apps/web/src/pages/SpacePage.tsx:134
     critical: false
   - id: space/SettingsTab/confirm.rasshirit-dostup
     kind: dialog
     screen: space
     component: SettingsTab
     label: Расширить доступ?
-    source: apps/web/src/pages/SpacePage.tsx:248
+    source: apps/web/src/pages/SpacePage.tsx:249
     confirm: true
     critical: true
   - id: space/SettingsTab/confirm.rasshirit-dostup.otkryt-prostranstvo
@@ -8607,7 +8597,7 @@ actions:
     screen: space
     component: SettingsTab
     label: Открыть пространство
-    source: apps/web/src/pages/SpacePage.tsx:248
+    source: apps/web/src/pages/SpacePage.tsx:249
     confirm: true
     critical: false
   - id: space/SettingsTab/confirm.arhivirovat-prostranstvo
@@ -8615,7 +8605,7 @@ actions:
     screen: space
     component: SettingsTab
     label: Архивировать пространство?
-    source: apps/web/src/pages/SpacePage.tsx:265
+    source: apps/web/src/pages/SpacePage.tsx:266
     confirm: true
     critical: true
   - id: space/SettingsTab/confirm.arhivirovat-prostranstvo.arhivirovat
@@ -8623,7 +8613,7 @@ actions:
     screen: space
     component: SettingsTab
     label: Архивировать
-    source: apps/web/src/pages/SpacePage.tsx:265
+    source: apps/web/src/pages/SpacePage.tsx:266
     confirm: true
     critical: true
   - id: space/SettingsTab/confirm.udalit-prostranstvo
@@ -8631,7 +8621,7 @@ actions:
     screen: space
     component: SettingsTab
     label: Удалить пространство?
-    source: apps/web/src/pages/SpacePage.tsx:278
+    source: apps/web/src/pages/SpacePage.tsx:279
     confirm: true
     critical: true
   - id: space/SettingsTab/confirm.udalit-prostranstvo.udalit
@@ -8639,7 +8629,7 @@ actions:
     screen: space
     component: SettingsTab
     label: Удалить
-    source: apps/web/src/pages/SpacePage.tsx:278
+    source: apps/web/src/pages/SpacePage.tsx:279
     confirm: true
     critical: true
     seen:
@@ -8649,84 +8639,84 @@ actions:
     screen: space
     component: SettingsTab
     label: Открыть корзину
-    source: apps/web/src/pages/SpacePage.tsx:289
+    source: apps/web/src/pages/SpacePage.tsx:290
     critical: true
   - id: space/SettingsTab/vybrat-ikonku
     kind: button
     screen: space
     component: SettingsTab
     label: Выбрать иконку
-    source: apps/web/src/pages/SpacePage.tsx:308
+    source: apps/web/src/pages/SpacePage.tsx:309
     critical: false
   - id: space/SettingsTab/nazvanie
     kind: input
     screen: space
     component: SettingsTab
     label: Название
-    source: apps/web/src/pages/SpacePage.tsx:314
+    source: apps/web/src/pages/SpacePage.tsx:315
     critical: false
   - id: space/SettingsTab/opisanie
     kind: input
     screen: space
     component: SettingsTab
     label: Описание
-    source: apps/web/src/pages/SpacePage.tsx:320
+    source: apps/web/src/pages/SpacePage.tsx:321
     critical: false
   - id: space/SettingsTab/vidimost
     kind: select
     screen: space
     component: SettingsTab
     label: Видимость
-    source: apps/web/src/pages/SpacePage.tsx:325
+    source: apps/web/src/pages/SpacePage.tsx:326
     critical: false
   - id: space/SettingsTab/srazu-chitateli-vidyat-tekuschuyu-versiyu
     kind: toggle
     screen: space
     component: SettingsTab
     label: Сразу — читатели видят текущую версию
-    source: apps/web/src/pages/SpacePage.tsx:338
+    source: apps/web/src/pages/SpacePage.tsx:339
     critical: false
   - id: space/SettingsTab/posle-publikacii-chitateli-vidyat-tolko-opubliko
     kind: toggle
     screen: space
     component: SettingsTab
     label: После публикации — читатели видят только опубликованные версии
-    source: apps/web/src/pages/SpacePage.tsx:344
+    source: apps/web/src/pages/SpacePage.tsx:345
     critical: false
   - id: space/SettingsTab/soglasovanie-pered-publikaciey
     kind: toggle
     screen: space
     component: SettingsTab
     label: Согласование перед публикацией
-    source: apps/web/src/pages/SpacePage.tsx:350
+    source: apps/web/src/pages/SpacePage.tsx:351
     critical: false
   - id: space/SettingsTab/razreshit-eksport
     kind: toggle
     screen: space
     component: SettingsTab
     label: Разрешить экспорт
-    source: apps/web/src/pages/SpacePage.tsx:354
+    source: apps/web/src/pages/SpacePage.tsx:355
     critical: false
   - id: space/SettingsTab/razreshit-skachivanie-vlozheniy
     kind: toggle
     screen: space
     component: SettingsTab
     label: Разрешить скачивание вложений
-    source: apps/web/src/pages/SpacePage.tsx:355
+    source: apps/web/src/pages/SpacePage.tsx:356
     critical: false
   - id: space/SettingsTab/razreshit-dostup-gostyam
     kind: toggle
     screen: space
     component: SettingsTab
     label: Разрешить доступ гостям
-    source: apps/web/src/pages/SpacePage.tsx:356
+    source: apps/web/src/pages/SpacePage.tsx:357
     critical: true
   - id: space/SettingsTab/sbrosit
     kind: button
     screen: space
     component: SettingsTab
     label: Сбросить
-    source: apps/web/src/pages/SpacePage.tsx:364
+    source: apps/web/src/pages/SpacePage.tsx:365
     critical: true
     seen:
       - /admin/audit
@@ -8735,7 +8725,7 @@ actions:
     screen: space
     component: SettingsTab
     label: Сохранить
-    source: apps/web/src/pages/SpacePage.tsx:379
+    source: apps/web/src/pages/SpacePage.tsx:380
     critical: true
     seen:
       - /admin/settings
@@ -8745,28 +8735,28 @@ actions:
     screen: space
     component: SettingsTab
     label: Вернуть из архива
-    source: apps/web/src/pages/SpacePage.tsx:387
+    source: apps/web/src/pages/SpacePage.tsx:388
     critical: true
   - id: space/SettingsTab/udalit-prostranstvo
     kind: button
     screen: space
     component: SettingsTab
     label: Удалить пространство
-    source: apps/web/src/pages/SpacePage.tsx:390
+    source: apps/web/src/pages/SpacePage.tsx:391
     critical: true
   - id: space/SpacePage/na-glavnuyu
     kind: link
     screen: space
     component: SpacePage
     label: На главную
-    source: apps/web/src/pages/SpacePage.tsx:437
+    source: apps/web/src/pages/SpacePage.tsx:438
     critical: false
   - id: space/SpacePage/pages
     kind: option
     screen: space
     component: SpacePage
     label: Страницы
-    source: apps/web/src/pages/SpacePage.tsx:452
+    source: apps/web/src/pages/SpacePage.tsx:453
     critical: false
     seen:
       - /admin/audit
@@ -8777,7 +8767,7 @@ actions:
     screen: space
     component: SpacePage
     label: Новая страница
-    source: apps/web/src/pages/SpacePage.tsx:502
+    source: apps/web/src/pages/SpacePage.tsx:503
     critical: true
     seen:
       - /
@@ -8806,7 +8796,7 @@ actions:
     screen: space
     component: SpacePage
     label: Из шаблона
-    source: apps/web/src/pages/SpacePage.tsx:508
+    source: apps/web/src/pages/SpacePage.tsx:509
     critical: false
     seen:
       - /s/:spaceId
@@ -8816,7 +8806,7 @@ actions:
     screen: space
     component: SpacePage
     label: Импорт
-    source: apps/web/src/pages/SpacePage.tsx:511
+    source: apps/web/src/pages/SpacePage.tsx:512
     critical: true
     seen:
       - /
@@ -8846,7 +8836,7 @@ actions:
     component: SpacePage
     label: "{…}"
     dynamic: true
-    source: apps/web/src/pages/SpacePage.tsx:521
+    source: apps/web/src/pages/SpacePage.tsx:522
     data_driven: true
     critical: false
   - id: templates/ErrorState/povtorit

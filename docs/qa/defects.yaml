@@ -201,3 +201,93 @@ defects:
     requirements: [R-QA-004]
     source: tests/e2e/qa-editor-shell.spec.ts, 2026-10-23
     actions: [search/SearchPage/zagruzit-esche]
+  - id: QA-A1
+    title: 'Мгновенное двойное нажатие кнопок, у которых состояние «выполняется» берётся из react-query (isPending), запускает операцию дважды: «Создать» нового пользователя (второй запрос — ошибка «email уже существует» после успеха), «Создать» группы (две группы), «Создать архив» (два полных экспорта), «Восстановить» из архива'
+    severity: medium
+    status: fixed
+    owner: команда «Администрирование и доступ»
+    test: tests/e2e/qa-admin-users.spec.ts › QA-A1 (fixed)…; tests/e2e/qa-admin-org.spec.ts › QA-A1 (fixed)…; tests/e2e/qa-admin-access.spec.ts › R-ARCHIVE-001 archive export…
+    requirements: [R-QA-004, R-UI-061]
+    source: tests/e2e/qa-admin-*.spec.ts, 2026-10-23 (исправлено общим охранником apps/web/src/hooks/useInFlight.ts)
+    actions: [admin/CreateUserDialog/sozdat, admin/GroupDialog/button-data, admin/ExportDialog/button-data, admin/RestoreDialog/button-data]
+  - id: QA-A2
+    title: 'Импорт сотрудников из CSV: один и тот же email дважды в файле проходит проверку («OK» у обеих строк), а применение падает целиком на уникальности email — не создаётся никто'
+    severity: medium
+    status: fixed
+    owner: команда «Администрирование и доступ»
+    test: tests/e2e/qa-admin-users.spec.ts › QA-A2 (fixed)…
+    requirements: [R-ADMIN-003, R-QA-004]
+    source: tests/e2e/qa-admin-users.spec.ts, 2026-10-23 (apps/server/src/routes/admin.ts — повтор помечается «повторяется в файле»)
+    actions: [admin/ImportDialog/importirovat]
+  - id: QA-A3
+    title: 'Журнал аудита: ошибка при «Загрузить ещё» заменяла уже загруженные записи сообщением «Не удалось загрузить данные» — терялся просматриваемый список'
+    severity: low
+    status: fixed
+    owner: команда «Администрирование и доступ»
+    test: tests/e2e/qa-admin-org.spec.ts › QA-A3 (fixed)…
+    requirements: [R-UI-061]
+    source: tests/e2e/qa-admin-org.spec.ts, 2026-10-23
+    actions: [admin/AuditSection/zagruzit-esche]
+  - id: QA-A4
+    title: 'Администрирование (/admin/*): вкладки разделов — относительные ссылки внутри маршрута-«звёздочки» (React Router 7): переход из «Пользователи» в «Группы и отделы» вёл на /admin/users/groups и оставлял раздел пользователей; адрес раздела, недоступного роли (аудитор → /admin/settings), перенаправлялся бесконечно (/admin/settings/audit/audit/…)'
+    severity: high
+    status: fixed
+    owner: команда «Администрирование и доступ»
+    test: tests/e2e/qa-admin-org.spec.ts › QA-A4 (fixed)…
+    requirements: [R-UI-068, R-ADMIN-001]
+    source: tests/e2e/qa-admin-org.spec.ts, 2026-10-23 (apps/web/src/admin/AdminPage.tsx — абсолютные адреса)
+    actions: [admin/AdminPage/link-data]
+  - id: QA-A5
+    title: 'Экстренный доступ: двойное нажатие «Отозвать» (и «Утвердить»/«Отклонить») отправляло второй запрос — после «Экстренный доступ отозван» появлялась ошибка «не найдено»'
+    severity: low
+    status: fixed
+    owner: команда «Администрирование и доступ»
+    test: tests/e2e/qa-admin-access.spec.ts › QA-A5 (fixed)…
+    requirements: [R-ACL-056, R-QA-004]
+    source: tests/e2e/qa-admin-access.spec.ts, 2026-10-23
+    actions: [admin/EmergencyAccess/otozvat, admin/EmergencyAccess/otklonit]
+  - id: QA-A6
+    title: 'Страница без доступа: двойное нажатие «Запросить доступ» создавало два запроса — владельцы получали два уведомления (кнопка блокировалась только после ответа сервера)'
+    severity: medium
+    status: fixed
+    owner: команда «Страница и совместная работа»
+    test: tests/e2e/qa-admin-page-panels.spec.ts › QA-A6 (fixed)…
+    requirements: [R-ACL-040, R-QA-004]
+    source: tests/e2e/qa-admin-page-panels.spec.ts, 2026-10-23 (apps/web/src/pages/PageView.tsx)
+    actions: [page/PageError/zapros-otpravlen]
+  - id: QA-A7
+    title: 'Свойства страницы: при ошибке сохранения нового свойства введённые название и значение стирались — повторить можно было только набрав их заново'
+    severity: medium
+    status: fixed
+    owner: команда «Страница и совместная работа»
+    test: tests/e2e/qa-admin-page-panels.spec.ts › R-PAGE-022 properties…
+    requirements: [R-PAGE-022, R-UI-061]
+    source: tests/e2e/qa-admin-page-panels.spec.ts, 2026-10-23 (apps/web/src/components/page/PageInfoPanel.tsx)
+    actions: [page/PropertiesEditor/dobavit-svoystvo]
+  - id: QA-A8
+    title: 'Настройки профиля (/settings/*): вкладки — относительные ссылки внутри маршрута-«звёздочки»: из любой вкладки «Пароль и вход» вела на /settings/<вкладка>/security, затем бесконечное перенаправление (/settings/sessions/security/profile/profile/…); переключение вкладок не работало'
+    severity: high
+    status: fixed
+    owner: команда «Навигация и оболочка»
+    test: tests/e2e/qa-admin-spaces.spec.ts › R-AUTH-012 sessions…QA-A8 (fixed)…
+    requirements: [R-UI-068]
+    source: tests/e2e/qa-admin-spaces.spec.ts, 2026-10-23 (apps/web/src/pages/SettingsPage.tsx — абсолютные адреса)
+    actions: [runtime/link/parol-i-vhod, runtime/link/api-tokeny]
+  - id: QA-A9
+    title: '«Общий доступ» → «Только приглашённые» при унаследованном доступе организации («Закрыть доступ для организации?») создавал запрет для всей организации; запрет сильнее любых разрешений — доступ терялся и у приглашённых лично, и у самого владельца, вопреки тексту подтверждения'
+    severity: high
+    status: fixed
+    owner: команда «Администрирование и доступ»
+    test: tests/e2e/qa-admin-page-panels.spec.ts › R-ACL-022 «Общий доступ»…QA-A9 (fixed)…
+    requirements: [R-ACL-022, R-ACL-030]
+    source: tests/e2e/qa-admin-page-panels.spec.ts, 2026-10-23 (apps/web/src/components/page/ShareDialog.tsx — наследование отключается с копированием прав, разрешение организации снимается)
+    actions: [page/ShareDialog/obschiy-dostup, page/ShareDialog/confirm.zakryt-dostup-dlya-organizacii]
+  - id: QA-A10
+    title: 'Страница, ни разу не открытая на устройстве, при открытии без сети показывала «Не удалось открыть страницу» без пояснения (повтор запроса приостановлен, причина в failureReason, а не в error) вместо «Нет связи с сервером»'
+    severity: low
+    status: fixed
+    owner: команда «Страница и совместная работа»
+    test: tests/e2e/qa-admin-offline.spec.ts › QA-A10 (fixed)…
+    requirements: [R-UI-061, R-QA-029]
+    source: tests/e2e/qa-admin-offline.spec.ts, 2026-10-23 (apps/web/src/pages/PageView.tsx)
+    actions: [page/PageError/zapros-otpravlen]

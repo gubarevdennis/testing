@@ -4,6 +4,7 @@ import {
   BorderStyle,
   Document,
   ExternalHyperlink,
+  FootnoteReferenceRun,
   HeadingLevel,
   ImageRun,
   InternalHyperlink,
@@ -62,6 +63,32 @@ export async function docToDocx(doc: PMNode, opts: DocxExportOptions): Promise<{
     if (!warnings.some((w) => w.code === code)) warnings.push({ code, message });
   };
   let listInstance = 0;
+  // Footnotes become Word footnotes (numbered by Word in reference order); inline images ImageRuns in their line.
+  const footnotes: Record<number, { children: Paragraph[] }> = {};
+  let footnoteNo = 0;
+  const inlineImages = new Map<PMNode, ImageRun | null>();
+  const pending: PMNode[] = [];
+  const collectInline = (n: PMNode) => {
+    if (n.type === 'inlineImage') pending.push(n);
+    n.content?.forEach(collectInline);
+  };
+  collectInline(doc);
+  await Promise.all(pending.map(async (n) => inlineImages.set(n, await imageRun(n, MAX_IMAGE_WIDTH))));
+
+  async function imageRun(n: PMNode, maxWidth: number): Promise<ImageRun | null> {
+    const img = await opts.loadImage(n).catch(() => null);
+    if (!img) return null;
+    const { width, height } = img;
+    let data = img.data;
+    let type: 'png' | 'jpg' | 'gif' = img.mime === 'image/jpeg' ? 'jpg' : img.mime === 'image/gif' ? 'gif' : 'png';
+    if (!['image/png', 'image/jpeg', 'image/gif'].includes(img.mime)) {
+      data = await sharp(data).png().toBuffer();
+      type = 'png';
+    }
+    const target = Math.min(n.attrs?.width ?? width, maxWidth, width || maxWidth);
+    const scale = width ? target / width : 1;
+    return new ImageRun({ type, data, transformation: { width: Math.round((width || 400) * scale), height: Math.round((height || 300) * scale) }, altText: { name: n.attrs?.alt || 'image', description: n.attrs?.alt || '', title: n.attrs?.caption || n.attrs?.title || '' } } as any);
+  }
 
   function runs(nodes: PMNode[] | undefined, base: IRunOptions = {}): ParagraphChild[] {
     const out: ParagraphChild[] = [];
@@ -77,6 +104,21 @@ export async function docToDocx(doc: PMNode, opts: DocxExportOptions): Promise<{
       if (n.type === 'inlineMath') {
         warn('math', 'Формулы экспортированы как текст LaTeX');
         out.push(new TextRun({ ...base, text: n.attrs?.latex ?? '', italics: true, font: 'Cambria Math' }));
+        continue;
+      }
+      if (n.type === 'footnote') {
+        footnoteNo++;
+        footnotes[footnoteNo] = { children: [new Paragraph({ children: runs(n.content) })] };
+        out.push(new FootnoteReferenceRun(footnoteNo));
+        continue;
+      }
+      if (n.type === 'inlineImage') {
+        const run = inlineImages.get(n);
+        if (run) out.push(run);
+        else {
+          warn('image-missing', 'Некоторые изображения недоступны и заменены текстовыми ссылками');
+          out.push(new TextRun({ ...base, text: `[изображение: ${n.attrs?.alt || 'без описания'}]`, italics: true }));
+        }
         continue;
       }
       if (n.type === 'pageMention') {
@@ -264,24 +306,15 @@ export async function docToDocx(doc: PMNode, opts: DocxExportOptions): Promise<{
         ];
       }
       case 'image': {
-        const img = await opts.loadImage(n).catch(() => null);
-        if (!img) {
+        const run = await imageRun(n, MAX_IMAGE_WIDTH);
+        if (!run) {
           warn('image-missing', 'Некоторые изображения недоступны и заменены текстовыми ссылками');
           return [new Paragraph({ children: [new TextRun({ text: `[изображение: ${n.attrs?.alt || n.attrs?.caption || 'без описания'}]`, italics: true })] })];
         }
-        const { width, height } = img;
-        let data = img.data;
-        let type: 'png' | 'jpg' | 'gif' = img.mime === 'image/jpeg' ? 'jpg' : img.mime === 'image/gif' ? 'gif' : 'png';
-        if (!['image/png', 'image/jpeg', 'image/gif'].includes(img.mime)) {
-          data = await sharp(data).png().toBuffer();
-          type = 'png';
-        }
-        const target = Math.min(n.attrs?.width ?? width, MAX_IMAGE_WIDTH, width || MAX_IMAGE_WIDTH);
-        const scale = width ? target / width : 1;
         const out: Paragraph[] = [
           new Paragraph({
             alignment: n.attrs?.align === 'left' ? AlignmentType.LEFT : n.attrs?.align === 'right' ? AlignmentType.RIGHT : AlignmentType.CENTER,
-            children: [new ImageRun({ type, data, transformation: { width: Math.round((width || 400) * scale), height: Math.round((height || 300) * scale) }, altText: { name: n.attrs?.alt || 'image', description: n.attrs?.alt || '', title: n.attrs?.caption || '' } } as any)],
+            children: [run],
           }),
         ];
         // Word's built-in "caption" style: Word lists it in the table of figures and re-import maps it back (R-IMPORT-027).
@@ -357,6 +390,7 @@ export async function docToDocx(doc: PMNode, opts: DocxExportOptions): Promise<{
     creator: opts.author ?? 'База знаний',
     description: opts.description ?? '',
     features: { updateFields: true },
+    footnotes,
     styles: {
       default: { document: { run: { font: 'Calibri', size: 22 } } },
       characterStyles: [{ id: 'Hyperlink', name: 'Hyperlink', basedOn: 'DefaultParagraphFont', run: { color: '2F5FA8', underline: {} } }],

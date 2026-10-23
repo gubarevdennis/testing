@@ -3,6 +3,7 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tansta
 import { Ellipsis, FileUp, Search, UserPlus, Users } from 'lucide-react';
 import { get, patch, post, put, del } from '../api/client';
 import { useMe } from '../state/session';
+import { useInFlight } from '../hooks/useInFlight';
 import { useSpaces } from '../hooks/data';
 import { Dialog } from '../components/ui/Dialog';
 import { Menu, type MenuEntry } from '../components/ui/Menu';
@@ -383,7 +384,9 @@ function CreateUserDialog({ groups, isAdmin, guestsEnabled, onClose, onCreated }
     },
     onError: (e) => setError(errMsg(e)),
   });
+  const once = useInFlight();
   const invalid = !f.email.trim() || !f.name.trim() || (guest && !f.accessExpiresAt) || (f.mode === 'password' && !f.password);
+  const submit = () => once(() => m.mutateAsync());
   const spaceName = (id: string) => spaces.data?.spaces.find((s) => s.id === id)?.name ?? 'Пространство';
 
   if (result) {
@@ -450,7 +453,7 @@ function CreateUserDialog({ groups, isAdmin, guestsEnabled, onClose, onCreated }
           <button className="btn" onClick={onClose}>
             Отмена
           </button>
-          <button className="btn primary" disabled={invalid || m.isPending} aria-busy={m.isPending} onClick={() => m.mutate()}>
+          <button className="btn primary" disabled={invalid || m.isPending} aria-busy={m.isPending} onClick={submit}>
             {m.isPending && <span className="spinner" />} Создать
           </button>
         </>
@@ -461,7 +464,7 @@ function CreateUserDialog({ groups, isAdmin, guestsEnabled, onClose, onCreated }
         style={{ gap: 14 }}
         onSubmit={(e) => {
           e.preventDefault();
-          if (!invalid) m.mutate();
+          if (!invalid) submit();
         }}
       >
         {error && (

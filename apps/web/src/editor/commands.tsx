@@ -1,8 +1,9 @@
 import type { Editor, Range } from '@tiptap/core';
 import {
-  Type, Heading1, Heading2, Heading3, Heading4, Heading5, Heading6, List, ListOrdered, ListChecks, Quote, Code2, Minus, Table, Image, Paperclip, Info, Columns2, Columns3, ChevronRight, Sigma, Workflow, ListTree, FileText, Link2, Video, Pilcrow, AtSign, Smile, Copy, Database,
+  Type, Heading1, Heading2, Heading3, Heading4, Heading5, Heading6, List, ListOrdered, ListChecks, Quote, Code2, Minus, Table, Image, Paperclip, Info, Columns2, Columns3, ChevronRight, Sigma, Workflow, ListTree, FileText, Link2, Video, Pilcrow, AtSign, Smile, Copy, Database, Footprints,
 } from 'lucide-react';
 import type { ReactNode } from 'react';
+import { insertFootnote } from './extensions/footnotes';
 
 export interface SlashCommand {
   id: string;
@@ -58,6 +59,7 @@ export const SLASH_COMMANDS: SlashCommand[] = [
   { id: 'toc', group: 'Страницы', title: 'Оглавление', keywords: 'toc contents оглавление содержание', icon: <ListTree size={S} />, run: (e, r) => del(e, r).insertContent({ type: 'toc' }).run() },
   { id: 'synced', group: 'Страницы', title: 'Синхронизированный блок', hint: 'Блок с другой страницы', keywords: 'synced block reuse синхронизированный повтор вставка блока', icon: <Copy size={S} />, run: (e, r, c) => (del(e, r).run(), c.insertSyncedBlock()) },
   { id: 'collection', group: 'Страницы', title: 'Реестр (база данных)', keywords: 'database collection registry реестр база таблица данных', icon: <Database size={S} />, run: (e, r, c) => (del(e, r).run(), c.insertCollection()) },
+  { id: 'footnote', group: 'Дополнительно', title: 'Сноска', hint: 'Номер в тексте и примечание внизу', keywords: 'footnote note reference сноска примечание ссылка источник', shortcut: 'Ctrl+Alt+F', icon: <Footprints size={S} />, run: (e, r) => (del(e, r).run(), insertFootnote(e)) },
   { id: 'math', group: 'Дополнительно', title: 'Формула', keywords: 'math formula latex katex формула уравнение', icon: <Sigma size={S} />, run: (e, r) => del(e, r).insertContent({ type: 'blockMath', attrs: { latex: 'E = mc^2' } }).run() },
   { id: 'mermaid', group: 'Дополнительно', title: 'Схема (Mermaid)', keywords: 'diagram mermaid flowchart схема диаграмма процесс', icon: <Workflow size={S} />, run: (e, r) => del(e, r).insertContent({ type: 'mermaid', content: [{ type: 'text', text: 'flowchart LR\n  A[Начало] --> B{Условие}\n  B -- да --> C[Действие]\n  B -- нет --> D[Конец]' }] }).run() },
   { id: 'emoji', group: 'Дополнительно', title: 'Эмодзи', keywords: 'emoji smile эмодзи смайлик', shortcut: ':', icon: <Smile size={S} />, run: (e, r) => del(e, r).insertContent(':').run() },

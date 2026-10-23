@@ -1,36 +1,46 @@
-import { Extension } from '@tiptap/core';
+import { Extension, type Editor } from '@tiptap/core';
 import { Plugin, PluginKey } from '@tiptap/pm/state';
-import { Slice, Fragment, DOMSerializer, type Node as PMNodeT } from '@tiptap/pm/model';
+import { Slice, Fragment, DOMSerializer, type Node as PMNodeT, type Schema } from '@tiptap/pm/model';
+import { CellSelection } from '@tiptap/pm/tables';
 import { yUndoPluginKey } from '@tiptap/y-tiptap';
-import { looksLikeTsv, parseTsv, rowsToTable, sanitizeHref, tableToRows, rowsToTsv, type PMNode } from '@kb/shared';
-import { markdownNow } from '../../lib/markdown';
+import { sanitizeHref, tableToRows, rowsToTsv, ingestClipboard, clipboardKind, reportSummary, looksLikeMarkdown, walk, type PMNode, type ClipboardInput, type IngestEnv } from '@kb/shared';
+import { markdownNow, loadMarkdown } from '../../lib/markdown';
 import { cleanPastedHtml, cleanCopiedDom, dataUriToFile, PASTE_TOKEN } from '../clipboard/html';
 import { parseRtf, substituteWordImages } from '../clipboard/rtf';
-import { importRemoteImages } from '../clipboard/rehome';
 import { KB_CLIPBOARD_TYPE, attachmentIdsOf, parseInternal, serializeInternal } from '../clipboard/internal';
 import { rehomeAttachments } from '../clipboard/rehome';
+import { handleRemoteImages } from '../clipboard/hooks';
 import { isHiddenRef, HIDDEN_PAGE_TITLE } from '../clipboard/redact';
 import { uploadIntoBlocks } from './uploads';
 import { notePaste } from './pasteOptions';
 import { toast } from '../../components/ui/Toast';
 
-const MD_HINTS = [/^#{1,6}\s/m, /^\s*[-*+]\s+\S/m, /^\s*\d+[.)]\s+\S/m, /^```/m, /^\s*>\s/m, /^\|.+\|\s*$/m, /\*\*[^*\n]+\*\*/, /\[[^\]\n]+\]\([^)\s]+\)/, /^\s*[-*]\s\[[ xX]\]\s/m];
+export { looksLikeMarkdown } from '@kb/shared';
 
-/** Text that is probably Markdown (at least two distinct markers, or one structural marker over several lines). */
-export function looksLikeMarkdown(text: string) {
-  const hits = MD_HINTS.filter((r) => r.test(text)).length;
-  return hits >= 2 || (hits === 1 && text.split('\n').length >= 3 && /^(#{1,6}\s|```|\|)/m.test(text));
+/** Environment of the shared ingest pipeline in the browser. */
+function browserEnv(): IngestEnv {
+  return { parser: new DOMParser(), origin: location.origin, markdown: markdownNow() };
+}
+
+/** Slice of converted content, opened like ProseMirror's own clipboard parser does (Slice.maxOpen). */
+export function sliceOfDoc(doc: PMNode, schema: Schema): Slice {
+  return Slice.maxOpen(Fragment.fromJSON(schema, doc.content ?? []));
 }
 
 /**
- * Clipboard handling:
- *  - spreadsheet ranges (TSV text without HTML) become tables; Excel/Sheets HTML tables are parsed by the schema;
- *  - Markdown text becomes formatted blocks (headings, lists, tables, code);
- *  - Ctrl/Cmd+Shift+V pastes plain text;
- *  - a bare URL over selected text becomes a link;
- *  - every pasted HTML goes through an allowlist sanitiser (clipboard/html.ts): Word lists become lists, foreign
- *    inline styles are dropped, embedded images are uploaded as attachments (R-CLIPBOARD-009/010/020/022);
- *  - copying writes portable HTML (absolute URLs, no comment anchors) and a table range as TSV text (R-CLIPBOARD-006/017).
+ * Clipboard handling. The conversion of everything that is not this knowledge base's own internal format is the shared
+ * ingest pipeline (packages/shared/src/editor/ingest.ts) — the same code the server runs for DOCX/HTML/MD/CSV/XLSX/TXT
+ * import, with the same report (R-IMPORT-021, D-38):
+ *  - text/html (Word, Google Docs, web pages, mail, other editors; RTF-only clipboards are first converted to HTML):
+ *    allowlist normalisation, Word lists, footnotes, embedded pictures uploaded into their blocks (R-CLIPBOARD-009/010/020/022);
+ *  - text/markdown, or Markdown-looking text → formatted blocks; spreadsheet ranges (TSV) → tables; other text → paragraphs;
+ *  - pictures and files only → upload blocks (Uploads plugin, same nodes as ingestFiles);
+ *  - Ctrl/Cmd+Shift+V pastes plain text; a bare URL over selected text becomes a link;
+ *  - images and files of another page become attachments of this page (POST /attachments/:id/copy), pictures of other
+ *    sites are handed to the remote-images hook (copied to the server);
+ *  - copying writes portable HTML (absolute URLs, no comment anchors, numbered footnotes), a table range as TSV text and
+ *    the internal format (R-CLIPBOARD-006/017/018).
+ * A paste is one Undo step; uploads and attachment copies complete it without adding steps.
  */
 export const SmartPaste = Extension.create({
   name: 'smartPaste',
@@ -42,30 +52,19 @@ export const SmartPaste = Extension.create({
       new Plugin({
         key: new PluginKey('smartPaste'),
         props: {
+          // ProseMirror's own HTML paste (kept for cell-by-cell pastes into tables) normalises with the same shared code
           transformPastedHTML(html) {
             return cleanPastedHtml(html, { origin: location.origin }).html;
           },
           transformPasted(slice) {
-            // embedded pictures (tokens left by the sanitiser) become upload blocks in place; pictures of other sites
-            // are copied to the server afterwards (the page must not depend on them)
-            const files = pendingFiles;
-            pendingFiles = [];
-            const remote = new Set<string>();
+            // pictures embedded in that path have no file to upload here: they are dropped (counted in the notice)
+            let dropped = 0;
             const mapped = mapImages(slice, (node) => {
-              const src = String(node.attrs.src ?? '');
-              const m = PASTE_TOKEN.exec(src);
-              if (m) {
-                const file = files[Number(m[1])];
-                if (!file) return null;
-                const id = crypto.randomUUID();
-                uploadsToStart.push({ id, file });
-                return node.type.create({ ...node.attrs, src: null, uploadId: id }, null, node.marks);
-              }
-              if (/^https?:\/\//i.test(src) && !node.attrs.attachmentId && !src.startsWith(location.origin + '/')) remote.add(src);
-              return node;
+              if (!PASTE_TOKEN.test(String(node.attrs.src ?? ''))) return node;
+              dropped++;
+              return null;
             });
-            const pageId = pageIdOf(editor);
-            if (remote.size && pageId) setTimeout(() => void importRemoteImages(editor, [...remote], pageId), 0);
+            if (dropped) toast.info(`Изображений, которые не удалось перенести из буфера: ${dropped}. Скопируйте их отдельно (как изображение) или перетащите файлы.`);
             return mapped;
           },
           clipboardSerializer: portableSerializer(editor.schema),
@@ -102,77 +101,64 @@ export const SmartPaste = Extension.create({
             // ...and typing right after the paste starts a new step too (R-EDITOR-033: one Undo = exactly the paste)
             setTimeout(() => um?.stopCapturing(), 0);
             const cd = event.clipboardData;
+            const asText = plain;
+            plain = false;
             if (!cd || !view.editable) return false;
             const text = cd.getData('text/plain');
             const rtf = cd.getData('text/rtf');
             let html = cd.getData('text/html');
             // RTF only (WordPad, some Office / mail clients): converted to HTML; with Word HTML: its pictures
-            if (!html && rtf && !plain) html = parseRtf(rtf).html;
+            if (!html && rtf && !asText) html = parseRtf(rtf).html;
             else if (html && rtf) html = substituteWordImages(html, rtf).html;
-            notePaste(html && !plain ? { html: true, text } : null); // paste options for formatted pastes (R-CLIPBOARD-009)
+            notePaste(html && !asText ? { html: true, text } : null); // paste options for formatted pastes (R-CLIPBOARD-009)
             const { $from } = view.state.selection;
             if ($from.parent.type.spec.code) return false; // code block / mermaid: browser default (plain)
-            if (plain) {
-              plain = false;
-              if (!text) return false;
-              const paras = text.replace(/\r\n?/g, '\n').split(/\n{2,}|\n/);
-              const nodes = paras.map((p) => view.state.schema.nodes.paragraph.create(null, p ? view.state.schema.text(p) : undefined));
-              view.dispatch(view.state.tr.replaceSelection(new Slice(Fragment.from(nodes), 1, 1)).scrollIntoView());
-              return true;
-            }
-            // 1) the internal format: exact blocks (types, ids, attributes) copied in this knowledge base
-            const internal = parseInternal(cd.getData(KB_CLIPBOARD_TYPE), view.state.schema);
-            if (internal) {
-              view.dispatch(view.state.tr.replaceSelection(internal.slice).scrollIntoView().setMeta('uiEvent', 'paste'));
-              // images and files from another page become attachments of this page (its readers, its rights)
-              const pageId = pageIdOf(editor);
-              const ids = attachmentIdsOf(internal.json);
-              if (pageId && internal.pageId !== pageId && ids.length) void rehomeAttachments(editor, ids, pageId);
-              return true;
-            }
-            // 2) HTML, 3) plain text
-            // URL over a text selection → link
-            const url = text.trim();
-            if (!view.state.selection.empty && /^(https?:\/\/|mailto:)\S+$/i.test(url) && sanitizeHref(url)) {
-              editor.chain().focus().extendMarkRange('link').setLink({ href: url }).run();
-              return true;
-            }
-            if (html && !/^\s*<meta[^>]*>\s*<(span|div)[^>]*white-space:\s*pre/i.test(html)) {
-              // A single image copied from a web page / app (files + trivial HTML) is uploaded by the Uploads plugin.
-              if (cd.files?.length && !/<table|<p|<h\d|<li/i.test(html)) return false;
-              const res = cleanPastedHtml(html, { origin: location.origin });
-              // schema parser on the sanitised HTML (transformPastedHTML) — unless it came from RTF or carries pictures
-              if (!res.images.length && !res.droppedImages && html === cd.getData('text/html')) return false;
-              const pageId = pageIdOf(editor);
-              pendingFiles = pageId ? res.images.map((im, i) => dataUriToFile(im.dataUri, im.alt || `Изображение ${i + 1}`)) : [];
-              uploadsToStart = [];
-              view.pasteHTML(res.html); // no event: our handlers do not see this paste again
-              pendingFiles = [];
-              const started = uploadsToStart;
-              uploadsToStart = [];
-              if (started.length && pageId) uploadIntoBlocks(editor, started, pageId);
-              if (res.droppedImages)
-                toast.info(`Изображений, которые не удалось перенести из буфера: ${res.droppedImages}. Скопируйте их отдельно (как изображение) или перетащите файлы.`);
-              return true;
-            }
-            if (text && looksLikeTsv(text) && !$from.node(-1)?.type.name.startsWith('table')) {
-              const rows = parseTsv(text);
-              const table = view.state.schema.nodeFromJSON(rowsToTable(rows, rows.length > 1));
-              view.dispatch(view.state.tr.replaceSelectionWith(table).scrollIntoView());
-              return true;
-            }
-            const md = markdownNow();
-            if (text && md && looksLikeMarkdown(text)) {
-              try {
-                const { doc } = md.markdownToDoc(text);
-                const node = view.state.schema.nodeFromJSON(doc);
-                view.dispatch(view.state.tr.replaceSelection(new Slice(node.content, 0, 0)).scrollIntoView());
+            if (!asText) {
+              // 1) the internal format: exact blocks (types, ids, attributes) copied in this knowledge base
+              const internal = parseInternal(cd.getData(KB_CLIPBOARD_TYPE), view.state.schema);
+              if (internal) {
+                view.dispatch(view.state.tr.replaceSelection(internal.slice).scrollIntoView().setMeta('uiEvent', 'paste'));
+                // images and files from another page become attachments of this page (its readers, its rights)
+                const pageId = pageIdOf(editor);
+                const ids = attachmentIdsOf(internal.json);
+                if (pageId && internal.pageId !== pageId && ids.length) void rehomeAttachments(editor, ids, pageId);
                 return true;
-              } catch {
-                return false;
+              }
+              // URL over a text selection → link
+              const url = text.trim();
+              if (!view.state.selection.empty && /^(https?:\/\/|mailto:)\S+$/i.test(url) && sanitizeHref(url)) {
+                editor.chain().focus().extendMarkRange('link').setLink({ href: url }).run();
+                return true;
               }
             }
-            return false;
+            // 2) everything else: the shared pipeline
+            const input: ClipboardInput = {
+              html: asText ? undefined : html || undefined,
+              text,
+              markdown: asText ? undefined : cd.getData('text/markdown') || undefined,
+              files: [...(cd.files ?? [])].map((f) => ({ name: f.name, type: f.type, size: f.size })),
+              plain: asText,
+            };
+            const env = browserEnv();
+            if (!env.markdown && (input.markdown?.trim() || (!input.html && looksLikeMarkdown(text)))) {
+              // the Markdown converter is loaded on demand: the paste completes as soon as it is there (a few ms)
+              void loadMarkdown().then((m) => {
+                if (!editor.isDestroyed) insertIngested(editor, ingestClipboard(input, { ...env, markdown: m }));
+              });
+              return true;
+            }
+            const kind = clipboardKind(input, env);
+            if (kind === 'none' || kind === 'files') return false; // pictures / files: the Uploads plugin (same nodes)
+            // a range pasted into a table goes cell by cell (prosemirror-tables), from the same normalised HTML / text
+            const inTable = view.state.selection instanceof CellSelection || /^table(Cell|Header)$/.test($from.node(-1)?.type.name ?? '');
+            if (inTable && (kind === 'rows' || (kind === 'html' && /<table/i.test(html)))) return false;
+            let res: ReturnType<typeof ingestClipboard>;
+            try {
+              res = ingestClipboard(input, env);
+            } catch {
+              return false;
+            }
+            return insertIngested(editor, res);
           },
         },
       }),
@@ -180,9 +166,56 @@ export const SmartPaste = Extension.create({
   },
 });
 
-/** Files of the embedded pictures of the paste being parsed (consumed by transformPasted). */
-let pendingFiles: File[] = [];
-let uploadsToStart: Array<{ id: string; file: File }> = [];
+/**
+ * Puts converted content into the document as one transaction (one Undo step): embedded pictures become upload blocks
+ * in place, then (outside the step) uploads start, attachments of other pages are copied, pictures of other sites go to
+ * the remote-images hook, and anything that could not be taken over is reported.
+ */
+export function insertIngested(editor: Editor, res: ReturnType<typeof ingestClipboard>): boolean {
+  const view = editor.view;
+  const pageId = pageIdOf(editor);
+  const uploads: Array<{ id: string; file: File }> = [];
+  let lost = 0;
+  const doc = structuredClone(res.doc);
+  walk(doc, (n) => {
+    const m = PASTE_TOKEN.exec(String(n.attrs?.src ?? ''));
+    if (!m || !n.attrs) return;
+    const im = res.images[Number(m[1])];
+    if (!pageId || !im) {
+      // no page to attach the file to: a visible placeholder instead of a broken picture
+      lost++;
+      const label = `[изображение: ${n.attrs.alt || 'без описания'}]`;
+      if (n.type === 'image') Object.assign(n, { type: 'paragraph', attrs: {}, content: [{ type: 'text', text: label }] });
+      else Object.assign(n, { type: 'text', text: label, attrs: undefined });
+      return false;
+    }
+    const id = crypto.randomUUID();
+    uploads.push({ id, file: dataUriToFile(im.dataUri, im.alt || `Изображение ${uploads.length + 1}`) });
+    n.attrs = { ...n.attrs, src: null, uploadId: id };
+  });
+  let slice: Slice;
+  try {
+    slice = sliceOfDoc(doc, view.state.schema);
+  } catch {
+    return false;
+  }
+  const single = slice.openStart === 0 && slice.openEnd === 0 && slice.content.childCount === 1 ? slice.content.firstChild : null;
+  const tr = single ? view.state.tr.replaceSelectionWith(single, false) : view.state.tr.replaceSelection(slice);
+  view.dispatch(tr.scrollIntoView().setMeta('uiEvent', 'paste'));
+  if (pageId) {
+    if (uploads.length) uploadIntoBlocks(editor, uploads, pageId);
+    handleRemoteImages(editor, res.remoteImages, pageId);
+    // pictures and files of another page of this knowledge base (HTML copied without the internal format)
+    const ids = attachmentIdsOf(doc.content ?? []);
+    if (ids.length) void rehomeAttachments(editor, ids, pageId);
+  }
+  // what could not be taken over is said (the same report as an import; pictures in the clipboard's own words)
+  const droppedImages = (res.report.dropped.images ?? 0) + lost;
+  const other = reportSummary({ ...res.report, warnings: res.report.warnings.filter((w) => w.code !== 'dropped-images') });
+  const summary = [droppedImages ? `Изображений, которые не удалось перенести из буфера: ${droppedImages}. Скопируйте их отдельно (как изображение) или перетащите файлы.` : '', other].filter(Boolean).join(' ');
+  if (summary) toast.info(summary);
+  return true;
+}
 
 /** Maps image nodes of a slice (null drops the node). */
 function mapImages(slice: Slice, fn: (n: PMNodeT) => PMNodeT | null): Slice {
@@ -190,7 +223,7 @@ function mapImages(slice: Slice, fn: (n: PMNodeT) => PMNodeT | null): Slice {
     let changed = false;
     const out: PMNodeT[] = [];
     frag.forEach((n) => {
-      const r = n.type.name === 'image' ? fn(n) : n.childCount ? n.copy(walk(n.content)) : n;
+      const r = n.type.name === 'image' || n.type.name === 'inlineImage' ? fn(n) : n.childCount ? n.copy(walk(n.content)) : n;
       if (r !== n) changed = true;
       if (r) out.push(r);
     });
@@ -200,7 +233,7 @@ function mapImages(slice: Slice, fn: (n: PMNodeT) => PMNodeT | null): Slice {
   return content === slice.content ? slice : new Slice(content, slice.openStart, slice.openEnd);
 }
 
-const pageIdOf = (editor: import('@tiptap/core').Editor) => (editor.storage as unknown as { kbPage?: { pageId?: string } }).kbPage?.pageId ?? null;
+const pageIdOf = (editor: Editor) => (editor.storage as unknown as { kbPage?: { pageId?: string } }).kbPage?.pageId ?? null;
 
 /** Copy / cut: the editor's own text/html and text/plain plus the internal format. */
 function writeClipboard(view: import('@tiptap/pm/view').EditorView, e: ClipboardEvent, cut: boolean, pageId: string | null): boolean {

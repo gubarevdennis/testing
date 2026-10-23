@@ -4,9 +4,11 @@
  * CollabProvider uses and carries exactly the same binary frames over plain HTTPS:
  *
  *   POST   /api/v1/collab/:pageId/tunnel        → { id }            opens a server-side session (same checks as WS)
- *   POST   /api/v1/collab/tunnel/:id/send        { frames: b64[] }   client → server frames, in order
- *   GET    /api/v1/collab/tunnel/:id/poll        → { frames, closed } long poll for server → client frames
- *   DELETE /api/v1/collab/tunnel/:id                                  closes the session
+ *   POST   /api/v1/collab/:pageId/tunnel/:id/send  { frames: b64[] }   client → server frames, in order
+ *   GET    /api/v1/collab/:pageId/tunnel/:id/poll  → { frames, closed } long poll for server → client frames
+ *   DELETE /api/v1/collab/:pageId/tunnel/:id                            closes the session
+ *   (page-scoped so that a load balancer hashing on the page id keeps a tunnel on the instance that holds it;
+ *   the server also accepts the older /api/v1/collab/tunnel/:id/… form)
  *
  * The durability contract is unchanged: ACK frames still arrive only after the server committed the operation.
  */
@@ -47,6 +49,8 @@ export class HttpTunnelSocket {
   private sending = false;
   private abort = new AbortController();
   private base: string;
+  /** /api/v1/collab/:pageId — every tunnel URL is page-scoped so a load balancer can keep a page on one instance. */
+  private path: string;
 
   /** `url` is the WebSocket URL of the page channel (ws(s)://host/api/v1/collab/:pageId). */
   constructor(
@@ -55,6 +59,7 @@ export class HttpTunnelSocket {
   ) {
     const u = new URL(url.replace(/^ws/, 'http'));
     this.base = u.origin;
+    this.path = u.pathname;
     void this.open(u.pathname);
   }
 
@@ -72,7 +77,7 @@ export class HttpTunnelSocket {
       if (!r.ok) return this.fail(r.status === 401 ? 4401 : r.status === 404 ? 4404 : r.status === 403 ? 4403 : 1006, 'http ' + r.status);
       const { id } = (await r.json()) as { id: string };
       if (this.readyState !== CONNECTING) {
-        void this.f()(`${this.base}/api/v1/collab/tunnel/${id}`, { method: 'DELETE', headers: this.headers(), credentials: 'same-origin' }).catch(() => undefined);
+        void this.f()(`${this.base}${this.path}/tunnel/${id}`, { method: 'DELETE', headers: this.headers(), credentials: 'same-origin' }).catch(() => undefined);
         return;
       }
       this.id = id;
@@ -105,7 +110,7 @@ export class HttpTunnelSocket {
         const bytes = frames.reduce((n, f) => n + f.byteLength, 0);
         let r: Response;
         try {
-          r = await this.f()(`${this.base}/api/v1/collab/tunnel/${this.id}/send`, { method: 'POST', headers: this.headers(true), body: JSON.stringify({ frames: frames.map(toBase64) }), credentials: 'same-origin', signal: this.abort.signal });
+          r = await this.f()(`${this.base}${this.path}/tunnel/${this.id}/send`, { method: 'POST', headers: this.headers(true), body: JSON.stringify({ frames: frames.map(toBase64) }), credentials: 'same-origin', signal: this.abort.signal });
         } catch {
           this.fail(1006, 'network');
           return;
@@ -127,7 +132,7 @@ export class HttpTunnelSocket {
       let body: { frames: string[]; last: number; closed: { code: number; reason?: string } | null };
       try {
         // `after` confirms received frames; anything the server sent after it is delivered again (lost responses)
-        const r = await this.f()(`${this.base}/api/v1/collab/tunnel/${this.id}/poll?after=${after}`, { headers: this.headers(), credentials: 'same-origin', signal: this.abort.signal });
+        const r = await this.f()(`${this.base}${this.path}/tunnel/${this.id}/poll?after=${after}`, { headers: this.headers(), credentials: 'same-origin', signal: this.abort.signal });
         if (!r.ok) return this.fail(r.status === 401 ? 4401 : 1006, 'poll ' + r.status);
         body = await r.json();
       } catch {
@@ -150,7 +155,7 @@ export class HttpTunnelSocket {
     const id = this.id;
     this.readyState = CLOSED;
     this.abort.abort();
-    if (id) void this.f()(`${this.base}/api/v1/collab/tunnel/${id}`, { method: 'DELETE', headers: this.headers(), credentials: 'same-origin' }).catch(() => undefined);
+    if (id) void this.f()(`${this.base}${this.path}/tunnel/${id}`, { method: 'DELETE', headers: this.headers(), credentials: 'same-origin' }).catch(() => undefined);
     this.onclose?.({ code });
   }
 

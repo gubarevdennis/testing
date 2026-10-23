@@ -1,0 +1,35 @@
+# Unit tests of the leak alerts (promtool test rules deploy/monitoring/leak-alerts.test.yml).
+# RSS that grows 30 MB/h for 9 h fires KbMemoryLeakSuspected; a flat RSS does not; waiting DB clients fire KbDbPoolExhausted.
+rule_files:
+  - prometheus-alerts.yml
+evaluation_interval: 1m
+tests:
+  - interval: 10m
+    input_series:
+      - series: 'kb_process_resident_memory_bytes{job="kb", instance="leaky"}'
+        values: '300000000+5242880x54'   # +5 MiB every 10 min = 30 MiB/h
+      - series: 'kb_process_resident_memory_bytes{job="kb", instance="steady"}'
+        values: '300000000+0x54'
+    alert_rule_test:
+      - eval_time: 9h
+        alertname: KbMemoryLeakSuspected
+        exp_alerts:
+          - exp_labels: { severity: warning, owner: dev, job: kb, instance: leaky }
+            exp_annotations:
+              summary: "RSS leaky растёт на 30MiB/ч 6 часов подряд — подозрение на утечку"
+              runbook: "docs/OPERATIONS.md#runbook-leak"
+  - interval: 1m
+    input_series:
+      - series: 'kb_db_pool_connections{job="kb", instance="steady", state="waiting"}'
+        values: '0x9 3x20'
+    alert_rule_test:
+      - eval_time: 12m
+        alertname: KbDbPoolExhausted
+        exp_alerts: []
+      - eval_time: 20m
+        alertname: KbDbPoolExhausted
+        exp_alerts:
+          - exp_labels: { severity: critical, owner: ops, instance: steady }
+            exp_annotations:
+              summary: "3 запросов ждут соединения с БД на steady (пул DB_POOL_SIZE исчерпан)"
+              runbook: "docs/OPERATIONS.md#runbook-leak"

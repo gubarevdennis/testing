@@ -1,6 +1,7 @@
 import { NodeViewWrapper, type NodeViewProps } from '@tiptap/react';
 import { useEffect, useRef, useState } from 'react';
-import { AlignLeft, AlignCenter, AlignRight, Maximize2, Download, Trash2, Captions, Type as AltIcon, Replace, ScanText, StretchHorizontal } from 'lucide-react';
+import { AlignLeft, AlignCenter, AlignRight, Maximize2, Download, Trash2, Captions, Type as AltIcon, Replace, ScanText, StretchHorizontal, WrapText } from 'lucide-react';
+import { TextSelection } from '@tiptap/pm/state';
 import { Tooltip } from '../../components/ui/Tooltip';
 import { openViewer, collectImages } from '../../components/ImageViewer';
 import { uploadFile } from '../../lib/uploads';
@@ -99,6 +100,18 @@ function LoadedImageView({ node, updateAttributes, selected, editor, getPos, del
     input.click();
   };
 
+  /** Block → picture in a line of text (R-MEDIA-007): a paragraph holding the picture replaces the block; one Undo step. */
+  const toInline = () => {
+    const p = typeof getPos === 'function' ? getPos() : undefined;
+    if (p == null) return;
+    const { schema } = editor.state;
+    const img = schema.nodes.inlineImage.create({ src: a.src, attachmentId: a.attachmentId, alt: a.alt, title: a.caption || null, width: a.width && a.width <= 200 ? a.width : 96, naturalWidth: a.naturalWidth, naturalHeight: a.naturalHeight });
+    const tr = editor.state.tr.replaceWith(p, p + node.nodeSize, schema.nodes.paragraph.create(null, img));
+    tr.setSelection(TextSelection.create(tr.doc, p + 1 + img.nodeSize));
+    editor.view.dispatch(tr.scrollIntoView());
+    editor.view.focus();
+  };
+
   const presets = [25, 50, 75, 100];
   return (
     <NodeViewWrapper as="figure" ref={figRef as any} className={`kb-image-block align-${a.align}${selected ? ' is-selected' : ''}`} data-drag-handle="" data-block-id={node.attrs.id}>
@@ -174,6 +187,13 @@ function LoadedImageView({ node, updateAttributes, selected, editor, getPos, del
               <Maximize2 size={15} />
             </button>
           </Tooltip>
+          {!node.attrs.uploadId && (
+            <Tooltip label="В строку текста">
+              <button aria-label="В строку текста" className="icon-btn sm" onClick={toInline}>
+                <WrapText size={15} />
+              </button>
+            </Tooltip>
+          )}
           {a.attachmentId && (
             <Tooltip label="Скачать оригинал">
             <a aria-label="Скачать оригинал" className="icon-btn sm" href={`/api/v1/attachments/${a.attachmentId}/download`} download>

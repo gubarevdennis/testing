@@ -5,6 +5,7 @@ import { isOrgAdmin } from '../acl/engine.js';
 import { forbidden } from '../lib/errors.js';
 import { migrationStatus } from '../db/migrate.js';
 import { integrityProblems } from '../services/integrity.js';
+import { safeEqual } from '../lib/crypto.js';
 
 export async function healthRoutes(app: FastifyInstance, s: Services) {
   /** Liveness: the process is up. */
@@ -37,11 +38,15 @@ export async function healthRoutes(app: FastifyInstance, s: Services) {
 
   app.get('/metrics', { config: { rateLimit: false } }, async (req, reply) => {
     const token = process.env.METRICS_TOKEN;
-    if (token && req.headers.authorization !== `Bearer ${token}`) return reply.status(401).send('unauthorized');
+    if (token && !safeEqual(req.headers.authorization ?? '', `Bearer ${token}`)) return reply.status(401).send('unauthorized');
     const pending = (await s.db.query('select count(*)::int c from outbox where processed_at is null')).rows[0].c;
     s.metrics.outboxLag.set(pending);
     const q = (await s.db.query(`select count(*)::int c from jobs where status = 'queued'`)).rows[0].c;
     s.metrics.jobsQueued.set(q);
+    s.metrics.dbPoolConnections.labels('total').set(s.db.totalCount);
+    s.metrics.dbPoolConnections.labels('idle').set(s.db.idleCount);
+    s.metrics.dbPoolConnections.labels('waiting').set(s.db.waitingCount);
+    s.metrics.dbPoolMax.set((s.db as unknown as { options: { max: number } }).options.max);
     const b = (await s.db.query(`select max(finished_at) f, max(verified_at) filter (where verify_status = 'ok') v from backups where status = 'ok'`)).rows[0];
     if (b.f) s.metrics.backupAgeSeconds.set((Date.now() - new Date(b.f).getTime()) / 1000);
     if (b.v) s.metrics.restoreVerifyAgeSeconds.set((Date.now() - new Date(b.v).getTime()) / 1000);

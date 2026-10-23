@@ -26,6 +26,8 @@ export function collectImages(editor: Editor): ViewerImage[] {
   const out: ViewerImage[] = [];
   editor.state.doc.descendants((n, pos) => {
     if (n.type.name === 'image') out.push({ pos, attachmentId: n.attrs.attachmentId, src: n.attrs.src, alt: n.attrs.alt, caption: n.attrs.caption, naturalWidth: n.attrs.naturalWidth, naturalHeight: n.attrs.naturalHeight });
+    // pictures in a line of text open in the same viewer (R-MEDIA-007); their caption is the title
+    else if (n.type.name === 'inlineImage' && (n.attrs.src || n.attrs.attachmentId)) out.push({ pos, attachmentId: n.attrs.attachmentId, src: n.attrs.src, alt: n.attrs.alt, caption: n.attrs.title ?? '', naturalWidth: n.attrs.naturalWidth, naturalHeight: n.attrs.naturalHeight });
   });
   return out;
 }

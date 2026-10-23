@@ -103,12 +103,16 @@ $$
     valid(r.doc);
   });
 
-  it('lifts images out of paragraphs and reports missing assets', () => {
-    const r = markdownToDoc('Текст ![схема](assets/s.png "Подпись") после', {
-      resolveAsset: (h) => (h === 'assets/s.png' ? { attachmentId: 'a1', src: '/api/v1/attachments/a1/content' } : null),
-    });
-    expect(r.doc.content!.map((n) => n.type)).toEqual(['paragraph', 'image', 'paragraph']);
-    expect(r.doc.content![1].attrs!.caption).toBe('Подпись');
+  it('a picture in a line of text stays inline; a lone picture is a block; missing assets are reported (R-MEDIA-007)', () => {
+    const resolveAsset = (h: string) => (h === 'assets/s.png' ? { attachmentId: 'a1', src: '/api/v1/attachments/a1/content' } : null);
+    const r = markdownToDoc('Текст ![схема](assets/s.png "Подпись") после', { resolveAsset });
+    expect(r.doc.content!.map((n) => n.type)).toEqual(['paragraph']);
+    const inl = r.doc.content![0].content!.find((n) => n.type === 'inlineImage')!;
+    expect(inl.attrs).toMatchObject({ attachmentId: 'a1', alt: 'схема', title: 'Подпись' });
+    valid(r.doc);
+    const b = markdownToDoc('Текст\n\n![схема](assets/s.png "Подпись")\n\nпосле', { resolveAsset });
+    expect(b.doc.content!.map((n) => n.type)).toEqual(['paragraph', 'image', 'paragraph']);
+    expect(b.doc.content![1].attrs!.caption).toBe('Подпись');
     const r2 = markdownToDoc('![x](missing.png)', { resolveAsset: () => null });
     expect(r2.warnings.some((w) => w.code === 'image-missing')).toBe(true);
     expect(docToPlainText(r2.doc)).toContain('изображение');
@@ -128,11 +132,15 @@ $$
     valid(r.doc);
   });
 
-  it('converts footnotes without losing text', () => {
-    const r = markdownToDoc('Текст[^1].\n\n[^1]: Пояснение.');
-    const txt = docToPlainText(r.doc);
-    expect(txt).toContain('Пояснение');
-    expect(r.warnings.some((w) => w.code === 'footnotes')).toBe(true);
+  it('R-EDITOR-038: [^n] references become footnote nodes carrying their note; unused definitions are kept', () => {
+    const r = markdownToDoc('Текст[^1].\n\n[^1]: Пояснение *важное*.\n\n[^x]: Без ссылки.');
+    const fn = r.doc.content![0].content!.find((n) => n.type === 'footnote')!;
+    expect(fn.content!.map((t) => t.text).join('')).toBe('Пояснение важное.');
+    expect(fn.content!.find((t) => t.text === 'важное')!.marks).toEqual([{ type: 'italic' }]);
+    expect(docToPlainText(r.doc)).toContain('Пояснение');
+    expect(docToPlainText(r.doc)).toContain('Без ссылки');
+    expect(r.warnings.map((w) => w.code)).toContain('footnote-unused');
+    valid(r.doc);
   });
 });
 
