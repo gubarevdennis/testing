@@ -7,21 +7,20 @@
 | Показатель | Значение |
 |---|---|
 | Действий в инвентаризации | **1029** |
-| Покрыто хотя бы одним автотестом | **554** (53.8%) |
-| Критичных действий | 294; покрыто 291 (99%) |
+| Покрыто хотя бы одним автотестом | **555** (53.9%) |
+| Критичных действий | 294; покрыто 292 (99.3%) |
 | Критичных с пройденным тестом в последнем запуске | 171 |
-| Ячеек «действие × состояние» (без N/A) | 6714; покрыто 1414 (21.1%) |
+| Ячеек «действие × состояние» (без N/A) | 6710; покрыто 1394 (20.8%) |
 | Неоднозначных ссылок тестов, не засчитанных | 233 |
 | Сборка последнего запуска | `dcce5d0b7f7b` (рабочая копия с изменениями), 2026-10-23T09:55:03.978Z |
 
-Состояния: success: покрыто 554, N/A 0, пробел 475; empty: покрыто 130, N/A 220, пробел 679; loading: покрыто 80, N/A 337, пробел 612; cancel: покрыто 229, N/A 285, пробел 515; error: покрыто 176, N/A 109, пробел 744; offline: покрыто 88, N/A 77, пробел 864; no-permission: покрыто 64, N/A 47, пробел 918; double-click: покрыто 93, N/A 443, пробел 493.
+Состояния: success: покрыто 555, N/A 0, пробел 474; empty: покрыто 130, N/A 220, пробел 679; loading: покрыто 80, N/A 337, пробел 612; cancel: покрыто 222, N/A 287, пробел 520; error: покрыто 176, N/A 109, пробел 744; offline: покрыто 88, N/A 77, пробел 864; no-permission: покрыто 57, N/A 47, пробел 925; double-click: покрыто 86, N/A 445, пробел 498.
 
 ## Не покрытые критичные действия (блокируют релиз)
 
 | ID | Тип | Название | Источник |
 |---|---|---|---|
 | `ui/ConfirmHost/podtverdit` | button | Подтвердить | `apps/web/src/components/ui/Confirm.tsx:41` |
-| `editor/InlineImageView/udalit` | button | Удалить | `apps/web/src/editor/nodeviews/InlineImageView.tsx:175` |
 | `search/SearchPage/zagruzit-esche` | button | Загрузить ещё | `apps/web/src/pages/SearchPage.tsx:466` |
 
 ## Не покрытые прочие действия
@@ -804,7 +803,7 @@
 | `common/OcrDialog/raspoznannyy-tekst` | Распознанный текст |  | ✔ | ✗ | · | ✔ | ✗ | ✗ | ✗ | · | PASS | `e2e/ocr-view.spec.ts` SC-22: the OCR view shows the original image, confidence with uncertain words, correcti… |
 | `common/useEvents/otkryt-versiyu` | Открыть версию {…} | **да** | ✔ | · | · | ✗ | ✗ | ✗ | ✔ | ✗ | BLOCKED | `e2e/qa-editor-history.spec.ts` R-HISTORY-014: a co-author sees «Открыть версию N» after the owner restores a version; … |
 
-### editor (84/216 покрыто)
+### editor (85/216 покрыто)
 
 | ID | Название | Крит. | ok | пусто | загр | отм | ошиб | офл | прав | 2× | Факт | Тесты |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
@@ -979,28 +978,28 @@
 | `editor/LoadedImageView/na-vsyu-shirinu` | На всю ширину |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | — | **нет теста** |
 | `editor/LoadedImageView/x` | {…} % |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | — | **нет теста** |
 | `editor/LoadedImageView/podpis` | Подпись |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | — | **нет теста** |
-| `editor/LoadedImageView/alternativnyy-tekst` | Альтернативный текст |  | ✔ | ✗ | ✗ | ✔ | ✗ | ✗ | ✔ | ✔ | BLOCKED | `e2e/editor-footnotes-media.spec.ts` R-MEDIA-007: a picture in a line of text — pasted inline, uploaded as an attachment, re… |
+| `editor/LoadedImageView/alternativnyy-tekst` | Альтернативный текст |  | ✔ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | BLOCKED | `e2e/editor-footnotes-media.spec.ts` R-MEDIA-007: a picture in a line of text — pasted inline, uploaded as an attachment, re… |
 | `editor/LoadedImageView/raspoznannyy-tekst-ocr` | Распознанный текст (OCR) |  | ✔ | ✗ | ✗ | ✔ | ✗ | ✗ | ✗ | ✗ | PASS | `e2e/ocr-view.spec.ts` SC-22: the OCR view shows the original image, confidence with uncertain words, correcti… |
 | `editor/LoadedImageView/zamenit` | Заменить |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | — | **нет теста** |
 | `editor/LoadedImageView/otkryt-na-ves-ekran` | Открыть на весь экран |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | — | **нет теста** |
-| `editor/LoadedImageView/v-stroku-teksta` | В строку текста |  | ✔ | ✗ | ✗ | ✔ | ✗ | ✗ | ✔ | ✔ | BLOCKED | `e2e/editor-footnotes-media.spec.ts` R-MEDIA-007: a picture in a line of text — pasted inline, uploaded as an attachment, re… |
+| `editor/LoadedImageView/v-stroku-teksta` | В строку текста |  | ✔ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | BLOCKED | `e2e/editor-footnotes-media.spec.ts` R-MEDIA-007: a picture in a line of text — pasted inline, uploaded as an attachment, re… |
 | `editor/LoadedImageView/skachat-original` | Скачать оригинал |  | ✗ | · | ✗ | · | ✗ | ✗ | ✗ | · | — | **нет теста** |
-| `editor/LoadedImageView/udalit` | Удалить | **да** | ✔ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | BLOCKED | `e2e/qa-editor-toolbars.spec.ts` R-MEDIA, QA26-07: image toolbar «По правому краю» and «Удалить» — stored, Undo returns … |
+| `editor/LoadedImageView/udalit` | Удалить | **да** | ✔ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | BLOCKED | `e2e/editor-footnotes-media.spec.ts` R-MEDIA-007: a picture in a line of text — pasted inline, uploaded as an attachment, re…<br>`e2e/qa-editor-toolbars.spec.ts` R-MEDIA, QA26-07: image toolbar «По правому краю» and «Удалить» — stored, Undo returns … |
 | `editor/LoadedImageView/povtorit` | Повторить |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | — | **нет теста** |
-| `editor/LoadedImageView/alternativnyy-tekst~2` | Альтернативный текст |  | ✔ | ✗ | · | ✔ | ✗ | ✗ | ✔ | ✔ | BLOCKED | `e2e/editor-footnotes-media.spec.ts` R-MEDIA-007: a picture in a line of text — pasted inline, uploaded as an attachment, re… |
+| `editor/LoadedImageView/alternativnyy-tekst~2` | Альтернативный текст |  | ✔ | ✗ | · | · | ✗ | ✗ | ✗ | · | BLOCKED | `e2e/editor-footnotes-media.spec.ts` R-MEDIA-007: a picture in a line of text — pasted inline, uploaded as an attachment, re… |
 | `editor/LoadedImageView/podpis-k-izobrazheniyu` | Подпись к изображению |  | ✗ | ✗ | · | · | ✗ | ✗ | ✗ | · | — | **нет теста** |
 | `editor/InlineImageView/button-data` | {…} |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | — | **нет теста** |
 | `editor/InlineImageView/1-1` | 1:1 |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | — | **нет теста** |
 | `editor/InlineImageView/po-bazovoy-linii` | По базовой линии |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | — | **нет теста** |
-| `editor/InlineImageView/po-centru-stroki` | По центру строки |  | ✔ | ✗ | ✗ | ✔ | ✗ | ✗ | ✔ | ✔ | BLOCKED | `e2e/editor-footnotes-media.spec.ts` R-MEDIA-007: a picture in a line of text — pasted inline, uploaded as an attachment, re… |
+| `editor/InlineImageView/po-centru-stroki` | По центру строки |  | ✔ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | BLOCKED | `e2e/editor-footnotes-media.spec.ts` R-MEDIA-007: a picture in a line of text — pasted inline, uploaded as an attachment, re… |
 | `editor/InlineImageView/po-verhu-stroki` | По верху строки |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | — | **нет теста** |
-| `editor/InlineImageView/alternativnyy-tekst` | Альтернативный текст |  | ✔ | ✗ | ✗ | ✔ | ✗ | ✗ | ✔ | ✔ | BLOCKED | `e2e/editor-footnotes-media.spec.ts` R-MEDIA-007: a picture in a line of text — pasted inline, uploaded as an attachment, re… |
+| `editor/InlineImageView/alternativnyy-tekst` | Альтернативный текст |  | ✔ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | BLOCKED | `e2e/editor-footnotes-media.spec.ts` R-MEDIA-007: a picture in a line of text — pasted inline, uploaded as an attachment, re… |
 | `editor/InlineImageView/podpis` | Подпись |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | — | **нет теста** |
 | `editor/InlineImageView/otkryt-na-ves-ekran` | Открыть на весь экран |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | — | **нет теста** |
 | `editor/InlineImageView/skachat-original` | Скачать оригинал |  | ✗ | · | ✗ | · | ✗ | ✗ | ✗ | · | — | **нет теста** |
-| `editor/InlineImageView/sdelat-blokom` | Сделать блоком |  | ✔ | ✗ | ✗ | ✔ | ✗ | ✗ | ✔ | ✔ | BLOCKED | `e2e/editor-footnotes-media.spec.ts` R-MEDIA-007: a picture in a line of text — pasted inline, uploaded as an attachment, re… |
-| `editor/InlineImageView/udalit` | Удалить | **да** | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | — | **нет теста** |
-| `editor/InlineImageView/alternativnyy-tekst~2` | Альтернативный текст |  | ✔ | ✗ | · | ✔ | ✗ | ✗ | ✔ | ✔ | BLOCKED | `e2e/editor-footnotes-media.spec.ts` R-MEDIA-007: a picture in a line of text — pasted inline, uploaded as an attachment, re… |
+| `editor/InlineImageView/sdelat-blokom` | Сделать блоком |  | ✔ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | BLOCKED | `e2e/editor-footnotes-media.spec.ts` R-MEDIA-007: a picture in a line of text — pasted inline, uploaded as an attachment, re… |
+| `editor/InlineImageView/udalit` | Удалить | **да** | ✔ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | BLOCKED | `e2e/editor-footnotes-media.spec.ts` R-MEDIA-007: a picture in a line of text — pasted inline, uploaded as an attachment, re… |
+| `editor/InlineImageView/alternativnyy-tekst~2` | Альтернативный текст |  | ✔ | ✗ | · | · | ✗ | ✗ | ✗ | · | BLOCKED | `e2e/editor-footnotes-media.spec.ts` R-MEDIA-007: a picture in a line of text — pasted inline, uploaded as an attachment, re… |
 | `editor/UploadPlaceholder/povtorit` | Повторить |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | — | **нет теста** |
 | `editor/UploadPlaceholder/otmenit` | Отменить |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | — | **нет теста** |
 | `editor/CalloutView/vid-bloka` | Вид блока |  | ✗ | · | · | · | · | · | ✗ | · | — | **нет теста** |

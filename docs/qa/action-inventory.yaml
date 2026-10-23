@@ -1,10 +1,10 @@
 # Action inventory (QA26-01, QA26-04). Generated from apps/web/src and docs/qa/runtime-controls.json.
 generated_by: node --import tsx scripts/qa/inventory.ts (do not edit by hand)
 summary:
-  total: 1029
-  critical: 294
+  total: 1028
+  critical: 292
   by_kind:
-    button: 412
+    button: 411
     command: 33
     dialog: 71
     input: 108
@@ -29,7 +29,7 @@ summary:
     import: 39
     page: 185
     runtime: 22
-    search: 23
+    search: 22
     settings: 43
     shell: 74
     space: 66
@@ -41,7 +41,7 @@ summary:
     static_actions_seen: 226
     runtime_only_added: 22
     select_option_values_skipped: 33
-  dynamic_unnamed: 66
+  dynamic_unnamed: 67
 dynamic_unnamed:
   - tab apps/web/src/admin/AccessSection.tsx:625
   - link apps/web/src/admin/AdminPage.tsx:64
@@ -73,6 +73,7 @@ dynamic_unnamed:
   - option apps/web/src/components/page/directory.tsx:142
   - button apps/web/src/components/space/SpaceAccess.tsx:56
   - button apps/web/src/components/space/SpaceAccess.tsx:222
+  - button apps/web/src/components/ui/Confirm.tsx:42
   - menu-item apps/web/src/components/ui/Menu.tsx:147
   - link apps/web/src/components/ui/Toast.tsx:51
   - button apps/web/src/components/ui/Toast.tsx:65
@@ -3873,22 +3874,23 @@ actions:
     screen: ui
     component: ConfirmHost
     label: Отмена
-    source: apps/web/src/components/ui/Confirm.tsx:38
+    source: apps/web/src/components/ui/Confirm.tsx:39
     critical: false
-  - id: ui/ConfirmHost/podtverdit
+  - id: ui/ConfirmHost/button-data
     kind: button
     screen: ui
     component: ConfirmHost
-    label: Подтвердить
+    label: "{…}"
     dynamic: true
-    source: apps/web/src/components/ui/Confirm.tsx:41
-    critical: true
+    source: apps/web/src/components/ui/Confirm.tsx:42
+    data_driven: true
+    critical: false
   - id: ui/ConfirmHost/dlya-podtverzhdeniya-vvedite
     kind: input
     screen: ui
     component: ConfirmHost
     label: "Для подтверждения введите:"
-    source: apps/web/src/components/ui/Confirm.tsx:54
+    source: apps/web/src/components/ui/Confirm.tsx:55
     critical: false
   - id: ui/Dialog/zakryt
     kind: button
@@ -8089,27 +8091,20 @@ actions:
     label: сбросить фильтры
     source: apps/web/src/pages/SearchPage.tsx:452
     critical: true
-  - id: search/SearchPage/zagruzit-esche
-    kind: button
-    screen: search
-    component: SearchPage
-    label: Загрузить ещё
-    source: apps/web/src/pages/SearchPage.tsx:466
-    critical: true
   - id: search/SearchPage/bez-nazvaniya-v-zagolovke-razdela-v-tegah-v-svoy
     kind: link
     screen: search
     component: SearchPage
     label: Без названия {…} В заголовке раздела В тегах В свойствах В комментариях Похожее название Опубликованная версия
     dynamic: true
-    source: apps/web/src/pages/SearchPage.tsx:475
+    source: apps/web/src/pages/SearchPage.tsx:465
     critical: true
   - id: search/SearchPage/pokazat-esche
     kind: button
     screen: search
     component: SearchPage
     label: Показать ещё
-    source: apps/web/src/pages/SearchPage.tsx:543
+    source: apps/web/src/pages/SearchPage.tsx:533
     critical: false
   - id: settings/SettingsPage/link-data
     kind: link

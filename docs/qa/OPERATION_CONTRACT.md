@@ -2,7 +2,7 @@
 
 Сгенерировано `npm run qa:report` (`scripts/qa/coverage.ts`) из инвентаризации действий `docs/qa/action-inventory.yaml`. Для каждой операции задано поведение в состояниях R-UI-061 — пусто, успех, загрузка, отмена, ошибка, нет прав, потеря сети, повторный клик: общее правило (таблица ниже) плюс особенности операции из исходного кода (текст причины недоступности, подтверждение, горячая клавиша). В ячейке состояния: ✔ — есть автотест этого состояния (ссылки — в `docs/qa/ACTION_MATRIX.md` и `action-matrix.json`), · — неприменимо (обоснование в `docs/qa/action-tests.yaml`), ✗ — пробел.
 
-Операций: **736**; с хотя бы одним тестом: 425; с особенностями из кода (причина недоступности, подтверждение): 103. Покрыто тестами по состояниям: пусто 93, успех 425, загрузка / медленная сеть 55, отмена 194, ошибка сервера 138, нет прав 56, потеря сети 84, повторный клик 66.
+Операций: **736**; с хотя бы одним тестом: 426; с особенностями из кода (причина недоступности, подтверждение): 103. Покрыто тестами по состояниям: пусто 93, успех 426, загрузка / медленная сеть 55, отмена 189, ошибка сервера 138, нет прав 51, потеря сети 84, повторный клик 61.
 
 Конфликт, «Назад», перезагрузка, мобильный ввод и zoom 200% описаны общими правилами ниже и проверяются сквозными наборами: конфликт — `tests/e2e/conflict.spec.ts`, `tests/integration/conflicts.test.ts`; перезагрузка и «Назад» — `tests/e2e/ui-p0-interaction.spec.ts`, `collab-p0-offline.spec.ts`; мобильный ввод — `tests/e2e/ui-p0-touch.spec.ts`, `mobile.layout.spec.ts`; zoom 200% — `tests/e2e/ui-p0-layout.spec.ts`, `visual.spec.ts`.
 
@@ -390,23 +390,23 @@
 | `editor/LoadedImageView/na-vsyu-shirinu` | На всю ширину |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | **нет** |
 | `editor/LoadedImageView/x` | {…} % |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | **нет** |
 | `editor/LoadedImageView/podpis` | Подпись |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | **нет** |
-| `editor/LoadedImageView/alternativnyy-tekst` | Альтернативный текст |  | ✗ | ✔ | ✗ | ✔ | ✗ | ✔ | ✗ | ✔ | `e2e/editor-footnotes-media.spec.ts` R-MEDIA-007: a picture in a line of text — pasted inline, uploaded as an attachment, re… |
+| `editor/LoadedImageView/alternativnyy-tekst` | Альтернативный текст |  | ✗ | ✔ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | `e2e/editor-footnotes-media.spec.ts` R-MEDIA-007: a picture in a line of text — pasted inline, uploaded as an attachment, re… |
 | `editor/LoadedImageView/raspoznannyy-tekst-ocr` | Распознанный текст (OCR) |  | ✗ | ✔ | ✗ | ✔ | ✗ | ✗ | ✗ | ✗ | `e2e/ocr-view.spec.ts` SC-22: the OCR view shows the original image, confidence with uncertain words, correcti… |
 | `editor/LoadedImageView/zamenit` | Заменить |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | **нет** |
 | `editor/LoadedImageView/otkryt-na-ves-ekran` | Открыть на весь экран |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | **нет** |
-| `editor/LoadedImageView/v-stroku-teksta` | В строку текста |  | ✗ | ✔ | ✗ | ✔ | ✗ | ✔ | ✗ | ✔ | `e2e/editor-footnotes-media.spec.ts` R-MEDIA-007: a picture in a line of text — pasted inline, uploaded as an attachment, re… |
-| `editor/LoadedImageView/udalit` | Удалить | **критичная** | ✗ | ✔ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | `e2e/qa-editor-toolbars.spec.ts` R-MEDIA, QA26-07: image toolbar «По правому краю» and «Удалить» — stored, Undo returns … |
+| `editor/LoadedImageView/v-stroku-teksta` | В строку текста |  | ✗ | ✔ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | `e2e/editor-footnotes-media.spec.ts` R-MEDIA-007: a picture in a line of text — pasted inline, uploaded as an attachment, re… |
+| `editor/LoadedImageView/udalit` | Удалить | **критичная** | ✗ | ✔ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | `e2e/editor-footnotes-media.spec.ts` R-MEDIA-007: a picture in a line of text — pasted inline, uploaded as an attachment, re… (+1) |
 | `editor/LoadedImageView/povtorit` | Повторить |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | **нет** |
 | `editor/InlineImageView/button-data` | {…} |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | **нет** |
 | `editor/InlineImageView/1-1` | 1:1 |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | **нет** |
 | `editor/InlineImageView/po-bazovoy-linii` | По базовой линии |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | **нет** |
-| `editor/InlineImageView/po-centru-stroki` | По центру строки |  | ✗ | ✔ | ✗ | ✔ | ✗ | ✔ | ✗ | ✔ | `e2e/editor-footnotes-media.spec.ts` R-MEDIA-007: a picture in a line of text — pasted inline, uploaded as an attachment, re… |
+| `editor/InlineImageView/po-centru-stroki` | По центру строки |  | ✗ | ✔ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | `e2e/editor-footnotes-media.spec.ts` R-MEDIA-007: a picture in a line of text — pasted inline, uploaded as an attachment, re… |
 | `editor/InlineImageView/po-verhu-stroki` | По верху строки |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | **нет** |
-| `editor/InlineImageView/alternativnyy-tekst` | Альтернативный текст |  | ✗ | ✔ | ✗ | ✔ | ✗ | ✔ | ✗ | ✔ | `e2e/editor-footnotes-media.spec.ts` R-MEDIA-007: a picture in a line of text — pasted inline, uploaded as an attachment, re… |
+| `editor/InlineImageView/alternativnyy-tekst` | Альтернативный текст |  | ✗ | ✔ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | `e2e/editor-footnotes-media.spec.ts` R-MEDIA-007: a picture in a line of text — pasted inline, uploaded as an attachment, re… |
 | `editor/InlineImageView/podpis` | Подпись |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | **нет** |
 | `editor/InlineImageView/otkryt-na-ves-ekran` | Открыть на весь экран |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | **нет** |
-| `editor/InlineImageView/sdelat-blokom` | Сделать блоком |  | ✗ | ✔ | ✗ | ✔ | ✗ | ✔ | ✗ | ✔ | `e2e/editor-footnotes-media.spec.ts` R-MEDIA-007: a picture in a line of text — pasted inline, uploaded as an attachment, re… |
-| `editor/InlineImageView/udalit` | Удалить | **критичная** | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | **нет** |
+| `editor/InlineImageView/sdelat-blokom` | Сделать блоком |  | ✗ | ✔ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | `e2e/editor-footnotes-media.spec.ts` R-MEDIA-007: a picture in a line of text — pasted inline, uploaded as an attachment, re… |
+| `editor/InlineImageView/udalit` | Удалить | **критичная** | ✗ | ✔ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | `e2e/editor-footnotes-media.spec.ts` R-MEDIA-007: a picture in a line of text — pasted inline, uploaded as an attachment, re… |
 | `editor/UploadPlaceholder/povtorit` | Повторить |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | **нет** |
 | `editor/UploadPlaceholder/otmenit` | Отменить |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | **нет** |
 | `editor/CalloutView/icon` | Свой значок… |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | **нет** |
