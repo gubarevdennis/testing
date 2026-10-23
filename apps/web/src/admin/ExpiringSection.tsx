@@ -39,7 +39,7 @@ export function ExpiringSection() {
     return !s || g.subject_name?.toLowerCase().includes(s) || (g.resource_name ?? '').toLowerCase().includes(s);
   });
   const revoke = async (g: ExpGrant) => {
-    if (!(await confirm({ title: 'Отозвать доступ сейчас?', body: `${g.subject_name} потеряет доступ «${LEVEL_LABEL[g.level] ?? g.level}» к «${g.resource_name ?? 'ресурсу'}» немедленно, не дожидаясь срока.`, confirmLabel: 'Отозвать', danger: true }))) return;
+    if (!(await confirm({ title: 'Отозвать доступ сейчас?', body: `${g.subject_name} потеряет доступ «${LEVEL_LABEL[g.level] ?? g.level}» к «${g.resource_name || 'без названия'}» немедленно, не дожидаясь срока.`, confirmLabel: 'Отозвать', danger: true }))) return;
     try {
       await del(`/api/v1/grants/${g.id}`);
       toast.success('Доступ отозван');
@@ -94,7 +94,7 @@ export function ExpiringSection() {
                     <div className="muted small">{SUBJECT[g.subject_type] ?? g.subject_type}</div>
                   </td>
                   <td>
-                    <Link to={g.resource_type === 'page' ? `/p/${g.resource_id}` : `/s/${g.resource_id}`}>{g.resource_name ?? '(без названия)'}</Link>
+                    <Link to={g.resource_type === 'page' ? `/p/${g.resource_id}` : `/s/${g.resource_id}`}>{g.resource_name || '(без названия)'}</Link>
                     <div className="muted small">{g.resource_type === 'page' ? 'Страница' : 'Пространство'}</div>
                   </td>
                   <td className="small">{LEVEL_LABEL[g.level] ?? g.level}</td>

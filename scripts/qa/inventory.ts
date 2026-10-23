@@ -163,26 +163,41 @@ function attrText(el: ts.JsxOpeningLikeElement, name: string, sf: ts.SourceFile)
 }
 
 /** Static text content of a JSX element (JsxText + string literal expressions, recursively). */
+/** JSX text as React renders it: lines trimmed where they meet a line break, whitespace-only lines dropped. */
+function jsxText(raw: string): string {
+  if (!raw.includes('\n')) return raw;
+  const lines = raw.split(/\r?\n/);
+  return lines
+    .map((l, i) => (i > 0 ? l.replace(/^\s+/, '') : l).replace(i < lines.length - 1 ? /\s+$/ : /$^/, ''))
+    .filter((l) => l.trim())
+    .join(' ');
+}
+
 function childText(node: ts.Node, sf: ts.SourceFile): { text: string; dynamic: boolean } {
   let text = '';
   let dynamic = false;
+  // text and `{expressions}` are joined as rendered ("Пропущенные строки ({n})" → "Пропущенные строки ({…})"); nested
+  // elements are separated by a space
   const visit = (n: ts.Node) => {
-    if (ts.isJsxText(n)) text += ' ' + n.text;
+    if (ts.isJsxText(n)) text += jsxText(n.text);
     else if (ts.isJsxExpression(n)) {
       if (!n.expression) return;
       const t = textOf(n.expression, sf);
       if (t) {
-        text += ' ' + t.text[0];
+        text += t.text[0];
         dynamic ||= t.dynamic;
       } else if (!ts.isJsxElement(n.expression) && !ts.isJsxSelfClosingElement(n.expression)) {
         // `{cond && <Icon/>}` contributes nothing; `{value}` is data
         if (!ts.isBinaryExpression(n.expression) && !ts.isConditionalExpression(n.expression)) {
-          text += ' ' + DYN;
+          text += DYN;
           dynamic = true;
         } else n.expression.forEachChild(visit);
       } else visit(n.expression);
-    } else if (ts.isJsxElement(n)) n.children.forEach(visit);
-    else if (ts.isJsxFragment(n)) n.children.forEach(visit);
+    } else if (ts.isJsxElement(n)) {
+      text += ' ';
+      n.children.forEach(visit);
+      text += ' ';
+    } else if (ts.isJsxFragment(n)) n.children.forEach(visit);
   };
   if (ts.isJsxElement(node)) node.children.forEach(visit);
   return { text: norm(text), dynamic };

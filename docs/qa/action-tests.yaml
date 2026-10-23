@@ -367,3 +367,40 @@ mappings:
       - test: 'tests/e2e/qa-admin-page-panels.spec.ts › R-ACL-040 no permission: a viewer asks for more rights — «Зачем нужен доступ (необязательно)» and «Отправить запрос»; a double click sends one request and the owner gets one notification'
         states: [no-permission]
     note: 'a viewer sees the access dialog without «Выдать доступ» or management controls'
+  # qa-admin2-*.spec.ts (second administration/pages wave): controls named by data or by an ambiguous word («Повторить»,
+  # «Копировать») that the matcher credits to another file
+  - action: admin/ErrorState/povtorit
+    tests:
+      - test: 'tests/e2e/qa-admin2-users.spec.ts › R-UI-061 users list load error…'
+        states: [error, loading]
+    note: 'the users list fails with 500 → «Не удалось загрузить данные.» → «Повторить» (slow network shows the loading rows) → the list'
+  - action: admin/CopyField/input-data
+    tests:
+      - test: 'tests/e2e/qa-admin2-users.spec.ts › R-QA-004 «Новый пользователь»…'
+      - test: 'tests/e2e/qa-admin2-users.spec.ts › R-UI-061 «Копировать» error…'
+        states: [error]
+    na: { empty: 'read-only field filled by the server answer', offline: 'read-only local value', no-permission: 'shown only to whoever created the link' }
+    note: 'the field is labelled by the CopyField `label` prop («Ссылка-приглашение»); focusing it selects the link'
+  - action: admin/CopyField/kopirovat
+    tests:
+      - test: 'tests/e2e/qa-admin2-users.spec.ts › R-QA-004 «Новый пользователь»…'
+      - test: 'tests/e2e/qa-admin2-users.spec.ts › R-UI-061 «Копировать» error…'
+        states: [error]
+    na: { empty: 'the value always exists when the field is shown', loading: 'local clipboard write, no request', offline: 'local clipboard write works offline', no-permission: 'shown only to whoever created the link', cancel: 'nothing to cancel', double-click: 'copying twice is idempotent' }
+    note: 'clipboard content checked with navigator.clipboard.readText; a refusing clipboard shows «Не удалось скопировать…»'
+  - action: admin/UserPicker/select-data
+    tests:
+      - test: 'tests/e2e/qa-admin2-users.spec.ts › R-QA-004 «Найти сотрудника по имени или email» picker…'
+        states: [empty, error]
+      - test: 'tests/e2e/qa-admin-users.spec.ts › R-QA-004 «Руководитель» picker…'
+    note: 'combobox labelled by its field («Руководитель»): keyboard ↓/Enter, «Никого не найдено», directory error'
+  - action: admin/UserPicker/gost
+    tests:
+      - test: 'tests/e2e/qa-admin2-users.spec.ts › R-QA-004 «Найти сотрудника по имени или email» picker…'
+    note: 'the guest option carries the «Гость» badge'
+  - action: admin/TransferDialog/toggle-data
+    tests:
+      - test: 'tests/e2e/qa-admin2-users.spec.ts › R-QA-004 «Перевести в другой отдел…»…'
+      - test: 'tests/e2e/qa-admin-users.spec.ts › R-QA-004 «Перевести в другой отдел…»: «Сравнить доступы»…'
+        states: [error]
+    note: 'checkbox per group, named by the group («Исключить из» / «Добавить в»)'

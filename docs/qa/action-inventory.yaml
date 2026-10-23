@@ -664,7 +664,7 @@ actions:
     kind: button
     screen: admin
     component: AnalysisReport
-    label: "Пользователи в архиве: {…} (найдено в системе: , не найдено: {…} )"
+    label: "Пользователи в архиве: {…} (найдено в системе: , не найдено: {…})"
     dynamic: true
     source: apps/web/src/admin/ArchivesSection.tsx:330
     critical: true
@@ -1690,7 +1690,7 @@ actions:
     kind: button
     screen: admin
     component: ImportDialog
-    label: Пропущенные строки ( {…} )
+    label: Пропущенные строки ({…})
     dynamic: true
     source: apps/web/src/admin/UsersSection.tsx:653
     critical: false
@@ -1726,7 +1726,7 @@ actions:
     kind: button
     screen: admin
     component: ImportDialog
-    label: Импортировать ( {…} )
+    label: Импортировать ({…})
     dynamic: true
     source: apps/web/src/admin/UsersSection.tsx:728
     critical: true
@@ -1949,7 +1949,7 @@ actions:
     kind: toggle
     screen: admin
     component: TransferDialog
-    label: Сделать « {…} » основным отделом
+    label: Сделать «{…}» основным отделом
     dynamic: true
     source: apps/web/src/admin/UsersSection.tsx:1129
     critical: false
@@ -2114,7 +2114,7 @@ actions:
     kind: button
     screen: common
     component: ViewerInner
-    label: "{…} %"
+    label: "{…}%"
     dynamic: true
     source: apps/web/src/components/ImageViewer.tsx:288
     critical: false
@@ -2631,7 +2631,7 @@ actions:
     kind: button
     screen: page
     component: RevisionItem
-    label: Версия {…} {…} Опубликована № {…} · {…} · {…}
+    label: Версия {…} {…} Опубликована №{…} · {…} · {…}
     dynamic: true
     source: apps/web/src/components/page/HistoryPanel.tsx:250
     critical: true
@@ -2852,7 +2852,7 @@ actions:
     kind: link
     screen: page
     component: TagsEditor
-    label: "# {…}"
+    label: "#{…}"
     dynamic: true
     source: apps/web/src/components/page/PageInfoPanel.tsx:220
     critical: false
@@ -5142,7 +5142,7 @@ actions:
     kind: button
     screen: editor
     component: LoadedImageView
-    label: "{…} %"
+    label: "{…}%"
     dynamic: true
     source: apps/web/src/editor/nodeviews/ImageView.tsx:149
     critical: false
