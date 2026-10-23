@@ -1,3 +1,4 @@
+import { randomBytes } from 'node:crypto';
 // Baseline DAST against an in-process server on a fresh database (R-SECURITY-004, R-SECURITY-002).
 // The same probes run black-box against a spawned server with `npm run security:dast`.
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
@@ -68,7 +69,7 @@ describe('baseline DAST (R-SECURITY-004, R-SECURITY-002)', () => {
   it('R-SECURITY-002: with COOKIE_SECURE (the production default) session and CSRF cookies carry Secure', async () => {
     const { loadConfig } = await import('../../apps/server/src/config.js');
     const saved = { ...process.env };
-    Object.assign(process.env, { NODE_ENV: 'production', SECRET_KEY: 'k'.repeat(64), DATABASE_URL: 'postgres://x/y' });
+    Object.assign(process.env, { NODE_ENV: 'production', SECRET_KEY: randomBytes(32).toString('base64'), DATABASE_URL: 'postgres://x/y' });
     delete process.env.COOKIE_SECURE;
     try {
       expect(loadConfig().cookieSecure).toBe(true);
