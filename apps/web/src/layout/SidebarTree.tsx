@@ -126,10 +126,16 @@ export function SidebarTree({ personal, spaces, shared, onNavigate }: Props) {
   const virtualizer = useVirtualizer({ count: rows.length, getScrollElement: () => scrollRef.current, estimateSize: () => ROW_H, overscan: 12 });
   // Rows have a fixed height: bring one into view with a single scroll. virtualizer.scrollToIndex keeps correcting the
   // position over several frames and fought scrolling started meanwhile (by the user or by focus()).
-  const scrollRowIntoView = useCallback((idx: number) => {
+  const scrollRowIntoView = useCallback((idx: number, center = false) => {
     const el = scrollRef.current;
     if (!el) return;
     const top = idx * ROW_H;
+    const visible = top >= el.scrollTop && top + ROW_H <= el.scrollTop + el.clientHeight;
+    // revealing the open page centres it (context above and below, away from the drag autoscroll edges)
+    if (center) {
+      if (!visible) el.scrollTop = Math.max(0, top - (el.clientHeight - ROW_H) / 2);
+      return;
+    }
     if (top < el.scrollTop) el.scrollTop = top;
     else if (top + ROW_H > el.scrollTop + el.clientHeight) el.scrollTop = top + ROW_H - el.clientHeight;
   }, []);
@@ -154,7 +160,7 @@ export function SidebarTree({ personal, spaces, shared, onNavigate }: Props) {
     const idx = rows.findIndex((r) => r.kind === 'node' && r.node.id === currentPage);
     if (idx < 0 || idx === st.idx) return;
     st.idx = idx;
-    scrollRowIntoView(idx);
+    scrollRowIntoView(idx, true);
   }, [currentPage, rows, scrollRowIntoView]);
 
   // ---------------- keyboard navigation (roving tabindex)

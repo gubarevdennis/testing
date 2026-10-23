@@ -5,10 +5,17 @@ import { ensureOwner, newPage, expectSaved, paste } from './helpers';
 test.describe.configure({ mode: 'serial' });
 
 async function axe(page: Page, label: string) {
-  // contrast is measured on the final appearance: an element fading in (opacity animation) is not a violation
-  await page.waitForFunction(() => document.getAnimations().every((a) => a.playState !== 'running' || a.effect?.getTiming().iterations === Infinity), undefined, { timeout: 5000 }).catch(() => undefined);
-  const r = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze();
-  const serious = r.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical');
+  // contrast is measured on the final appearance: elements fading in (a delayed onboarding hint, a toast) are re-checked
+  // once after they settle; a violation that persists fails the test
+  const settle = () => page.waitForFunction(() => document.getAnimations().every((a) => a.playState !== 'running' || a.effect?.getTiming().iterations === Infinity), undefined, { timeout: 5000 }).catch(() => undefined);
+  const run = async () => (await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze()).violations.filter((v) => v.impact === 'serious' || v.impact === 'critical');
+  await settle();
+  let serious = await run();
+  if (serious.length) {
+    await page.waitForTimeout(1000);
+    await settle();
+    serious = await run();
+  }
   for (const v of serious) console.log(`[axe ${label}] ${v.id}: ${v.help} — ${v.nodes.slice(0, 3).map((n) => n.target.join(' ')).join(' | ')}`);
   expect(serious.map((v) => v.id), `${label}: serious/critical WCAG 2.1 AA violations`).toEqual([]);
 }
