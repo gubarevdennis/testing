@@ -75,6 +75,7 @@ function candidates(ref: Ref, actions: Action[]): Action[] {
   if (ref.kind !== 'name' || (!ref.value && !ref.regex)) return [];
   const kinds = ref.role ? ROLE_KINDS[ref.role] : null;
   if (ref.role && !kinds) return [];
+  actions = actions.filter((a) => !a.data_driven);
   const pool = kinds ? actions.filter((a) => kinds.includes(a.kind) && (a.kind !== 'runtime' || !ref.role || a.component === ref.role || kinds.includes('runtime'))) : actions.filter((a) => a.kind !== 'route');
   const names = (a: Action) => (a.kind === 'route' ? a.aliases ?? [] : [a.label, ...(a.aliases ?? [])]);
   if (ref.regex) {
@@ -209,7 +210,7 @@ export function computeMatrix() {
       // inferred non-success states go only to what the test itself drives (not helpers), and only when the test is
       // focused (≤ 8 actions) or names the action in its title — a broad test that also presses Escape somewhere does
       // not prove "cancel" for every control it touched
-      const named = title.includes(a.label.toLowerCase().replace(DYN_RE, '').trim()) && a.label.length > 3;
+      const named = !a.data_driven && title.includes(a.label.toLowerCase().replace(DYN_RE, '').trim()) && a.label.length > 3;
       // "no permission" needs a second, less privileged account in the test
       const states = ['success', ...((direct.has(id) && direct.size <= 8) || named ? extra : [])].filter((st) => st !== 'no-permission' || t.otherUser);
       addLink(id, t.key, states, 'auto');
@@ -436,48 +437,52 @@ function writeContract(m: ReturnType<typeof computeMatrix>, inv: { actions: Acti
   const ops = m.records.filter((r) => ['button', 'menu-item', 'command', 'toast-action', 'dialog', 'route', 'toggle', 'runtime'].includes(r.kind));
   const L: string[] = [];
   L.push('# Контракт состояний операций (R-UI-061, сгенерировано)', '');
-  L.push('Сгенерировано `npm run qa:report` (`scripts/qa/coverage.ts`) из инвентаризации действий. Для каждой операции перечислены состояния R-UI-061: пусто, успех, загрузка, отмена, ошибка, нет прав, потеря сети, повторный клик. В ячейке — ожидаемое поведение (специфичное из исходного кода — текст причины недоступности, подтверждение; иначе общее правило из таблицы ниже) и тест, который его проверяет, либо «N/A» с обоснованием, либо **пробел**.', '');
+  L.push('Сгенерировано `npm run qa:report` (`scripts/qa/coverage.ts`) из инвентаризации действий `docs/qa/action-inventory.yaml`. Для каждой операции задано поведение в состояниях R-UI-061 — пусто, успех, загрузка, отмена, ошибка, нет прав, потеря сети, повторный клик: общее правило (таблица ниже) плюс особенности операции из исходного кода (текст причины недоступности, подтверждение, горячая клавиша). В ячейке состояния: ✔ — есть автотест этого состояния (ссылки — в `docs/qa/ACTION_MATRIX.md` и `action-matrix.json`), · — неприменимо (обоснование в `docs/qa/action-tests.yaml`), ✗ — пробел.', '');
   L.push(EXTRA_DIMENSIONS, '');
   L.push('## Общие правила состояний', '', '| Состояние | Ожидаемое поведение |', '|---|---|');
   for (const [k, n] of CONTRACT_STATES) L.push(`| ${n} | ${CONTRACT_RULES[k]} |`);
   L.push('| Конфликт | правка не теряется: слияние CRDT, при несливаемой операции — диалог сравнения (R-COLLAB-036) |');
   L.push('| Назад / перезагрузка | состояние экрана восстанавливается по адресу; черновик не теряется (R-UI-062) |');
   L.push('| Мобильный ввод / zoom 200% | действие доступно касанием (цель ≥ 44 px) и без горизонтальной прокрутки (R-A11Y-008, R-QA-007) |', '');
-  const docCount = { total: ops.length, specific: 0, tested: 0 };
+  const count = { total: ops.length, specific: 0, tested: 0 };
+  const perState: Record<string, number> = {};
   L.push('## Операции', '');
   const screens = [...new Set(ops.map((r) => r.component.split('/')[0]))].sort();
   for (const sc of screens) {
     L.push(`### ${sc}`, '');
+    L.push('| ID | Операция | Особенности из кода | ' + CONTRACT_STATES.map(([, n]) => n).join(' | ') + ' | Тест |');
+    L.push('|---|---|---|' + CONTRACT_STATES.map(() => '---').join('|') + '|---|');
     for (const r of ops.filter((x) => x.component.startsWith(sc + '/'))) {
       const a = byId.get(r.id)!;
-      const states = r.states as Record<string, { status: string; tests?: string[]; reason?: string }>;
-      L.push(`#### \`${r.id}\` — ${esc(r.label)}${r.critical ? ' (критичная)' : ''}`, '');
-      L.push(`Источник: \`${r.source}\`. Ожидание: ${r.expectation}.`, '');
-      L.push('| Состояние | Ожидаемое поведение | Проверка |', '|---|---|---|');
-      let specific = false;
-      for (const [k, n] of CONTRACT_STATES) {
-        let exp = CONTRACT_RULES[k];
-        if (k === 'no-permission' && a.no_permission) {
-          exp = `недоступно с причиной «${esc(a.no_permission)}»`;
-          specific = true;
-        }
-        if (k === 'success' && a.shortcut) exp += `; горячая клавиша ${a.shortcut}`;
-        const c = states[k];
-        const check = c.status === 'covered' ? c.tests!.slice(0, 2).map(short).join('<br>') : c.status === 'n/a' ? `N/A: ${esc(c.reason!)}` : '**пробел**';
-        L.push(`| ${n} | ${c.status === 'n/a' ? '—' : exp} | ${check} |`);
-      }
-      if (specific) docCount.specific++;
-      if (r.autotests.length) docCount.tested++;
-      L.push('');
+      const notes: string[] = [];
+      if (a.no_permission) notes.push(`без прав: «${esc(a.no_permission)}»`);
+      if (a.confirm) notes.push('с подтверждением');
+      if (a.shortcut) notes.push(`клавиша ${esc(a.shortcut)}`);
+      if (r.critical) notes.push('**критичная**');
+      if (a.no_permission || a.confirm) count.specific++;
+      if (r.autotests.length) count.tested++;
+      const cells = CONTRACT_STATES.map(([k]) => {
+        const st = (r.states as Record<string, { status: string }>)[k].status;
+        if (st === 'covered') perState[k] = (perState[k] ?? 0) + 1;
+        return st === 'covered' ? '✔' : st === 'n/a' ? '·' : '✗';
+      });
+      L.push(`| \`${r.id}\` | ${esc(r.label)} | ${notes.join('; ')} | ${cells.join(' | ')} | ${r.autotests[0] ? short(r.autotests[0].test) + (r.autotests.length > 1 ? ` (+${r.autotests.length - 1})` : '') : '**нет**'} |`);
     }
+    L.push('');
   }
-  L.splice(4, 0, `Операций: **${docCount.total}**; с хотя бы одним тестом: ${docCount.tested}; с причиной недоступности из кода: ${docCount.specific}.`, '');
+  L.splice(
+    4,
+    0,
+    `Операций: **${count.total}**; с хотя бы одним тестом: ${count.tested}; с особенностями из кода (причина недоступности, подтверждение): ${count.specific}. Покрыто тестами по состояниям: ` + CONTRACT_STATES.map(([k, n]) => `${n.toLowerCase()} ${perState[k] ?? 0}`).join(', ') + '.',
+    '',
+  );
   writeFileSync(OUT_CONTRACT, L.join('\n') + '\n');
 }
 
 if (process.argv[1]?.endsWith('coverage.ts')) {
   const m = computeMatrix();
-  writeFileSync(OUT_JSON, JSON.stringify({ generated_by: 'scripts/qa/coverage.ts', summary: m.summary, records: m.records }, null, 1) + '\n');
+  const compact = m.records.map((r) => ({ ...r, states: Object.fromEntries(Object.entries(r.states).map(([k, v]) => [k, v.status === 'n/a' ? { na: (v as { reason?: string }).reason } : v.status])) }));
+  writeFileSync(OUT_JSON, '{"generated_by":"scripts/qa/coverage.ts",\n"summary":' + JSON.stringify(m.summary, null, 1) + ',\n"records":[\n' + compact.map((r) => JSON.stringify(r)).join(',\n') + '\n]}\n');
   writeMd(m);
   writeContract(m, loadInventory());
   const s = m.summary;

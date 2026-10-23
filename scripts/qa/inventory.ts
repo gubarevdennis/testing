@@ -52,6 +52,8 @@ export interface Action {
   seen?: string[];
   /** slash-menu search keywords (commands) */
   keywords?: string;
+  /** named only by data (list rows): never matched by name */
+  data_driven?: boolean;
 }
 
 export function walk(dir: string, exts: string[]): string[] {
@@ -320,7 +322,12 @@ export function scanSource(): { raws: Raw[]; dynamicUnnamed: Array<{ source: str
             if (labels.length) {
               const shortcut = attrText(el, 'aria-keyshortcuts', sf)?.text[0];
               push(el, kind, labels, dynamic, { ...(disabledReason ? { no_permission: disabledReason } : {}), ...(shortcut ? { shortcut } : {}) });
-            } else dynamicUnnamed.push({ source: loc(el), kind });
+            } else {
+              // a control named only by data (a list row, a user, a page title): inventoried by its source location; it is
+              // linked to tests only through docs/qa/action-tests.yaml (its name differs for every row)
+              dynamicUnnamed.push({ source: loc(el), kind });
+              push(el, kind, [DYN], true, { data_driven: true }, kind + '-data');
+            }
           }
         }
       } else if (ts.isCallExpression(n) && ts.isIdentifier(n.expression) && n.expression.text === 'confirm' && n.arguments[0] && ts.isObjectLiteralExpression(n.arguments[0])) {
@@ -419,7 +426,7 @@ function mergeRuntime(actions: Action[]): { added: number; seenStatic: number; r
   if (!existsSync(RUNTIME)) return { added: 0, seenStatic: 0, runtimeTotal: 0, optionValues: 0 };
   const rt = JSON.parse(readFileSync(RUNTIME, 'utf8')) as { controls: RuntimeControl[]; data: string[] };
   const data = new Set(rt.data.map((d) => norm(d).toLowerCase()));
-  const patterns = actions.map((a) => ({ a, res: (a.kind === 'route' ? a.aliases ?? [] : [a.label, ...(a.aliases ?? [])]).map(labelPattern) }));
+  const patterns = actions.filter((a) => !a.data_driven).map((a) => ({ a, res: (a.kind === 'route' ? a.aliases ?? [] : [a.label, ...(a.aliases ?? [])]).map(labelPattern) }));
   let added = 0;
   let optionValues = 0;
   const seen = new Set<string>();

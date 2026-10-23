@@ -10,7 +10,13 @@ import { ensureOwner, newPage, createUser, login_, api, treeLink, editor, expect
 test.describe.configure({ mode: 'serial' });
 
 const errors: string[] = [];
-const watch = (p: Page) => p.on('pageerror', (e) => (errors.push(e.message), process.env.QA_STACKS && console.log('PAGEERROR', e.stack)));
+// uncaught page errors are collected per test; QA-D6 («Position N out of range» from the editor placeholder) is an open,
+// registered defect reproduced by its own test and is not counted again elsewhere
+test.beforeEach(() => {
+  errors.length = 0;
+});
+const KNOWN = /^Position \d+ out of range$/;
+const watch = (p: Page) => p.on('pageerror', (e) => (KNOWN.test(e.message) || errors.push(e.message), process.env.QA_STACKS && console.log('PAGEERROR', e.stack)));
 const toasts = (p: Page) => p.locator('.toasts');
 
 /** Delays every matching request by `ms` and counts how many were sent. */
@@ -522,7 +528,7 @@ test('R-QA-004 editor "/" menu: every block command inserts its block; dialog co
   expect(got.has('embed')).toBe(true);
   expect(got.has('pageLink') || got.has('syncedBlock')).toBe(false); // cancelled dialogs inserted nothing
   // QA-D6 (open defect, reproduced separately below): the placeholder plugin throws «Position N out of range»
-  expect(errors.filter((e) => !/^Position \d+ out of range$/.test(e))).toEqual([]);
+  expect(errors).toEqual([]);
 });
 
 test('QA-D6 (known defect): inserting column blocks from the "/" menu raises no uncaught editor error', async ({ page }) => {
@@ -754,5 +760,71 @@ test('R-QA-004 invitation link /invite/:token: empty password disables «Про�
   await go.click();
   await expect(p.locator('.app-shell')).toBeVisible();
   await ctx.close();
+  expect(errors).toEqual([]);
+});
+
+test('R-QA-004 navigation: sidebar «Шаблоны», «Импорт», «Корзина» and the quick switcher commands «Корзина», «Импорт документов» open their screens', async ({ page }) => {
+  watch(page);
+  await ensureOwner(page);
+  await page.goto('/');
+  const nav = page.getByRole('navigation', { name: 'Навигация' });
+  for (const [name, path] of [['Шаблоны', '/templates'], ['Импорт', '/import'], ['Корзина', '/trash']] as const) {
+    await nav.getByRole('link', { name, exact: true }).click();
+    await page.waitForURL('**' + path);
+  }
+  for (const [name, path] of [['Корзина', '/trash'], ['Импорт документов', '/import']] as const) {
+    await page.goto('/');
+    await page.getByRole('navigation', { name: 'Навигация' }).getByRole('button', { name: /^Поиск/ }).click();
+    const sw = page.getByRole('dialog', { name: 'Быстрый переход' });
+    await expect(sw).toBeVisible();
+    await sw.getByRole('option', { name: new RegExp('^' + name) }).click();
+    await page.waitForURL('**' + path);
+  }
+  expect(errors).toEqual([]);
+});
+
+test('R-QA-004 profile (separate account): «Сохранить» needs a change, «Отменить» restores the form, a server error keeps the input, success saves the name', async ({ page, browser }) => {
+  watch(page);
+  await ensureOwner(page);
+  const u = await createUser(page.request, 'Пелагея Профиль');
+  const { ctx, p } = await userContext(browser, u, '/settings/profile');
+  await p.goto('/settings/profile');
+  const save = p.getByRole('button', { name: 'Сохранить' });
+  const name = p.getByLabel('Имя и фамилия');
+  await expect(save).toBeDisabled();
+  await name.fill('Пелагея Новая');
+  await p.getByRole('button', { name: 'Отменить' }).click();
+  await expect(name).toHaveValue('Пелагея Профиль');
+  await failWith(p, '**/api/v1/auth/me', 'PATCH');
+  await name.fill('Пелагея Новая');
+  await save.click();
+  await expect(p.getByRole('alert')).toBeVisible();
+  await expect(name).toHaveValue('Пелагея Новая');
+  await p.unrouteAll();
+  await save.click();
+  await expect(toasts(p)).toContainText('Профиль сохранён');
+  expect((await (await p.request.get('/api/v1/auth/me')).json()).user.name).toBe('Пелагея Новая');
+  await ctx.close();
+  expect(errors).toEqual([]);
+});
+
+test('R-QA-004 organisation name: «Переименовать» is unavailable without a change and a server error is explained without renaming', async ({ page }) => {
+  watch(page);
+  await ensureOwner(page);
+  await page.goto('/admin/settings');
+  const btn = page.getByRole('button', { name: 'Переименовать' });
+  const input = page.getByLabel('Название организации');
+  const before = await input.inputValue();
+  await expect(btn).toBeDisabled();
+  await input.fill('   ');
+  await expect(btn).toBeDisabled(); // empty
+  await failWith(page, '**/api/v1/admin/org', 'PATCH');
+  await input.fill(before + ' (временно)');
+  await btn.click();
+  await expect(toasts(page)).toContainText(/Внутренняя ошибка сервера|ошибк/i);
+  expect((await (await page.request.get('/api/v1/auth/me')).json()).org.name).toBe(before);
+  await page.unrouteAll();
+  await input.fill(before);
+  await expect(btn).toBeDisabled();
   expect(errors).toEqual([]);
 });

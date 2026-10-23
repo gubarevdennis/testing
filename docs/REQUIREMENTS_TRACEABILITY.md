@@ -8,10 +8,10 @@
 
 | Приоритет | Всего | реализовано | частично | не реализовано | требует ручной проверки | ограничение окружения | процесс/документ | заменено | не оценено | покрыто тестами |
 |---|---|---|---|---|---|---|---|---|---|---|
-| P0 | 637 | 561 | 37 | 11 | 1 | 12 | 14 | 1 | 0 | 454 |
+| P0 | 637 | 562 | 46 | 1 | 1 | 12 | 14 | 1 | 0 | 454 |
 | P1 | 588 | 227 | 276 | 30 | 32 | 7 | 15 | 1 | 0 | 95 |
 | P2 | 73 | 26 | 24 | 6 | 7 | 0 | 9 | 1 | 0 | 1 |
-| **Итого** | 1298 | 814 | 337 | 47 | 40 | 19 | 38 | 3 | 0 | 550 |
+| **Итого** | 1298 | 815 | 346 | 37 | 40 | 19 | 38 | 3 | 0 | 550 |
 
 ## По модулям
 
@@ -42,39 +42,39 @@
 | ORG | 7 | 6 | 1 | 0 | 0 | 0 | 0 | 5 |
 | PAGE | 50 | 31 | 14 | 4 | 1 | 0 | 0 | 8 |
 | PERF | 44 | 7 | 25 | 12 | 0 | 0 | 0 | 7 |
-| PROCESS | 57 | 9 | 11 | 7 | 2 | 0 | 28 | 0 |
+| PROCESS | 57 | 9 | 13 | 5 | 2 | 0 | 28 | 0 |
 | PUBLISH | 15 | 9 | 5 | 1 | 0 | 0 | 0 | 4 |
-| QA | 56 | 6 | 25 | 9 | 10 | 3 | 3 | 8 |
+| QA | 56 | 7 | 31 | 2 | 10 | 3 | 3 | 8 |
 | SEARCH | 30 | 24 | 6 | 0 | 0 | 0 | 0 | 15 |
 | SECURITY | 15 | 13 | 1 | 0 | 0 | 0 | 1 | 10 |
 | SPACE | 15 | 13 | 1 | 1 | 0 | 0 | 0 | 8 |
 | TABLE | 9 | 5 | 4 | 0 | 0 | 0 | 0 | 2 |
 | TEMPLATES | 14 | 10 | 4 | 0 | 0 | 0 | 0 | 0 |
 | TREE | 63 | 50 | 11 | 1 | 1 | 0 | 0 | 24 |
-| UI | 89 | 19 | 53 | 2 | 14 | 1 | 0 | 17 |
+| UI | 89 | 19 | 54 | 1 | 14 | 1 | 0 | 17 |
 
 ## Открытые P0/P1 (частично / не реализовано / не оценено)
 
 - **R-PROCESS-004** (P1, PROCESS, частично): Создать docs/ARCHITECTURE.md, DECISIONS.md, TEST_MATRIX.md, OPERATIONS.md, RELEASE_READINESS.md — RELEASE_READINESS.md not yet present at re-assessment (written by the lead)
 - **R-QA-001** (P0, QA, частично): Тестировать в реальном браузере: навигация, курсор, выделение, hover, меню, drag-and-drop, масштаб, таблицы, мобильная версия … — drag-and-drop and text selection by mouse not covered; paste is synthetic
 - **R-PROCESS-010** (P1, PROCESS, не реализовано): Итоговый отчёт: реализованное, трассировка, команды запуска, тесты, дефекты, производительность, резервирование, ограничения … — final report (RELEASE_READINESS) not written
-- **R-QA-002** (P0, QA, частично): «Всё протестировано» = доказанное покрытие каждого доступного элемента и действия через каталог состояний, матрицы переходов, pairwise … — no per-element state catalogue or transition matrix
+- **R-QA-002** (P0, QA, частично): «Всё протестировано» = доказанное покрытие каждого доступного элемента и действия через каталог состояний, матрицы переходов, pairwise … — 35.6% of actions and 9.3% of action x state cells proven by tests; no transition matrix
 - **R-UI-003** (P1, UI, частично): Минимизировать обязательные диалоги и клики; умные контекстные действия, наследование настроек и понятные значения по умолчанию — no audit of all key tasks for mandatory dialogs
 - **R-UI-004** (P1, UI, частично): Меню остаётся в пределах экрана — no test of menus at viewport edges
 - **R-UI-005** (P1, UI, частично): Последний контекст навигации восстанавливается — last route/page/space not restored after restart
 - **R-A11Y-001** (P1, A11Y, частично): Действия мышью, клавиатурой и на телефоне одинаково доступны — no mouse/keyboard/touch input matrix; touch never exercised in tests
 - **R-QA-003** (P1, QA, не реализовано): Для каждого компонента перечислить состояния: default, hover, focus, active, disabled, loading, error, empty, overflow, mobile … — no component state catalogue
-- **R-QA-004** (P0, QA, не реализовано): Для каждого действия проверить нормальный путь, отмену, повтор, двойной клик, медленную сеть, офлайн, конфликт, недостаток прав … — no actions × conditions matrix
+- **R-QA-004** (P0, QA, частично): Для каждого действия проверить нормальный путь, отмену, повтор, двойной клик, медленную сеть, офлайн, конфликт, недостаток прав … — covered cells: success 367, empty 50, loading 19, cancel 96, error 32, offline 12, no-permission 9, double-click 20 of 1030 actions; retry, conflict, recovery and reverse operation are not separate matrix columns
 - **R-UI-007** (P1, UI, частично): Кнопки/иконки: семантика, tooltip, hit target, доступность, реакция, идемпотентность — no per-button checks
 - **R-TABLE-002** (P1, TABLE, частично): Таблицы: вставка, resize, wrap, merge, выделение диапазона, выравнивание, большие данные — Большие таблицы не проверялись (нет виртуализации/теста); есть только E2E вставки
 - **R-QA-005** (P0, QA, частично): Отказы: отключение сети, рестарт сервера, перезапуск вкладки, таймаут, конфликт, частичный сбой хранилища — timeouts and partial storage failure not covered
-- **R-QA-006** (P0, QA, частично): docs/TEST_MATRIX.md с ID каждого компонента/действия и ссылкой на тест; нет «нет теста» для критичного пути — not organised by component/action id; several critical paths still listed as gaps
+- **R-QA-006** (P0, QA, частично): docs/TEST_MATRIX.md с ID каждого компонента/действия и ссылкой на тест; нет «нет теста» для критичного пути — 122 of 293 critical actions still have no test
 - **R-QA-007** (P1, QA, частично): Браузерная матрица 320/375/768/1024/1440/1920px, zoom 200%, мышь/клавиатура/сенсор; WebKit, Chromium, Firefox — only Chromium is installed (playwright.config.ts, DECISIONS D-18); touch input not exercised
 - **R-OPS-003** (P0, OPS, частично): Инфраструктура эксплуатации: health checks, метрики, логи, трассировки, алерты, backup/restore, миграции, CI/CD, секреты, runbooks — No CD/deploy pipeline (needs target infrastructure); no secrets manager integration (env/EnvironmentFile only)
 - **R-PROCESS-013** (P1, PROCESS, частично): Документация: REQUIREMENTS_TRACEABILITY, ARCHITECTURE, DECISIONS, TEST_MATRIX, UX_ACCEPTANCE, SECURITY, OPERATIONS, BACKUP_RESTORE … — RELEASE_READINESS.md not yet present at re-assessment (written by the lead)
 - **R-UI-011** (P0, UI, частично): Система сохраняет работу, объясняет состояние и позволяет исправить ошибку — Добавлены отмена изменений свойств, предпросмотр восстановления, диалог конфликтов; отмена/статус не проверены для каждой операции
 - **R-ADMIN-001** (P1, ADMIN, частично): Администратор управляет подразделениями и пространствами, а не сотнями разрозненных ACL — Departments managed in UI, spaces are not: no web UI to create spaces or to add groups/users to a space (SpacePage AccessTab is read-only; POST /api/v1/spaces and PUT /grants resourceType=space only via API).
-- **R-PROCESS-018** (P0, PROCESS, частично): Продукт завершён только после доказанных проверок каждого критичного сценария — many critical scenarios lack passing tests
+- **R-PROCESS-018** (P0, PROCESS, частично): Продукт завершён только после доказанных проверок каждого критичного сценария — 122 critical actions untested; 2 critical actions fail (QA-D4 tree rename, QA-D5 space settings menu)
 - **R-COLLAB-005** (P1, COLLAB, частично): Совместная работа, комментарии, упоминания, согласование и публикация, история и восстановление — Функции есть; согласование/публикация и упоминания покрыты только интеграционными тестами, не E2E
 - **R-ACL-009** (P1, ACL, частично): Роль «Редактор»: структурирует, актуализирует, управляет публикацией пространства — No distinct "Editor" role separate from Author: both are level edit, publish distinguished only via per-grant canPublish flag.
 - **R-ACL-010** (P1, ACL, частично): Роль «Владелец пространства»: участники, шаблоны, структура — Members management for space owners has no UI: no web UI to create spaces or to add groups/users to a space (SpacePage AccessTab is read-only; POST /api/v1/spaces and PUT /grants resourceType=space only via API).
@@ -143,7 +143,7 @@
 - **R-QA-015** (P1, QA, частично): Артефакт: unit, integration, contract, E2E, load, security, accessibility тесты; fixtures DOCX/MD/изображений; отчёты прогонов — no contract, load or accessibility tests; no archived run reports
 - **R-PROCESS-033** (P1, PROCESS, не реализовано): Акт приёмки с трассировкой «пункт ТЗ → тест → результат → доказательство» — no acceptance act
 - **R-EDITOR-025** (P1, EDITOR, частично): Не писать rich-text редактор с нуля; взять зрелую платформу и проверить ограничения до фиксации архитектуры — В docs/DECISIONS.md нет решения о выборе редактора и проверке его ограничений
-- **R-UI-026** (P0, UI, частично): Не создавать UI-элементы без работающих действий, ошибок, состояний и автотестов — most UI (admin, ShareDialog, trash, templates, import UI, export, OCR dialog) has no browser test
+- **R-UI-026** (P0, UI, частично): Не создавать UI-элементы без работающих действий, ошибок, состояний и автотестов — 663 of 1030 inventoried elements have no automated test
 - **R-EDITOR-026** (P1, EDITOR, не реализовано): Для сложного блока описать представление во внутренней модели, DOCX, MD, clipboard и индексе — Нет документа с таблицей представлений сложных блоков (модель/DOCX/MD/clipboard/индекс)
 - **R-UI-027** (P0, UI, частично): Неподдерживаемая операция обязана иметь честное объяснение; молчаливая потеря данных запрещена — Добавлены честные отказы: page_deleted при восстановлении, replace_not_confirmed, schema_outdated/schema_newer; систематической проверки всех операций нет
 - **R-IMPORT-021** (P0, IMPORT, частично): Единый конвейер: DOCX, MD, CSV, XLSX, буфер (text/html, text/plain, text/markdown, изображения, файлы); пакетно … — Clipboard paste uses a separate client-side pipeline
@@ -292,7 +292,7 @@
 - **R-FILES-008** (P1, FILES, частично): Вложение — карточка: иконка типа, название, размер, состояние, превью, скачать, заменить, переименовать, удалить, открыть; без обрезаний — Нет заменить/переименовать/удалить в карточке; имя обрезается ellipsis
 - **R-FILES-010** (P1, FILES, частично): Вложения перемещаются как блоки, выравниваются, группируются в колонки; клавиатура — Выравнивания вложений нет; без тестов
 - **R-A11Y-007** (P1, A11Y, частично): Панели не перекрывают текст; IME, экранные читалки, touch, zoom 200%; палитра с проверкой контраста — IME, screen readers, real touch not available
-- **R-QA-029** (P0, QA, не реализовано): Для каждого действия: исходное состояние, happy path, пусто, медленная сеть, офлайн, потеря прав, конфликт, квота, неверный файл … — no per-action condition matrix
+- **R-QA-029** (P0, QA, частично): Для каждого действия: исходное состояние, happy path, пусто, медленная сеть, офлайн, потеря прав, конфликт, квота, неверный файл … — 9.3% of required action x condition cells covered; quota, wrong file, restart, mobile, keyboard per action not tracked as columns
 - **R-QA-030** (P1, QA, не реализовано): Реестр состояний каждого компонента: idle/hover/focus/loading/empty/success/error/offline/permission denied/conflict … — no component state registry
 - **V18-A09** (P1, LAYOUT, частично): Выравнивание изображения не ломается на телефоне — untested at 375px
 - **V18-A15** (P1, PERF, частично): Медленная сеть не тормозит набор — no slow-network typing measurement
@@ -308,7 +308,7 @@
 - **R-COMMENTS-003** (P1, COMMENTS, частично): Комментарии к выделению, упоминания, уведомления без спама; выделение и курсор сохраняются после закрытия панели — Preservation of selection/cursor after closing the panel not verified; spam control is basic (participants only).
 - **R-UI-058** (P1, UI, частично): Без hover на touch: доступные кнопки и меню, безопасные размеры касания; клавиатура не перекрывает редактор — no visualViewport handling for the on-screen keyboard
 - **R-TREE-021** (P1, TREE, частично): Дочерние страницы в sidebar и в теле родителя на одной модели данных — Дочерние в теле родителя — отдельные узлы pageLink, не синхронизированы с деревом (созданная в дереве не появляется в теле)
-- **R-UI-061** (P0, UI, не реализовано): Для каждой операции документировать: пусто, успех, загрузка, отмена, ошибка, нет прав, потеря сети, конфликт, назад, перезагрузка … — no per-operation state documentation (no TEST_MATRIX/UX_ACCEPTANCE)
+- **R-UI-061** (P0, UI, частично): Для каждой операции документировать: пусто, успех, загрузка, отмена, ошибка, нет прав, потеря сети, конфликт, назад, перезагрузка … — documentation is generic for most operations; per-state tests exist for a minority (success 278 of 683)
 - **UX-127** (P1, PAGE, не реализовано): Открыть в предпросмотре и закрыть Esc — Peek-предпросмотра нет
 - **UX-128** (P1, PAGE, не реализовано): Открыть страницу полностью из предпросмотра — Peek-предпросмотра нет
 - **UX-135** (P1, EDITOR, частично): Раскрытие toggle heading — Toggle раскрывается; создать раскрывающийся заголовок из UI нельзя
@@ -365,22 +365,22 @@
 - **UX23-223** (P1, UI, частично): Мобильное создание и перенос без hover — move without hover untested
 - **R-UI-068** (P0, UI, частично): Никакие функции не ведут в тупик, нет нерабочих кнопок и незавершённых состояний — Исправлен «мёртвый» пункт «Переместить в…» в меню страницы (всегда disabled). Полной инвентаризации всех кнопок нет
 - **R-PROCESS-049** (P1, PROCESS, частично): При неоднозначности — варианты и выбор по приоритету: данные/права, корректность, простота, скорость/доступность, визуал, сопровождение … — not every decision has an ADR
-- **R-PROCESS-051** (P0, PROCESS, не реализовано): Реестр открытых вопросов и дефектов с владельцем и тестом; 0 критических/высоких; средние/низкие исправлены или письменно приняты — no open-issues/defects registry
+- **R-PROCESS-051** (P0, PROCESS, частично): Реестр открытых вопросов и дефектов с владельцем и тестом; 0 критических/высоких; средние/низкие исправлены или письменно приняты — register not closed: 8 high open (PERF-D1, PERF-D2, PERF-D4, SEC-L3, QA-D2, QA-D4, QA-D7, QA-D8); medium/low open, none accepted in writing
 - **R-PERF-028** (P1, PERF, частично): Локальный отклик набора и действий p95 ≤100 мс в типовом документе; честная индикация тяжёлых операций — typing only; other local actions unmeasured
 - **R-PERF-029** (P1, PERF, частично): Удалённое подтверждённое изменение у другого участника p95 ≤500 мс при нормальной сети — latency not measured
 - **R-OPS-021** (P1, OPS, частично): Поддерживаемые размеры документов, вложений, число редакторов и профили нагрузки определены, измерены и в паспорте эксплуатации — No operations passport with supported document/attachment sizes, editor counts, load profiles
-- **R-QA-036** (P0, QA, не реализовано): Для каждого сценария: обычный, граничный, ошибочный, конкурентный, восстановительный пути по 16 группам функций — no scenario × path matrix
+- **R-QA-036** (P0, QA, частично): Для каждого сценария: обычный, граничный, ошибочный, конкурентный, восстановительный пути по 16 группам функций — no scenario x path (normal, boundary, error, concurrent, recovery) matrix per the 16 function groups
 - **R-QA-037** (P0, QA, частично): Сквозные испытания A–L: одна строка и разные блоки; перенос+правка; структура таблицы; обрыв при записи и перезапуск … — no mapping of the 12 trials to tests
 - **R-QA-038** (P0, QA, частично): Автоматизация unit/component/integration/API/E2E/property/load/chaos; рандомизированные конкурентные последовательности … — no component/contract tests; load test exists (scripts/load) but is not in CI
 - **R-OPS-022** (P0, OPS, частично): Поставка: deployment без секретов в репо, миграции и откат, health/readiness, метрики/логи/трейсы, алерты, бэкапы и restore-тесты … — Missing from the kit: CD pipeline, operations/limitations passport; other kit items (help, templates, browsers, data schema, sync protocol, report) assessed under their own requirements
 - **R-PROCESS-052** (P0, PROCESS, не реализовано): До запуска: тестовая эксплуатация, нагрузка, доступность, угрозы и права, тест восстановления, ручная UX-проверка, регрессии, пилот … — no gate checklist; no pilot, load, a11y audit, manual UX check
-- **R-PROCESS-053** (P0, PROCESS, частично): «Готово» только после прохождения gate, не после написания кода — gate currently fails (open P0s), so "готово" is not claimed
+- **R-PROCESS-053** (P0, PROCESS, частично): «Готово» только после прохождения gate, не после написания кода — gate currently fails, so «готово» is not claimed
 - **OPS-012** (P1, UI, частично): Корректное отображение долгих операций — no browser test
 - **OPS-013** (P1, OPS, частично): Мониторинг и тревоги — Rules not loaded into Prometheus / fired in a drill here (promtool unavailable)
 - **OPS-015** (P1, QA, частично): Мобильная и планшетная регрессия — single phone test; no tablet project
 - **OPS-016** (P1, A11Y, частично): Доступность с клавиатуры — no keyboard pass
 - **OPS-017** (P1, PERF, не реализовано): Нагрузка и длительная сессия без деградации — no long-session/load degradation test
-- **OPS-018** (P0, PROCESS, не реализовано): Нет открытых критических/высоких дефектов при приёмке — no defect registry
+- **OPS-018** (P0, PROCESS, частично): Нет открытых критических/высоких дефектов при приёмке — criterion not met: 8 open high defects (docs/qa/DEFECTS.md)
 - **R-ACL-057** (P1, ACL, частично): Объекты: организация, подразделение, группа, пространство, папка/страница, дочерняя, вложение, версия, шаблон; области «Только я» … — Scopes "Группа", "Подразделение", "Гости по приглашению", "Только я" not offered as presets; no grants on templates/attachments.
 - **R-ACL-060** (P1, ACL, частично): Диалог доступа: область, люди/группы/подразделения, уровень, срок, статус (активен/ожидает/приостановлен/истёк) … — No status (active/pending/suspended/expired) display; starts_at not exposed in UI.
 - **R-ACL-061** (P1, ACL, частично): Быстрые действия: пригласить гостя, добавить сотрудника, подразделение, вся компания, роль, срок начала/окончания, приостановить … — No start date, suspend/resume of a grant, grouping/filters or bulk assignment with preview in UI.
@@ -388,9 +388,8 @@
 - **R-ADMIN-019** (P1, ADMIN, частично): Поиск, фильтры, пустые состояния, пакетные операции с предпросмотром; администрирование на мобильном/планшете без hover-only — No batch operations; admin on mobile/tablet not verified.
 - **ACL-170** (P1, ADMIN, частично): Массовое назначение показывает точную аудиторию до подтверждения — Bulk preview does not compute exact audience; no bulk UI.
 - **ACL-174** (P1, A11Y, частично): Все операции доступа клавиатурой, с экрана 320px и на планшете — no test at 320px/keyboard/tablet
-- **QA26-01** (P0, QA, не реализовано): Система не готова, пока не проверено каждое доступное действие, визуальный элемент и переход состояния; «в основном работает» не критерий — no inventory of actions
-- **QA26-03** (P0, QA, не реализовано): Запись матрицы на каждый экран/элемент/состояние/действие: ID, компонент, состояние, устройство, ввод, предусловия, действие, ожидание … — no matrix records
-- **QA26-04** (P0, QA, не реализовано): Инвентаризация из маршрутов и реестра компонентов; пропущенные действия блокируют релиз — no route/component inventory
+- **QA26-01** (P0, QA, частично): Система не готова, пока не проверено каждое доступное действие, визуальный элемент и переход состояния; «в основном работает» не критерий — 367/1030 actions (35.6%) have an automated test, critical 171/293 (58.4%); 663 actions listed explicitly as uncovered; release gate fails on this (scripts/qa/gate.py)
+- **QA26-03** (P0, QA, частично): Запись матрицы на каждый экран/элемент/состояние/действие: ID, компонент, состояние, устройство, ввод, предусловия, действие, ожидание … — fields animation/time, persistence, undo/redo and negative are not filled per record; action x state cells covered 605/6512 (9.3%)
 - **QA26-05** (P1, QA, частично): Состояния normal/hover/focus/active/disabled/loading/error/empty/overflow; подсказки, popover, modal, меню, drag-preview; клавиатура … — not verified
 - **QA26-06** (P0, EDITOR, частично): Проверить ввод, выделение (мышь/клавиатура/палец), клики, Shift, copy/cut/paste plain/rich/HTML/Word/Excel, DnD, форматирование, ссылки … — Покрыты: ввод, IME, выделение мышью/клавиатурой, Shift, copy/cut/paste plain/rich/HTML/Word (HTML и RTF)/Google Docs/почта/Excel, внутренний формат между статьями, DnD блоков мышью, форматирование, slash, заголовки, списки, чек-листы, таблицы (все операции, merge, сортировка), изображения, колонки (перенос блоков между ними), перенос блоков. Не покрыты: выделение пальцем, изменение ширины колонок макета (в интерфейсе нет)
 - **QA26-07** (P0, EDITOR, частично): Каждое действие в пустом/заполненном документе, на длинных данных, после Undo/Redo, после перезагрузки, при конкурирующих изменениях — Пять контекстов на каждое действие не реализованы системно; для перетаскивания нет проверки при конкурирующих правках
@@ -402,8 +401,8 @@
 - **QA26-22** (P1, PERF, частично): SLO (калибруемые): локальный отклик p95 ≤100 мс; контекстная панель p95 ≤150 мс; загруженная страница p95 ≤500 мс; ~60 fps … — panel/page-load/fps not measured
 - **QA26-23** (P1, QA, частично): 320–1920 px, zoom 100/125/150/200%, темы, Safari/Chrome/Firefox/Edge, iOS/Android, длинные строки, переполнение, меню у границ … — zoom only 200% (no 125/150); only Chromium is installed (playwright.config.ts, DECISIONS D-18)
 - **QA26-25** (P0, OPS, частично): Нагрузочное, soak, стресс, регрессия, доступность, отказоустойчивость; наблюдаемость, алерты, журналы без секретов, миграции, откат … — No load/soak/stress test protocols
-- **QA26-27** (P0, QA, не реализовано): Статус PASS/FAIL/BLOCKED/N/A с обоснованием, ссылкой на запуск и версией сборки; CI, E2E, visual regression, ручной UX-аудит … — no PASS/FAIL/BLOCKED per scenario with build/run links
-- **QA26-28** (P0, PROCESS, частично): Перед релизом: 100% действий покрыто; 100% критичных пройдено; 0 blocker/critical; 0 сценариев потери данных, обхода ACL … — gate defined but not met; "100% действий покрыто" not measurable (no action inventory)
+- **QA26-27** (P0, QA, частично): Статус PASS/FAIL/BLOCKED/N/A с обоснованием, ссылкой на запуск и версией сборки; CI, E2E, visual regression, ручной UX-аудит … — manual UX audit and gestures on real devices have no recorded status; runs were made on a working copy with uncommitted changes (marked dirty); CI does not yet call qa:report
+- **QA26-28** (P0, PROCESS, частично): Перед релизом: 100% действий покрыто; 100% критичных пройдено; 0 blocker/critical; 0 сценариев потери данных, обхода ACL … — gate implemented and currently failing — criteria not met
 - **QA26-29** (P1, PROCESS, частично): Сдать отчёт о покрытии, протоколы восстановления, измерения производительности, реестр решений, руководство администратора, runbooks — coverage report per run missing
 - **R-UI-069** (P1, UI, частично): Дочерняя статья, DnD, копирование, публикация — минимум действий; исключения доступа скрыты до запроса — DnD/copy/publish action counts not measured
 - **R-ADMIN-022** (P1, ADMIN, частично): Временные приглашения, гости, приостановка, отзыв сессий, массовое управление группами — No bulk group management.
@@ -498,7 +497,7 @@
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| R-QA-002 | P0 | «Всё протестировано» = доказанное покрытие каждого доступного элемента и действия через каталог состояний, матрицы переходов, pairwise … | частично | docs/TEST_MATRIX.md (area × condition matrix, generated test catalogue); pairwise generator tests/support/pairwise.ts; no per-element state catalogue or transition matrix |  |
+| R-QA-002 | P0 | «Всё протестировано» = доказанное покрытие каждого доступного элемента и действия через каталог состояний, матрицы переходов, pairwise … | частично | action inventory (1030) x state catalogue (8 dimensions) matrix docs/qa/ACTION_MATRIX.md, docs/qa/action-matrix.json; pairwise generator tests/support/pairwise.ts; property-based tests (fast-check); 35.6% of actions and 9.3% of action x state cells proven by tests; no transition matrix |  |
 
 ### UI
 
@@ -665,7 +664,7 @@
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
 | R-QA-003 | P1 | Для каждого компонента перечислить состояния: default, hover, focus, active, disabled, loading, error, empty, overflow, mobile … | не реализовано | n/a; no component state catalogue |  |
-| R-QA-004 | P0 | Для каждого действия проверить нормальный путь, отмену, повтор, двойной клик, медленную сеть, офлайн, конфликт, недостаток прав … | не реализовано | n/a; no actions × conditions matrix | tests/e2e/qa-actions.spec.ts: R-QA-004 API tokens: empty name disables «Создать токен»; slow network shows progress and <br>tests/e2e/qa-actions.spec.ts: R-QA-004 password change (separate account): empty form is disabled, mismatch and wrong cu<br>tests/e2e/qa-actions.spec.ts: R-QA-004 sessions: «Завершить остальные» — cancel keeps the other device signed in, confir<br>… ещё 13 |
+| R-QA-004 | P0 | Для каждого действия проверить нормальный путь, отмену, повтор, двойной клик, медленную сеть, офлайн, конфликт, недостаток прав … | частично | docs/qa/ACTION_MATRIX.md actions x conditions (normal, empty, loading/slow network, cancel, server error, offline, no permission, double click) with N/A justified per kind in docs/qa/action-tests.yaml; tests/e2e/qa-actions.spec.ts drives cancel / human double click / slow network / server error / offline / no-permission paths for tokens, password, sessions, trash, tree, page menu, search, space delete, admin users, templates, invite, editor commands and block menu; covered cells: success 367, empty 50, loading 19, cancel 96, error 32, offline 12, no-permission 9, double-click 20 of 1030 actions; retry, conflict, recovery and reverse operation are not separate matrix columns | tests/e2e/qa-actions.spec.ts: R-QA-004 API tokens: empty name disables «Создать токен»; slow network shows progress and <br>tests/e2e/qa-actions.spec.ts: R-QA-004 password change (separate account): empty form is disabled, mismatch and wrong cu<br>tests/e2e/qa-actions.spec.ts: R-QA-004 sessions: «Завершить остальные» — cancel keeps the other device signed in, confir<br>… ещё 13 |
 
 ### UI
 
@@ -721,7 +720,7 @@
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
 | R-QA-005 | P0 | Отказы: отключение сети, рестарт сервера, перезапуск вкладки, таймаут, конфликт, частичный сбой хранилища | частично | tests/resilience/crash-restart.test.ts, db-connection-loss.test.ts; tests/integration/collab.test.ts offline/pending store/conflict; tests/e2e/editor.spec.ts offline; timeouts and partial storage failure not covered |  |
-| R-QA-006 | P0 | docs/TEST_MATRIX.md с ID каждого компонента/действия и ссылкой на тест; нет «нет теста» для критичного пути | частично | docs/TEST_MATRIX.md (generated catalogue with requirement ids per test, known gaps listed); not organised by component/action id; several critical paths still listed as gaps |  |
+| R-QA-006 | P0 | docs/TEST_MATRIX.md с ID каждого компонента/действия и ссылкой на тест; нет «нет теста» для критичного пути | частично | docs/TEST_MATRIX.md (generated, with last result per test) links docs/qa/ACTION_MATRIX.md: every component/action id with its tests; critical paths without a test are listed explicitly; 122 of 293 critical actions still have no test |  |
 | R-QA-007 | P1 | Браузерная матрица 320/375/768/1024/1440/1920px, zoom 200%, мышь/клавиатура/сенсор; WebKit, Chromium, Firefox | частично | tests/e2e/visual.spec.ts 6 widths + zoom; tests/e2e/mobile.layout.spec.ts; only Chromium is installed (playwright.config.ts, DECISIONS D-18); touch input not exercised |  |
 | R-QA-008 | P1 | Визуальные скриншоты эталонных экранов и сравнение регрессий | реализовано | tests/e2e/a11y.spec.ts "pixel baselines for stable screens (R-QA-008, AT-89)" toHaveScreenshot vs committed tests/e2e/a11y.spec.ts-snapshots (maxDiffPixelRatio 0.01), run in CI; only 2 screens (sign-in, help dialog) have baselines | tests/e2e/a11y.spec.ts: pixel baselines for stable screens (R-QA-008, AT-89) |
 | R-QA-009 | P1 | UX-сравнение с Notion: задачи, клики, время, ошибки, оценка; без копирования ассетов; без существенного проигрыша | требует ручной проверки | n/a; Notion comparison not performed |  |
@@ -894,7 +893,7 @@
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| R-PROCESS-018 | P0 | Продукт завершён только после доказанных проверок каждого критичного сценария | частично | see QA gaps; many critical scenarios lack passing tests |  |
+| R-PROCESS-018 | P0 | Продукт завершён только после доказанных проверок каждого критичного сценария | частично | docs/qa/ACTION_MATRIX.md + docs/qa/test-results.json: 169 of 293 critical actions passed in the last ingested run; release gate blocks otherwise; 122 critical actions untested; 2 critical actions fail (QA-D4 tree rename, QA-D5 space settings menu) |  |
 | R-PROCESS-019 | P0 | Исторический корпус v2.7 реализуется полностью, кроме коллизий, разрешённых разделом B; повторения — подтверждение важности | процесс/документ | registry.yaml covers corpus; exists |  |
 
 ### COLLAB
@@ -1894,7 +1893,7 @@
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| R-UI-026 | P0 | Не создавать UI-элементы без работающих действий, ошибок, состояний и автотестов | частично | tests/e2e: 6 spec files, ~22 tests; most UI (admin, ShareDialog, trash, templates, import UI, export, OCR dialog) has no browser test | tests/e2e/qa-crawl.spec.ts: QA26-01, QA26-04, R-UI-026: every route rendered as owner exposes only named controls; run |
+| R-UI-026 | P0 | Не создавать UI-элементы без работающих действий, ошибок, состояний и автотестов | частично | docs/qa/ACTION_MATRIX.md lists every UI element of the inventory with its tests; tests/e2e/qa-crawl.spec.ts asserts every rendered control has an accessible name and no page errors on all routes; tests/e2e/qa-actions.spec.ts; 663 of 1030 inventoried elements have no automated test | tests/e2e/qa-crawl.spec.ts: QA26-01, QA26-04, R-UI-026: every route rendered as owner exposes only named controls; run |
 
 ### SECURITY
 
@@ -3945,7 +3944,7 @@
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| R-QA-029 | P0 | Для каждого действия: исходное состояние, happy path, пусто, медленная сеть, офлайн, потеря прав, конфликт, квота, неверный файл … | не реализовано | n/a; no per-action condition matrix | tests/e2e/qa-actions.spec.ts: R-QA-029 offline: «Создать токен» without a network explains the failure and works after r<br>tests/e2e/qa-actions.spec.ts: R-QA-029 no permission: a viewer sees page and tree actions disabled with the reason, and  |
+| R-QA-029 | P0 | Для каждого действия: исходное состояние, happy path, пусто, медленная сеть, офлайн, потеря прав, конфликт, квота, неверный файл … | частично | docs/qa/ACTION_MATRIX.md (8 condition columns per action, N/A with reasons), tests/e2e/qa-actions.spec.ts (empty, slow network, offline, no permission, repeated click, cancel per action); 9.3% of required action x condition cells covered; quota, wrong file, restart, mobile, keyboard per action not tracked as columns | tests/e2e/qa-actions.spec.ts: R-QA-029 offline: «Создать токен» without a network explains the failure and works after r<br>tests/e2e/qa-actions.spec.ts: R-QA-029 no permission: a viewer sees page and tree actions disabled with the reason, and  |
 
 ### UI
 
@@ -4176,7 +4175,7 @@
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| R-UI-061 | P0 | Для каждой операции документировать: пусто, успех, загрузка, отмена, ошибка, нет прав, потеря сети, конфликт, назад, перезагрузка … | не реализовано | n/a; no per-operation state documentation (no TEST_MATRIX/UX_ACCEPTANCE) |  |
+| R-UI-061 | P0 | Для каждой операции документировать: пусто, успех, загрузка, отмена, ошибка, нет прав, потеря сети, конфликт, назад, перезагрузка … | частично | docs/qa/OPERATION_CONTRACT.md generated from the inventory: 683 operations x states empty/success/loading/cancel/error/no permission/offline/double click (general rules + per-operation specifics from code: disabled reason, confirmation, shortcut) with test status per state; conflict/back/reload/mobile/zoom rules with their suites; documentation is generic for most operations; per-state tests exist for a minority (success 278 of 683) |  |
 | R-UI-062 | P0 | Нельзя создавать страницу «в никуда», терять черновик, закрывать диалог с критичными данными без предупреждения, прятать возврат | реализовано | apps/web/src/components/ui/Dialog.tsx (dirty: Esc/×/клик снаружи спрашивают), применено к «Сохранить версию», согласованию, OCR, созданию/редактированию пользователя; tests/e2e/ocr-view.spec.ts (R-UI-062), tests/e2e/ui-p0-interaction.spec.ts (страница не «в никуда», черновик переживает перезагрузку) | tests/e2e/ocr-view.spec.ts: R-UI-062: a dialog with typed critical input warns before closing; closing without saving <br>tests/e2e/ui-p0-interaction.spec.ts: R-UI-062: a new page is never created "nowhere" and a draft survives an immediate reload |
 
 ### COLLAB
@@ -5056,7 +5055,7 @@
 |---|---|---|---|---|---|
 | R-PROCESS-049 | P1 | При неоднозначности — варианты и выбор по приоритету: данные/права, корректность, простота, скорость/доступность, визуал, сопровождение … | частично | docs/DECISIONS.md 18 entries; not every decision has an ADR |  |
 | R-PROCESS-050 | P1 | Существенные изменения требований согласуются; закрытие пробелов не меняет объём и бизнес-правила | процесс/документ | n/a; n/a |  |
-| R-PROCESS-051 | P0 | Реестр открытых вопросов и дефектов с владельцем и тестом; 0 критических/высоких; средние/низкие исправлены или письменно приняты | не реализовано | n/a; no open-issues/defects registry |  |
+| R-PROCESS-051 | P0 | Реестр открытых вопросов и дефектов с владельцем и тестом; 0 критических/высоких; средние/низкие исправлены или письменно приняты | частично | docs/qa/defects.yaml (validated: owner, test, severity, status; accepted only medium/low with name and reason) -> docs/qa/DEFECTS.md (also open P0 requirement gaps and failing tests of the last run); 16 registered defects incl. QA-D3..D8 found by tests/e2e/qa-actions.spec.ts; register not closed: 8 high open (PERF-D1, PERF-D2, PERF-D4, SEC-L3, QA-D2, QA-D4, QA-D7, QA-D8); medium/low open, none accepted in writing |  |
 
 ### QA
 
@@ -5126,7 +5125,7 @@
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| R-QA-036 | P0 | Для каждого сценария: обычный, граничный, ошибочный, конкурентный, восстановительный пути по 16 группам функций | не реализовано | n/a; no scenario × path matrix |  |
+| R-QA-036 | P0 | Для каждого сценария: обычный, граничный, ошибочный, конкурентный, восстановительный пути по 16 группам функций | частично | action-level matrix docs/qa/ACTION_MATRIX.md (normal / error / cancel / offline / no-permission paths per action); conflict and recovery suites tests/e2e/conflict.spec.ts, tests/resilience/*; no scenario x path (normal, boundary, error, concurrent, recovery) matrix per the 16 function groups |  |
 | R-QA-037 | P0 | Сквозные испытания A–L: одна строка и разные блоки; перенос+правка; структура таблицы; обрыв при записи и перезапуск … | частично | crash-restart typing, concurrent paragraph edits, paste table; no mapping of the 12 trials to tests |  |
 | R-QA-038 | P0 | Автоматизация unit/component/integration/API/E2E/property/load/chaos; рандомизированные конкурентные последовательности … | частично | unit/integration/E2E/property/chaos present; no component/contract tests; load test exists (scripts/load) but is not in CI |  |
 
@@ -5141,7 +5140,7 @@
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
 | R-PROCESS-052 | P0 | До запуска: тестовая эксплуатация, нагрузка, доступность, угрозы и права, тест восстановления, ручная UX-проверка, регрессии, пилот … | не реализовано | n/a; no gate checklist; no pilot, load, a11y audit, manual UX check |  |
-| R-PROCESS-053 | P0 | «Готово» только после прохождения gate, не после написания кода | частично | scripts/release-gate.py defines the gate; gate currently fails (open P0s), so "готово" is not claimed |  |
+| R-PROCESS-053 | P0 | «Готово» только после прохождения gate, не после написания кода | частично | scripts/release-gate.py (requirements, restore drill, action coverage, run results, defects) defines «готово»; gate currently fails, so «готово» is not claimed |  |
 
 ### OPS
 
@@ -5234,7 +5233,7 @@
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| OPS-018 | P0 | Нет открытых критических/высоких дефектов при приёмке | не реализовано | n/a; no defect registry |  |
+| OPS-018 | P0 | Нет открытых критических/высоких дефектов при приёмке | частично | scripts/release-gate.py fails while any blocker/critical/high defect in docs/qa/defects.yaml is open (scripts/qa/gate.py); criterion not met: 8 open high defects (docs/qa/DEFECTS.md) |  |
 
 ### ACL
 
@@ -5410,10 +5409,10 @@
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| QA26-01 | P0 | Система не готова, пока не проверено каждое доступное действие, визуальный элемент и переход состояния; «в основном работает» не критерий | не реализовано | n/a; no inventory of actions | tests/e2e/qa-crawl.spec.ts: QA26-01, QA26-04, R-UI-026: every route rendered as owner exposes only named controls; run |
+| QA26-01 | P0 | Система не готова, пока не проверено каждое доступное действие, визуальный элемент и переход состояния; «в основном работает» не критерий | частично | docs/qa/action-inventory.yaml (1030 actions: 965 named from source + 65 data-driven controls by location; runtime crawl tests/e2e/qa-crawl.spec.ts recorded 1148 controls on 25 routes); docs/qa/ACTION_MATRIX.md (npm run qa:report); 367/1030 actions (35.6%) have an automated test, critical 171/293 (58.4%); 663 actions listed explicitly as uncovered; release gate fails on this (scripts/qa/gate.py) | tests/e2e/qa-crawl.spec.ts: QA26-01, QA26-04, R-UI-026: every route rendered as owner exposes only named controls; run |
 | QA26-02 | P1 | Качество взаимодействия не хуже Notion подтверждается сравнительными испытаниями; охват: корректность, скорость, понятность, визуал … | требует ручной проверки | n/a; comparison trials not performed |  |
-| QA26-03 | P0 | Запись матрицы на каждый экран/элемент/состояние/действие: ID, компонент, состояние, устройство, ввод, предусловия, действие, ожидание … | не реализовано | n/a; no matrix records |  |
-| QA26-04 | P0 | Инвентаризация из маршрутов и реестра компонентов; пропущенные действия блокируют релиз | не реализовано | n/a; no route/component inventory | tests/e2e/qa-crawl.spec.ts: QA26-04 seed: a space with a page, a comment thread and a trashed page<br>tests/e2e/qa-crawl.spec.ts: QA26-01, QA26-04, R-UI-026: every route rendered as owner exposes only named controls; run |
+| QA26-03 | P0 | Запись матрицы на каждый экран/элемент/состояние/действие: ID, компонент, состояние, устройство, ввод, предусловия, действие, ожидание … | частично | docs/qa/action-matrix.json: one record per inventoried action with ID, component, states (8 dimensions with covered/N/A/gap), devices, inputs, preconditions, expectation, autotests with per-test result, manual, fact (last run), defects, owner, evidence (build sha + run); readable docs/qa/ACTION_MATRIX.md; fields animation/time, persistence, undo/redo and negative are not filled per record; action x state cells covered 605/6512 (9.3%) |  |
+| QA26-04 | P0 | Инвентаризация из маршрутов и реестра компонентов; пропущенные действия блокируют релиз | реализовано | scripts/qa/inventory.ts parses apps/web/src (TypeScript AST: <Route> paths and admin/settings section tables, JSX controls named by aria-label/label/title/text/Tooltip, menu and slash-command tables, confirm() dialogs, data-driven controls by source location) + runtime crawl tests/e2e/qa-crawl.spec.ts (all routes as owner, every popup menu opened) -> docs/qa/action-inventory.yaml with stable ids screen/Component/action; scripts/release-gate.py (scripts/qa/gate.py) fails when the inventory is stale (inventory.ts --check) and while any inventoried action has no test; the crawl runs as the organisation owner; controls shown only to other roles or in states the crawl does not reach are inventoried statically only; 65 data-driven controls (list rows) have no stable name and are linked to tests only by explicit mapping | tests/e2e/qa-crawl.spec.ts: QA26-04 seed: a space with a page, a comment thread and a trashed page<br>tests/e2e/qa-crawl.spec.ts: QA26-01, QA26-04, R-UI-026: every route rendered as owner exposes only named controls; run |
 | QA26-05 | P1 | Состояния normal/hover/focus/active/disabled/loading/error/empty/overflow; подсказки, popover, modal, меню, drag-preview; клавиатура … | частично | states styled in ui.css; not verified |  |
 
 ### EDITOR
@@ -5521,13 +5520,13 @@
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| QA26-27 | P0 | Статус PASS/FAIL/BLOCKED/N/A с обоснованием, ссылкой на запуск и версией сборки; CI, E2E, visual regression, ручной UX-аудит … | не реализовано | n/a; no PASS/FAIL/BLOCKED per scenario with build/run links |  |
+| QA26-27 | P0 | Статус PASS/FAIL/BLOCKED/N/A с обоснованием, ссылкой на запуск и версией сборки; CI, E2E, visual regression, ручной UX-аудит … | частично | scripts/qa/report.ts (npm run qa:report / qa:run): Playwright JSON + vitest JSON -> docs/qa/test-results.json with PASS/FAIL/BLOCKED/N/A, reason, run link (CI run URL or local report@timestamp) and git sha per run; merged into docs/TEST_MATRIX.md column «Результат» (tests not executed are BLOCKED); last ingest: 527 tests — PASS 495, FAIL 13 (6 of them known-defect tests QA-D3..D8), BLOCKED 18, N/A 1; manual UX audit and gestures on real devices have no recorded status; runs were made on a working copy with uncommitted changes (marked dirty); CI does not yet call qa:report |  |
 
 ### PROCESS
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| QA26-28 | P0 | Перед релизом: 100% действий покрыто; 100% критичных пройдено; 0 blocker/critical; 0 сценариев потери данных, обхода ACL … | частично | scripts/release-gate.py (P0 open → fail; unassessed → fail); gate defined but not met; "100% действий покрыто" not measurable (no action inventory) |  |
+| QA26-28 | P0 | Перед релизом: 100% действий покрыто; 100% критичных пройдено; 0 blocker/critical; 0 сценариев потери данных, обхода ACL … | частично | scripts/release-gate.py + scripts/qa/gate.py: blocks on stale inventory, critical actions without tests (122), any action without test (663/1030), critical actions not passed in the last run (169/293 passed), missing/stale run results, open blocker/critical/high defects (8 in docs/qa/DEFECTS.md); gate implemented and currently failing — criteria not met |  |
 | QA26-29 | P1 | Сдать отчёт о покрытии, протоколы восстановления, измерения производительности, реестр решений, руководство администратора, runbooks | частично | docs/OPERATIONS.md, BACKUP_RESTORE.md, SECURITY.md, DECISIONS.md, TEST_MATRIX.md, PERFORMANCE.md; coverage report per run missing |  |
 
 ### QA

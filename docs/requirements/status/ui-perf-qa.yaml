@@ -53,8 +53,8 @@
   note: no agreed mockups in repo; needs visual sign-off
 - id: R-QA-002
   status: partial
-  evidence: docs/TEST_MATRIX.md (area × condition matrix, generated test catalogue); pairwise generator tests/support/pairwise.ts
-  note: no per-element state catalogue or transition matrix
+  evidence: 'action inventory (1030) x state catalogue (8 dimensions) matrix docs/qa/ACTION_MATRIX.md, docs/qa/action-matrix.json; pairwise generator tests/support/pairwise.ts; property-based tests (fast-check)'
+  note: '35.6% of actions and 9.3% of action x state cells proven by tests; no transition matrix'
 - id: R-UI-002
   status: manual
   evidence: n/a
@@ -84,9 +84,9 @@
   evidence: n/a
   note: no component state catalogue
 - id: R-QA-004
-  status: missing
-  evidence: n/a
-  note: no actions × conditions matrix
+  status: partial
+  evidence: 'docs/qa/ACTION_MATRIX.md actions x conditions (normal, empty, loading/slow network, cancel, server error, offline, no permission, double click) with N/A justified per kind in docs/qa/action-tests.yaml; tests/e2e/qa-actions.spec.ts drives cancel / human double click / slow network / server error / offline / no-permission paths for tokens, password, sessions, trash, tree, page menu, search, space delete, admin users, templates, invite, editor commands and block menu'
+  note: 'covered cells: success 367, empty 50, loading 19, cancel 96, error 32, offline 12, no-permission 9, double-click 20 of 1030 actions; retry, conflict, recovery and reverse operation are not separate matrix columns'
 - id: R-UI-007
   status: partial
   evidence: aria-label + Tooltip on icon buttons; ui.css .icon-btn 28px (44px coarse)
@@ -101,8 +101,8 @@
   note: timeouts and partial storage failure not covered
 - id: R-QA-006
   status: partial
-  evidence: docs/TEST_MATRIX.md (generated catalogue with requirement ids per test, known gaps listed)
-  note: not organised by component/action id; several critical paths still listed as gaps
+  evidence: 'docs/TEST_MATRIX.md (generated, with last result per test) links docs/qa/ACTION_MATRIX.md: every component/action id with its tests; critical paths without a test are listed explicitly'
+  note: '122 of 293 critical actions still have no test'
 - id: R-QA-007
   status: partial
   evidence: tests/e2e/visual.spec.ts 6 widths + zoom; tests/e2e/mobile.layout.spec.ts
@@ -169,8 +169,8 @@
   note: 'Добавлены отмена изменений свойств, предпросмотр восстановления, диалог конфликтов; отмена/статус не проверены для каждой операции'
 - id: R-PROCESS-018
   status: partial
-  evidence: see QA gaps
-  note: many critical scenarios lack passing tests
+  evidence: 'docs/qa/ACTION_MATRIX.md + docs/qa/test-results.json: 169 of 293 critical actions passed in the last ingested run; release gate blocks otherwise'
+  note: '122 critical actions untested; 2 critical actions fail (QA-D4 tree rename, QA-D5 space settings menu)'
 - id: R-PROCESS-019
   status: process
   evidence: registry.yaml covers corpus
@@ -351,8 +351,8 @@
   note: no acceptance act
 - id: R-UI-026
   status: partial
-  evidence: 'tests/e2e: 6 spec files, ~22 tests'
-  note: most UI (admin, ShareDialog, trash, templates, import UI, export, OCR dialog) has no browser test
+  evidence: 'docs/qa/ACTION_MATRIX.md lists every UI element of the inventory with its tests; tests/e2e/qa-crawl.spec.ts asserts every rendered control has an accessible name and no page errors on all routes; tests/e2e/qa-actions.spec.ts'
+  note: '663 of 1030 inventoried elements have no automated test'
 - id: R-QA-016
   status: done
   evidence: .github/workflows/ci.yml runs the Playwright suite (Chromium) on every push and PR
@@ -767,9 +767,9 @@
   evidence: mobile panels as sheets; real 200% zoom and axe audit in tests/e2e/a11y.spec.ts
   note: IME, screen readers, real touch not available
 - id: R-QA-029
-  status: missing
-  evidence: n/a
-  note: no per-action condition matrix
+  status: partial
+  evidence: 'docs/qa/ACTION_MATRIX.md (8 condition columns per action, N/A with reasons), tests/e2e/qa-actions.spec.ts (empty, slow network, offline, no permission, repeated click, cancel per action)'
+  note: '9.3% of required action x condition cells covered; quota, wrong file, restart, mobile, keyboard per action not tracked as columns'
 - id: R-UI-052
   status: done
   evidence: 'apps/web/src/api/client.ts explainError (what happened + "Изменение не сохранено" + what to do/retry + request code); tests/unit/ui-error-template.test.ts "R-UI-052: …"; tests/e2e/ui-p0-interaction.spec.ts "R-UI-009, R-UI-052: …"'
@@ -843,9 +843,9 @@
   evidence: 'tests/e2e/ui-p0-interaction.spec.ts "R-UI-060, UX-141: hovering controls performs no action; hover-only tree actions have a keyboard equivalent" (hover over ~70 controls: URL, dialogs, menus, tree and content unchanged; Shift+F10/Menu key opens tree row actions — added in SidebarTree.tsx)'
   note: ''
 - id: R-UI-061
-  status: missing
-  evidence: n/a
-  note: no per-operation state documentation (no TEST_MATRIX/UX_ACCEPTANCE)
+  status: partial
+  evidence: 'docs/qa/OPERATION_CONTRACT.md generated from the inventory: 683 operations x states empty/success/loading/cancel/error/no permission/offline/double click (general rules + per-operation specifics from code: disabled reason, confirmation, shortcut) with test status per state; conflict/back/reload/mobile/zoom rules with their suites'
+  note: 'documentation is generic for most operations; per-state tests exist for a minority (success 278 of 683)'
 - id: R-UI-062
   status: done
   evidence: 'apps/web/src/components/ui/Dialog.tsx (dirty: Esc/×/клик снаружи спрашивают), применено к «Сохранить версию», согласованию, OCR, созданию/редактированию пользователя; tests/e2e/ocr-view.spec.ts (R-UI-062), tests/e2e/ui-p0-interaction.spec.ts (страница не «в никуда», черновик переживает перезагрузку)'
@@ -1024,9 +1024,9 @@
   evidence: n/a
   note: n/a
 - id: R-PROCESS-051
-  status: missing
-  evidence: n/a
-  note: no open-issues/defects registry
+  status: partial
+  evidence: 'docs/qa/defects.yaml (validated: owner, test, severity, status; accepted only medium/low with name and reason) -> docs/qa/DEFECTS.md (also open P0 requirement gaps and failing tests of the last run); 16 registered defects incl. QA-D3..D8 found by tests/e2e/qa-actions.spec.ts'
+  note: 'register not closed: 8 high open (PERF-D1, PERF-D2, PERF-D4, SEC-L3, QA-D2, QA-D4, QA-D7, QA-D8); medium/low open, none accepted in writing'
 - id: R-QA-035
   status: process
   evidence: n/a
@@ -1041,9 +1041,9 @@
   evidence: tests/e2e/collab.spec.ts two people edit — convergence only
   note: latency not measured
 - id: R-QA-036
-  status: missing
-  evidence: n/a
-  note: no scenario × path matrix
+  status: partial
+  evidence: 'action-level matrix docs/qa/ACTION_MATRIX.md (normal / error / cancel / offline / no-permission paths per action); conflict and recovery suites tests/e2e/conflict.spec.ts, tests/resilience/*'
+  note: 'no scenario x path (normal, boundary, error, concurrent, recovery) matrix per the 16 function groups'
 - id: R-QA-037
   status: partial
   evidence: crash-restart typing, concurrent paragraph edits, paste table
@@ -1058,8 +1058,8 @@
   note: no gate checklist; no pilot, load, a11y audit, manual UX check
 - id: R-PROCESS-053
   status: partial
-  evidence: scripts/release-gate.py defines the gate
-  note: gate currently fails (open P0s), so "готово" is not claimed
+  evidence: 'scripts/release-gate.py (requirements, restore drill, action coverage, run results, defects) defines «готово»'
+  note: 'gate currently fails, so «готово» is not claimed'
 - id: OPS-012
   status: partial
   evidence: ImportPage progress + cancel
@@ -1077,29 +1077,29 @@
   evidence: n/a
   note: no long-session/load degradation test
 - id: OPS-018
-  status: missing
-  evidence: n/a
-  note: no defect registry
+  status: partial
+  evidence: 'scripts/release-gate.py fails while any blocker/critical/high defect in docs/qa/defects.yaml is open (scripts/qa/gate.py)'
+  note: 'criterion not met: 8 open high defects (docs/qa/DEFECTS.md)'
 - id: ACL-174
   status: partial
   evidence: ShareDialog
   note: no test at 320px/keyboard/tablet
 - id: QA26-01
-  status: missing
-  evidence: n/a
-  note: no inventory of actions
+  status: partial
+  evidence: 'docs/qa/action-inventory.yaml (1030 actions: 965 named from source + 65 data-driven controls by location; runtime crawl tests/e2e/qa-crawl.spec.ts recorded 1148 controls on 25 routes); docs/qa/ACTION_MATRIX.md (npm run qa:report)'
+  note: '367/1030 actions (35.6%) have an automated test, critical 171/293 (58.4%); 663 actions listed explicitly as uncovered; release gate fails on this (scripts/qa/gate.py)'
 - id: QA26-02
   status: manual
   evidence: n/a
   note: comparison trials not performed
 - id: QA26-03
-  status: missing
-  evidence: n/a
-  note: no matrix records
+  status: partial
+  evidence: 'docs/qa/action-matrix.json: one record per inventoried action with ID, component, states (8 dimensions with covered/N/A/gap), devices, inputs, preconditions, expectation, autotests with per-test result, manual, fact (last run), defects, owner, evidence (build sha + run); readable docs/qa/ACTION_MATRIX.md'
+  note: 'fields animation/time, persistence, undo/redo and negative are not filled per record; action x state cells covered 605/6512 (9.3%)'
 - id: QA26-04
-  status: missing
-  evidence: n/a
-  note: no route/component inventory
+  status: done
+  evidence: 'scripts/qa/inventory.ts parses apps/web/src (TypeScript AST: <Route> paths and admin/settings section tables, JSX controls named by aria-label/label/title/text/Tooltip, menu and slash-command tables, confirm() dialogs, data-driven controls by source location) + runtime crawl tests/e2e/qa-crawl.spec.ts (all routes as owner, every popup menu opened) -> docs/qa/action-inventory.yaml with stable ids screen/Component/action; scripts/release-gate.py (scripts/qa/gate.py) fails when the inventory is stale (inventory.ts --check) and while any inventoried action has no test'
+  note: 'the crawl runs as the organisation owner; controls shown only to other roles or in states the crawl does not reach are inventoried statically only; 65 data-driven controls (list rows) have no stable name and are linked to tests only by explicit mapping'
 - id: QA26-05
   status: partial
   evidence: states styled in ui.css
@@ -1118,13 +1118,13 @@
   evidence: tests/e2e/visual.spec.ts
   note: zoom only 200% (no 125/150); only Chromium is installed (playwright.config.ts, DECISIONS D-18)
 - id: QA26-27
-  status: missing
-  evidence: n/a
-  note: no PASS/FAIL/BLOCKED per scenario with build/run links
+  status: partial
+  evidence: 'scripts/qa/report.ts (npm run qa:report / qa:run): Playwright JSON + vitest JSON -> docs/qa/test-results.json with PASS/FAIL/BLOCKED/N/A, reason, run link (CI run URL or local report@timestamp) and git sha per run; merged into docs/TEST_MATRIX.md column «Результат» (tests not executed are BLOCKED); last ingest: 527 tests — PASS 495, FAIL 13 (6 of them known-defect tests QA-D3..D8), BLOCKED 18, N/A 1'
+  note: 'manual UX audit and gestures on real devices have no recorded status; runs were made on a working copy with uncommitted changes (marked dirty); CI does not yet call qa:report'
 - id: QA26-28
   status: partial
-  evidence: scripts/release-gate.py (P0 open → fail; unassessed → fail)
-  note: gate defined but not met; "100% действий покрыто" not measurable (no action inventory)
+  evidence: 'scripts/release-gate.py + scripts/qa/gate.py: blocks on stale inventory, critical actions without tests (122), any action without test (663/1030), critical actions not passed in the last run (169/293 passed), missing/stale run results, open blocker/critical/high defects (8 in docs/qa/DEFECTS.md)'
+  note: 'gate implemented and currently failing — criteria not met'
 - id: QA26-29
   status: partial
   evidence: docs/OPERATIONS.md, BACKUP_RESTORE.md, SECURITY.md, DECISIONS.md, TEST_MATRIX.md, PERFORMANCE.md
