@@ -124,6 +124,15 @@ export function SidebarTree({ personal, spaces, shared, onNavigate }: Props) {
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const virtualizer = useVirtualizer({ count: rows.length, getScrollElement: () => scrollRef.current, estimateSize: () => ROW_H, overscan: 12 });
+  // Rows have a fixed height: bring one into view with a single scroll. virtualizer.scrollToIndex keeps correcting the
+  // position over several frames and fought scrolling started meanwhile (by the user or by focus()).
+  const scrollRowIntoView = useCallback((idx: number) => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const top = idx * ROW_H;
+    if (top < el.scrollTop) el.scrollTop = top;
+    else if (top + ROW_H > el.scrollTop + el.clientHeight) el.scrollTop = top + ROW_H - el.clientHeight;
+  }, []);
   useTreeScrollMemory(scrollRef, rows.length, !!currentPage);
   useRevealCurrentPage(currentPage);
   // keep the open page in view while rows load around it: spaces and ancestors load lazily and shift its row. Only
@@ -145,8 +154,8 @@ export function SidebarTree({ personal, spaces, shared, onNavigate }: Props) {
     const idx = rows.findIndex((r) => r.kind === 'node' && r.node.id === currentPage);
     if (idx < 0 || idx === st.idx) return;
     st.idx = idx;
-    virtualizer.scrollToIndex(idx, { align: 'auto' });
-  }, [currentPage, rows, virtualizer]);
+    scrollRowIntoView(idx);
+  }, [currentPage, rows, scrollRowIntoView]);
 
   // ---------------- keyboard navigation (roving tabindex)
   const [focusIdx, setFocusIdx] = useState(0);
@@ -154,10 +163,10 @@ export function SidebarTree({ personal, spaces, shared, onNavigate }: Props) {
     (i: number) => {
       const idx = Math.max(0, Math.min(rows.length - 1, i));
       setFocusIdx(idx);
-      virtualizer.scrollToIndex(idx, { align: 'auto' });
+      scrollRowIntoView(idx);
       requestAnimationFrame(() => (scrollRef.current?.querySelector(`[data-index="${idx}"] .tree-row-main`) as HTMLElement | null)?.focus());
     },
-    [rows.length, virtualizer],
+    [rows.length, scrollRowIntoView],
   );
   const toggleRow = (r: Row, value?: boolean) => {
     if (r.kind === 'node' && r.node.hasChildren) toggleExpanded(r.node.id, value);
