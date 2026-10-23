@@ -317,14 +317,21 @@ async function planMarkdownZip(entries: Map<string, Buffer>, plan: ImportPlan, a
     if (bad.length) report.warnings.push({ code: 'checksum-mismatch', message: `Контрольные суммы не совпали (файл изменён или повреждён): ${bad.slice(0, 10).join(', ')}${bad.length > 10 ? '…' : ''}` });
   }
   const service = new Set(sums ? ['checksums.sha256', 'export-report.md'] : []);
-  const mdFiles = [...entries.keys()].filter((k) => /\.(md|markdown)$/i.test(k) && !service.has(k)).sort();
-  if (!mdFiles.length) throw unprocessable('zip_no_md', 'В архиве нет Markdown-файлов');
+  // A folder of documents: every .md/.docx/.txt/.html becomes a page, every folder a section page (R-IMPORT-021).
+  const DOC = /\.(md|markdown|docx|txt|html?)$/i;
+  const byName = (x: string, y: string) => x.localeCompare(y, 'ru', { numeric: true, sensitivity: 'base' });
+  const mdFiles = [...entries.keys()].filter((k) => DOC.test(k) && !service.has(k) && !posix.basename(k).startsWith('~$')).sort(byName);
+  const legacyDoc = [...entries.keys()].filter((k) => /\.(doc|rtf|odt)$/i.test(k));
+  if (legacyDoc.length)
+    report.warnings.push({ code: 'unsupported-format', message: `Не импортированы (${legacyDoc.length}) — сохраните их в Word как .docx и импортируйте снова: ${legacyDoc.slice(0, 10).join(', ')}` });
+  if (!mdFiles.length) throw unprocessable('zip_no_md', 'В архиве нет документов (.docx, .md, .txt, .html)');
   // Strip a single common top folder.
   const tops = new Set(mdFiles.map((f) => f.split('/')[0]));
   const strip = tops.size === 1 && mdFiles.every((f) => f.includes('/')) ? [...tops][0] + '/' : '';
   const folderPage = new Map<string, PlannedPage>(); // folder path -> page
   const filePage = new Map<string, PlannedPage>();
-  const isIndex = (f: string) => /(^|\/)(index|readme)\.(md|markdown)$/i.test(f);
+  const isIndex = (f: string) => /(^|\/)(index|readme)\.(md|markdown|docx)$/i.test(f);
+  const usedPaths = new Set<string>();
   const ensureFolder = (dir: string): string | null => {
     if (!dir) return null;
     if (folderPage.has(dir)) return folderPage.get(dir)!.tempId;
@@ -360,6 +367,29 @@ async function planMarkdownZip(entries: Map<string, Buffer>, plan: ImportPlan, a
       if (p.startsWith('..')) return null;
       return p;
     };
+    const lowerF = f.toLowerCase();
+    if (!/\.(md|markdown)$/.test(lowerF)) {
+      let res: { doc: PMNode; title?: string | null; warnings: Array<{ code: string; message: string }> };
+      if (lowerF.endsWith('.docx')) {
+        res = await docxToDoc(entries.get(f)!, async (buf, name) => {
+          const a = await addAsset(buf, name);
+          return { attachmentId: a.ref, src: a.ref };
+        });
+      } else if (lowerF.endsWith('.txt')) res = importText(entries.get(f)!.toString('utf8').replace(/^\uFEFF/, ''));
+      else {
+        const html = entries.get(f)!.toString('utf8');
+        const h = htmlToDoc(html);
+        await storeEmbeddedImages(h, addAsset);
+        res = { ...h, title: /<title>([^<]*)<\/title>/i.exec(html)?.[1]?.trim() || null };
+      }
+      report.warnings.push(...res.warnings.map((w) => ({ ...w, message: `${f}: ${w.message}` })));
+      page.content = res.doc;
+      if (res.title && !isIndex(f)) page.title = String(res.title).slice(0, 500);
+      const freshDoc = planPage(page.content, page.title, page.parentTempId, zipName);
+      page.assets = freshDoc.assets;
+      page.stats = freshDoc.stats;
+      continue;
+    }
     const assetsInFile: Array<{ href: string; path: string }> = [];
     // Pre-scan to upload assets (the Markdown conversion is synchronous).
     const text = entries.get(f)!.toString('utf8').replace(/^﻿/, '');
@@ -373,6 +403,7 @@ async function planMarkdownZip(entries: Map<string, Buffer>, plan: ImportPlan, a
     }
     const resolved = new Map<string, PlannedAsset>();
     for (const a of assetsInFile) if (!resolved.has(a.path)) resolved.set(a.path, await addAsset(entries.get(a.path)!, posix.basename(a.path)));
+    for (const a of assetsInFile) usedPaths.add(a.path);
     const res = importMarkdown(text, {
       resolveAsset: (href) => {
         const p = resolvePath(href);
@@ -402,8 +433,33 @@ async function planMarkdownZip(entries: Map<string, Buffer>, plan: ImportPlan, a
     page.stats = fresh.stats;
   }
   if (missing.length) report.warnings.push({ code: 'missing-files', message: `Не найдены в архиве (${missing.length}): ${missing.slice(0, 20).join('; ')}` });
-  const unused = [...entries.keys()].filter((k) => !/\.(md|markdown)$/i.test(k) && !Object.values(plan.assets).some((a) => a.filename === posix.basename(k)));
-  if (unused.length) report.warnings.push({ code: 'unused-files', message: `Файлы без ссылок из документов не импортированы (${unused.length}): ${unused.slice(0, 10).join(', ')}` });
+  // Other files of the folder (PDF, spreadsheets, pictures not referenced from a document) are not dropped: they are
+  // attached to the page of their folder (or to a "Файлы" page at the top level).
+  const others = [...entries.keys()].filter((k) => !DOC.test(k) && !service.has(k) && !usedPaths.has(k) && !/\.(doc|rtf|odt)$/i.test(k) && !posix.basename(k).startsWith('~$')).sort(byName);
+  let rootFiles: PlannedPage | null = null;
+  for (const k of others) {
+    const rel = k.slice(strip.length);
+    const dir = posix.dirname(rel) === '.' ? '' : posix.dirname(rel);
+    let holder: PlannedPage;
+    if (dir) {
+      ensureFolder(dir);
+      holder = folderPage.get(dir)!;
+    } else {
+      if (!rootFiles) {
+        rootFiles = planPage({ type: 'doc', content: [{ type: 'paragraph' }] }, 'Файлы', null, zipName);
+        plan.pages.push(rootFiles);
+      }
+      holder = rootFiles;
+    }
+    const a = await addAsset(entries.get(k)!, posix.basename(k));
+    const node: PMNode = a.kind === 'image' ? { type: 'image', attrs: { attachmentId: a.ref, src: a.ref, alt: stripExt(a.filename) } } : { type: 'fileBlock', attrs: { attachmentId: a.ref, name: a.filename, size: a.size, mime: a.mime } };
+    const content = (holder.content.content ?? []).filter((n, i, arr) => !(arr.length === 1 && n.type === 'paragraph' && !n.content?.length));
+    holder.content = { ...holder.content, content: [...content, node] };
+    const freshHolder = planPage(holder.content, holder.title, holder.parentTempId, zipName);
+    holder.assets = freshHolder.assets;
+    holder.stats = freshHolder.stats;
+  }
+  if (others.length) report.warnings.push({ code: 'attached-files', message: `Прочие файлы прикреплены к страницам своих папок (${others.length}): ${others.slice(0, 10).join(', ')}${others.length > 10 ? '…' : ''}` });
 }
 
 // ----------------------------------------------------------------------------------- commit

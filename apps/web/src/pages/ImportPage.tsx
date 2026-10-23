@@ -377,7 +377,7 @@ export default function ImportPage() {
   return (
     <div className="page-container narrow imp-page">
       <h1 className="page-heading">Импорт</h1>
-      <p className="page-sub">DOCX, Markdown (в том числе ZIP с изображениями), HTML, CSV и XLSX. До подтверждения ничего не публикуется.</p>
+      <p className="page-sub">DOCX, Markdown, HTML, TXT, CSV и XLSX — по одному или ZIP с папками (например, выгрузка из Teamly): папки станут разделами, документы — страницами. До подтверждения ничего не публикуется.</p>
 
       <ol className="imp-steps" aria-label="Шаги импорта">
         {STAGES.map((s, i) => (
@@ -412,7 +412,7 @@ export default function ImportPage() {
           >
             <Upload size={28} aria-hidden />
             <b>Перетащите файлы сюда или нажмите, чтобы выбрать</b>
-            <span className="small muted" id="imp-drop-hint">DOCX · MD · ZIP с Markdown · HTML · CSV · XLSX</span>
+            <span className="small muted" id="imp-drop-hint">DOCX · MD · ZIP с папками · HTML · TXT · CSV · XLSX</span>
             <input
               ref={inputRef}
               type="file"
