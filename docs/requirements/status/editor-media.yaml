@@ -9,9 +9,9 @@
   evidence: "extensions/stableSelection.ts (курсор/выделение при синхронизации); selectionMemory.ts (курсор по id блока); hooks/useScrollRestore.ts (прокрутка Back/Forward и при повторном открытии страницы)"
   note: "tests/e2e/editor-p0-core.spec.ts:'caret and selection stay in place while a colleague edits…'; tests/e2e/clipboard.spec.ts:'caret position of a page is restored…'; tests/e2e/editor-p0-nav.spec.ts:'opening another page and coming back from the tree keeps the scroll position…'"
 - id: R-EDITOR-002
-  status: partial
-  evidence: "packages/shared/src/editor/extensions.ts; extensions/paste.ts + clipboard/html.ts (санитайзер, списки Word, data:-картинки); IME и курсор — editor-p0-core.spec.ts"
-  note: "IME, выделение, курсор, Undo, вставка Word/Excel/HTML покрыты тестами (editor-p0-*.spec.ts, clipboard.spec.ts). Не сделано: RTF-только буфер не разбирается; картинки Word по file:// браузер не передаёт (пользователь получает уведомление)"
+  status: done
+  evidence: "packages/shared/src/editor/extensions.ts; extensions/paste.ts + clipboard/html.ts, clipboard/rtf.ts, clipboard/internal.ts; menus/blockDrag.ts + blockDrop.ts (drag); extensions/historyBoundaries.ts (Undo/Redo); IME и курсор — editor-p0-core.spec.ts"
+  note: "Ввод, IME, выделение, преобразование, курсор, форматирование — editor-p0-core/blocks.spec.ts; drag — tests/e2e/editor-p0-dnd.spec.ts (8 сценариев реальной мышью); вставка Word (HTML+RTF, только RTF), Google Docs, Excel/TSV, браузер, почта — editor-p0-clipboard-fidelity.spec.ts, clipboard.spec.ts, editor-p0-clipboard.spec.ts; Undo/Redo — undo.spec.ts, editor-p0-undo-ops.spec.ts. Ограничение среды: системный буфер Word на Windows/macOS не проверялся (контейнер Linux) — использованы фикстуры tests/fixtures/clipboard/ с разметкой Word 365"
 - id: R-TABLE-002
   status: partial
   evidence: '@tiptap/extension-table (resizable, CellSelection); apps/web/src/editor/menus/TableToolbar.tsx'
@@ -240,9 +240,9 @@
   evidence: "Схема packages/shared; Yjs-хранение; Markdown-маркеры"
   note: "tests/integration/editor-p0.test.ts:'SC-05: a document with all inline formats, headings, nested lists, checklists, callout, toggle, formulas, links, code and quotes is stored and reopened identically', 'SC-05: Markdown export with markers and re-import keep the same structure…'"
 - id: SC-06
-  status: partial
-  evidence: apps/web/src/editor/clipboard/html.ts; apps/web/src/editor/extensions/paste.ts SmartPaste
-  note: tests/e2e/clipboard.spec.ts. Предпросмотра вставки нет; Картинки из Word (file://, VML) браузер не передаёт — пользователь получает уведомление с числом непереданных изображений; RTF не разбирается
+  status: done
+  evidence: "apps/web/src/editor/clipboard/html.ts, clipboard/rtf.ts; apps/web/src/editor/extensions/paste.ts SmartPaste; PasteOptions (после вставки: «Сохранить форматирование / Объединить / Только текст»)"
+  note: "tests/e2e/editor-p0-clipboard-fidelity.spec.ts (Word: заголовки, таблица, ссылка, картинка с подписью; веб-страница: фигура с подписью, навигация/скрипты/кнопки/счётчики удалены); clipboard.spec.ts. Диалог предпросмотра при обычной вставке не показывается намеренно (ТЗ: «не навязывать диалог»)"
 - id: SC-07
   status: env-blocked
   evidence: PM copy html/plain; парсинг HTML
@@ -405,9 +405,9 @@
   evidence: ProseMirror selection/clipboard; turnIntoItems
   note: Без автотестов конверсии/копирования между страницами
 - id: R-CLIPBOARD-018
-  status: partial
-  evidence: apps/web/src/editor/clipboard/html.ts cleanCopiedDom/cleanPastedHtml (внутренние ссылки), ClientBlockIds
-  note: Вложение, скопированное на другую страницу, проверяется по правам исходной страницы (читатели новой получат 404)
+  status: done
+  evidence: "apps/web/src/editor/clipboard/internal.ts (application/x-kb-blocks+json: типы, id, атрибуты; без якорей комментариев и скрытых названий), extensions/paste.ts (копирование/вырезание; вставка: внутренний → HTML → текст), clipboard/rehome.ts + apps/server/src/routes/attachment-copy.ts (вложения по правам целевой страницы); Markdown — «Копировать как Markdown» (Mod+Shift+C, меню блока и страницы); D-32"
+  note: "tests/e2e/editor-p0-clipboard-fidelity.spec.ts:'copy / cut / paste between articles with the keyboard…', 'paste priority: internal format → HTML → plain text…'; tests/unit/clipboard-internal.test.ts; tests/integration/attachment-copy.test.ts; clipboard.spec.ts:'page menu copies… as Markdown'"
 - id: R-EDITOR-033
   status: done
   evidence: "extensions/paste.ts (stopCapturing до и после вставки: Undo отменяет ровно вставку); Markdown-автозамены (input rules) с отменой Backspace"
@@ -470,9 +470,9 @@
   evidence: components/IconPicker.tsx; TemplatesPage
   note: UI обложки нет (pages.cover только в API)
 - id: R-CLIPBOARD-020
-  status: partial
-  evidence: apps/web/src/editor/clipboard/html.ts (H1–H6, списки Word, таблицы, ссылки, data:-изображения → вложения)
-  note: tests/e2e/clipboard.spec.ts. Картинки из Word (file://, VML) браузер не передаёт — пользователь получает уведомление с числом непереданных изображений; RTF не разбирается
+  status: done
+  evidence: "apps/web/src/editor/clipboard/html.ts (H1–H6, списки Word и Google Docs с вложенностью, таблицы, ссылки, подписи, цитаты, код), clipboard/rtf.ts (RTF-only и картинки Word из RTF), extensions/paste.ts (встроенные картинки на месте, внешние — копия на сервере)"
+  note: "tests/unit/clipboard-fidelity.test.ts и tests/e2e/editor-p0-clipboard-fidelity.spec.ts на фикстурах tests/fixtures/clipboard/ (Word 365 HTML+RTF, Google Docs, Outlook, веб-статья) — построчное сравнение структуры с копией сервера; clipboard.spec.ts. Картинка Word без RTF (только file://) по-прежнему не передаётся браузером — пользователь получает уведомление"
 - id: R-CLIPBOARD-021
   status: partial
   evidence: apps/web/src/editor/extensions/paste.ts SmartPaste (без диалогов)
@@ -502,10 +502,9 @@
   evidence: apps/server/src/routes/attachments.ts DELETE — soft delete; физического удаления blob нет (GC не реализован)
   note: Без теста
 - id: UX13-02
-  status: partial
-  evidence: apps/web/src/editor/clipboard/html.ts
-  note: tests/e2e/clipboard.spec.ts (заголовки, вложенные списки, таблица). Картинки из Word (file://, VML) браузер не передаёт — пользователь получает уведомление с числом непереданных изображений; RTF
-    не разбирается
+  status: done
+  evidence: "apps/web/src/editor/clipboard/html.ts, clipboard/rtf.ts; tests/fixtures/clipboard/word365-reglament.html/.rtf; tests/support/doc-outline.ts (структура)"
+  note: "tests/e2e/editor-p0-clipboard-fidelity.spec.ts:'Word 365: HTML + RTF of one copy — five heading levels, nested lists, table, link, picture…' — структура копии сервера совпадает построчно с ожидаемой; RTF той же копии даёт ту же структуру (tests/unit/clipboard-fidelity.test.ts)"
 - id: UX13-03
   status: done
   evidence: "apps/web/src/lib/pendingUploads.ts + extensions/uploads.ts resumeUploads (Editor.tsx при открытии страницы с правом правки)"
@@ -520,8 +519,8 @@
   note: Направление в Word не проверено (env)
 - id: R-EDITOR-038
   status: partial
-  evidence: packages/shared/src/editor/extensions.ts; apps/web/src/editor/commands.tsx SLASH_COMMANDS
-  note: Сносок (footnotes) в схеме нет — Markdown-импорт сносок разворачивает их в текст
+  evidence: "packages/shared/src/editor/extensions.ts; apps/web/src/editor/commands.tsx SLASH_COMMANDS"
+  note: "Все элементы, кроме сносок, есть (колонки — с переносом блоков между ними, editor-p0-dnd.spec.ts). Сносок (footnotes) в схеме нет — Markdown-импорт сносок превращает их в надстрочные номера и раздел «Сноски»"
 - id: R-EDITOR-039
   status: manual
   evidence: apps/web/src/editor/palette.ts TEXT_COLORS/HIGHLIGHTS; styles/editor.css dark remap; «По умолчанию» в apps/web/src/editor/menus/BubbleToolbar.tsx
@@ -701,8 +700,8 @@
   note: tests/integration/gaps.test.ts:'creates a template directly from ProseMirror JSON and uses it for new pages'
 - id: R-EDITOR-052
   status: partial
-  evidence: "Клавиатура: BlockOps (Esc, Shift+↑/↓, Alt+Shift+стрелки, Ctrl+A), меню; мышь: всё; touch: «+» (TouchInsertButton)"
-  note: "Touch: нет DnD/ручки блока; resize изображения без клавиатуры (только пресеты 25–100 % мышью/касанием)"
+  evidence: "Клавиатура: BlockOps (Esc, Esc-Esc — родительский блок, Shift+↑/↓, Alt+Shift+стрелки — в т. ч. вынос из колонки/выноски, Ctrl+A), меню блока; мышь: всё, включая перетаскивание (menus/blockDrag.ts); touch: «+» (TouchInsertButton), меню"
+  note: "tests/e2e/editor-p0-dnd.spec.ts:'keyboard alternatives…'. Не сделано: перетаскивание касанием (долгое нажатие на ручку) — ручка на узких экранах скрыта; изменение размера изображения с клавиатуры — только кнопками-пресетами панели"
 - id: R-EDITOR-053
   status: done
   evidence: "Tiptap+Yjs; StableSelection; Undo только своих правок"
@@ -768,17 +767,17 @@
   evidence: "extensions/blockOps.ts: Ctrl/Cmd+A блок → статья (selectAllStepwise), Esc → блок, Shift+↑/↓ расширяет выделение целыми блоками (blockRangeKey), Backspace/Delete удаляют блоки, Alt+Shift+↑/↓ переносит набор"
   note: "tests/e2e/editor-p0-blocks.spec.ts:'selection modes: word, paragraph, Shift+arrows, across blocks, Ctrl+A block → article, Esc → block, several blocks (R-EDITOR-068, E201)'"
 - id: R-CLIPBOARD-024
-  status: partial
-  evidence: "clipboard/html.ts stripTracking/isTrackingImage (utm_*, fbclid, gclid, yclid…, пиксели счётчиков); portable HTML; Ctrl+Shift+V"
-  note: "Трекеры удаляются: tests/unit/editor-p0-clipboard.test.ts:'tracker cleanup in pasted HTML (R-CLIPBOARD-024)', tests/e2e/editor-p0-clipboard.spec.ts:'paste options… (R-CLIPBOARD-009, R-CLIPBOARD-024)'. Открыто: права на вложения при переносе между статьями — см. R-CLIPBOARD-018"
+  status: done
+  evidence: "clipboard/internal.ts + rehome.ts (между статьями: стили, вложенность, таблицы, ссылки, изображения по правам), clipboard/html.ts stripTracking/isTrackingImage/unwrapRedirect, portable HTML + text/plain; Ctrl+Shift+V"
+  note: "tests/e2e/editor-p0-clipboard-fidelity.spec.ts:'copy / cut / paste between articles…', 'mail (Outlook) and a web article…'; tests/unit/editor-p0-clipboard.test.ts:'tracker cleanup…'; tests/e2e/editor-p0-clipboard.spec.ts:'paste options…'; tests/integration/attachment-copy.test.ts"
 - id: R-CLIPBOARD-025
   status: partial
   evidence: json.ts parseTsv (кавычки, многострочные ячейки), looksLikeTsv
   note: Больших вставок с прогрессом/отменой нет (синхронно)
 - id: R-EDITOR-069
-  status: partial
-  evidence: '@tiptap/extension-drag-handle-react 3.32; Dropcursor'
-  note: Нет копирования Ctrl/Alt-перетаскиванием, нет «внутрь», нет запрета недопустимых целей; без тестов
+  status: done
+  evidence: "apps/web/src/editor/menus/blockDrag.ts (порог 5 px, линия до/после/внутрь, автопрокрутка, Alt/Ctrl — копия, Esc), apps/web/src/editor/blockDrop.ts (модель, одна транзакция), moveToPage.ts (перенос на страницу без потери), extensions/blockOps.ts (клавиатура); D-31"
+  note: "tests/e2e/editor-p0-dnd.spec.ts:'drag threshold, preview, line before/after, one atomic drop, one Undo…', 'Esc cancels a drag…', 'inside a callout, between columns…', 'autoscroll…', 'drop on another page in the sidebar tree…', 'keyboard alternatives…'; tests/unit/editor-block-drop.test.ts"
 - id: R-EDITOR-070
   status: done
   evidence: StarterKit marks; apps/web/src/editor/extensions/blockOps.ts Mod-k/Mod-Shift-m; find.ts Mod-f; apps/web/src/editor/extensions/paste.ts SmartPaste Mod-Shift-v; Collaboration undo
@@ -884,13 +883,13 @@
   evidence: apps/web/src/editor/menus/BlockHandle.tsx (absolute, без сдвига)
   note: На touch нет долгого нажатия/меню «Переместить» (ручка только hover)
 - id: R-EDITOR-075
-  status: partial
-  evidence: DragHandle (preview), Dropcursor (линия), одна PM-транзакция
-  note: Нет подсветки колонки/контейнера и недопустимых целей
+  status: done
+  evidence: "menus/blockDrag.ts: превью (.kb-drag-preview, прозрачность), исходные блоки приглушены (декорация), линия вставки, рамка колонки/контейнера, недопустимая цель — красная линия и причина; blockDrop.ts dropTransaction — одна транзакция"
+  note: "tests/e2e/editor-p0-dnd.spec.ts:'drag threshold, preview…', 'inside a callout, between columns with the column highlighted, invalid target explained…'"
 - id: R-EDITOR-076
-  status: partial
-  evidence: "blockOps.ts moveBlockRange (набор блоков), moveToPage.ts (между страницами, id и порядок сохраняются)"
-  note: "tests/e2e/editor-p0-nav.spec.ts:'blocks move to another page… (E215, R-EDITOR-076)'; editor-p0-blocks.spec.ts (набор блоков). Нет теста перетаскивания между колонками; вложения изображений при переносе остаются привязаны к исходной странице (R-CLIPBOARD-018)"
+  status: done
+  evidence: "blockDrop.ts dragSource (набор блоков, выделение текста через блоки, выделенный контейнер); перенос между колонками и на другую страницу (дерево, «Переместить на страницу…»); вложения переносятся во вложения целевой страницы (POST /api/v1/attachments/:id/copy)"
+  note: "tests/e2e/editor-p0-dnd.spec.ts:'several selected blocks; images, tables and nested lists move whole; Alt-drag copies…', 'inside a callout, between columns…', 'drop on another page in the sidebar tree…'; tests/e2e/editor-p0-nav.spec.ts:'blocks move to another page…'; tests/integration/attachment-copy.test.ts"
 - id: R-TEMPLATES-007
   status: partial
   evidence: library.ts 35 шаблонов; TemplatesPage PreviewDialog, «Использовать»
@@ -1018,19 +1017,19 @@
 - id: QA26-06
   status: partial
   evidence: "tests/e2e/editor-p0-*.spec.ts, editor.spec.ts, clipboard.spec.ts, content.spec.ts, undo.spec.ts"
-  note: "Покрыты: ввод, IME, выделение мышью/клавиатурой (слово, абзац, через блоки, блоки), Shift, copy/paste plain/rich/HTML/Word/Excel, форматирование, slash, заголовки, списки, чек-листы, таблицы (все операции, merge, сортировка), изображения, перенос блоков. Не покрыты: DnD блоков мышью, выделение пальцем, 1–4 колонки, ширина колонок макета"
+  note: "Покрыты: ввод, IME, выделение мышью/клавиатурой, Shift, copy/cut/paste plain/rich/HTML/Word (HTML и RTF)/Google Docs/почта/Excel, внутренний формат между статьями, DnD блоков мышью, форматирование, slash, заголовки, списки, чек-листы, таблицы (все операции, merge, сортировка), изображения, колонки (перенос блоков между ними), перенос блоков. Не покрыты: выделение пальцем, изменение ширины колонок макета (в интерфейсе нет)"
 - id: QA26-07
   status: partial
-  evidence: collab/resilience тесты (перезагрузка, конкуренция, офлайн)
-  note: Пять контекстов на каждое действие не реализованы
+  evidence: "collab/resilience тесты (перезагрузка, конкуренция, офлайн); editor-p0-dnd.spec.ts (заполненный документ, длинный документ с автопрокруткой, после Undo/Redo, после перезагрузки)"
+  note: "Пять контекстов на каждое действие не реализованы системно; для перетаскивания нет проверки при конкурирующих правках"
 - id: QA26-08
   status: partial
   evidence: apps/web/src/editor/menus/TableToolbar.tsx (верт./гор. выравнивание), CSS переносы
   note: Чек-лист таблиц не автоматизирован
 - id: QA26-09
-  status: partial
-  evidence: —
-  note: Автотестов DnD нет
+  status: done
+  evidence: "tests/e2e/editor-p0-dnd.spec.ts (10 сценариев реальной мышью); apps/web/src/editor/menus/blockDrag.ts, blockDrop.ts; apps/web/src/layout/SidebarTree.tsx (дерево: запрет цели без права создания и для «перед/после»)"
+  note: "Блоки: соседние, внутрь контейнера, между колонками, наборы колонок, изображения, таблицы, вложенные списки, несколько блоков, другая статья (дерево), статья без права редактирования, автопрокрутка у края, медленно/быстро, Esc, на месте — без изменений. Дерево: ветка в свёрнутый узел (авторазворачивание), запрет переноса в собственного потомка, Esc, автопрокрутка дерева у края, раздел только для чтения — явная недопустимая цель (на пространство и между его страницами). Только Chromium (D-18)"
 - id: QA26-12
   status: partial
   evidence: 'tests/e2e/content.spec.ts:''image: upload via file chooser, resize presets, caption, full-screen viewer with zoom'''

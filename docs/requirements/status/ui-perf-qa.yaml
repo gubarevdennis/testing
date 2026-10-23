@@ -403,8 +403,8 @@
   note: no measurement conditions/report (8GB laptop, RTT 80ms, low-end mobile, 10/100 editors)
 - id: R-PERF-008
   status: partial
-  evidence: 'tests/e2e/perf-typing.spec.ts "R-PERF-008, AT-84: typing in a 10 000-word article with CPU throttled 4x — 240 samples, p95/p99 journaled…" (11 090 words, CDP throttling 4x, keydown→next frame, no lost characters); docs/PERFORMANCE.md'
-  note: 'budget NOT met in this environment: 4x p95 504–827 ms, p99 824–1169 ms; 1x p95 64 ms, p99 157 ms (overloaded 4-vCPU container). Budget assertion runs only with KB_PERF_ENFORCE=1 (open defect PERF-D1)'
+  evidence: "tests/e2e/perf-typing.spec.ts \"R-PERF-008, AT-84: typing in a 10 000-word article…\" (11 090 words, keydown→next frame, CDP throttling, no lost characters); tests/e2e/perf-profile.spec.ts (CDP profile + React render origins); fixes D-34 (extensions/editorPerf.ts, codeHighlight.ts, blockIds.ts, SyncStatus.tsx, BlockHandle.tsx); docs/PERFORMANCE.md"
+  note: "23.10, shared container (load 4–5): CPU 1× — p95 24–27 ms, p99 34–44 ms (budget met; before D-34 in the same window 20–32 / 25–50); CPU 4× — p95 72.6 ms, p99 104 ms (budget NOT met; before 95.7 / 120). Remaining cost: y-prosemirror per-keystroke sync and relative cursor positions, ProseMirror redraw, IndexedDB journal (open defect PERF-D1). Budget assertion only with KB_PERF_ENFORCE=1 on a calibrated machine"
 - id: R-PERF-009
   status: missing
   evidence: 'vite build: entry index.js 140 KB gz + index.css 23 KB gz; opening a page also loads PageView chunk 1.32 MB / 413 KB gz (katex + all highlight.js languages bundled eagerly) => ~576 KB gz before
@@ -480,8 +480,8 @@
   note: VS sample has only a 3-column table, no long code; no dedicated test
 - id: AT-84
   status: partial
-  evidence: 'tests/e2e/perf-typing.spec.ts "R-PERF-008, AT-84: …"; docs/PERFORMANCE.md'
-  note: typing SLO not met (see R-PERF-008); page switching time not measured
+  evidence: "tests/e2e/perf-typing.spec.ts \"R-PERF-008, AT-84: …\"; docs/PERFORMANCE.md"
+  note: "typing SLO met at CPU 1× (p95 24–27 ms) but not at 4× (p95 73 ms) — see R-PERF-008; page switching time not measured"
 - id: AT-85
   status: missing
   evidence: tests/e2e/collab.spec.ts uses 2 authors

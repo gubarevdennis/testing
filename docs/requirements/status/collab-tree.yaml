@@ -743,9 +743,9 @@
   status: done
   evidence: apps/web/src/layout/treeActions.tsx#movePage (toast «Отменить»)
 - id: R-HISTORY-017
-  status: partial
-  evidence: 'apps/web/src/editor/clientExtensions.ts; tests/e2e/undo.spec.ts, tests/e2e/collab-p0-editing.spec.ts (sequences: преобразование в заголовок, удаление)'
-  note: 'Ctrl+Z / Ctrl+Shift+Z / Ctrl+Y: ввод, формат, вставка, удаление, перенос, преобразование отменяются (тесты); отмена изменения размера (resize изображения/колонки) не тестируется'
+  status: done
+  evidence: "apps/web/src/editor/extensions/historyBoundaries.ts (набор текста группируется, любая другая операция — отдельный шаг; клавиши отмены с кнопок внутри блока); Collaboration Mod-z / Shift-Mod-z / Mod-y; extensions/blockOps.ts dispatchAtomic; D-33"
+  note: "tests/e2e/editor-p0-undo-ops.spec.ts: набор → формат → преобразование → набор без пауз (4 отдельных шага), изменение размера изображения ручкой и пресетом, ширина столбца таблицы, ⌘Z/⌘⇧Z при платформе macOS; tests/e2e/undo.spec.ts (ввод, Ctrl+Y, вставка, удаление, перенос, таблица); tests/e2e/editor-p0-dnd.spec.ts (перетаскивание — один шаг)"
 - id: R-HISTORY-018
   status: done
   evidence: apps/web/src/editor/clientExtensions.ts (Tiptap Collaboration → y-tiptap yUndoPlugin, own origin only; undoRedo disabled in packages/shared/src/editor/extensions.ts); tests/e2e/undo.spec.ts

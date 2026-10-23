@@ -14,7 +14,7 @@ const uuid = z.string().uuid();
  * into page B must be readable by B's readers and must follow B's rights, not A's. The copy is a new attachment of B
  * that shares the stored bytes (content-addressed blob, no second upload).
  *
- * Rights: the user must be allowed to download the file on its page (D-26: taking a file elsewhere is a download — a
+ * Rights: the user must be allowed to download the file on its page (D-32: taking a file elsewhere is a download — a
  * reader without the download right cannot spread it this way) and to edit the target page. Otherwise 404 / 403 and the
  * client keeps the original reference (which B's readers simply cannot open).
  */

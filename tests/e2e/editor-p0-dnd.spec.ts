@@ -1,5 +1,5 @@
 import { test, expect, type Page, type Locator } from '@playwright/test';
-import { ensureOwner, editor, expectSaved, apiContent, treeLink, caretIn } from './helpers';
+import { ensureOwner, editor, expectSaved, apiContent, treeLink, caretIn, createUser, login_ } from './helpers';
 import { newPage, cleanupCreatedPages, settle } from './editor-p0-helpers';
 
 /**
@@ -320,7 +320,7 @@ test('autoscroll near the bottom edge while dragging, drop far below (QA26-09)',
   expect(Math.abs(idx - o.indexOf('p' + n))).toBe(1);
 });
 
-test('drop on another page in the sidebar tree moves the blocks there (ids kept), no-rights target refused (R-EDITOR-076)', async ({ page }) => {
+test('drop on another page in the sidebar tree moves the blocks there (ids kept); the page itself and a page without edit rights are refused (R-EDITOR-076)', async ({ page, browser }) => {
   await ensureOwner(page);
   await page.evaluate(() => localStorage.setItem('kb:debug', '1'));
   const target = await newPage(page, 'DnD цель переноса');
@@ -348,6 +348,24 @@ test('drop on another page in the sidebar tree moves the blocks there (ids kept)
   await expect(page.locator('.kb-drop-label')).toHaveText('Блок уже на этой странице');
   await page.mouse.up();
   expect(await order(page)).toEqual(['m1']);
+
+  // a colleague who may only read the target page: the target is refused with the reason, nothing moves
+  const u = await createUser(page.request, 'Редактор источника', { pageGrants: [{ pageId: source, level: 'edit' }, { pageId: target, level: 'view' }] });
+  const ctx = await browser.newContext();
+  const p2 = await ctx.newPage();
+  await p2.goto('/');
+  await login_(p2, u.email, u.password);
+  await p2.goto('/p/' + source);
+  await expect(editor(p2).locator('p', { hasText: 'Останется' })).toBeVisible();
+  const tr2 = (await treeLink(p2, 'DnD цель переноса')).locator('xpath=ancestor::div[contains(concat(" ",@class," ")," tree-row ")][1]');
+  const r2 = await rect(tr2);
+  await dragTo(p2, editor(p2).locator('p', { hasText: 'Останется' }), r2.x + r2.width / 2, r2.y + r2.height / 2, 16);
+  await expect(tr2).toHaveClass(/kb-block-drop-page.*invalid|invalid.*kb-block-drop-page/);
+  await expect(p2.locator('.kb-drop-label')).toHaveText('Нет права редактировать эту страницу');
+  await p2.mouse.up();
+  await expect(editor(p2).locator('p', { hasText: 'Останется' })).toHaveCount(1);
+  expect(((await apiContent(page.request, target)).content.content as any[]).map((n) => n.content?.[0]?.text)).toEqual(['Уже на странице', 'Уедет на другую страницу']);
+  await ctx.close();
 });
 
 test('keyboard alternatives: Alt+Shift+↑/↓ move (also out of a callout / column), Esc twice selects the column set (R-EDITOR-069, R-EDITOR-052)', async ({ page }) => {
@@ -356,7 +374,6 @@ test('keyboard alternatives: Alt+Shift+↑/↓ move (also out of a callout / col
     { type: 'callout', attrs: { id: 'k', variant: 'info' }, content: [p('k1', 'Первая в выноске'), p('k2', 'Вторая в выноске')] },
     { type: 'columns', attrs: { id: 'cols' }, content: [{ type: 'column', content: [p('l1', 'Слева')] }, { type: 'column', content: [p('r1', 'Справа')] }] },
   ]);
-  const ed = editor(page);
   await caretIn(page, 'Первая в выноске');
   await page.keyboard.press('Alt+Shift+ArrowUp');
   expect(await order(page)).toEqual(['a', 'k1', 'k', [['l1'], ['r1']]]);
@@ -371,4 +388,126 @@ test('keyboard alternatives: Alt+Shift+↑/↓ move (also out of a callout / col
   await page.keyboard.press('Escape');
   await page.keyboard.press('Alt+Shift+ArrowUp');
   expect(await order(page)).toEqual(['a', [['l1'], ['r1']], 'k']);
+});
+
+test('pages and whole branches in the tree: into a collapsed node (auto-expand), not into their own descendant, Esc cancels (QA26-09)', async ({ page }) => {
+  await ensureOwner(page);
+  const csrf = (await page.context().storageState()).cookies.find((c) => c.name === 'kb_csrf')?.value ?? '';
+  const space = (await (await page.request.get('/api/v1/auth/me')).json()).personalSpaceId as string;
+  const mk = async (title: string, parentId: string | null) => {
+    const r = await page.request.post('/api/v1/pages', { data: { spaceId: space, parentId, title, requestId: crypto.randomUUID() }, headers: { 'x-csrf-token': csrf } });
+    expect(r.ok(), await r.text()).toBeTruthy();
+    return (await r.json()).page.id as string;
+  };
+  const folder = await mk('DnD-дерево: папка', null);
+  await mk('DnD-дерево: старый ребёнок', folder);
+  const branch = await mk('DnD-дерево: ветка', null);
+  const leaf = await mk('DnD-дерево: лист ветки', branch);
+  const parentOf = async (id: string) => (await (await page.request.get(`/api/v1/pages/${id}`)).json()).page.parentId as string | null;
+  await page.goto('/p/' + branch);
+  const row = async (name: string) => (await treeLink(page, name)).locator('xpath=ancestor::div[contains(concat(" ",@class," ")," tree-row ")][1]');
+  const dragRow = async (from: string, to: string, opts: { hold?: number; cancel?: boolean } = {}) => {
+    const src = await row(from);
+    await src.hover();
+    const h = (await rect(src.locator('.tree-handle')))!;
+    await page.mouse.move(h.x + h.width / 2, h.y + h.height / 2);
+    await page.mouse.down();
+    const dst = await rect(await row(to));
+    await page.mouse.move(dst.x + dst.width / 2, dst.y + dst.height / 2, { steps: 10 });
+    for (let t = 0; t < (opts.hold ?? 0); t += 150) await page.mouse.move(dst.x + dst.width / 2 + (t % 2), dst.y + dst.height / 2);
+    if (opts.cancel) await page.keyboard.press('Escape');
+    await page.mouse.up();
+  };
+  // a page into its own descendant: refused (no cycle), nothing moves
+  await (await treeLink(page, 'DnD-дерево: ветка')).locator('xpath=ancestor::div[contains(concat(" ",@class," ")," tree-row ")][1]').locator('.tree-chevron').click();
+  await dragRow('DnD-дерево: ветка', 'DnD-дерево: лист ветки');
+  expect(await parentOf(branch)).toBeNull();
+  expect(await parentOf(leaf)).toBe(branch);
+  // Esc during the drag: nothing moves
+  await dragRow('DnD-дерево: ветка', 'DnD-дерево: папка', { cancel: true });
+  expect(await parentOf(branch)).toBeNull();
+  // the whole branch into the collapsed folder: held "inside" the folder expands, the branch moves with its child
+  await dragRow('DnD-дерево: ветка', 'DnD-дерево: папка', { hold: 900 });
+  await expect.poll(() => parentOf(branch)).toBe(folder);
+  expect(await parentOf(leaf)).toBe(branch);
+  await expect(await treeLink(page, 'DnD-дерево: старый ребёнок')).toBeVisible();
+});
+
+test('tree: dragging a page to the bottom edge scrolls the tree, the drop lands under the pointer (QA26-09)', async ({ page }) => {
+  await ensureOwner(page);
+  const csrf = (await page.context().storageState()).cookies.find((c) => c.name === 'kb_csrf')?.value ?? '';
+  const space = (await (await page.request.get('/api/v1/auth/me')).json()).personalSpaceId as string;
+  const mk = async (title: string) => {
+    const r = await page.request.post('/api/v1/pages', { data: { spaceId: space, parentId: null, title, requestId: crypto.randomUUID() }, headers: { 'x-csrf-token': csrf } });
+    return (await r.json()).page.id as string;
+  };
+  const moving = await mk('АА прокрутка: переносимая');
+  for (let i = 0; i < 45; i++) await mk(`АА прокрутка: страница ${String(i).padStart(2, '0')}`);
+  await page.goto('/p/' + moving);
+  const tree = page.getByRole('tree', { name: 'Страницы' });
+  const row = (await treeLink(page, 'АА прокрутка: переносимая')).locator('xpath=ancestor::div[contains(concat(" ",@class," ")," tree-row ")][1]');
+  await row.hover();
+  const h = (await rect(row.locator('.tree-handle')))!;
+  const box = await rect(tree);
+  const top0 = await tree.evaluate((el) => el.scrollTop);
+  await page.mouse.move(h.x + h.width / 2, h.y + h.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height - 6, { steps: 12 });
+  await expect.poll(() => tree.evaluate((el) => el.scrollTop), { timeout: 10_000 }).toBeGreaterThan(top0 + 200);
+  // leave the edge, then drop inside the row under the pointer
+  const y = box.y + box.height / 2;
+  await page.mouse.move(box.x + box.width / 2, y, { steps: 4 });
+  await page.waitForTimeout(150);
+  const target = await page.evaluate(({ x, y }) => {
+    const r = document.elementFromPoint(x, y)?.closest('.tree-row');
+    const rr = r?.getBoundingClientRect();
+    return { title: r?.querySelector('a.tree-title')?.textContent ?? '', mid: rr ? rr.top + rr.height / 2 : y };
+  }, { x: box.x + box.width / 2, y });
+  expect(target.title).toMatch(/АА прокрутка: страница \d\d/);
+  await page.mouse.move(box.x + box.width / 2, target.mid, { steps: 2 });
+  await page.mouse.up();
+  const parentTitle = async () => {
+    const p = (await (await page.request.get(`/api/v1/pages/${moving}`)).json()).page;
+    return p.parentId ? (await (await page.request.get(`/api/v1/pages/${p.parentId}`)).json()).page.title : null;
+  };
+  await expect.poll(parentTitle).toBe(target.title);
+});
+
+test('tree: a section (space) the user may only read is an explicit invalid target — on the space and between its pages (QA26-09)', async ({ page, browser }) => {
+  await ensureOwner(page);
+  const csrf = (await page.context().storageState()).cookies.find((c) => c.name === 'kb_csrf')?.value ?? '';
+  const u = await createUser(page.request, 'Читатель раздела');
+  const sp = await page.request.post('/api/v1/spaces', { data: { name: 'DnD-раздел для чтения', kind: 'project', visibility: 'closed', users: [{ userId: u.id, level: 'view' }] }, headers: { 'x-csrf-token': csrf } });
+  expect(sp.ok(), await sp.text()).toBeTruthy();
+  const space = (await sp.json()).space;
+  const r = await page.request.post('/api/v1/pages', { data: { spaceId: space.id, parentId: null, title: 'DnD-раздел: страница', requestId: crypto.randomUUID() }, headers: { 'x-csrf-token': csrf } });
+  expect(r.ok()).toBeTruthy();
+  const ctx = await browser.newContext();
+  const p2 = await ctx.newPage();
+  await p2.goto('/');
+  await login_(p2, u.email, u.password);
+  await expect(p2.locator('.app-shell')).toBeVisible();
+  const own = await newPage(p2, 'DnD-раздел: моя страница');
+  const rowOf = async (name: string) => (await treeLink(p2, name)).locator('xpath=ancestor::div[contains(concat(" ",@class," ")," tree-row ")][1]');
+  const spaceRow = p2.locator('.tree-row.space-row', { hasText: 'DnD-раздел для чтения' });
+  await expect(spaceRow).toBeVisible();
+  if ((await spaceRow.getAttribute('aria-expanded')) !== 'true') await spaceRow.getByRole('button', { name: 'Развернуть' }).click();
+  const src = await rowOf('DnD-раздел: моя страница');
+  await src.hover();
+  const h = (await rect(src.locator('.tree-handle')))!;
+  await p2.mouse.move(h.x + h.width / 2, h.y + h.height / 2);
+  await p2.mouse.down();
+  // between pages of the read-only section
+  const other = await rect(await rowOf('DnD-раздел: страница'));
+  await p2.mouse.move(other.x + other.width / 2, other.y + 2, { steps: 10 });
+  await expect(p2.getByText('Недопустимая цель')).toBeAttached();
+  await expect(p2.locator('.tree-drop-line')).toHaveCount(0);
+  // into the read-only section itself
+  const s = await rect(spaceRow);
+  await p2.mouse.move(s.x + s.width / 2, s.y + s.height / 2, { steps: 6 });
+  await expect(p2.getByText('Недопустимая цель')).toBeAttached();
+  await p2.mouse.up();
+  const moved = (await (await p2.request.get(`/api/v1/pages/${own}`)).json()).page;
+  expect(moved.spaceId).not.toBe(space.id);
+  await ctx.close();
 });

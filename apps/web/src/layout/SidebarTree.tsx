@@ -267,7 +267,10 @@ export function SidebarTree({ personal, spaces, shared, onNavigate }: Props) {
       if (r.kind === 'section') return null;
       if (r.kind !== 'node') return null;
       const zone = within < 0.28 ? 'before' : within > 0.72 ? 'after' : 'inside';
-      const invalid = r.node.id === d.node.id || d.descendants.has(r.node.id) || (zone === 'inside' && !r.node.canCreate);
+      // before / after a page puts the dragged page under that page's parent: it needs the right to create there too
+      const parentRow = rows.find((x) => (r.node.parentId ? x.kind === 'node' && x.node.id === r.node.parentId : x.kind === 'space' && x.space.id === r.node.spaceId));
+      const parentCanCreate = !parentRow || (parentRow.kind === 'node' ? parentRow.node.canCreate : parentRow.kind === 'space' ? !!parentRow.space.actions.create : true);
+      const invalid = r.node.id === d.node.id || d.descendants.has(r.node.id) || (zone === 'inside' ? !r.node.canCreate : !parentCanCreate);
       return { index, zone: zone as 'before' | 'after' | 'inside', valid: !invalid };
     };
     const onMove = (e: PointerEvent) => {

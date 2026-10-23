@@ -13,6 +13,7 @@ import { BlockOps } from './extensions/blockOps';
 import { BlockDragDecorations } from './menus/blockDrag';
 import { StableSelection } from './extensions/stableSelection';
 import { EditorPerf } from './extensions/editorPerf';
+import { HistoryBoundaries } from './extensions/historyBoundaries';
 import { TableRepair } from './extensions/tableRepair';
 import { Uploads } from './extensions/uploads';
 import { SmartPaste } from './extensions/paste';
@@ -71,6 +72,7 @@ export function clientExtensions(o: ClientExtensionOptions): AnyExtension[] {
     Collaboration.configure({ document: o.doc, field: FRAGMENT_NAME }),
     StableSelection,
     EditorPerf,
+    HistoryBoundaries,
     TableRepair.configure({ provider: o.provider }),
     Placeholder.configure({
       includeChildren: true,

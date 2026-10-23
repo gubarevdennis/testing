@@ -103,7 +103,14 @@ function LoadedImageView({ node, updateAttributes, selected, editor, getPos, del
   return (
     <NodeViewWrapper as="figure" ref={figRef as any} className={`kb-image-block align-${a.align}${selected ? ' is-selected' : ''}`} data-drag-handle="" data-block-id={node.attrs.id}>
       {selected && editable && (
-        <div className="kb-node-toolbar" contentEditable={false} role="toolbar" aria-label="Изображение">
+        <div
+          className="kb-node-toolbar"
+          contentEditable={false}
+          role="toolbar"
+          aria-label="Изображение"
+          // buttons do not take the focus from the document (Ctrl+Z right after a click must undo in the editor)
+          onMouseDown={(e) => (e.target as HTMLElement).closest('button') && e.preventDefault()}
+        >
           <Tooltip label="По левому краю">
             <button aria-label="По левому краю" className="icon-btn sm" aria-pressed={a.align === 'left'} onClick={() => updateAttributes({ align: 'left' })}>
               <AlignLeft size={15} />
