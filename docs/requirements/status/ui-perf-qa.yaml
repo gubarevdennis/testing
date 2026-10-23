@@ -956,7 +956,7 @@
   note: no requestAnimationFrame batching; gesture latency/fps not measured
 - id: R-QA-034
   status: done
-  evidence: 'Convergence without loss of anything acknowledged under: partition (outages 1/30/300 s), latency (RTT 300 ms + jitter), loss (5 %, retransmission delay), reorder and duplicate (10 % duplicated, 15 % swapped frames) — tests/resilience/network-faults.test.ts; 2/5/20 editors (collab-p0.test.ts); randomised/property tests (collab.test.ts, qa-invariants.test.ts); several instances with SIGKILL failover (multi-instance.test.ts); load (scripts/load/collab-load.mjs) and 2-hour soak with periodic integrity checks (scripts/load/soak.mjs, docs/PERFORMANCE.md «Soak»); recovery from snapshot+log (crash-restart, backup-restore, dr-drill)'
+  evidence: 'Convergence without loss of anything acknowledged under: partition (outages 1/30/300 s), latency (RTT 300 ms + jitter), loss (5 %, retransmission delay), reorder and duplicate (10 % duplicated, 15 % swapped frames) — tests/resilience/network-faults.test.ts; 2/5/20 editors (collab-p0.test.ts); randomised/property tests (collab.test.ts, qa-invariants.test.ts); several instances with SIGKILL failover (multi-instance.test.ts); load (scripts/load/collab-load.mjs) and a soak run of 1 h 36 min with 19 integrity checks: 16 896 acknowledged edits, 0 lost/duplicated/resurrected (scripts/load/soak.mjs, docs/PERFORMANCE.md «Soak»); recovery from snapshot+log (crash-restart, backup-restore, dr-drill)'
   note: 'Load and soak run nightly in .github/workflows/nightly-load.yml (not yet executed on GitHub)'
 - id: R-PROCESS-047
   status: process
@@ -1050,7 +1050,7 @@
   note: no mapping of the 12 trials to tests
 - id: R-QA-038
   status: partial
-  evidence: 'unit/integration/API/E2E/property; chaos: tests/resilience/network-faults.test.ts (TCP fault proxy), multi-instance.test.ts (instance kill); load scripts/load/collab-load.mjs; soak scripts/load/soak.mjs (2 h run, docs/PERFORMANCE.md); both nightly in .github/workflows/nightly-load.yml'
+  evidence: 'unit/integration/API/E2E/property; chaos: tests/resilience/network-faults.test.ts (TCP fault proxy), multi-instance.test.ts (instance kill); load scripts/load/collab-load.mjs; soak scripts/load/soak.mjs (1 h 36 min run, docs/PERFORMANCE.md); both nightly in .github/workflows/nightly-load.yml'
   note: 'No component/contract tests; the nightly load/soak workflow has not run on GitHub yet; regression test per defect is a process rule (docs/qa/DEFECTS.md)'
 - id: R-PROCESS-052
   status: missing
