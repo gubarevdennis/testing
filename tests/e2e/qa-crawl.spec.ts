@@ -83,12 +83,16 @@ test('QA26-04 seed: a space with a page, a comment thread and a trashed page', a
   const spaces = await (await page.request.get('/api/v1/spaces')).json();
   for (const s of spaces.spaces ?? []) data.add(s.name);
   const templates = await (await page.request.get('/api/v1/templates')).json();
-  for (const t of templates.templates ?? []) (data.add(t.name), t.category && data.add(t.category));
+  for (const t of templates.templates ?? []) {
+    data.add(t.name);
+    if (t.category) data.add(t.category);
+  }
 });
 
 const ROUTES: Array<{ route: string; url: () => string; ready: (p: Page) => Promise<void> }> = [
   { route: '/', url: () => '/', ready: (p) => expect(p.locator('main, #main').first()).toBeVisible() },
   { route: '/p/:pageId', url: () => '/p/' + pageId, ready: (p) => expect(p.locator('.kb-editor')).toBeVisible() },
+  { route: '/p/:pageId/:slug', url: () => '/p/' + pageId + '/stranica-obhoda', ready: (p) => expect(p.locator('.kb-editor')).toBeVisible() },
   { route: '/s/:spaceId', url: () => '/s/' + spaceId, ready: (p) => expect(p.getByRole('heading', { name: 'Обход действий' }).first()).toBeVisible() },
   { route: '/s/:spaceId?tab=settings', url: () => '/s/' + spaceId + '?tab=settings', ready: (p) => expect(p.getByRole('heading', { name: 'Обход действий' }).first()).toBeVisible() },
   { route: '/search', url: () => '/search?q=обход', ready: (p) => expect(p.getByLabel('Поисковый запрос')).toBeVisible() },

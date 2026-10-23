@@ -79,6 +79,9 @@ export function slug(s: string): string {
 }
 
 export const norm = (s: string) => s.replace(/\s+/g, ' ').trim();
+/** Marker of a data-driven part of a label (template substitution, `{value}`); a literal … in a label is just text. */
+export const DYN = '{…}';
+export const DYN_RE = /\{…\}/g;
 
 /** Screen of a source file: the route area it belongs to. */
 function screenOf(file: string): string {
@@ -124,7 +127,7 @@ function textOf(e: ts.Expression | undefined, sf: ts.SourceFile): { text: string
   if (ts.isStringLiteral(e) || ts.isNoSubstitutionTemplateLiteral(e)) return { text: [e.text], dynamic: false };
   if (ts.isTemplateExpression(e)) {
     let s = e.head.text;
-    for (const span of e.templateSpans) s += '…' + span.literal.text;
+    for (const span of e.templateSpans) s += DYN + span.literal.text;
     return { text: [s], dynamic: true };
   }
   if (ts.isConditionalExpression(e)) {
@@ -141,7 +144,7 @@ function textOf(e: ts.Expression | undefined, sf: ts.SourceFile): { text: string
     const a = textOf(e.left, sf);
     const b = textOf(e.right, sf);
     if (!a && !b) return null;
-    return { text: [(a?.text[0] ?? '…') + (b?.text[0] ?? '…')], dynamic: true };
+    return { text: [(a?.text[0] ?? DYN) + (b?.text[0] ?? DYN)], dynamic: true };
   }
   return null;
 }
@@ -172,7 +175,7 @@ function childText(node: ts.Node, sf: ts.SourceFile): { text: string; dynamic: b
       } else if (!ts.isJsxElement(n.expression) && !ts.isJsxSelfClosingElement(n.expression)) {
         // `{cond && <Icon/>}` contributes nothing; `{value}` is data
         if (!ts.isBinaryExpression(n.expression) && !ts.isConditionalExpression(n.expression)) {
-          text += ' …';
+          text += ' ' + DYN;
           dynamic = true;
         } else n.expression.forEachChild(visit);
       } else visit(n.expression);
@@ -219,7 +222,7 @@ export function scanSource(): { raws: Raw[]; dynamicUnnamed: Array<{ source: str
       const ls = [...new Set(labels.map(norm).filter(Boolean))];
       if (!ls.length) return;
       const { component, group } = enclosingNames(n);
-      raws.push({ kind, screen, component: component ?? fileComp, label: ls[0], ...(ls.length > 1 ? { aliases: ls.slice(1) } : {}), ...(dynamic ? { dynamic: true } : {}), source: loc(n), key: key ?? slug(ls[0].replace(/…/g, ' ')), group: group ?? '', ...extra });
+      raws.push({ kind, screen, component: component ?? fileComp, label: ls[0], ...(ls.length > 1 ? { aliases: ls.slice(1) } : {}), ...(dynamic ? { dynamic: true } : {}), source: loc(n), key: key ?? slug(ls[0].replace(DYN_RE, ' ')), group: group ?? '', ...extra });
     };
 
     const visit = (n: ts.Node) => {
@@ -237,7 +240,8 @@ export function scanSource(): { raws: Raw[]; dynamicUnnamed: Array<{ source: str
             const raw = p.text[0];
             const prefix = ROUTE_PREFIX[rel] ?? '';
             const path = raw === '*' || raw === '/*' ? null : (prefix + raw).replace(/\/\*$/, '').replace(/\/+/g, '/');
-            if (path) push(el, 'route', [path], p.dynamic, { route: path }, slug(path === '/' ? 'root' : path));
+            // a dynamic path (`s.path + '/*'`) is generated from a section table that is inventoried itself
+            if (path && !p.dynamic) push(el, 'route', [path], false, { route: path }, slug(path === '/' ? 'root' : path));
           }
         } else if (tag === 'Dialog') {
           const t = attrText(el, 'title', sf);
@@ -247,7 +251,7 @@ export function scanSource(): { raws: Raw[]; dynamicUnnamed: Array<{ source: str
           if (l) push(el, 'menu', l.text, l.dynamic);
         } else if (tag === 'Toggle' || tag === 'CopyField') {
           const l = attrText(el, 'label', sf) ?? aria;
-          if (l) push(el, tag === 'Toggle' ? 'toggle' : 'button', tag === 'CopyField' ? l.text.map((t) => t) : l.text, l.dynamic);
+          if (l) push(el, tag === 'Toggle' ? 'toggle' : 'input', l.text, l.dynamic);
         } else {
           let kind: Kind | null = null;
           if (tag === 'button') kind = 'button';
@@ -261,12 +265,14 @@ export function scanSource(): { raws: Raw[]; dynamicUnnamed: Array<{ source: str
           if (role && ROLE_KIND[role]) kind = ROLE_KIND[role];
           if (role === 'presentation' || role === 'none') kind = null;
           if (kind) {
-            let name = aria ?? (kind === 'input' || kind === 'select' ? attrText(el, 'placeholder', sf) : null);
+            const field = kind === 'input' || kind === 'select';
+            const placeholder = field ? attrText(el, 'placeholder', sf) : null;
+            const name = aria;
             let dynamic = name?.dynamic ?? false;
             let labels = name?.text ?? [];
             if (!labels.length && kind !== 'select' && kind !== 'input') {
               const c = childText(whole, sf);
-              if (c.text && c.text !== '…') {
+              if (c.text && c.text !== DYN) {
                 labels = [c.text];
                 dynamic = c.dynamic;
               }
@@ -282,12 +288,18 @@ export function scanSource(): { raws: Raw[]; dynamicUnnamed: Array<{ source: str
                   const pt = p.openingElement.tagName.getText(sf);
                   if (pt === 'Tooltip') {
                     const l = attrText(p.openingElement, 'label', sf);
-                    if (l) ((labels = l.text), (dynamic = l.dynamic));
+                    if (l) {
+                      labels = l.text;
+                      dynamic = l.dynamic;
+                    }
                     break;
                   }
                   if (pt === 'label') {
                     const c = childText(p, sf);
-                    if (c.text) ((labels = [c.text]), (dynamic = c.dynamic));
+                    if (c.text) {
+                      labels = [c.text];
+                      dynamic = c.dynamic;
+                    }
                     break;
                   }
                   if (/^[a-z]/.test(pt) && pt !== 'span') break;
@@ -295,18 +307,32 @@ export function scanSource(): { raws: Raw[]; dynamicUnnamed: Array<{ source: str
               }
             }
             const id = attrText(el, 'id', sf)?.text[0];
-            if (!labels.length && (kind === 'input' || kind === 'select') && id) {
+            if (!labels.length && field && id) {
               // <label htmlFor=id>
               const m = new RegExp(`htmlFor=["']${id}["'][^>]*>([^<{]+)<`).exec(src);
               if (m) labels = [m[1]];
             }
-            if (labels.length && labels.every((l) => norm(l.replace(/…/g, '')) === '')) labels = [];
+            if (!labels.length && placeholder) {
+              labels = placeholder.text;
+              dynamic = placeholder.dynamic;
+            }
+            if (labels.length && labels.every((l) => norm(l.replace(DYN_RE, '')) === '')) labels = [];
             if (labels.length) {
               const shortcut = attrText(el, 'aria-keyshortcuts', sf)?.text[0];
               push(el, kind, labels, dynamic, { ...(disabledReason ? { no_permission: disabledReason } : {}), ...(shortcut ? { shortcut } : {}) });
             } else dynamicUnnamed.push({ source: loc(el), kind });
           }
         }
+      } else if (ts.isCallExpression(n) && ts.isIdentifier(n.expression) && n.expression.text === 'confirm' && n.arguments[0] && ts.isObjectLiteralExpression(n.arguments[0])) {
+        // confirm({ title, confirmLabel }) — a confirmation dialog and its confirm button (Cancel is ui/ConfirmHost)
+        const o = n.arguments[0];
+        const get = (k: string) => o.properties.find((p): p is ts.PropertyAssignment => ts.isPropertyAssignment(p) && p.name.getText(sf) === k)?.initializer;
+        const title = textOf(get('title'), sf);
+        const cl = textOf(get('confirmLabel'), sf);
+        if (title) push(n, 'dialog', title.text, title.dynamic, { confirm: true }, 'confirm.' + slug(title.text[0].replace(DYN_RE, ' ')));
+        if (title && cl) push(n, 'button', cl.text, cl.dynamic, { confirm: true }, 'confirm.' + slug(title.text[0].replace(DYN_RE, ' ')) + '.' + slug(cl.text[0]));
+        n.forEachChild(visit);
+        return;
       } else if (ts.isObjectLiteralExpression(n)) {
         const props = new Map<string, ts.Expression>();
         for (const p of n.properties) if (ts.isPropertyAssignment(p) && (ts.isIdentifier(p.name) || ts.isStringLiteral(p.name))) props.set(p.name.text, p.initializer);
@@ -371,9 +397,9 @@ export interface RuntimeControl {
   name: string;
 }
 
-/** Pattern of a (possibly dynamic) label: `…` matches anything. */
+/** Pattern of a (possibly dynamic) label: each {…} matches anything. */
 export function labelPattern(label: string): RegExp {
-  const esc = label.split('…').map((p) => p.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+  const esc = label.split(DYN).map((p) => p.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
   return new RegExp('^' + esc.join('.*') + '$', 'i');
 }
 

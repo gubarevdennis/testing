@@ -498,6 +498,13 @@ function EditorInner(p: Props & { session: CollabSession }) {
                 if (range && pos >= range.from && pos < range.to) setMoveRange(range);
                 else if (node) setMoveRange({ from: pos, to: pos + node.nodeSize });
               }}
+              onDropToPage={(range, target) => {
+                // dropped on a page in the sidebar tree: same safe transfer as «Переместить на страницу…»
+                void moveBlocksToPage(editor, range.from, range.to, target.pageId, p.user.id).then((r) => {
+                  if (r.ok) toast.success(`Перенесено на страницу «${target.title || 'Без названия'}»`, { label: 'Открыть', run: () => navigate('/p/' + target.pageId) });
+                  else toast.error(r.message);
+                });
+              }}
             />
           )}
           {!p.canEdit && <ReadOnlyCommentButton editor={editor} onComment={() => requestComment()} />}

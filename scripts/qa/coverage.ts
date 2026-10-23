@@ -12,7 +12,7 @@
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import YAML from 'yaml';
-import { ROOT, loadInventory, labelPattern, norm, type Action, type Kind } from './inventory';
+import { ROOT, loadInventory, labelPattern, norm, DYN, DYN_RE, type Action, type Kind } from './inventory';
 import { indexTests, type TestCase, type Ref } from './tests-index';
 
 interface Mapping {
@@ -69,7 +69,7 @@ const ROLE_KINDS: Record<string, Kind[]> = {
 };
 
 const lower = (s: string) => norm(s).toLowerCase();
-const sample = (label: string) => label.replace(/…/g, 'Тест');
+const sample = (label: string) => label.replace(DYN_RE, 'Тест');
 
 function candidates(ref: Ref, actions: Action[]): Action[] {
   if (ref.kind !== 'name' || (!ref.value && !ref.regex)) return [];
@@ -90,15 +90,15 @@ function candidates(ref: Ref, actions: Action[]): Action[] {
     return pool.filter((a) => names(a).some((n) => re.test(sample(n))));
   }
   const v = lower(ref.value);
-  if (v.length < 2 || v === '…') return [];
-  if (v.includes('…')) {
+  if (v.length < 2 || v === DYN) return [];
+  if (v.includes(DYN)) {
     const p = labelPattern(ref.value);
     return pool.filter((a) => names(a).some((n) => p.test(sample(n))));
   }
-  const exact = pool.filter((a) => names(a).some((n) => (n.includes('…') ? labelPattern(n).test(ref.value) : lower(n) === v)));
+  const exact = pool.filter((a) => names(a).some((n) => (n.includes(DYN) ? labelPattern(n).test(ref.value) : lower(n) === v)));
   if (exact.length || ref.exact) return exact;
   if (v.length < 4) return [];
-  return pool.filter((a) => names(a).some((n) => lower(n.replace(/…/g, ' ')).includes(v)));
+  return pool.filter((a) => names(a).some((n) => lower(n.replace(DYN_RE, ' ')).includes(v)));
 }
 
 /** Slash-menu query typed in the editor → the command the palette ranks first (same order as filterCommands). */
@@ -122,6 +122,8 @@ interface Link {
   states: Set<string>;
   source: 'auto' | 'explicit';
 }
+
+const CONFIRM_HOST = 'apps/web/src/components/ui/Confirm.tsx';
 
 function fileOf(a: Action) {
   return a.source.split(':')[0];
@@ -159,11 +161,13 @@ export function computeMatrix() {
     const context = new Set<string>();
     const credit = (a: Action, ref: Ref | null) => {
       all.add(a.id);
+      // a confirm({…}) dialog is rendered by ui/ConfirmHost: its «Отмена»/«Подтвердить» belong to that context
+      if (a.confirm) context.add(CONFIRM_HOST);
       if (!ref?.helper) direct.add(a.id);
     };
     for (const ref of t.refs) {
       if (ref.kind === 'url') {
-        const v = ref.value.replace(/^https?:\/\/[^/]+/, '').replace(/…/g, 'x');
+        const v = ref.value.replace(/^https?:\/\/[^/]+/, '').replace(DYN_RE, 'x');
         for (const r of routes) {
           if (r.route === '/' ? /^\/(?:[?#].*)?$/.test(v) : routeRe(r.route!).test(v)) {
             credit(r, ref);
@@ -205,7 +209,7 @@ export function computeMatrix() {
       // inferred non-success states go only to what the test itself drives (not helpers), and only when the test is
       // focused (≤ 8 actions) or names the action in its title — a broad test that also presses Escape somewhere does
       // not prove "cancel" for every control it touched
-      const named = title.includes(a.label.toLowerCase().replace(/…/g, '').trim()) && a.label.length > 3;
+      const named = title.includes(a.label.toLowerCase().replace(DYN_RE, '').trim()) && a.label.length > 3;
       // "no permission" needs a second, less privileged account in the test
       const states = ['success', ...((direct.has(id) && direct.size <= 8) || named ? extra : [])].filter((st) => st !== 'no-permission' || t.otherUser);
       addLink(id, t.key, states, 'auto');
@@ -292,9 +296,15 @@ export function computeMatrix() {
   for (const r of records)
     for (const [s, c] of Object.entries(r.states)) {
       perState[s] ??= { covered: 0, na: 0, gap: 0 };
-      if (c.status === 'covered') (perState[s].covered++, cellsReq++, cellsCov++);
-      else if (c.status === 'n/a') perState[s].na++;
-      else (perState[s].gap++, cellsReq++);
+      if (c.status === 'covered') {
+        perState[s].covered++;
+        cellsReq++;
+        cellsCov++;
+      } else if (c.status === 'n/a') perState[s].na++;
+      else {
+        perState[s].gap++;
+        cellsReq++;
+      }
     }
   const pct = (a: number, b: number) => (b ? Math.round((1000 * a) / b) / 10 : 100);
   const summary = {
@@ -447,7 +457,10 @@ function writeContract(m: ReturnType<typeof computeMatrix>, inv: { actions: Acti
       let specific = false;
       for (const [k, n] of CONTRACT_STATES) {
         let exp = CONTRACT_RULES[k];
-        if (k === 'no-permission' && a.no_permission) ((exp = `недоступно с причиной «${esc(a.no_permission)}»`), (specific = true));
+        if (k === 'no-permission' && a.no_permission) {
+          exp = `недоступно с причиной «${esc(a.no_permission)}»`;
+          specific = true;
+        }
         if (k === 'success' && a.shortcut) exp += `; горячая клавиша ${a.shortcut}`;
         const c = states[k];
         const check = c.status === 'covered' ? c.tests!.slice(0, 2).map(short).join('<br>') : c.status === 'n/a' ? `N/A: ${esc(c.reason!)}` : '**пробел**';

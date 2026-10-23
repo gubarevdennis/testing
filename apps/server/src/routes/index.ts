@@ -9,6 +9,7 @@ import { collabRoutes } from './collab.js';
 import { adminRoutes } from './admin.js';
 import { healthRoutes } from './health.js';
 import { attachmentRoutes } from './attachments.js';
+import { attachmentCopyRoutes } from './attachment-copy.js';
 import { searchCommentRoutes } from './search-comments.js';
 import { templateRoutes } from './templates.js';
 import { collectionRoutes } from './collections.js';
@@ -32,6 +33,7 @@ export async function registerRoutes(app: FastifyInstance, s: Services) {
   await collabRoutes(app, s);
   await adminRoutes(app, s);
   await attachmentRoutes(app, s);
+  await attachmentCopyRoutes(app, s);
   await searchCommentRoutes(app, s);
   await templateRoutes(app, s);
   await collectionRoutes(app, s);

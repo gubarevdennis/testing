@@ -88,3 +88,57 @@ defects:
     test: scripts/qa/coverage.ts (npm run qa:report)
     requirements: [QA26-01, QA26-28, R-QA-006, R-UI-026]
     source: docs/qa/ACTION_MATRIX.md
+  - id: QA-D3
+    title: Мгновенное двойное нажатие «Создать токен» (два нажатия за несколько миллисекунд) создаёт два токена — состояние «выполняется» появляется только после уведомления react-query, у запроса нет ключа идемпотентности
+    severity: low
+    status: open
+    owner: команда «Навигация и оболочка»
+    test: tests/e2e/qa-actions.spec.ts › QA-D3 (known defect) (test.fail; QA_SHOW_DEFECTS=1 показывает падение)
+    requirements: [R-QA-004]
+    source: tests/e2e/qa-actions.spec.ts, 2026-10-23 (двойной клик человека с интервалом 120 мс создаёт один токен)
+    actions: [settings/TokensTab/sozdat-token]
+  - id: QA-D4
+    title: Пункт «Переименовать» в меню строки дерева не работает — поле названия появляется и сразу закрывается (меню возвращает фокус кнопке, поле теряет фокус); F2 работает
+    severity: high
+    status: open
+    owner: команда «Навигация и оболочка»
+    test: tests/e2e/qa-actions.spec.ts › QA-D4 (known defect) (test.fail)
+    requirements: [R-UI-068, R-TREE-002]
+    source: tests/e2e/qa-actions.spec.ts, 2026-10-23 (мышью и Shift+F10)
+    actions: [shell/SidebarTree/rename]
+  - id: QA-D5
+    title: Пункт «Настройки и участники» меню пространства в боковой панели открывает вкладку «Страницы» — SpacePage не читает ?tab=settings
+    severity: medium
+    status: open
+    owner: команда «Администрирование и доступ»
+    test: tests/e2e/qa-actions.spec.ts › QA-D5 (known defect) (test.fail)
+    requirements: [R-UI-068]
+    source: tests/e2e/qa-actions.spec.ts, 2026-10-23
+    actions: [shell/SidebarTree/settings]
+  - id: QA-D6
+    title: 'Редактор: необработанная ошибка RangeError «Position N out of range» в обработчике подсказки-плейсхолдера (editor/clientExtensions.ts) после вставки колонок из меню «/»'
+    severity: medium
+    status: open
+    owner: команда «Редактор»
+    test: tests/e2e/qa-actions.spec.ts › QA-D6 (known defect) (test.fail)
+    requirements: [R-UI-011]
+    source: tests/e2e/qa-actions.spec.ts, 2026-10-23 (стек — Placeholder → doc.resolve)
+    actions: [editor/commands/cols2, editor/commands/cols3]
+  - id: QA-D7
+    title: 'Меню блока «Действия с блоком» продолжает действовать на блок, для которого его открыли первым: после Esc или выполненного действия меню, открытое у другого блока, перемещает (удаляет, дублирует) прежний блок'
+    severity: high
+    status: open
+    owner: команда «Редактор»
+    test: tests/e2e/qa-actions.spec.ts › QA-D7 (known defect) (test.fail)
+    requirements: [R-EDITOR-069, R-EDITOR-073]
+    source: tests/e2e/qa-actions.spec.ts, 2026-10-23 (воспроизводится на сборке рабочей копии)
+    actions: [editor/BlockHandle/up, editor/BlockHandle/dup]
+  - id: QA-D8
+    title: 'Меню блока: подменю «Цвет текста» (и другие подменю) у блока рядом с боковой панелью открывается за пределами окна (x < 0, под панелью) — мышью пункт не нажать, только клавиатурой'
+    severity: high
+    status: open
+    owner: команда «Навигация и оболочка»
+    test: tests/e2e/qa-actions.spec.ts › QA-D8 (known defect) (test.fail)
+    requirements: [R-UI-059, R-UI-068]
+    source: 'tests/e2e/qa-actions.spec.ts, 2026-10-23 (окно 1440×900, components/ui/Menu.tsx SubMenu; R-UI-059 в статусе done — противоречие)'
+    actions: [editor/BlockHandle/color, editor/BlockHandle/turn]

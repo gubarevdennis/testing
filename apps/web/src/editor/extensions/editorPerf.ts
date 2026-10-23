@@ -2,6 +2,7 @@ import { Extension } from '@tiptap/core';
 import { Plugin, PluginKey } from '@tiptap/pm/state';
 import type { EditorView } from '@tiptap/pm/view';
 import type { Node as PMNode } from '@tiptap/pm/model';
+import { ySyncPluginKey } from '@tiptap/y-tiptap';
 
 interface Desc {
   node?: PMNode;
@@ -29,13 +30,40 @@ export function refreshDescs(view: EditorView) {
   }
 }
 
-export const ViewIdentity = Extension.create({
-  name: 'kbViewIdentity',
+interface Binding {
+  syncedDoc: PMNode | null;
+  _prosemirrorChanged(doc: PMNode, plan?: unknown): void;
+  __kbFast?: boolean;
+}
+
+/**
+ * The Yjs binding (y-tiptap 3.0) pushes the editor document into Yjs on *every* view update — also for transactions that
+ * did not change the document (selection moves, plugin metadata such as its own follow-up transaction after each
+ * keystroke). Each push diffs every top-level block against the Yjs fragment and converts the selection to relative
+ * positions twice (linear in the position): roughly half of the per-keystroke cost on large pages. A push of the very
+ * document object that was synced last is a no-op (it can change nothing in Yjs, and a position migration plan never
+ * targets the synced document), so it is skipped.
+ */
+export function skipRedundantYSync(view: EditorView) {
+  const binding = (ySyncPluginKey.getState(view.state) as { binding?: Binding } | undefined)?.binding;
+  if (!binding || binding.__kbFast) return;
+  const orig = binding._prosemirrorChanged;
+  binding._prosemirrorChanged = function (this: Binding, doc: PMNode, plan?: unknown) {
+    if (doc === this.syncedDoc) return;
+    return orig.call(this, doc, plan);
+  };
+  binding.__kbFast = true;
+}
+
+/** Editor performance guards (PERF-D1): see refreshDescs and skipRedundantYSync. */
+export const EditorPerf = Extension.create({
+  name: 'kbEditorPerf',
   addProseMirrorPlugins() {
     return [
       new Plugin({
-        key: new PluginKey('kbViewIdentity'),
+        key: new PluginKey('kbEditorPerf'),
         view(view) {
+          skipRedundantYSync(view);
           refreshDescs(view);
           return {
             update(v, prev) {

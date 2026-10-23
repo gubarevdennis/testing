@@ -6,9 +6,12 @@
 import type { Editor } from '@tiptap/core';
 import { Fragment } from '@tiptap/pm/model';
 import { updateYFragment, yXmlFragmentToProseMirrorRootNode } from '@tiptap/y-tiptap';
-import { FRAGMENT_NAME } from '@kb/shared';
+import { FRAGMENT_NAME, type PMNode } from '@kb/shared';
 import { get } from '../api/client';
 import { openCollab } from '../sync/collab';
+import { attachmentIdsOf } from './clipboard/internal';
+import { copyAttachmentsTo, refusedMessage, rewriteJson } from './clipboard/rehome';
+import { toast } from '../components/ui/Toast';
 
 export type MoveResult = { ok: true } | { ok: false; reason: 'no-access' | 'not-saved' | 'error'; message: string };
 
@@ -43,7 +46,16 @@ export async function moveBlocksToPage(editor: Editor, from: number, to: number,
     const frag = s.doc.getXmlFragment(FRAGMENT_NAME);
     const target = yXmlFragmentToProseMirrorRootNode(frag, editor.schema);
     const onlyEmpty = target.childCount === 1 && target.firstChild!.isTextblock && target.firstChild!.content.size === 0;
-    const next = target.copy(onlyEmpty ? nodes : target.content.append(Fragment.from(nodes)));
+    // images and files become attachments of the target page (its rights, its readers)
+    let moved = nodes;
+    const json = (nodes.toJSON() ?? []) as PMNode[];
+    const ids = attachmentIdsOf(json);
+    if (ids.length) {
+      const { map, refused } = await copyAttachmentsTo(ids, targetPageId);
+      if (refused) toast.info(refusedMessage(refused));
+      if (map.size) moved = Fragment.fromJSON(editor.schema, rewriteJson(json, map));
+    }
+    const next = target.copy(onlyEmpty ? moved : target.content.append(moved));
     next.check();
     s.doc.transact(() => updateYFragment(s.doc, frag, next, { mapping: new Map(), isOMark: new Map() }));
     s.provider.flush();

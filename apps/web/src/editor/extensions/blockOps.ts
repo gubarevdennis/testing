@@ -1,10 +1,11 @@
 import { Extension, InputRule, type Editor } from '@tiptap/core';
-import { NodeSelection, TextSelection, Plugin, PluginKey, type EditorState } from '@tiptap/pm/state';
+import { NodeSelection, TextSelection, Plugin, PluginKey, type EditorState, type Transaction } from '@tiptap/pm/state';
 import type { Node as PMNode } from '@tiptap/pm/model';
-import { ySyncPluginKey } from '@tiptap/y-tiptap';
+import { ySyncPluginKey, yUndoPluginKey } from '@tiptap/y-tiptap';
 import { Decoration, DecorationSet } from '@tiptap/pm/view';
 import { isInTable } from '@tiptap/pm/tables';
 import { moveTableRow, moveTableColumn } from '../tableOps';
+import { CONTAINERS, moveOutTransaction } from '../blockDrop';
 
 /** Finds the top-most block (direct child of the doc or of a container like column/callout) around the selection. */
 export function currentBlock(state: EditorState): { node: PMNode; pos: number; depth: number } | null {
@@ -22,6 +23,17 @@ export function currentBlock(state: EditorState): { node: PMNode; pos: number; d
   return null;
 }
 
+/**
+ * Dispatches a structural change as its own Undo step (R-HISTORY-017): the Yjs undo manager merges changes made within
+ * 500 ms, so two quick moves — or typing right before a move — would otherwise be undone together.
+ */
+export function dispatchAtomic(editor: Editor, tr: Transaction) {
+  const um = yUndoPluginKey.getState(editor.state)?.undoManager;
+  um?.stopCapturing();
+  editor.view.dispatch(tr);
+  um?.stopCapturing();
+}
+
 export function blockAt(editor: Editor, pos: number) {
   const node = editor.state.doc.nodeAt(pos);
   return node ? { node, pos } : null;
@@ -36,7 +48,13 @@ export function moveBlock(editor: Editor, dir: -1 | 1, at?: number): boolean {
   const index = $pos.index();
   const parent = $pos.parent;
   const target = index + dir;
-  if (target < 0 || target >= parent.childCount) return false;
+  if (target < 0 || target >= parent.childCount) {
+    // first/last block of a column, callout, quote or toggle: leaves the container (keyboard alternative to dragging out)
+    const tr = parent.type.name !== 'doc' ? moveOutTransaction(state, { from: b.pos, to: b.pos + b.node.nodeSize }, dir) : null;
+    if (!tr) return false;
+    dispatchAtomic(editor, tr);
+    return true;
+  }
   const sibling = parent.child(target);
   const tr = state.tr;
   const offset = state.selection.from - b.pos;
@@ -51,7 +69,7 @@ export function moveBlock(editor: Editor, dir: -1 | 1, at?: number): boolean {
   }
   if (b.node.isAtom || state.selection instanceof NodeSelection) tr.setSelection(NodeSelection.create(tr.doc, newPos));
   else tr.setSelection(TextSelection.near(tr.doc.resolve(Math.min(newPos + Math.max(1, offset), tr.doc.content.size))));
-  editor.view.dispatch(tr.scrollIntoView());
+  dispatchAtomic(editor, tr.scrollIntoView());
   return true;
 }
 
@@ -62,7 +80,7 @@ export function duplicateBlock(editor: Editor, at?: number): boolean {
   const end = b.pos + b.node.nodeSize;
   const tr = editor.state.tr.insert(end, copy);
   tr.setSelection(TextSelection.near(tr.doc.resolve(end + 1)));
-  editor.view.dispatch(tr.scrollIntoView());
+  dispatchAtomic(editor, tr.scrollIntoView());
   return true;
 }
 
@@ -80,7 +98,7 @@ export function stripIds(node: PMNode): PMNode {
 export function deleteBlock(editor: Editor, at?: number): boolean {
   const b = at != null ? blockAt(editor, at) : currentBlock(editor.state);
   if (!b) return false;
-  editor.view.dispatch(editor.state.tr.delete(b.pos, b.pos + b.node.nodeSize).scrollIntoView());
+  dispatchAtomic(editor, editor.state.tr.delete(b.pos, b.pos + b.node.nodeSize).scrollIntoView());
   return true;
 }
 
@@ -88,6 +106,19 @@ export function selectBlock(editor: Editor, at?: number): boolean {
   const b = at != null ? blockAt(editor, at) : currentBlock(editor.state);
   if (!b) return false;
   editor.view.dispatch(editor.state.tr.setSelection(NodeSelection.create(editor.state.doc, b.pos)));
+  return true;
+}
+
+/** Selects the movable block around the selected one (column set around a column's block, callout around its block…). */
+export function selectParentBlock(editor: Editor): boolean {
+  const { state } = editor;
+  const $pos = state.selection.$from;
+  let d = $pos.depth;
+  if (d === 0) return false;
+  // the container itself, or the block around it when it cannot move alone (a column → its column set)
+  while (d > 0 && !CONTAINERS.has($pos.node(d - 1).type.name)) d--;
+  if (d === 0) return false;
+  editor.view.dispatch(state.tr.setSelection(NodeSelection.create(state.doc, $pos.before(d))));
   return true;
 }
 
@@ -130,6 +161,11 @@ function rangeSelection(state: EditorState, from: number, to: number) {
   return TextSelection.create(state.doc, a, b);
 }
 
+/** Selects whole sibling blocks [from, to) as a block range (shown and handled like Esc + Shift+↑/↓). */
+export function withBlockRange(tr: Transaction, from: number, to: number): Transaction {
+  return tr.setSelection(rangeSelection({ doc: tr.doc } as EditorState, from, to)).setMeta(SET_RANGE, { from, to });
+}
+
 function setBlockRange(editor: Editor, from: number, to: number) {
   const tr = editor.state.tr.setSelection(rangeSelection(editor.state, from, to)).setMeta(SET_RANGE, { from, to });
   editor.view.dispatch(tr.scrollIntoView());
@@ -161,7 +197,7 @@ function deleteBlockRange(editor: Editor): boolean {
   if (!range) return false;
   const tr = editor.state.tr.delete(range.from, range.to);
   tr.setSelection(TextSelection.near(tr.doc.resolve(Math.min(range.from, tr.doc.content.size))));
-  editor.view.dispatch(tr.scrollIntoView());
+  dispatchAtomic(editor, tr.scrollIntoView());
   return true;
 }
 
@@ -190,7 +226,7 @@ export function moveBlockRange(editor: Editor, dir: -1 | 1): boolean {
   }
   const to = from + (range.to - range.from);
   tr.setSelection(rangeSelection({ doc: tr.doc } as EditorState, from, to)).setMeta(SET_RANGE, { from, to });
-  editor.view.dispatch(tr.scrollIntoView());
+  dispatchAtomic(editor, tr.scrollIntoView());
   return true;
 }
 
@@ -249,7 +285,9 @@ export const BlockOps = Extension.create({
       'Alt-Shift-ArrowLeft': () => inTableNoRange(this.editor) && (moveTableColumn(this.editor, -1), true),
       'Alt-Shift-ArrowRight': () => inTableNoRange(this.editor) && (moveTableColumn(this.editor, 1), true),
       Escape: () => {
-        if (this.editor.state.selection instanceof NodeSelection) return false;
+        const sel = this.editor.state.selection;
+        // a selected block inside a column / callout / quote: Esc again selects the enclosing block (to move it whole)
+        if (sel instanceof NodeSelection) return selectParentBlock(this.editor);
         return selectBlock(this.editor);
       },
       // Leaving the last block of the document (table, image, callout…) by keyboard creates a paragraph below it.

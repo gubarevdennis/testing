@@ -1,7 +1,7 @@
 import DragHandle from '@tiptap/extension-drag-handle-react';
 import type { Editor } from '@tiptap/core';
 import { NodeSelection, TextSelection } from '@tiptap/pm/state';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { GripVertical, Plus, Copy, Trash2, Link2, ArrowUp, ArrowDown, MessageSquarePlus, FileDown, Repeat2, Palette, ClipboardCopy, FileInput } from 'lucide-react';
 import { loadMarkdown } from '../../lib/markdown';
 import { Menu } from '../../components/ui/Menu';
@@ -11,14 +11,48 @@ import { turnIntoItems } from './BubbleToolbar';
 import { TEXT_COLORS } from '../palette';
 import { copyWithFeedback, copyBlocks } from '../clipboard/copy';
 import { sectionRange } from '../clipboard/section';
+import { startBlockDrag, type PageDrop } from './blockDrag';
+import type { DragSource } from '../blockDrop';
 
 // Must be a stable object: DragHandle re-registers its plugin (re-initialising every plugin view) when it changes.
 const POSITION = { placement: 'left-start' as const, strategy: 'absolute' as const };
+// Handles also for blocks inside columns (drag between columns); lists, table cells, callout contents move with their block.
+const NESTED = {
+  defaultRules: false,
+  edgeDetection: 'none' as const,
+  rules: [{ id: 'kbMovable', evaluate: ({ node, parent }: { node: { isInline: boolean; type: { name: string } }; parent: { type: { name: string } } | null }) => (node.isInline || !parent || !(parent.type.name === 'doc' || parent.type.name === 'column') ? 1000 : 0) }],
+};
 
 /** Block controls on hover: "+" inserts a block below (opens the "/" menu), the grip drags or opens block actions. */
-export function BlockHandle({ editor, pageId, onComment, onMoveToPage }: { editor: Editor; pageId: string; onComment(blockId: string | null): void; onMoveToPage?(pos: number): void }) {
+export function BlockHandle({
+  editor,
+  pageId,
+  onComment,
+  onMoveToPage,
+  onDropToPage,
+}: {
+  editor: Editor;
+  pageId: string;
+  onComment(blockId: string | null): void;
+  onMoveToPage?(pos: number): void;
+  onDropToPage?(source: DragSource, page: PageDrop): void;
+}) {
   const current = useRef<{ pos: number; node: any } | null>(null);
   const [, setTick] = useState(0);
+  const drag = useRef<{ dragged: () => boolean } | null>(null);
+  const dropToPage = useRef(onDropToPage);
+  dropToPage.current = onDropToPage;
+  useEffect(() => {
+    // the handle is draggable for the browser's own drag-and-drop: blocks are dragged by our pointer logic instead
+    const stop = (e: DragEvent) => (e.target as HTMLElement | null)?.closest?.('.block-handle') && e.preventDefault();
+    document.addEventListener('dragstart', stop, true);
+    return () => document.removeEventListener('dragstart', stop, true);
+  }, []);
+  const onGripDown = (e: React.PointerEvent) => {
+    const c = current.current;
+    if (e.button !== 0 || !c) return;
+    drag.current = startBlockDrag({ editor, pageId, onDropToPage: (src, page) => dropToPage.current?.(src, page) }, e.nativeEvent, c.pos);
+  };
   const selectCurrent = () => {
     const c = current.current;
     if (!c) return false;
@@ -134,6 +168,7 @@ export function BlockHandle({ editor, pageId, onComment, onMoveToPage }: { edito
         if ((prev?.node.type.name ?? null) !== (node?.type.name ?? null) || prev?.node.attrs.level !== node?.attrs.level) setTick((x) => x + 1);
       }}
       computePositionConfig={POSITION}
+      nested={NESTED}
     >
       <div className="block-handle-inner">
         <Tooltip label="Добавить блок ниже">
@@ -148,7 +183,23 @@ export function BlockHandle({ editor, pageId, onComment, onMoveToPage }: { edito
           // with several blocks selected (Esc, Shift+↑/↓) the selection is kept: «Переместить на страницу…» moves them all
           onOpenChange={(o) => o && !blockRangeKey.getState(editor.state) && selectCurrent()}
           trigger={({ ref, props }) => (
-            <button ref={ref} className="icon-btn sm block-grip" aria-label="Перетащите или нажмите для действий" {...props} onMouseDown={(e) => e.stopPropagation()}>
+            <button
+              ref={ref}
+              className="icon-btn sm block-grip"
+              aria-label="Перетащите или нажмите для действий"
+              {...props}
+              onMouseDown={(e) => e.stopPropagation()}
+              onPointerDown={onGripDown}
+              onClick={(e) => {
+                // the click that ends a drag does not open the menu
+                if (drag.current?.dragged()) {
+                  drag.current = null;
+                  e.preventDefault();
+                  return;
+                }
+                (props as { onClick?: (e: React.MouseEvent) => void }).onClick?.(e);
+              }}
+            >
               <GripVertical size={16} />
             </button>
           )}

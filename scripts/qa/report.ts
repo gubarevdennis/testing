@@ -69,8 +69,11 @@ function playwright(file: string, tests: Record<string, Entry>): Run {
       for (const t of spec.tests ?? []) {
         const last = t.results?.[t.results.length - 1];
         const skip = (t.annotations ?? []).find((a: any) => a.type === 'skip' || a.type === 'fixme');
+        const knownDefect = (t.annotations ?? []).find((a: any) => a.type === 'fail');
         let e: Entry;
-        if (!last || last.status === 'skipped' || t.status === 'skipped')
+        // test.fail(): the test documents an open defect — it "passes" by failing, the action itself does not work
+        if (knownDefect && last && last.status !== 'skipped') e = { status: 'FAIL', reason: `known defect: ${knownDefect.description ?? ''}${last.status === 'passed' ? ' (unexpectedly passed — defect may be fixed)' : ''}`, run: runId, durationMs: last.duration };
+        else if (!last || last.status === 'skipped' || t.status === 'skipped')
           e = skip?.description ? { status: 'N/A', reason: skip.description, run: runId } : { status: 'BLOCKED', reason: 'skipped (not executed: serial group stopped earlier or skipped without reason)', run: runId };
         else if (last.status === 'passed') e = { status: 'PASS', run: runId, durationMs: last.duration };
         else e = { status: 'FAIL', reason: firstLine(last.error?.message ?? last.errors?.[0]?.message) ?? last.status, run: runId, durationMs: last.duration };
@@ -128,7 +131,10 @@ for (let i = 0; i < args.length; i++) {
   if (args[i] === '--playwright') pw.push(resolve(args[++i]));
   else if (args[i] === '--vitest') vt.push(resolve(args[++i]));
 }
-if (!pw.length && !vt.length) (pw.push(...defaults('playwright')), vt.push(...defaults('vitest')));
+if (!pw.length && !vt.length) {
+  pw.push(...defaults('playwright'));
+  vt.push(...defaults('vitest'));
+}
 
 const prev = existsSync(OUT) && !args.includes('--reset') ? JSON.parse(readFileSync(OUT, 'utf8')) : { runs: [], tests: {} };
 const tests: Record<string, Entry> = prev.tests;

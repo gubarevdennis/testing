@@ -154,6 +154,18 @@ export function startUploads(editor: Editor, files: File[], pos: number, pageId:
   }
 }
 
+/**
+ * Uploads files into image / file blocks that already exist with these upload ids (a pasted document whose embedded
+ * pictures stay where they were, with their captions).
+ */
+export function uploadIntoBlocks(editor: Editor, entries: Array<{ id: string; file: File }>, pageId: string) {
+  editors.set(pageId, editor);
+  for (const { id, file } of entries) {
+    const item = track(file, id, pageId);
+    void saveUpload({ id, pageId, name: file.name, type: file.type, lastModified: file.lastModified, size: file.size, blob: file, ts: Date.now() }).then(() => run(editor, item));
+  }
+}
+
 async function run(editor: Editor, item: UploadItem) {
   item.state = 'uploading';
   item.error = undefined;

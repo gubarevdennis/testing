@@ -39,7 +39,15 @@ except (OSError, ValueError, KeyError) as e:
     restore_problem = f'no valid restore-drill protocol ({report_path}: {e})'
 if restore_problem:
     blocking.append(('R-BACKUP-002', 'restore-protocol', restore_problem))
+# QA26-04/27/28, R-QA-006, OPS-018: action inventory current, every (critical) action tested and passing on this build,
+# no open blocker/critical/high defect — see scripts/qa/gate.py and docs/qa/.
+sys.path.insert(0, os.path.join(ROOT, 'scripts/qa'))
+from gate import qa_blocking  # noqa: E402
+qa_block, qa_info = qa_blocking(ROOT)
+blocking.extend(qa_block)
 subprocess.run([sys.executable, os.path.join(ROOT, 'scripts/requirements/trace.py')], check=True)
+for line in qa_info:
+    print(line)
 print(f"\nP0 blocking (partial/missing): {len(blocking)}")
 for b in blocking:
     print('  -', *b)

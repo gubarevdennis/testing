@@ -6,8 +6,18 @@
 # component the same test also addresses unambiguously. Entries below add what the matcher cannot see (unit/integration
 # tests of an action's logic, indirect use), state dimensions a test covers, and justified N/A states.
 #
+# State dimensions found automatically (scripts/qa/tests-index.ts STATE_RULES) from the test title and body: cancel (Esc,
+# «Отмена»), error (route.abort / mocked 4xx-5xx), offline (context.setOffline), loading (delayed route), double-click
+# (dblclick / second press), empty, conflict, undo; no-permission only when the test signs in a second, less privileged
+# account. They are credited only to actions the test drives itself (not via helpers) when it drives at most 8 of them,
+# or to actions named in its title — a broad test that presses Esc somewhere does not prove "cancel" for everything.
+#
 # Test keys: "<file> › [describe ›] <title>" exactly as in docs/qa/ACTION_MATRIX.md; a key may end with "…" to match a
 # title prefix.
+#
+# Pipeline: npm run qa:crawl (runtime controls) → npm run qa:run (tests with JSON reporters) or npm run qa:report (ingest
+# existing reports) → docs/qa/ACTION_MATRIX.md, OPERATION_CONTRACT.md, DEFECTS.md, docs/TEST_MATRIX.md; the release gate
+# (scripts/release-gate.py → scripts/qa/gate.py) blocks on uncovered/failing critical actions and open high defects.
 
 # State dimensions of the action × condition matrix (R-QA-004, R-QA-029, R-UI-061).
 states: [success, empty, loading, cancel, error, offline, no-permission, double-click]
@@ -51,4 +61,29 @@ critical:
   add: []
   remove: []
 
-mappings: []
+# Routes the runtime crawl (tests/e2e/qa-crawl.spec.ts) opens from a data table the static matcher cannot read.
+mappings:
+  - action: app/Authenticated/route.p-pageid-slug
+    tests:
+      - test: 'tests/e2e/qa-crawl.spec.ts › QA26-01, QA26-04, R-UI-026: every route rendered as owner exposes only named controls; runtime inventory recorded'
+    note: the crawl opens the route by its address and records every control on it
+  - action: admin/AdminPage/route.admin-settings
+    tests:
+      - test: 'tests/e2e/qa-crawl.spec.ts › QA26-01, QA26-04, R-UI-026: every route rendered as owner exposes only named controls; runtime inventory recorded'
+    note: the crawl opens the route by its address and records every control on it
+  - action: admin/AdminPage/route.admin-health
+    tests:
+      - test: 'tests/e2e/qa-crawl.spec.ts › QA26-01, QA26-04, R-UI-026: every route rendered as owner exposes only named controls; runtime inventory recorded'
+    note: the crawl opens the route by its address and records every control on it
+  - action: admin/AdminPage/route.admin-expiring
+    tests:
+      - test: 'tests/e2e/qa-crawl.spec.ts › QA26-01, QA26-04, R-UI-026: every route rendered as owner exposes only named controls; runtime inventory recorded'
+    note: the crawl opens the route by its address and records every control on it
+  - action: settings/SettingsPage/route.settings-profile
+    tests:
+      - test: 'tests/e2e/qa-crawl.spec.ts › QA26-01, QA26-04, R-UI-026: every route rendered as owner exposes only named controls; runtime inventory recorded'
+    note: the crawl opens the route by its address and records every control on it
+  - action: settings/SettingsPage/route.settings-appearance
+    tests:
+      - test: 'tests/e2e/qa-crawl.spec.ts › QA26-01, QA26-04, R-UI-026: every route rendered as owner exposes only named controls; runtime inventory recorded'
+    note: the crawl opens the route by its address and records every control on it

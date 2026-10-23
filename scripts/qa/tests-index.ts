@@ -6,7 +6,7 @@
 import ts from 'typescript';
 import { readFileSync, existsSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
-import { ROOT, walk } from './inventory';
+import { ROOT, walk, DYN } from './inventory';
 
 export type RefKind = 'name' | 'typed' | 'url';
 export interface Ref {
@@ -39,9 +39,12 @@ export interface TestCase {
 const LOCATOR_FNS = new Set(['getByLabel', 'getByText', 'getByTitle', 'getByPlaceholder', 'getByAltText', 'getByTestId']);
 const TYPE_FNS = new Set(['type', 'fill', 'pressSequentially', 'insertText']);
 const URL_FNS = new Set(['goto', 'waitForURL', 'toHaveURL']);
+/** literal paths of the web application (not API calls) */
+const APP_PATH = /^\/(?:$|[?#]|(?:p|s|search|trash|templates|import|settings|admin|invite)(?:[/?#]|$))/;
+const calleeName = (c: ts.CallExpression) => (ts.isPropertyAccessExpression(c.expression) ? c.expression.name.text : ts.isIdentifier(c.expression) ? c.expression.text : '');
 
 /** Placeholder for `${…}` parts of template literals in references. */
-const SUB = '…';
+const SUB = DYN;
 
 function lit(e: ts.Expression): { value: string; regex?: string; template?: boolean } | null {
   if (ts.isStringLiteral(e) || ts.isNoSubstitutionTemplateLiteral(e)) return { value: e.text };
@@ -160,6 +163,11 @@ function collectInner(node: ts.Node, info: FileInfo, refs: Ref[], text: string[]
         }
       }
     }
+    // app paths written as data (e.g. `for (const path of ['/trash', '/settings']) await page.goto(path)`)
+    if ((ts.isStringLiteral(n) || ts.isNoSubstitutionTemplateLiteral(n) || ts.isTemplateExpression(n)) && !(ts.isCallExpression(n.parent) && URL_FNS.has(calleeName(n.parent)))) {
+      const l = lit(n as ts.Expression);
+      if (l && APP_PATH.test(l.value)) refs.push({ kind: 'url', value: l.value });
+    }
     if (ts.isPropertyAssignment(n) && ts.isIdentifier(n.name) && n.name.text === 'hasText') {
       const l = lit(n.initializer);
       if (l) refs.push({ kind: 'name', value: l.value, ...(l.regex ? { regex: l.regex } : {}) });
@@ -172,7 +180,7 @@ function collectInner(node: ts.Node, info: FileInfo, refs: Ref[], text: string[]
   node.forEachChild(visit);
 }
 
-/** State dimensions a test exercises, inferred from its title and body (documented heuristics, see docs/qa/README.md). */
+/** State dimensions a test exercises, inferred from its title and body (heuristics described in docs/qa/action-tests.yaml). */
 export const STATE_RULES: Array<[string, RegExp, RegExp | null]> = [
   ['empty', /пуст|empty|без страниц|нет результат|ничего не найдено|с нуля/i, /\bempty\b/i],
   ['loading', /медленн|slow|loading|загрузк[аи] |задержк|delay|спиннер|spinner|скелет|skeleton|долг/i, /route\([^)]*\)[\s\S]{0,400}?(setTimeout|waitForTimeout\(\d{3,}|delay)/],

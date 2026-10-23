@@ -10,8 +10,9 @@ import { ImageView } from './nodeviews/ImageView';
 import { CalloutView, FileView, EmbedView, PageLinkView, PageMentionView, MermaidView, TocView, SyncedBlockView, CollectionBlockView, CodeBlockView } from './nodeviews/blocks';
 import { ClientBlockIds } from './extensions/blockIds';
 import { BlockOps } from './extensions/blockOps';
+import { BlockDragDecorations } from './menus/blockDrag';
 import { StableSelection } from './extensions/stableSelection';
-import { ViewIdentity } from './extensions/viewIdentity';
+import { EditorPerf } from './extensions/editorPerf';
 import { TableRepair } from './extensions/tableRepair';
 import { Uploads } from './extensions/uploads';
 import { SmartPaste } from './extensions/paste';
@@ -69,7 +70,7 @@ export function clientExtensions(o: ClientExtensionOptions): AnyExtension[] {
     ...schema,
     Collaboration.configure({ document: o.doc, field: FRAGMENT_NAME }),
     StableSelection,
-    ViewIdentity,
+    EditorPerf,
     TableRepair.configure({ provider: o.provider }),
     Placeholder.configure({
       includeChildren: true,
@@ -89,6 +90,7 @@ export function clientExtensions(o: ClientExtensionOptions): AnyExtension[] {
     CharacterCount,
     ClientBlockIds,
     BlockOps,
+    BlockDragDecorations,
     Uploads.configure({ pageId: () => o.pageId }),
     SmartPaste,
     PasteOptions,

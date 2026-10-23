@@ -1,12 +1,16 @@
 import { Extension } from '@tiptap/core';
 import { Plugin, PluginKey } from '@tiptap/pm/state';
-import { Slice, Fragment, DOMSerializer } from '@tiptap/pm/model';
+import { Slice, Fragment, DOMSerializer, type Node as PMNodeT } from '@tiptap/pm/model';
 import { yUndoPluginKey } from '@tiptap/y-tiptap';
 import { looksLikeTsv, parseTsv, rowsToTable, sanitizeHref, tableToRows, rowsToTsv, type PMNode } from '@kb/shared';
 import { markdownNow } from '../../lib/markdown';
-import { cleanPastedHtml, cleanCopiedDom, dataUriToFile } from '../clipboard/html';
+import { cleanPastedHtml, cleanCopiedDom, dataUriToFile, PASTE_TOKEN } from '../clipboard/html';
+import { parseRtf, substituteWordImages } from '../clipboard/rtf';
+import { importRemoteImages } from '../clipboard/rehome';
+import { KB_CLIPBOARD_TYPE, attachmentIdsOf, parseInternal, serializeInternal } from '../clipboard/internal';
+import { rehomeAttachments } from '../clipboard/rehome';
 import { isHiddenRef, HIDDEN_PAGE_TITLE } from '../clipboard/redact';
-import { startUploads } from './uploads';
+import { uploadIntoBlocks } from './uploads';
 import { notePaste } from './pasteOptions';
 import { toast } from '../../components/ui/Toast';
 
@@ -41,6 +45,29 @@ export const SmartPaste = Extension.create({
           transformPastedHTML(html) {
             return cleanPastedHtml(html, { origin: location.origin }).html;
           },
+          transformPasted(slice) {
+            // embedded pictures (tokens left by the sanitiser) become upload blocks in place; pictures of other sites
+            // are copied to the server afterwards (the page must not depend on them)
+            const files = pendingFiles;
+            pendingFiles = [];
+            const remote = new Set<string>();
+            const mapped = mapImages(slice, (node) => {
+              const src = String(node.attrs.src ?? '');
+              const m = PASTE_TOKEN.exec(src);
+              if (m) {
+                const file = files[Number(m[1])];
+                if (!file) return null;
+                const id = crypto.randomUUID();
+                uploadsToStart.push({ id, file });
+                return node.type.create({ ...node.attrs, src: null, uploadId: id }, null, node.marks);
+              }
+              if (/^https?:\/\//i.test(src) && !node.attrs.attachmentId && !src.startsWith(location.origin + '/')) remote.add(src);
+              return node;
+            });
+            const pageId = pageIdOf(editor);
+            if (remote.size && pageId) setTimeout(() => void importRemoteImages(editor, [...remote], pageId), 0);
+            return mapped;
+          },
           clipboardSerializer: portableSerializer(editor.schema),
           clipboardTextSerializer(slice) {
             // A table (cell range) is copied as TSV so it lands cell by cell in Excel / Google Sheets.
@@ -59,6 +86,11 @@ export const SmartPaste = Extension.create({
               );
             return '';
           },
+          handleDOMEvents: {
+            // text/html + text/plain as the editor writes them, plus the internal format (R-CLIPBOARD-018)
+            copy: (view, e) => writeClipboard(view, e as ClipboardEvent, false, pageIdOf(editor)),
+            cut: (view, e) => writeClipboard(view, e as ClipboardEvent, true, pageIdOf(editor)),
+          },
           handleKeyDown(_view, e) {
             plain = (e.metaKey || e.ctrlKey) && e.shiftKey && (e.key === 'v' || e.key === 'V' || e.key === 'м' || e.key === 'М');
             return false;
@@ -72,7 +104,11 @@ export const SmartPaste = Extension.create({
             const cd = event.clipboardData;
             if (!cd || !view.editable) return false;
             const text = cd.getData('text/plain');
-            const html = cd.getData('text/html');
+            const rtf = cd.getData('text/rtf');
+            let html = cd.getData('text/html');
+            // RTF only (WordPad, some Office / mail clients): converted to HTML; with Word HTML: its pictures
+            if (!html && rtf && !plain) html = parseRtf(rtf).html;
+            else if (html && rtf) html = substituteWordImages(html, rtf).html;
             notePaste(html && !plain ? { html: true, text } : null); // paste options for formatted pastes (R-CLIPBOARD-009)
             const { $from } = view.state.selection;
             if ($from.parent.type.spec.code) return false; // code block / mermaid: browser default (plain)
@@ -84,6 +120,17 @@ export const SmartPaste = Extension.create({
               view.dispatch(view.state.tr.replaceSelection(new Slice(Fragment.from(nodes), 1, 1)).scrollIntoView());
               return true;
             }
+            // 1) the internal format: exact blocks (types, ids, attributes) copied in this knowledge base
+            const internal = parseInternal(cd.getData(KB_CLIPBOARD_TYPE), view.state.schema);
+            if (internal) {
+              view.dispatch(view.state.tr.replaceSelection(internal.slice).scrollIntoView().setMeta('uiEvent', 'paste'));
+              // images and files from another page become attachments of this page (its readers, its rights)
+              const pageId = pageIdOf(editor);
+              const ids = attachmentIdsOf(internal.json);
+              if (pageId && internal.pageId !== pageId && ids.length) void rehomeAttachments(editor, ids, pageId);
+              return true;
+            }
+            // 2) HTML, 3) plain text
             // URL over a text selection → link
             const url = text.trim();
             if (!view.state.selection.empty && /^(https?:\/\/|mailto:)\S+$/i.test(url) && sanitizeHref(url)) {
@@ -94,11 +141,16 @@ export const SmartPaste = Extension.create({
               // A single image copied from a web page / app (files + trivial HTML) is uploaded by the Uploads plugin.
               if (cd.files?.length && !/<table|<p|<h\d|<li/i.test(html)) return false;
               const res = cleanPastedHtml(html, { origin: location.origin });
-              if (!res.images.length && !res.droppedImages) return false; // schema parser on the sanitised HTML (transformPastedHTML)
+              // schema parser on the sanitised HTML (transformPastedHTML) — unless it came from RTF or carries pictures
+              if (!res.images.length && !res.droppedImages && html === cd.getData('text/html')) return false;
+              const pageId = pageIdOf(editor);
+              pendingFiles = pageId ? res.images.map((im, i) => dataUriToFile(im.dataUri, im.alt || `Изображение ${i + 1}`)) : [];
+              uploadsToStart = [];
               view.pasteHTML(res.html); // no event: our handlers do not see this paste again
-              const files = res.images.map((im, i) => dataUriToFile(im.dataUri, im.alt || `Изображение ${i + 1}`));
-              const pageId = (editor.storage as unknown as { kbPage?: { pageId?: string } }).kbPage?.pageId;
-              if (files.length && pageId) startUploads(editor, files, view.state.selection.from, pageId);
+              pendingFiles = [];
+              const started = uploadsToStart;
+              uploadsToStart = [];
+              if (started.length && pageId) uploadIntoBlocks(editor, started, pageId);
               if (res.droppedImages)
                 toast.info(`Изображений, которые не удалось перенести из буфера: ${res.droppedImages}. Скопируйте их отдельно (как изображение) или перетащите файлы.`);
               return true;
@@ -127,6 +179,54 @@ export const SmartPaste = Extension.create({
     ];
   },
 });
+
+/** Files of the embedded pictures of the paste being parsed (consumed by transformPasted). */
+let pendingFiles: File[] = [];
+let uploadsToStart: Array<{ id: string; file: File }> = [];
+
+/** Maps image nodes of a slice (null drops the node). */
+function mapImages(slice: Slice, fn: (n: PMNodeT) => PMNodeT | null): Slice {
+  const walk = (frag: Fragment): Fragment => {
+    let changed = false;
+    const out: PMNodeT[] = [];
+    frag.forEach((n) => {
+      const r = n.type.name === 'image' ? fn(n) : n.childCount ? n.copy(walk(n.content)) : n;
+      if (r !== n) changed = true;
+      if (r) out.push(r);
+    });
+    return changed ? Fragment.fromArray(out) : frag;
+  };
+  const content = walk(slice.content);
+  return content === slice.content ? slice : new Slice(content, slice.openStart, slice.openEnd);
+}
+
+const pageIdOf = (editor: import('@tiptap/core').Editor) => (editor.storage as unknown as { kbPage?: { pageId?: string } }).kbPage?.pageId ?? null;
+
+/** Copy / cut: the editor's own text/html and text/plain plus the internal format. */
+function writeClipboard(view: import('@tiptap/pm/view').EditorView, e: ClipboardEvent, cut: boolean, pageId: string | null): boolean {
+  const sel = view.state.selection;
+  const cd = e.clipboardData;
+  if (sel.empty || !cd) return false;
+  const slice = sel.content();
+  const { dom, text } = view.serializeForClipboard(slice);
+  e.preventDefault();
+  cd.clearData();
+  cd.setData('text/html', dom.innerHTML);
+  cd.setData('text/plain', text);
+  try {
+    cd.setData(KB_CLIPBOARD_TYPE, serializeInternal(slice, pageId));
+  } catch {
+    /* a browser without custom clipboard types: HTML still carries the blocks */
+  }
+  if (cut && view.editable) {
+    // a cut is its own undo step (R-HISTORY-017)
+    const um = yUndoPluginKey.getState(view.state)?.undoManager;
+    um?.stopCapturing();
+    view.dispatch(view.state.tr.deleteSelection().scrollIntoView().setMeta('uiEvent', 'cut'));
+    um?.stopCapturing();
+  }
+  return true;
+}
 
 /** Clipboard HTML = the schema's own markup made portable (cleanCopiedDom). */
 function portableSerializer(schema: import('@tiptap/pm/model').Schema): DOMSerializer {

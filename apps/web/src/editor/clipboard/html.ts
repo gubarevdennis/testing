@@ -3,7 +3,8 @@
  *  - cleanPastedHtml: allowlist sanitiser for pasted HTML (Word, Google Docs, web pages, other editors). Scripts,
  *    event handlers, Office junk and arbitrary inline styles are removed; only semantic formatting and the
  *    editor's own palette colours/fonts survive (R-CLIPBOARD-009/010/022). Word list paragraphs become real lists,
- *    embedded (data:) images are extracted for upload, unusable images (file://, blob:, cid:) are counted.
+ *    embedded (data:) images stay in place as upload tokens, unusable images (file://, blob:, cid:) are counted;
+ *    Google Docs list nesting, Word titles / quotes / captions are normalised.
  *  - cleanCopiedDom: makes HTML written to the clipboard portable (absolute URLs, no comment anchors / DOM ids).
  */
 import { sanitizeHref, safeImageSrc, FONT_FAMILIES, FONT_SIZES } from '@kb/shared';
@@ -25,7 +26,7 @@ export interface CleanResult {
   wordListItems: number;
 }
 
-const REMOVE = new Set(['script', 'style', 'noscript', 'template', 'iframe', 'object', 'embed', 'meta', 'link', 'title', 'head', 'svg', 'math', 'canvas', 'audio', 'select', 'option', 'textarea', 'button', 'frame', 'frameset', 'applet', 'base']);
+const REMOVE = new Set(['nav', 'form', 'script', 'style', 'noscript', 'template', 'iframe', 'object', 'embed', 'meta', 'link', 'title', 'head', 'svg', 'math', 'canvas', 'audio', 'select', 'option', 'textarea', 'button', 'frame', 'frameset', 'applet', 'base']);
 const ALLOWED = new Set([
   'p', 'br', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote', 'pre', 'code', 'hr', 'ul', 'ol', 'li', 'strong', 'b', 'em', 'i', 'u', 's', 'strike', 'del', 'ins', 'sub', 'sup', 'mark',
   'a', 'img', 'figure', 'figcaption', 'table', 'thead', 'tbody', 'tfoot', 'tr', 'th', 'td', 'caption', 'colgroup', 'col', 'span', 'div', 'details', 'summary', 'label', 'input', 'video', 'aside',
@@ -121,6 +122,28 @@ export function stripTracking(href: string): string {
   const frag = hash < 0 ? '' : href.slice(hash);
   const kept = query.split('&').filter((p) => p && !TRACKING_PARAM.test(decodeURIComponent(p.split('=')[0] ?? '')));
   return base + (kept.length ? '?' + kept.join('&') : '') + frag;
+}
+
+/** Placeholder `src` of an embedded (data:) image of a paste: `kb-paste-image:<index into CleanResult.images>`. */
+export const PASTE_TOKEN_PREFIX = 'kb-paste-image:';
+export const PASTE_TOKEN = /^kb-paste-image:(\d+)$/;
+
+/** Google's redirect wrapper (links copied from Google Docs / search results): the real target. */
+export function unwrapRedirect(href: string): string {
+  const m = /^https?:\/\/(?:www\.)?google\.[a-z.]+\/url\?(.*)$/i.exec(href);
+  if (!m) return href;
+  for (const part of m[1].split('&')) {
+    const [k, v] = part.split('=');
+    if ((k === 'q' || k === 'url') && v) {
+      try {
+        const target = decodeURIComponent(v);
+        if (/^https?:\/\//i.test(target)) return target;
+      } catch {
+        /* keep the original */
+      }
+    }
+  }
+  return href;
 }
 
 /** Tracking pixels: 0/1 px images or images served by analytics counters. */
@@ -236,7 +259,7 @@ function sanitizeTree(root: Element, res: CleanResult, origin: string | null) {
       if (href != null) {
         if (!sanitizeHref(href)) el.removeAttribute('href');
         else if (origin && href.startsWith(origin + '/')) el.setAttribute('href', stripTracking(href.slice(origin.length)));
-        else el.setAttribute('href', stripTracking(href));
+        else el.setAttribute('href', stripTracking(unwrapRedirect(href)));
       }
     }
     if (tag === 'img') {
@@ -247,9 +270,12 @@ function sanitizeTree(root: Element, res: CleanResult, origin: string | null) {
         el.remove();
         continue;
       }
-      if (/^data:image\//i.test(src.trim()) && safeImageSrc(src)) {
+      if (PASTE_TOKEN.test(src)) {
+        // already processed (a re-run of the sanitiser on its own output)
+      } else if (/^data:image\//i.test(src.trim()) && safeImageSrc(src)) {
+        // stays in place (with its figure / caption) as a token; the editor uploads the file into that block
+        el.setAttribute('src', PASTE_TOKEN_PREFIX + res.images.length);
         res.images.push({ dataUri: src.trim(), alt: el.getAttribute('alt') ?? '' });
-        el.remove();
       } else if (!safeImageSrc(src)) {
         res.droppedImages++;
         el.remove();
@@ -267,6 +293,80 @@ function removeComments(root: Node) {
   list.forEach((c) => c.parentNode?.removeChild(c));
 }
 
+/**
+ * Lists nested the way Google Docs (and some mail clients) write them — a <ul>/<ol> directly inside a <ul>/<ol>, next to
+ * the items — become proper nesting: the inner list moves into the preceding item.
+ */
+export function fixNestedLists(root: ParentNode) {
+  const doc = (root as Node).ownerDocument ?? (root as Document);
+  for (const list of Array.from(root.querySelectorAll('ul > ul, ul > ol, ol > ul, ol > ol'))) {
+    const prev = list.previousElementSibling;
+    if (prev && prev.tagName === 'LI') prev.append(list);
+    else {
+      const li = doc.createElement('li');
+      list.before(li);
+      li.append(list);
+    }
+  }
+  // Google Docs marks the level of flat items with aria-level (older exports): nest them
+  for (const list of Array.from(root.querySelectorAll('ul, ol'))) {
+    const items = Array.from(list.children).filter((c) => c.tagName === 'LI' && c.getAttribute('aria-level'));
+    if (items.length < 2 || !items.some((i) => Number(i.getAttribute('aria-level')) > 1)) continue;
+    const stack: Array<{ level: number; list: Element }> = [{ level: Number(items[0].getAttribute('aria-level')) || 1, list }];
+    for (const li of items) {
+      const level = Number(li.getAttribute('aria-level')) || 1;
+      while (stack.length > 1 && stack[stack.length - 1].level > level) stack.pop();
+      let top = stack[stack.length - 1];
+      if (level > top.level) {
+        const host = top.list.lastElementChild;
+        const sub = doc.createElement(list.tagName.toLowerCase());
+        (host ?? top.list).append(sub);
+        stack.push((top = { level, list: sub }));
+      }
+      top.list.append(li); // in document order: items staying at this level keep their order
+    }
+  }
+}
+
+/**
+ * Word specifics beyond lists: the title style becomes H1, quote styles become quotes, a caption paragraph right
+ * after a picture becomes the picture's caption (figure / figcaption).
+ */
+export function convertWordBlocks(root: ParentNode) {
+  const doc = (root as Node).ownerDocument ?? (root as Document);
+  const cls = (el: Element) => el.getAttribute('class') ?? '';
+  for (const p of Array.from(root.querySelectorAll('p'))) {
+    const c = cls(p);
+    if (/\bMsoTitle\b/i.test(c)) {
+      const h = doc.createElement('h1');
+      h.append(...Array.from(p.childNodes));
+      p.replaceWith(h);
+    } else if (/\bMso(Intense)?Quote\b/i.test(c)) {
+      const q = doc.createElement('blockquote');
+      p.before(q);
+      q.append(p);
+    } else if (/\bMsoCaption\b/i.test(c)) {
+      const prev = p.previousElementSibling;
+      const img = prev && (prev.tagName === 'IMG' ? prev : prev.querySelectorAll('img').length === 1 && !(prev.textContent ?? '').trim() ? prev.querySelector('img') : null);
+      if (!img || !prev) continue;
+      const fig = doc.createElement('figure');
+      const cap = doc.createElement('figcaption');
+      cap.textContent = (p.textContent ?? '').replace(/\s+/g, ' ').trim();
+      prev.replaceWith(fig);
+      fig.append(img, cap);
+      p.remove();
+    }
+  }
+  // consecutive quote paragraphs form one quote
+  for (const q of Array.from(root.querySelectorAll('blockquote'))) {
+    const next = q.nextElementSibling;
+    if (next?.tagName === 'BLOCKQUOTE' && q.isConnected) {
+      q.append(...Array.from(next.childNodes));
+      next.remove();
+    }
+  }
+}
+
 /** Cleans pasted HTML. `origin` (e.g. location.origin) turns absolute links to this instance back into in-app links. */
 export function cleanPastedHtml(html: string, opts: { origin?: string | null; parser?: DOMParser } = {}): CleanResult {
   const parser = opts.parser ?? new DOMParser();
@@ -275,7 +375,11 @@ export function cleanPastedHtml(html: string, opts: { origin?: string | null; pa
   const res: CleanResult = { html: '', images: [], droppedImages: 0, wordListItems: 0 };
   removeComments(doc.body);
   res.wordListItems = convertWordLists(doc.body);
+  convertWordBlocks(doc.body);
+  fixNestedLists(doc.body);
   sanitizeTree(doc.body, res, opts.origin ?? null);
+  // line breaks between blocks (Google Docs, Safari's interchange newline) would become empty paragraphs
+  Array.from(doc.body.children).forEach((el) => el.tagName === 'BR' && el.remove());
   res.html = doc.body.innerHTML;
   return res;
 }
