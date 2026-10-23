@@ -12,7 +12,7 @@ import { REPO_ROOT } from '../support/process-server.js';
 // new alerts (WebSocket reconnects, import failure rate, OCR latency) and the consistency of the alert rules.
 
 let collector: Server;
-let received: Array<{ headers: Record<string, unknown>; body: any }> = [];
+const received: Array<{ headers: Record<string, unknown>; body: any }> = [];
 let ts: TestServer;
 let org: Awaited<ReturnType<typeof setupOrg>>;
 

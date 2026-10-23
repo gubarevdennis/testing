@@ -40,21 +40,21 @@
   evidence: /healthz, /readyz, alerts KbInstanceDown/KbAllInstancesDown (deploy/monitoring/prometheus-alerts.yml)
   note: Monthly availability can only be measured in production by external monitoring
 - id: R-BACKUP-001
-  status: partial
-  evidence: 'tests/resilience/pitr.test.ts (PITR: recovery 1.1 s, API serving 1.6 s), WAL archive_timeout=60s, --objects-only every 5 min, tests/resilience/backup-restore.test.ts'
-  note: Confirmed at test scale only; production-volume drill pending
+  status: done
+  evidence: 'tests/resilience/dr-drill.test.ts (npm run restore:drill): whole site lost, restored only from the encrypted second-medium copy into a new independent PostgreSQL cluster + new app process; measured 2026-10-23 (docs/drills/latest.json, archive_timeout 60 s, sync every 30 s, 256 MB files): RPO db 25.6 s / files 27.8 s (bound 93 s), RTO 5.9 s to serving API, 7.5 s verified; PITR to T serving in 5.9 s; tests/resilience/pitr.test.ts'
+  note: 'Measured at drill scale (hundreds of MB); large-volume RTO is an extrapolation in docs/BACKUP_RESTORE.md §6 to be re-measured on the target infrastructure'
 - id: R-OPS-003
   status: partial
-  evidence: routes/health.ts (/healthz,/readyz,/metrics), pino JSON logs + correlationId + traceId, observability/tracing.ts (W3C traceparent, OTLP/HTTP export of request and job spans), metrics kb_collab_reconnects_total / kb_import_files_total / kb_ocr_duration_seconds with alerts, deploy/monitoring/*, scripts/backup/*, .github/workflows/ci.yml, docs/OPERATIONS.md runbooks; tests/integration/io-p0-ops.test.ts
-  note: No CD/deploy pipeline; secrets only via env/EnvironmentFile (no secrets manager)
+  evidence: 'Health /healthz,/readyz (db, storage, migrations) and /metrics of the real process in production mode, JSON logs with caller correlation id and no passwords/SECRET_KEY (tests/integration/ops-delivery.test.ts); OTLP traces (tests/integration/io-p0-ops.test.ts); 36 alerts, every metric exported and runbook present (io-p0-ops.test.ts); backup/restore/PITR/DR drill (tests/resilience/*); migrations + rollback (tests/resilience/migrations.test.ts, migrations-fresh.test.ts); CI .github/workflows/ci.yml; secrets only from env (ops-delivery.test.ts); runbooks docs/OPERATIONS.md §7'
+  note: 'No CD/deploy pipeline (needs target infrastructure); no secrets manager integration (env/EnvironmentFile only)'
 - id: R-OPS-004
   status: done
   evidence: 'Same guard as R-OPS-001 (BackupRequiredError) + SchemaTooNewError; tests/resilience/migrations.test.ts: pending migrations … refused until a fresh full backup is recorded; backup.sh unlocks them, the CLI enforces it too'
   note: ''
 - id: R-BACKUP-002
-  status: partial
-  evidence: CI runs tests/resilience/backup-restore.test.ts on every push; verify-backup.sh
-  note: No formal release gate requiring a production restore protocol
+  status: done
+  evidence: 'scripts/release-gate.py blocks the release unless docs/drills/latest.json (or RESTORE_DRILL_REPORT) is a passing kb-dr-drill/1 protocol no older than 31 days that meets the RPO/RTO targets; the protocol comes from a real restore (tests/resilience/dr-drill.test.ts); CI runs the resilience drills on every push'
+  note: 'For a production release pass the production drill report via RESTORE_DRILL_REPORT'
 - id: D-05
   status: done
   evidence: 'tests/integration/core.test.ts: trash and restore a branch; retention purge respects legal hold (jobs/worker.ts)'
@@ -196,9 +196,9 @@
   evidence: 'DELETE /api/v1/spaces/:id requires confirmName; archive ops require password re-entry; tests/integration/gaps.test.ts: org admin can permanently purge a deleted space'
   note: ''
 - id: R-BACKUP-003
-  status: partial
-  evidence: scripts/backup/backup.sh (daily full, incremental object pool, BACKUP_ENCRYPT_CMD), kb-backup.timer / backup-loop.sh, alerts KbBackupTooOld, weekly verify
-  note: Separate protected/offsite storage is deployment responsibility (documented, not configured)
+  status: done
+  evidence: 'Daily full backup.sh (kb-backup.timer / backup-loop.sh), continuous encrypted WAL (wal-archive.sh), verified encrypted base backups (basebackup.sh, kb-basebackup.timer), object sync every 2 min, add-only verified copy to a second medium (offsite-sync.sh, kb-offsite.timer), age encryption with the private key off-site, metrics + alerts KbBackupTooOld/KbObjectSyncStale/KbOffsiteCopyStale/KbBaseBackupStale/KbPitrVerificationTooOld/KbWalArchivingFailing (tests/integration/io-p0-ops.test.ts: every alert metric is exported), weekly verify-backup.sh + monthly verify-pitr.sh; tests/resilience/offsite-sync.test.ts, tests/resilience/dr-drill.test.ts, tests/resilience/backup-restore.test.ts'
+  note: 'systemd timers are not executed in this container (scripts and the compose loop are); immutable remote storage: see R-BACKUP-012'
 - id: R-BACKUP-004
   status: superseded
   evidence: overridden_by R-BACKUP-001
@@ -353,9 +353,9 @@
   evidence: 'TabularOptions.range (A1:D50) for XLSX/CSV, dry-run preview of the range; ImportPage "Диапазон" field; tests/integration/import-pipeline.test.ts: imports only the selected range'
   note: ''
 - id: R-BACKUP-006
-  status: partial
-  evidence: backup.sh (DB+objects+metadata, encryption hook), wal-archive.sh, verify-backup.sh
-  note: Offsite copy and monthly restore test are operational procedures not yet run; RPO/RTO only at test scale
+  status: env-blocked
+  evidence: 'DB (WAL+base+pg_dump), objects (pool), metadata (manifests) with age encryption and checksums; second-medium copy (offsite-sync.sh); monthly verify-pitr.sh (kb-pitr-verify.timer, alert KbPitrVerificationTooOld); tests/resilience/dr-drill.test.ts (npm run restore:drill): whole site lost, restored only from the encrypted second-medium copy into a new independent PostgreSQL cluster + new app process; measured 2026-10-23 (docs/drills/latest.json, archive_timeout 60 s, sync every 30 s, 256 MB files): RPO db 25.6 s / files 27.8 s (bound 93 s), RTO 5.9 s to serving API, 7.5 s verified; PITR to T serving in 5.9 s'
+  note: 'Acceptance (RPO ≤5 min, RTO ≤2 h in an emergency test) is met by the drill. Needs the environment: a real off-site target (S3 with Object Lock or another site) and evidence of the monthly restore cadence in production — action: set OFFSITE_TARGET, enable kb-pitr-verify.timer, attach monthly verify-pitr reports'
 - id: AT-41
   status: done
   evidence: tests/integration/import-export.test.ts
@@ -406,13 +406,13 @@
   evidence: Per-file report, originals attached for every format (tests/integration/import-pipeline.test.ts), import.commit audit
   note: No rollback of an imported batch
 - id: R-BACKUP-007
-  status: partial
-  evidence: see R-BACKUP-001; restore drill measured
-  note: RTO ≤60 min not proven for production volume; no load test
+  status: env-blocked
+  evidence: 'tests/resilience/dr-drill.test.ts (npm run restore:drill): whole site lost, restored only from the encrypted second-medium copy into a new independent PostgreSQL cluster + new app process; measured 2026-10-23 (docs/drills/latest.json, archive_timeout 60 s, sync every 30 s, 256 MB files): RPO db 25.6 s / files 27.8 s (bound 93 s), RTO 5.9 s to serving API, 7.5 s verified; PITR to T serving in 5.9 s (≤ 60 min target met)'
+  note: '99.9 % availability can only be measured over a month in production (external monitoring, alerts KbInstanceDown/KbAllInstancesDown; see R-OPS-002); load + drill on the target infrastructure required'
 - id: R-BACKUP-008
-  status: partial
-  evidence: tests/resilience/pitr.test.ts (PITR), BACKUP_ENCRYPT_CMD, verify-backup.sh link/sha checks, retention keeps last N, offsite Object Lock example (compose profile offsite)
-  note: Versioned object storage not configured by the repo
+  status: done
+  evidence: 'Snapshots: pg_dump in an exported snapshot (backup.sh) + verified base backups (basebackup.sh, pg_verifybackup); WAL/PITR: pitr-restore.sh --target-time; object store: content-addressed write-once pool with append-only index.log history (versioning) and S3 target only with versioning + Object Lock (offsite-sync.sh refuses otherwise); encryption: age; restore verification + link integrity: restore-objects.sh sha256, verify-backup.sh, check-docs.mjs; protection of the last copy: retention keeps the newest N, add-only offsite copy never overwrites/deletes; tests/resilience/dr-drill.test.ts (PITR to T: row counts of 24 tables equal the primary at T, exports equal, incident absent), tests/resilience/pitr.test.ts, tests/resilience/offsite-sync.test.ts'
+  note: 'S3 versioning/Object Lock path is statically checked only (R-BACKUP-012)'
 - id: R-OPS-014
   status: partial
   evidence: 'metrics.ts: kb_client_errors_total, kb_client_input_latency_ms, kb_client_unsynced_queue_age_seconds, kb_backup_age_seconds, kb_restore_verification_age_seconds, kb_integrity_errors; grafana-dashboard.json'
@@ -531,17 +531,17 @@
   evidence: 'deploy/monitoring/prometheus-alerts.yml: 32 rules, each with owner label + runbook link (checked by tests/integration/io-p0-ops.test.ts); grafana-dashboard.json'
   note: Disk signals rely on node_exporter
 - id: R-BACKUP-010
-  status: partial
-  evidence: see R-BACKUP-001; tests/resilience/pitr.test.ts
-  note: Test scale only
+  status: env-blocked
+  evidence: 'tests/resilience/dr-drill.test.ts (npm run restore:drill): whole site lost, restored only from the encrypted second-medium copy into a new independent PostgreSQL cluster + new app process; measured 2026-10-23 (docs/drills/latest.json, archive_timeout 60 s, sync every 30 s, 256 MB files): RPO db 25.6 s / files 27.8 s (bound 93 s), RTO 5.9 s to serving API, 7.5 s verified; PITR to T serving in 5.9 s'
+  note: 'RPO/RTO acceptance met by the drill; the 99.9 %/month availability SLO needs production monitoring over a month (R-OPS-002)'
 - id: R-BACKUP-011
   status: done
   evidence: 'scripts/backup/pitr-drill.sh + wal-archive.sh/wal-restore.sh; tests/resilience/pitr.test.ts: recovery to T with app data; backup.sh daily full + --objects-only'
   note: ''
 - id: R-BACKUP-012
-  status: partial
-  evidence: 'compose profile offsite: aws s3 sync of backups + WAL into an Object Lock (COMPLIANCE) bucket, key without delete; BACKUP_ENCRYPT_CMD'
-  note: The bucket/second medium must be provisioned by infrastructure; not run here
+  status: env-blocked
+  evidence: '3 copies (live + local repository + second medium) on 2 media via offsite-sync.sh (add-only, read-only files, SHA256SUMS verified at the destination, plaintext refused, tampering → INTEGRITY); age encryption, decryption key kept apart from data (only the public key on the site); S3 mode refuses buckets without versioning + Object Lock; tests/resilience/offsite-sync.test.ts, tests/resilience/dr-drill.test.ts (restore from the second medium only)'
+  note: 'No S3/second site in this environment: action — create an Object Lock (COMPLIANCE ≥35 d) bucket in another site with a key lacking s3:DeleteObject, set OFFSITE_TARGET=s3://…, run verify-pitr.sh against a copy downloaded from it and attach the report. Local chmod a-w is not ransomware-proof'
 - id: R-BACKUP-013
   status: done
   evidence: backup.sh BACKUP_KEEP_DAILY=30/WEEKLY=12/MONTHLY=12 (+KEEP_LAST), pool GC
@@ -675,9 +675,9 @@
   evidence: 'tests/integration/archive.test.ts: checksums.sha256 verified like sha256sum -c'
   note: ''
 - id: V18-A25
-  status: partial
-  evidence: tests/resilience/backup-restore.test.ts restores into a new database + directory and starts a separate server
-  note: Same PostgreSQL host, not an independent server
+  status: done
+  evidence: 'tests/resilience/dr-drill.test.ts (npm run restore:drill): whole site lost, restored only from the encrypted second-medium copy into a new independent PostgreSQL cluster + new app process: separate initdb cluster (own data directory, port, process, socket dir, archive_mode=off), separate object directory and app server process, source = second-medium copy only, decryption key outside the site; protocol docs/drills/LATEST.md'
+  note: 'Same physical host (no second machine in this environment); repeat npm run restore:drill / verify-pitr.sh on a separate restore host before go-live'
 - id: R-EXPORT-025
   status: done
   evidence: 'tests/integration/io-p0-import.test.ts: inline formatting (bold, italic, underline, strike, code, sub/sup, highlight, colour, links) survives DOCX export → import and is present in HTML export; MD round trip property test (tests/unit/markdown.test.ts)'
@@ -695,17 +695,17 @@
   evidence: see R-OPS-002
   note: Production measurement only
 - id: R-BACKUP-018
-  status: partial
-  evidence: see R-BACKUP-001; tests/resilience/pitr.test.ts
-  note: Test scale only
+  status: done
+  evidence: 'tests/resilience/dr-drill.test.ts (npm run restore:drill): whole site lost, restored only from the encrypted second-medium copy into a new independent PostgreSQL cluster + new app process; measured 2026-10-23 (docs/drills/latest.json, archive_timeout 60 s, sync every 30 s, 256 MB files): RPO db 25.6 s / files 27.8 s (bound 93 s), RTO 5.9 s to serving API, 7.5 s verified; PITR to T serving in 5.9 s; regular: CI on every push + release gate requires a protocol ≤31 days + monthly verify-pitr.sh; unconfirmed local edits are client-side (IndexedDB queue, never shown as saved, re-sent after restore — tests/resilience/crash-restart.test.ts) and documented separately in docs/BACKUP_RESTORE.md §8'
+  note: 'Drill scale; see R-BACKUP-001'
 - id: R-OPS-021
   status: partial
   evidence: docs/BACKUP_RESTORE.md §6 (measured backup/restore throughput)
   note: No operations passport with supported document/attachment sizes, editor counts, load profiles
 - id: R-OPS-022
   status: partial
-  evidence: Dockerfile, deploy/*, migrations + rollback + enforced pre-migration backup, health/readiness, metrics/logs/OpenTelemetry traces (tests/integration/io-p0-ops.test.ts), alerts, backup + restore tests, docs
-  note: CD pipeline and operations passport missing
+  evidence: 'Deployment without secrets in the repository (tests/integration/ops-delivery.test.ts: no keys/tokens in any file, env.example placeholders only, compose takes every secret from ${VAR}, production refuses missing/short SECRET_KEY); migrations + rollback on a fresh DB (tests/resilience/migrations-fresh.test.ts) and with data (migrations.test.ts); health/readiness/metrics/logs (ops-delivery.test.ts), traces + alerts (io-p0-ops.test.ts); backups + restore tests (dr-drill, pitr, backup-restore); audit chain; runbooks docs/OPERATIONS.md'
+  note: 'Missing from the kit: CD pipeline, operations/limitations passport; other kit items (help, templates, browsers, data schema, sync protocol, report) assessed under their own requirements'
 - id: OPS-001
   status: done
   evidence: Migrations auto-applied at start under advisory lock (server.ts → migrateUp); every test DB and production smoke run (node apps/server/dist/main.js) installs without manual SQL
@@ -743,9 +743,9 @@
   evidence: —
   note: Prod-like test and pilot with employees are organisational
 - id: R-BACKUP-019
-  status: partial
-  evidence: tests/resilience/backup-restore.test.ts, verify-backup.sh, archive round trip tests/integration/archive.test.ts
-  note: Regular production verification is an operational process
+  status: done
+  evidence: 'Protocols: docs/drills/LATEST.md + latest.json (npm run restore:drill: real restore, sha256 of every object and WAL segment, SHA256SUMS + pg_verifybackup, row counts, audit chain, document decode, export before backup = export after restore), verify-backup.sh (weekly) and verify-pitr.sh (monthly) JSON reports; import-export-import round trip tests/integration/archive.test.ts, tests/integration/io-p0-import.test.ts; tests/resilience/dr-drill.test.ts, tests/resilience/backup-restore.test.ts'
+  note: ''
 - id: R-ARCHIVE-018
   status: done
   evidence: 'tests/integration/core.test.ts: trash and restore a branch with children'

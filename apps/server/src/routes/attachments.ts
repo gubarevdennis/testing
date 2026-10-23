@@ -50,6 +50,11 @@ function contentDisposition(kind: 'inline' | 'attachment', filename: string) {
 /** Streams a stored object with Range support and safe headers (user content never executes in our origin). */
 async function sendObject(s: Services, req: FastifyRequest, reply: FastifyReply, key: string, mime: string, size: number, filename: string, disposition: 'inline' | 'attachment', etag: string) {
   reply.header('x-content-type-options', 'nosniff');
+  // Stored objects go out byte-exact: never through @fastify/compress. mime-db marks application/octet-stream (and many
+  // binary types) compressible, and the plugin passes data that merely *starts* like zlib/gzip (every .gz, ~1 in 1000
+  // random files) through unchanged while still labelling it `Content-Encoding: gzip` — a corrupted download.
+  // The plugin's documented per-request opt-out is the x-no-compression header.
+  req.headers['x-no-compression'] = '1';
   // User content must never run scripts in our origin. PDFs need the browser's built-in viewer, which refuses
   // sandboxed documents, so they get a script-free policy without the sandbox flag (embeddable only by us).
   reply.header(

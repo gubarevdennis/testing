@@ -113,6 +113,8 @@ sudo systemctl daemon-reload && sudo systemctl enable --now kb kb-backup.timer
   Порядок важен: старая версия **отказывается запускаться** на более новой схеме — `SchemaTooNewError`
   («Database schema is newer than this application…»), поэтому откатывайте схему до замены образа. Откат каждой
   миграции с данными в БД и отказ старой версии проверяются тестом `tests/resilience/migrations.test.ts`.
+* Полный цикл на **пустой** БД через CLI релиза (`migrate up` → `migrate down N` без остатков → `migrate up` с
+  идентичной схемой по `pg_dump --schema-only`) проверяется тестом `tests/resilience/migrations-fresh.test.ts`.
 * **Если down-миграция теряет данные или не удалась:** восстановите копию, сделанную на шаге 1, в новую БД
   (`restore.sh`) и переключите `DATABASE_URL`. Изменения после копии восстанавливаются через PITR (WAL).
 
@@ -153,8 +155,12 @@ sudo systemctl daemon-reload && sudo systemctl enable --now kb kb-backup.timer
 * Целостность: `kb_integrity_errors`.
 * Процесс: `kb_process_*`, `kb_nodejs_*`.
 
-Скрипты бэкапа дополнительно пишут textfile-метрики для node_exporter: `kb_backup_last_success_timestamp_seconds`,
-`kb_restore_verification_last_success_timestamp_seconds`, `kb_backup_objects_last_sync_timestamp_seconds`.
+Скрипты бэкапа дополнительно пишут textfile-метрики для node_exporter (`BACKUP_METRICS_FILE`):
+`kb_backup_last_success_timestamp_seconds`, `kb_restore_verification_last_success_timestamp_seconds`,
+`kb_backup_objects_last_sync_timestamp_seconds`, `kb_basebackup_last_success_timestamp_seconds` (`basebackup.sh`),
+`kb_backup_offsite_last_success_timestamp_seconds` (`offsite-sync.sh`), `kb_pitr_verify_last_success_timestamp_seconds`
+(`verify-pitr.sh`). Ответы `/healthz`, `/readyz`, `/metrics` реального процесса в `NODE_ENV=production` проверяет тест
+`tests/integration/ops-delivery.test.ts`.
 
 Алерты (`deploy/monitoring/prometheus-alerts.yml`, проверка: `promtool check rules …`) объединены в группы:
 
@@ -163,7 +169,7 @@ sudo systemctl daemon-reload && sudo systemctl enable --now kb kb-backup.timer
 | Доступность | instance/all down, 5xx > 2 %, p95 > 1 с, event loop lag, память, цикл перезапусков |
 | Совместное редактирование | сбои фиксации, p99 фиксации > 500 мс, отклонённые правки, неотправленные изменения клиентов старше 5 мин, ошибки браузеров |
 | Фоновые задачи | очередь > 100, доля ошибок > 20 %, отставание индекса > 1000, ошибки целостности |
-| Бэкап | копия старше 26 ч (из приложения и с хоста бэкапа), нет ни одной копии, проверка восстановления старше 8 дней, сбой или задержка архивации WAL |
+| Бэкап | копия старше 26 ч (из приложения и с хоста бэкапа), нет ни одной копии, проверка восстановления старше 8 дней, сбой или задержка архивации WAL, файлы не синхронизируются > 10 мин (`KbObjectSyncStale`), внешняя копия старше 15 мин (`KbOffsiteCopyStale`), базовая копия старше 26 ч (`KbBaseBackupStale`), проверка PITR старше 35 дней (`KbPitrVerificationTooOld`) |
 | Инфраструктура (node/postgres_exporter) | PostgreSQL down, соединения > 85 %, долгая транзакция, диск < 15 %, прогноз заполнения диска за сутки, хост down |
 
 Каждый алерт несёт `owner` (ops/dba/dev) и ссылку `runbook` на раздел ниже. Дашборд
@@ -185,7 +191,9 @@ sudo systemctl daemon-reload && sudo systemctl enable --now kb kb-backup.timer
 
 * Приложение пишет JSON-журнал (pino) в stdout, уровень задаёт `LOG_LEVEL`. В каждой записи запроса есть
   `reqId`, который совпадает с `correlationId` в ответе об ошибке: по номеру из сообщения пользователя
-  находится нужная запись. Тела документов в журнал не попадают.
+  находится нужная запись. Заголовок `x-correlation-id` вызывающей стороны становится `reqId`. Тела документов,
+  пароли, cookie и `SECRET_KEY` в журнал не попадают (тест `tests/integration/ops-delivery.test.ts` проверяет это на
+  реальном процессе в `NODE_ENV=production`: каждая строка — JSON с `level`/`time`, пароль входа и ключ не встречаются).
   * Docker: `docker compose -f deploy/docker-compose.yml logs -f app`; драйвер `json-file` или
     отправка в Loki/ELK.
   * systemd: `journalctl -u kb -f -o cat | npx pino-pretty`.
@@ -346,8 +354,15 @@ sudo systemctl daemon-reload && sudo systemctl enable --now kb kb-backup.timer
    * версия `pg_dump` ниже версии сервера;
    * `INTEGRITY:` — повреждённый объект, см. 7.4;
    * не работает `BACKUP_ENCRYPT_CMD` (нет ключа).
-3. После исправления запустите вручную: `backup.sh`, затем `verify-backup.sh --latest`. Алерт снимется при
-   следующем сборе метрик.
+   * `basebackup.sh`: `pg_verifybackup failed` — копия не сохранена (по замыслу), проверьте диск и `pg_wal`;
+     нет права `REPLICATION` у роли `BASEBACKUP_URL`; запрос пароля (используйте `~/.pgpass`, скрипт не ждёт ввода);
+   * `offsite-sync.sh`: `unencrypted data would leave the site` — не задан `BACKUP_ENCRYPT_CMD`/`WAL_ENCRYPT_CMD`;
+     `INTEGRITY` — локальный файл и внешняя копия различаются: **не удаляйте** внешнюю копию, сравните sha256 и
+     выясните, какая сторона повреждена (`sha256sum -c SHA256SUMS` в каталоге копии); `versioning is not Enabled` /
+     `Object Lock is not enabled` — бакет настроен неверно;
+   * `verify-pitr.sh`: смотрите журнал временного кластера (путь в сообщении об ошибке, `--keep` оставляет каталог).
+3. После исправления запустите вручную: `backup.sh`, затем `verify-backup.sh --latest`; для PITR — `basebackup.sh`,
+   `offsite-sync.sh`, `verify-pitr.sh --repo <внешняя копия>`. Алерт снимется при следующем сборе метрик.
 4. Если сбой `verify-backup.sh`, **последняя копия считается непригодной** (E-08). Разберите причину по отчёту.
    Для проверки предыдущей копии запустите `verify-backup.sh /backups/kb-…`.
 
@@ -358,14 +373,18 @@ sudo systemctl daemon-reload && sudo systemctl enable --now kb kb-backup.timer
 PITR — в [`scripts/backup/wal-archive.md`](../scripts/backup/wal-archive.md). Коротко:
 
 1. Остановите запись (обслуживание на балансировщике). Клиенты держат неподтверждённые правки у себя.
-2. Восстановите данные в **новый** контур:
-   * PITR: базовая копия + WAL, затем `restore-objects.sh`;
+2. Восстановите данные в **новый** контур (при потере площадки — с внешней копии `OFFSITE_TARGET`; ключ
+   расшифрования берётся из сейфа/менеджера секретов, на площадке его нет):
+   * PITR: `scripts/backup/pitr-restore.sh --base-root <копия>/base --wal <копия>/wal --pgdata /srv/pg-restore --port 5433
+     --latest` (или `--target-time T`), затем `restore-objects.sh --db … --pool <копия>/objects --target … [--allow-missing]`;
    * или полная копия: `restore.sh <копия> --create --target-db … --target-storage …`.
 3. Проверьте: `audit-verify`, `check-docs.mjs`; для полной копии `restore.sh` проверяет всё сам. Затем
    выборочно вручную.
 4. Переключите `DATABASE_URL`/`STORAGE_ROOT`, запустите приложение и дождитесь `/readyz`.
-5. Зафиксируйте фактические RPO/RTO. Ориентиры по времени — в `BACKUP_RESTORE.md` §6: восстановление
-   524 МБ файлов + БД заняло 15 с, проверка — 21 с.
+5. Зафиксируйте фактические RPO/RTO: время последней воспроизведённой транзакции (`lastReplayedTransaction` в
+   выводе `pitr-restore.sh`) против момента аварии — это RPO БД; список `missingBlobs` из `--report` — потерянные
+   файлы. Ориентиры по времени — в `BACKUP_RESTORE.md` §6 и в протоколе учения `docs/drills/LATEST.md`
+   (`npm run restore:drill`).
 
 <a id="runbook-security"></a>
 ### 7.10 Компрометация учётной записи администратора

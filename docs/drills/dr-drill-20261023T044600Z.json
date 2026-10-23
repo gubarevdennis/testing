@@ -1,0 +1,108 @@
+{
+  "format": "kb-dr-drill/1",
+  "ok": true,
+  "startedAt": "2026-10-23T04:46:00.973Z",
+  "finishedAt": "2026-10-23T04:48:04.816Z",
+  "host": "vm",
+  "postgres": "PostgreSQL 16.15 (Ubuntu 16.15-0ubuntu0.24.04.1) on x86_64-pc-linux-gnu, compiled by gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0, 64-bit",
+  "config": {
+    "archiveTimeoutS": 60,
+    "syncIntervalS": 30,
+    "writeSeconds": 80,
+    "encryption": "age (X25519, ChaCha20-Poly1305); private key outside the site",
+    "restoreSource": "second medium only (site, live objects and local repository deleted)"
+  },
+  "targets": {
+    "rpoS": 300,
+    "rtoS": 3600
+  },
+  "rpoBoundS": 93,
+  "dataset": {
+    "bulkMb": 256,
+    "bulkPages": 200,
+    "confirmedWrites": 469,
+    "uploads": 26,
+    "blobsInRecoveredDb": 84,
+    "baseBackupBytes": 5664228,
+    "baseBackupDataDirBytes": 52539656,
+    "syncRuns": 4
+  },
+  "baseBackup": {
+    "ms": 1012,
+    "durationsMs": {
+      "copy": 303,
+      "verify": 56,
+      "packEncrypt": 516,
+      "total": 930
+    },
+    "startSegment": "000000010000000000000002"
+  },
+  "disaster": {
+    "rpo": {
+      "databaseS": 25.599,
+      "filesS": 27.778,
+      "lostConfirmedWrites": 147,
+      "lostUploads": 8,
+      "lostUploadsWithDbRow": 0,
+      "missingBlobKeys": 0,
+      "gapsBelowRecoveryPoint": 0
+    },
+    "rto": {
+      "servingS": 5.937,
+      "verifiedS": 7.507
+    },
+    "stepsMs": {
+      "restoreDatabase": 1204,
+      "restoreScript": {
+        "checksumsDecrypt": 63,
+        "extractVerify": 525,
+        "replayPromote": 471
+      },
+      "restoreObjects": 1874,
+      "startServer": 2173,
+      "verify": 1570
+    },
+    "lastReplayedTransaction": "2026-10-23 04:47:19.678996+00",
+    "checks": [
+      "no gaps among confirmed writes",
+      "attachment bytes sha256 via API",
+      "lost files only after the last sync",
+      "audit hash chain (cli audit-verify)",
+      "documents decode (check-docs.mjs)"
+    ]
+  },
+  "pitr": {
+    "target": "2026-10-23 04:46:23.967048+00",
+    "stop": "recovery stopping before commit of transaction 2056, time 2026-10-23 04:46:25.085281+00",
+    "servingS": 5.877,
+    "stepsMs": {
+      "checksumsDecrypt": 49,
+      "extractVerify": 460,
+      "replayPromote": 418
+    },
+    "checks": [
+      "row counts of 24 tables equal the primary at T",
+      "incident absent (page not trashed, no damage, no later pages)",
+      "Markdown export of A equals export before the backup and at T; B equals at T",
+      "attachments sha256",
+      "revision present",
+      "ACL: editor sees, outsider 404 (page and file)",
+      "audit hash chain",
+      "documents decode"
+    ]
+  },
+  "verifyPitr": {
+    "ms": 3908,
+    "documents": {
+      "documents": 524,
+      "journalUpdates": 203,
+      "revisions": 728
+    },
+    "objects": {
+      "blobs": 84,
+      "missingBlobs": 0,
+      "missingDerivatives": 0
+    }
+  },
+  "notes": "Unconfirmed local edits are client-side (IndexedDB queue) and are re-sent after the restore; they are not part of any server backup (see docs/BACKUP_RESTORE.md §8)."
+}

@@ -94,10 +94,18 @@ async function checkDocs(dbUrl: string) {
   const r = await run(process.execPath, [join(REPO_ROOT, 'scripts/backup/check-docs.mjs'), dbUrl], { cwd: REPO_ROOT, maxBuffer: 16 * 1024 * 1024 });
   return JSON.parse(r.stdout);
 }
+/** Reads a response body; a failure names the request and its encoding headers (diagnosable in the protocol). */
+async function body(r: Response, what: string) {
+  try {
+    return Buffer.from(await r.arrayBuffer());
+  } catch (e) {
+    throw new Error(`${what}: HTTP ${r.status}, content-encoding=${r.headers.get('content-encoding')}, content-type=${r.headers.get('content-type')}, content-length=${r.headers.get('content-length')}: ${(e as Error).message} / ${String((e as any).cause?.message ?? '')}`);
+  }
+}
 async function exportMd(api: Api, pageId: string) {
   const r = await api.raw('GET', `/api/v1/pages/${pageId}/export?format=md`);
   expect(r.status).toBe(200);
-  return Buffer.from(await r.arrayBuffer()).toString('utf8'); // compared as text: a mismatch shows the diff
+  return (await body(r, `export ${pageId}`)).toString('utf8'); // compared as text: a mismatch shows the diff
 }
 async function upload(api: Api, pageId: string, bytes: Buffer, name: string) {
   const fd = new FormData();
@@ -107,7 +115,7 @@ async function upload(api: Api, pageId: string, bytes: Buffer, name: string) {
 }
 async function downloadSha(api: Api, attId: string) {
   const r = await api.raw('GET', `/api/v1/attachments/${attId}/download`);
-  return r.status === 200 ? sha(Buffer.from(await r.arrayBuffer())) : `HTTP ${r.status}`;
+  return r.status === 200 ? sha(await body(r, `download ${attId} from ${api.base}`)) : `HTTP ${r.status}`;
 }
 
 beforeAll(async () => {

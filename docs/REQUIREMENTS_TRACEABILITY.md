@@ -8,10 +8,10 @@
 
 | Приоритет | Всего | реализовано | частично | не реализовано | требует ручной проверки | ограничение окружения | процесс/документ | заменено | не оценено | покрыто тестами |
 |---|---|---|---|---|---|---|---|---|---|---|
-| P0 | 637 | 527 | 75 | 11 | 1 | 8 | 14 | 1 | 0 | 445 |
+| P0 | 637 | 534 | 64 | 11 | 1 | 12 | 14 | 1 | 0 | 445 |
 | P1 | 588 | 227 | 276 | 30 | 32 | 7 | 15 | 1 | 0 | 95 |
 | P2 | 73 | 26 | 24 | 6 | 7 | 0 | 9 | 1 | 0 | 1 |
-| **Итого** | 1298 | 780 | 375 | 47 | 40 | 15 | 38 | 3 | 0 | 541 |
+| **Итого** | 1298 | 787 | 364 | 47 | 40 | 19 | 38 | 3 | 0 | 541 |
 
 ## По модулям
 
@@ -23,7 +23,7 @@
 | ARCHIVE | 30 | 26 | 3 | 0 | 0 | 0 | 1 | 18 |
 | AUDIT | 11 | 11 | 0 | 0 | 0 | 0 | 0 | 9 |
 | AUTH | 5 | 5 | 0 | 0 | 0 | 0 | 0 | 3 |
-| BACKUP | 29 | 15 | 11 | 0 | 0 | 0 | 2 | 22 |
+| BACKUP | 29 | 22 | 0 | 0 | 0 | 4 | 2 | 22 |
 | CLIPBOARD | 45 | 24 | 16 | 1 | 0 | 4 | 0 | 21 |
 | COLLAB | 80 | 70 | 8 | 0 | 2 | 0 | 0 | 60 |
 | COLLECTION | 10 | 3 | 7 | 0 | 0 | 0 | 0 | 3 |
@@ -73,10 +73,8 @@
 - **R-QA-005** (P0, QA, частично): Отказы: отключение сети, рестарт сервера, перезапуск вкладки, таймаут, конфликт, частичный сбой хранилища — timeouts and partial storage failure not covered
 - **R-QA-006** (P0, QA, частично): docs/TEST_MATRIX.md с ID каждого компонента/действия и ссылкой на тест; нет «нет теста» для критичного пути — not organised by component/action id; several critical paths still listed as gaps
 - **R-QA-007** (P1, QA, частично): Браузерная матрица 320/375/768/1024/1440/1920px, zoom 200%, мышь/клавиатура/сенсор; WebKit, Chromium, Firefox — only Chromium is installed (playwright.config.ts, DECISIONS D-18); touch input not exercised
-- **R-BACKUP-001** (P0, BACKUP, частично): RPO ≤5 минут и RTO ≤2 часа для катастрофического отказа — Confirmed at test scale only; production-volume drill pending
-- **R-OPS-003** (P0, OPS, частично): Инфраструктура эксплуатации: health checks, метрики, логи, трассировки, алерты, backup/restore, миграции, CI/CD, секреты, runbooks — No CD/deploy pipeline; secrets only via env/EnvironmentFile (no secrets manager)
+- **R-OPS-003** (P0, OPS, частично): Инфраструктура эксплуатации: health checks, метрики, логи, трассировки, алерты, backup/restore, миграции, CI/CD, секреты, runbooks — No CD/deploy pipeline (needs target infrastructure); no secrets manager integration (env/EnvironmentFile only)
 - **R-PROCESS-013** (P1, PROCESS, частично): Документация: REQUIREMENTS_TRACEABILITY, ARCHITECTURE, DECISIONS, TEST_MATRIX, UX_ACCEPTANCE, SECURITY, OPERATIONS, BACKUP_RESTORE … — RELEASE_READINESS.md not yet present at re-assessment (written by the lead)
-- **R-BACKUP-002** (P0, BACKUP, частично): Запрет: выпускать релиз без проверки реального восстановления — No formal release gate requiring a production restore protocol
 - **R-UI-011** (P0, UI, частично): Система сохраняет работу, объясняет состояние и позволяет исправить ошибку — cancel/status not verified for every operation
 - **R-ADMIN-001** (P1, ADMIN, частично): Администратор управляет подразделениями и пространствами, а не сотнями разрозненных ACL — Departments managed in UI, spaces are not: no web UI to create spaces or to add groups/users to a space (SpacePage AccessTab is read-only; POST /api/v1/spaces and PUT /grants resourceType=space only via API).
 - **R-PROCESS-018** (P0, PROCESS, частично): Продукт завершён только после доказанных проверок каждого критичного сценария — many critical scenarios lack passing tests
@@ -116,7 +114,6 @@
 - **R-COMMENTS-001** (P1, COMMENTS, частично): Комментарии к выделению и блоку, ветки, @mention, разрешить/переоткрыть, привязка к версии и ID блока — revision_number = latest saved revision (may lag live content by up to the auto-revision interval).
 - **R-COLLAB-009** (P0, COLLAB, частично): Интеграционные тесты конфликтов при смене схемы, копировании блока, отключённой сети — Нет тестов конфликтов при смене схемы содержимого (миграции content_schema_version не реализованы)
 - **R-PROCESS-022** (P1, PROCESS, не реализовано): Внешние зависимости, особенно платные, лицензируются и фиксируются до разработки — no licence register
-- **R-BACKUP-003** (P0, BACKUP, частично): Бэкапы: ежедневные полные, инкрементальные/журналы, отдельное защищённое хранилище, шифрование, мониторинг, регулярный тест восстановления — Separate protected/offsite storage is deployment responsibility (documented, not configured)
 - **R-UI-021** (P1, UI, частично): 8-пиксельная сетка, последовательные отступы, ≥3 уровня текстовой иерархии, контролируемая ширина чтения и таблиц — many hard-coded 6/10/14 px paddings off the 8px grid; no token check
 - **R-UI-022** (P1, UI, частично): Анимации: меню 100–160 мс, панели 160–240 мс, перетаскивание 120–200 мс; индикатор сохранения без постоянного движения; без блокировки ввода — values in range but not tested; save spinner rotates while saving
 - **R-UI-023** (P1, UI, частично): hover, focus-visible, active, disabled, pending, success, error, пустые состояния каждого элемента управления — no state catalogue; pending/success/error not uniform
@@ -172,7 +169,6 @@
 - **R-MEDIA-007** (P0, MEDIA, частично): Изображения inline/блоком, размер, выравнивание, подпись, alt, lightbox, оригинал; thumbnail не заменяет оригинал; не теряются при переносе — tests/integration/content.test.ts:'uploads an image, stores the original byte-exact with checksum…'. Нет inline-изображений в строке; копия блока на другую страницу ссылается на вложение исходной страницы (права)
 - **R-UI-029** (P1, UI, частично): Микроанимации 120–220 мс для hover, меню, перестановки, дерева; не анимировать ввод; reduced-motion — no measurement/test
 - **R-PERF-006** (P1, PERF, частично): Ввод p95 <50 мс; локальная правка <100 мс; удалённая правка p95 <500 мс; восстановление после обрыва <10 с — input p95 not met at 4x; remote edit p95 1.4 s at 100+20 (143 ms at 20+5); reconnect not measured
-- **R-BACKUP-006** (P0, BACKUP, частично): Бэкапы БД, объектов, метаданных; шифрование, offsite, ежемесячный тест восстановления; RPO ≤5 мин, RTO ≤2 ч — Offsite copy and monthly restore test are operational procedures not yet run; RPO/RTO only at test scale
 - **AT-51** (P1, CLIPBOARD, частично): Вставка диапазона 20×10 из Excel сохраняет геометрию и значения — tests/e2e/collab.spec.ts:'paste: spreadsheet range becomes a table; Markdown becomes formatted blocks' — только TSV 3×3; 20×10 из Excel не проверялся
 - **AT-52** (P1, COLLECTION, частично): Фильтры, сортировка, группы, закрепление колонок, итоги на 10 000 строк — Закрепления колонок и UI нет; производительность на 10 000 строк не измерена
 - **R-PAGE-013** (P1, PAGE, частично): «Новая статья» в дереве, шапке пространства и Ctrl/Cmd+N; открытие без модального мастера — Ctrl/Cmd+N не реализован
@@ -201,8 +197,6 @@
 - **R-UI-032** (P1, UI, частично): Анимации меню/подсказок 120–220 мс, дерева/панелей 160–260 мс; без bounce; без смещения курсора и layout shift — CLS during animations not measured
 - **R-UI-033** (P1, UI, частично): Для каждого экрана состояния loading/empty/error/offline/conflict/permission-denied и визуальная консистентность — conflict/permission-denied not on every screen; not verified
 - **R-ADMIN-003** (P1, ADMIN, частично): Админ управляет пользователями, пространствами, политиками хранения, квотами, журналом, импортами, бэкапами — Spaces and imports not administrable from admin UI.
-- **R-BACKUP-007** (P0, BACKUP, частично): 99.9% доступности, RPO ≤5 мин, RTO ≤60 мин; подтверждено нагрузкой и restore drill — RTO ≤60 min not proven for production volume; no load test
-- **R-BACKUP-008** (P0, BACKUP, частично): Снимки БД, WAL/PITR, versioned object storage, шифрование, проверка восстановления, целостность ссылок, защита последней копии — Versioned object storage not configured by the repo
 - **R-QA-018** (P0, QA, частично): Contract tests схемы/миграций; property-based undo/redo, paste, CRDT; fuzz HTML/DOCX/MD/ZIP; security XSS/CSRF/SSRF/traversal/ACL — no migration contract tests, undo/redo or paste property tests, DOCX/HTML fuzz, SSRF/XSS-paste tests (CI exists now)
 - **R-QA-019** (P0, QA, частично): Playwright E2E Chromium/Firefox/WebKit desktop/mobile с реальным буфером и DnD — only Chromium is installed (playwright.config.ts, DECISIONS D-18); no real clipboard, no DnD
 - **R-QA-020** (P1, QA, частично): Visual regression на всех ширинах и темах с порогами и ручной проверкой — baselines not at all widths and themes
@@ -300,8 +294,6 @@
 - **R-PUBLISH-011** (P1, PUBLISH, частично): Блокировка подтверждённых регламентов; обновления через черновик и согласование; опубликованная редакция неизменна — No "update via draft + approval" for locked regulations — locked page simply blocks non-owners.
 - **R-PAGE-026** (P1, PAGE, частично): Обратные ссылки, проверка битых ссылок, обновление пути при перемещении, неизменные ID — Отчёта о битых ссылках нет
 - **R-OPS-016** (P1, OPS, частично): Кластеризация приложений и WS-шлюзов, health checks, rolling deploy, graceful shutdown, rate limiting … — Rolling deploy not tested end-to-end; no explicit overload shedding for import/OCR beyond queue concurrency
-- **R-BACKUP-010** (P0, BACKUP, частично): Проектные SLO: доступность 99,9%/мес, RPO ≤5 мин, RTO ≤2 ч для полной организации; подтверждаются испытаниями — Test scale only
-- **R-BACKUP-012** (P0, BACKUP, частично): Правило 3-2-1: ≥3 копии, 2 среды, 1 вне контура; шифрование, отдельные ключи, неизменяемое хранение от ransomware — The bucket/second medium must be provisioned by infrastructure; not run here
 - **R-ARCHIVE-005** (P1, ARCHIVE, частично): ZIP/тома для больших объёмов с прогрессом, возобновлением, проверкой целостности; шифрование, временная ссылка, аудит скачивания — No volumes, no resumable download, no archive encryption; archive built in memory
 - **R-ADMIN-013** (P1, ADMIN, частично): Панель «Здоровье системы»: сервисы, задержки, последний бэкап, последний тест восстановления, место, неуспешные задания, архивы — No latency metrics, no free disk space, archives not summarised.
 - **R-ADMIN-014** (P1, ADMIN, частично): Вкладки: Сотрудники, Отделы, Группы, Пространства, Доступы, Публикации, Аудит, Резервирование, Импорт/экспорт … — No Spaces, Access, Publications, Import/Export tabs; no bulk operations with preview/report.
@@ -323,7 +315,6 @@
 - **V18-A19** (P1, A11Y, частично): Все основные действия доступны с клавиатуры — no keyboard pass test
 - **V18-A22** (P1, IMPORT, частично): Повторный импорт предлагает стратегию конфликтов — Documents: no conflict strategy on re-import (new copies created)
 - **V18-A23** (P1, UI, частично): Длительная операция имеет отмену или объясняет её невозможность — export/OCR cancel or explanation not verified in UI
-- **V18-A25** (P0, BACKUP, частично): Восстановление прошло тест на независимом сервере — Same PostgreSQL host, not an independent server
 - **R-PERF-020** (P1, PERF, частично): Целевые задержки и надёжность v1.7 сохраняются; приоритеты: сохранность, понятность, скорость, эстетика, расширенные функции — most targets unmeasured
 - **R-UI-055** (P0, UI, частично): Визуальный эталон — утверждённые светлые UX-примеры; запрещены произвольные стили по разделам; общие design tokens, контраст … — some hard-coded colours (#9cc0f5 toast, #000 embed) and inline styles (HistoryPanel fontSize 22)
 - **R-TREE-018** (P1, TREE, частично): Настраиваемый sidebar: недавние, избранное, пространства команд, общие, личные; скрыть, переставить, сброс … — Можно сворачивать секции и сбросить; нет скрытия/перестановки секций и админ-предустановки отдела; хранится только в localStorage
@@ -402,12 +393,11 @@
 - **R-PROCESS-051** (P0, PROCESS, не реализовано): Реестр открытых вопросов и дефектов с владельцем и тестом; 0 критических/высоких; средние/низкие исправлены или письменно приняты — no open-issues/defects registry
 - **R-PERF-028** (P1, PERF, частично): Локальный отклик набора и действий p95 ≤100 мс в типовом документе; честная индикация тяжёлых операций — typing only; other local actions unmeasured
 - **R-PERF-029** (P1, PERF, частично): Удалённое подтверждённое изменение у другого участника p95 ≤500 мс при нормальной сети — latency not measured
-- **R-BACKUP-018** (P0, BACKUP, частично): RPO ≤5 минут и RTO ≤2 часа с регулярными испытаниями; учёт неподтверждённых локальных изменений отдельно — Test scale only
 - **R-OPS-021** (P1, OPS, частично): Поддерживаемые размеры документов, вложений, число редакторов и профили нагрузки определены, измерены и в паспорте эксплуатации — No operations passport with supported document/attachment sizes, editor counts, load profiles
 - **R-QA-036** (P0, QA, не реализовано): Для каждого сценария: обычный, граничный, ошибочный, конкурентный, восстановительный пути по 16 группам функций — no scenario × path matrix
 - **R-QA-037** (P0, QA, частично): Сквозные испытания A–L: одна строка и разные блоки; перенос+правка; структура таблицы; обрыв при записи и перезапуск … — no mapping of the 12 trials to tests
 - **R-QA-038** (P0, QA, частично): Автоматизация unit/component/integration/API/E2E/property/load/chaos; рандомизированные конкурентные последовательности … — no component/contract tests; load test exists (scripts/load) but is not in CI
-- **R-OPS-022** (P0, OPS, частично): Поставка: deployment без секретов в репо, миграции и откат, health/readiness, метрики/логи/трейсы, алерты, бэкапы и restore-тесты … — CD pipeline and operations passport missing
+- **R-OPS-022** (P0, OPS, частично): Поставка: deployment без секретов в репо, миграции и откат, health/readiness, метрики/логи/трейсы, алерты, бэкапы и restore-тесты … — Missing from the kit: CD pipeline, operations/limitations passport; other kit items (help, templates, browsers, data schema, sync protocol, report) assessed under their own requirements
 - **R-PROCESS-052** (P0, PROCESS, не реализовано): До запуска: тестовая эксплуатация, нагрузка, доступность, угрозы и права, тест восстановления, ручная UX-проверка, регрессии, пилот … — no gate checklist; no pilot, load, a11y audit, manual UX check
 - **R-PROCESS-053** (P0, PROCESS, частично): «Готово» только после прохождения gate, не после написания кода — gate currently fails (open P0s), so "готово" is not claimed
 - **OPS-012** (P1, UI, частично): Корректное отображение долгих операций — no browser test
@@ -444,7 +434,6 @@
 - **QA26-29** (P1, PROCESS, частично): Сдать отчёт о покрытии, протоколы восстановления, измерения производительности, реестр решений, руководство администратора, runbooks — coverage report per run missing
 - **R-UI-069** (P1, UI, частично): Дочерняя статья, DnD, копирование, публикация — минимум действий; исключения доступа скрыты до запроса — DnD/copy/publish action counts not measured
 - **R-ADMIN-022** (P1, ADMIN, частично): Временные приглашения, гости, приостановка, отзыв сессий, массовое управление группами — No bulk group management.
-- **R-BACKUP-019** (P0, BACKUP, частично): Регулярная проверка бэкапов реальным восстановлением, контрольными суммами и сравнением импорт-экспорт-импорт — Regular production verification is an operational process
 - **R-UI-071** (P1, UI, частично): Умные значения по умолчанию, последняя позиция, быстрый поиск, клавиатура, отмена, понятная обратная связь — not verified
 - **R-UI-072** (P1, UI, частично): Без обязательных диалогов для типовых операций; предупреждения только при необратимом действии или изменении видимости — no audit of dialogs in typical ops
 
@@ -774,7 +763,7 @@
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| R-BACKUP-001 | P0 | RPO ≤5 минут и RTO ≤2 часа для катастрофического отказа | частично | tests/resilience/pitr.test.ts (PITR: recovery 1.1 s, API serving 1.6 s), WAL archive_timeout=60s, --objects-only every 5 min, tests/resilience/backup-restore.test.ts; Confirmed at test scale only; production-volume drill pending | tests/resilience/backup-restore.test.ts: restores content, attachment bytes, history, permissions and the audit chain into a new in<br>tests/resilience/pitr.test.ts: recovers database and files to the moment before the incident; later damage is absent, ear |
+| R-BACKUP-001 | P0 | RPO ≤5 минут и RTO ≤2 часа для катастрофического отказа | реализовано | tests/resilience/dr-drill.test.ts (npm run restore:drill): whole site lost, restored only from the encrypted second-medium copy into a new independent PostgreSQL cluster + new app process; measured 2026-10-23 (docs/drills/latest.json, archive_timeout 60 s, sync every 30 s, 256 MB files): RPO db 25.6 s / files 27.8 s (bound 93 s), RTO 5.9 s to serving API, 7.5 s verified; PITR to T serving in 5.9 s; tests/resilience/pitr.test.ts; Measured at drill scale (hundreds of MB); large-volume RTO is an extrapolation in docs/BACKUP_RESTORE.md §6 to be re-measured on the target infrastructure | tests/resilience/backup-restore.test.ts: restores content, attachment bytes, history, permissions and the audit chain into a new in<br>tests/resilience/pitr.test.ts: recovers database and files to the moment before the incident; later damage is absent, ear |
 
 ### COLLAB
 
@@ -804,7 +793,7 @@
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| R-OPS-003 | P0 | Инфраструктура эксплуатации: health checks, метрики, логи, трассировки, алерты, backup/restore, миграции, CI/CD, секреты, runbooks | частично | routes/health.ts (/healthz,/readyz,/metrics), pino JSON logs + correlationId + traceId, observability/tracing.ts (W3C traceparent, OTLP/HTTP export of request and job spans), metrics kb_collab_reconnects_total / kb_import_files_total / kb_ocr_duration_seconds with alerts, deploy/monitoring/*, scripts/backup/*, .github/workflows/ci.yml, docs/OPERATIONS.md runbooks; tests/integration/io-p0-ops.test.ts; No CD/deploy pipeline; secrets only via env/EnvironmentFile (no secrets manager) | tests/integration/ops-delivery.test.ts: health, readiness, metrics and structured logs of the server process (R-OPS-003, R-OPS-022<br>tests/integration/ops-delivery.test.ts: /healthz, /readyz (database, storage, migrations) and Prometheus /metrics answer; logs are<br>tests/integration/io-p0-ops.test.ts: distributed tracing (R-OPS-003, R-OPS-022)<br>… ещё 6 |
+| R-OPS-003 | P0 | Инфраструктура эксплуатации: health checks, метрики, логи, трассировки, алерты, backup/restore, миграции, CI/CD, секреты, runbooks | частично | Health /healthz,/readyz (db, storage, migrations) and /metrics of the real process in production mode, JSON logs with caller correlation id and no passwords/SECRET_KEY (tests/integration/ops-delivery.test.ts); OTLP traces (tests/integration/io-p0-ops.test.ts); 36 alerts, every metric exported and runbook present (io-p0-ops.test.ts); backup/restore/PITR/DR drill (tests/resilience/*); migrations + rollback (tests/resilience/migrations.test.ts, migrations-fresh.test.ts); CI .github/workflows/ci.yml; secrets only from env (ops-delivery.test.ts); runbooks docs/OPERATIONS.md §7; No CD/deploy pipeline (needs target infrastructure); no secrets manager integration (env/EnvironmentFile only) | tests/integration/ops-delivery.test.ts: health, readiness, metrics and structured logs of the server process (R-OPS-003, R-OPS-022<br>tests/integration/ops-delivery.test.ts: /healthz, /readyz (database, storage, migrations) and Prometheus /metrics answer; logs are<br>tests/integration/io-p0-ops.test.ts: distributed tracing (R-OPS-003, R-OPS-022)<br>… ещё 6 |
 
 ### PROCESS
 
@@ -890,7 +879,7 @@
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| R-BACKUP-002 | P0 | Запрет: выпускать релиз без проверки реального восстановления | частично | CI runs tests/resilience/backup-restore.test.ts on every push; verify-backup.sh; No formal release gate requiring a production restore protocol | tests/resilience/backup-restore.test.ts: restores content, attachment bytes, history, permissions and the audit chain into a new in |
+| R-BACKUP-002 | P0 | Запрет: выпускать релиз без проверки реального восстановления | реализовано | scripts/release-gate.py blocks the release unless docs/drills/latest.json (or RESTORE_DRILL_REPORT) is a passing kb-dr-drill/1 protocol no older than 31 days that meets the RPO/RTO targets; the protocol comes from a real restore (tests/resilience/dr-drill.test.ts); CI runs the resilience drills on every push; For a production release pass the production drill report via RESTORE_DRILL_REPORT | tests/resilience/backup-restore.test.ts: restores content, attachment bytes, history, permissions and the audit chain into a new in |
 
 ### PROCESS
 
@@ -1452,7 +1441,7 @@
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| R-BACKUP-003 | P0 | Бэкапы: ежедневные полные, инкрементальные/журналы, отдельное защищённое хранилище, шифрование, мониторинг, регулярный тест восстановления | частично | scripts/backup/backup.sh (daily full, incremental object pool, BACKUP_ENCRYPT_CMD), kb-backup.timer / backup-loop.sh, alerts KbBackupTooOld, weekly verify; Separate protected/offsite storage is deployment responsibility (documented, not configured) | tests/resilience/offsite-sync.test.ts: copies add-only and read-only, verifies SHA256SUMS at the destination, survives deletion a |
+| R-BACKUP-003 | P0 | Бэкапы: ежедневные полные, инкрементальные/журналы, отдельное защищённое хранилище, шифрование, мониторинг, регулярный тест восстановления | реализовано | Daily full backup.sh (kb-backup.timer / backup-loop.sh), continuous encrypted WAL (wal-archive.sh), verified encrypted base backups (basebackup.sh, kb-basebackup.timer), object sync every 2 min, add-only verified copy to a second medium (offsite-sync.sh, kb-offsite.timer), age encryption with the private key off-site, metrics + alerts KbBackupTooOld/KbObjectSyncStale/KbOffsiteCopyStale/KbBaseBackupStale/KbPitrVerificationTooOld/KbWalArchivingFailing (tests/integration/io-p0-ops.test.ts: every alert metric is exported), weekly verify-backup.sh + monthly verify-pitr.sh; tests/resilience/offsite-sync.test.ts, tests/resilience/dr-drill.test.ts, tests/resilience/backup-restore.test.ts; systemd timers are not executed in this container (scripts and the compose loop are); immutable remote storage: see R-BACKUP-012 | tests/resilience/offsite-sync.test.ts: copies add-only and read-only, verifies SHA256SUMS at the destination, survives deletion a |
 | R-BACKUP-004 | P0 | RPO ≤15 минут, RTO ≤4 часа для типового инцидента, подтверждённые испытаниями | заменено | overridden_by R-BACKUP-001 |  |
 | R-BACKUP-005 | P0 | Экспорт резервной копии: структура, медиа, ACL, версии, связи, метаданные в документированном формате | реализовано | Org archive (services/archive.ts: structure, media, ACL, versions, links, metadata, manifest) + kb-backup/1 manifest; tests/integration/archive.test.ts | tests/integration/archive.test.ts: export → readable without the app → restore into a clean installation → verified (V18-A05, |
 
@@ -2163,7 +2152,7 @@
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| R-BACKUP-006 | P0 | Бэкапы БД, объектов, метаданных; шифрование, offsite, ежемесячный тест восстановления; RPO ≤5 мин, RTO ≤2 ч | частично | backup.sh (DB+objects+metadata, encryption hook), wal-archive.sh, verify-backup.sh; Offsite copy and monthly restore test are operational procedures not yet run; RPO/RTO only at test scale | tests/resilience/offsite-sync.test.ts: refuses to ship unencrypted backups off the site (R-BACKUP-012, R-BACKUP-006) |
+| R-BACKUP-006 | P0 | Бэкапы БД, объектов, метаданных; шифрование, offsite, ежемесячный тест восстановления; RPO ≤5 мин, RTO ≤2 ч | ограничение окружения | DB (WAL+base+pg_dump), objects (pool), metadata (manifests) with age encryption and checksums; second-medium copy (offsite-sync.sh); monthly verify-pitr.sh (kb-pitr-verify.timer, alert KbPitrVerificationTooOld); tests/resilience/dr-drill.test.ts (npm run restore:drill): whole site lost, restored only from the encrypted second-medium copy into a new independent PostgreSQL cluster + new app process; measured 2026-10-23 (docs/drills/latest.json, archive_timeout 60 s, sync every 30 s, 256 MB files): RPO db 25.6 s / files 27.8 s (bound 93 s), RTO 5.9 s to serving API, 7.5 s verified; PITR to T serving in 5.9 s; Acceptance (RPO ≤5 min, RTO ≤2 h in an emergency test) is met by the drill. Needs the environment: a real off-site target (S3 with Object Lock or another site) and evidence of the monthly restore cadence in production — action: set OFFSITE_TARGET, enable kb-pitr-verify.timer, attach monthly verify-pitr reports | tests/resilience/offsite-sync.test.ts: refuses to ship unencrypted backups off the site (R-BACKUP-012, R-BACKUP-006) |
 
 ### COLLAB
 
@@ -2473,8 +2462,8 @@
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| R-BACKUP-007 | P0 | 99.9% доступности, RPO ≤5 мин, RTO ≤60 мин; подтверждено нагрузкой и restore drill | частично | see R-BACKUP-001; restore drill measured; RTO ≤60 min not proven for production volume; no load test |  |
-| R-BACKUP-008 | P0 | Снимки БД, WAL/PITR, versioned object storage, шифрование, проверка восстановления, целостность ссылок, защита последней копии | частично | tests/resilience/pitr.test.ts (PITR), BACKUP_ENCRYPT_CMD, verify-backup.sh link/sha checks, retention keeps last N, offsite Object Lock example (compose profile offsite); Versioned object storage not configured by the repo | tests/integration/download-integrity.test.ts: attachment downloads are byte-exact (R-BACKUP-008, R-BACKUP-019)<br>tests/integration/download-integrity.test.ts: gzip files, zlib-looking and random binary files download unchanged with and without Accep<br>tests/resilience/pitr.test.ts: recovers database and files to the moment before the incident; later damage is absent, ear |
+| R-BACKUP-007 | P0 | 99.9% доступности, RPO ≤5 мин, RTO ≤60 мин; подтверждено нагрузкой и restore drill | ограничение окружения | tests/resilience/dr-drill.test.ts (npm run restore:drill): whole site lost, restored only from the encrypted second-medium copy into a new independent PostgreSQL cluster + new app process; measured 2026-10-23 (docs/drills/latest.json, archive_timeout 60 s, sync every 30 s, 256 MB files): RPO db 25.6 s / files 27.8 s (bound 93 s), RTO 5.9 s to serving API, 7.5 s verified; PITR to T serving in 5.9 s (≤ 60 min target met); 99.9 % availability can only be measured over a month in production (external monitoring, alerts KbInstanceDown/KbAllInstancesDown; see R-OPS-002); load + drill on the target infrastructure required |  |
+| R-BACKUP-008 | P0 | Снимки БД, WAL/PITR, versioned object storage, шифрование, проверка восстановления, целостность ссылок, защита последней копии | реализовано | Snapshots: pg_dump in an exported snapshot (backup.sh) + verified base backups (basebackup.sh, pg_verifybackup); WAL/PITR: pitr-restore.sh --target-time; object store: content-addressed write-once pool with append-only index.log history (versioning) and S3 target only with versioning + Object Lock (offsite-sync.sh refuses otherwise); encryption: age; restore verification + link integrity: restore-objects.sh sha256, verify-backup.sh, check-docs.mjs; protection of the last copy: retention keeps the newest N, add-only offsite copy never overwrites/deletes; tests/resilience/dr-drill.test.ts (PITR to T: row counts of 24 tables equal the primary at T, exports equal, incident absent), tests/resilience/pitr.test.ts, tests/resilience/offsite-sync.test.ts; S3 versioning/Object Lock path is statically checked only (R-BACKUP-012) | tests/integration/download-integrity.test.ts: attachment downloads are byte-exact (R-BACKUP-008, R-BACKUP-019)<br>tests/integration/download-integrity.test.ts: gzip files, zlib-looking and random binary files download unchanged with and without Accep<br>tests/resilience/pitr.test.ts: recovers database and files to the moment before the incident; later damage is absent, ear |
 
 ### QA
 
@@ -3773,9 +3762,9 @@
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| R-BACKUP-010 | P0 | Проектные SLO: доступность 99,9%/мес, RPO ≤5 мин, RTO ≤2 ч для полной организации; подтверждаются испытаниями | частично | see R-BACKUP-001; tests/resilience/pitr.test.ts; Test scale only | tests/resilience/pitr.test.ts: recovers database and files to the moment before the incident; later damage is absent, ear |
+| R-BACKUP-010 | P0 | Проектные SLO: доступность 99,9%/мес, RPO ≤5 мин, RTO ≤2 ч для полной организации; подтверждаются испытаниями | ограничение окружения | tests/resilience/dr-drill.test.ts (npm run restore:drill): whole site lost, restored only from the encrypted second-medium copy into a new independent PostgreSQL cluster + new app process; measured 2026-10-23 (docs/drills/latest.json, archive_timeout 60 s, sync every 30 s, 256 MB files): RPO db 25.6 s / files 27.8 s (bound 93 s), RTO 5.9 s to serving API, 7.5 s verified; PITR to T serving in 5.9 s; RPO/RTO acceptance met by the drill; the 99.9 %/month availability SLO needs production monitoring over a month (R-OPS-002) | tests/resilience/pitr.test.ts: recovers database and files to the moment before the incident; later damage is absent, ear |
 | R-BACKUP-011 | P0 | Непрерывный WAL и PITR PostgreSQL; ежедневные полные + инкрементальные; согласованные снимки файлов и метаданных | реализовано | scripts/backup/pitr-drill.sh + wal-archive.sh/wal-restore.sh; tests/resilience/pitr.test.ts: recovery to T with app data; backup.sh daily full + --objects-only | tests/resilience/pitr.test.ts: recovers database and files to the moment before the incident; later damage is absent, ear |
-| R-BACKUP-012 | P0 | Правило 3-2-1: ≥3 копии, 2 среды, 1 вне контура; шифрование, отдельные ключи, неизменяемое хранение от ransomware | частично | compose profile offsite: aws s3 sync of backups + WAL into an Object Lock (COMPLIANCE) bucket, key without delete; BACKUP_ENCRYPT_CMD; The bucket/second medium must be provisioned by infrastructure; not run here | tests/resilience/offsite-sync.test.ts: offsite copy to a second medium (R-BACKUP-012)<br>tests/resilience/offsite-sync.test.ts: refuses to ship unencrypted backups off the site (R-BACKUP-012, R-BACKUP-006)<br>tests/resilience/offsite-sync.test.ts: copies add-only and read-only, verifies SHA256SUMS at the destination, survives deletion a |
+| R-BACKUP-012 | P0 | Правило 3-2-1: ≥3 копии, 2 среды, 1 вне контура; шифрование, отдельные ключи, неизменяемое хранение от ransomware | ограничение окружения | 3 copies (live + local repository + second medium) on 2 media via offsite-sync.sh (add-only, read-only files, SHA256SUMS verified at the destination, plaintext refused, tampering → INTEGRITY); age encryption, decryption key kept apart from data (only the public key on the site); S3 mode refuses buckets without versioning + Object Lock; tests/resilience/offsite-sync.test.ts, tests/resilience/dr-drill.test.ts (restore from the second medium only); No S3/second site in this environment: action — create an Object Lock (COMPLIANCE ≥35 d) bucket in another site with a key lacking s3:DeleteObject, set OFFSITE_TARGET=s3://…, run verify-pitr.sh against a copy downloaded from it and attach the report. Local chmod a-w is not ransomware-proof | tests/resilience/offsite-sync.test.ts: offsite copy to a second medium (R-BACKUP-012)<br>tests/resilience/offsite-sync.test.ts: refuses to ship unencrypted backups off the site (R-BACKUP-012, R-BACKUP-006)<br>tests/resilience/offsite-sync.test.ts: copies add-only and read-only, verifies SHA256SUMS at the destination, survives deletion a |
 | R-BACKUP-013 | P1 | Хранение: ежедневные 30 дней, еженедельные 12 недель, ежемесячные 12 месяцев (настраиваемо) | реализовано | backup.sh BACKUP_KEEP_DAILY=30/WEEKLY=12/MONTHLY=12 (+KEEP_LAST), pool GC; Retention logic verified manually, not by an automated test |  |
 | R-BACKUP-014 | P0 | Ежедневная проверка и checksums; ежемесячное тестовое восстановление страниц/вложений … | процесс/документ | verify-backup.sh (weekly in kb-backup.service/backup-loop.sh), SHA256SUMS; Monthly/quarterly drill protocols must be run by operations |  |
 | R-BACKUP-015 | P0 | Восстановление страницы, пространства, организации на точку времени; предпросмотр влияния; как новая версия/контур без затирания | реализовано | services/partial-restore.ts + cli restore-pages: page/space restore from a backup restored into a temporary DB — impact preview (per-page diff, missing files), apply as a new version (existing/trashed pages) or recreated page with files (purged pages), never overwriting; org level: restore.sh / PITR; tests/resilience/io-p0-partial-restore.test.ts: space restore from a backup restored into a temporary database… | tests/resilience/backup-restore.test.ts: restores content, attachment bytes, history, permissions and the audit chain into a new in<br>tests/resilience/io-p0-partial-restore.test.ts: partial restore from a backup (R-BACKUP-015)<br>tests/resilience/io-p0-partial-restore.test.ts: space restore from a backup restored into a temporary database: impact preview with per-pa |
@@ -4128,7 +4117,7 @@
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| V18-A25 | P0 | Восстановление прошло тест на независимом сервере | частично | tests/resilience/backup-restore.test.ts restores into a new database + directory and starts a separate server; Same PostgreSQL host, not an independent server | tests/resilience/dr-drill.test.ts: PostgreSQL server binaries (initdb, pg_verifybackup) or age are not installed: install pos<br>tests/resilience/backup-restore.test.ts: restores content, attachment bytes, history, permissions and the audit chain into a new in |
+| V18-A25 | P0 | Восстановление прошло тест на независимом сервере | реализовано | tests/resilience/dr-drill.test.ts (npm run restore:drill): whole site lost, restored only from the encrypted second-medium copy into a new independent PostgreSQL cluster + new app process: separate initdb cluster (own data directory, port, process, socket dir, archive_mode=off), separate object directory and app server process, source = second-medium copy only, decryption key outside the site; protocol docs/drills/LATEST.md; Same physical host (no second machine in this environment); repeat npm run restore:drill / verify-pitr.sh on a separate restore host before go-live | tests/resilience/dr-drill.test.ts: PostgreSQL server binaries (initdb, pg_verifybackup) or age are not installed: install pos<br>tests/resilience/backup-restore.test.ts: restores content, attachment bytes, history, permissions and the audit chain into a new in |
 
 ### PROCESS
 
@@ -5146,7 +5135,7 @@
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| R-BACKUP-018 | P0 | RPO ≤5 минут и RTO ≤2 часа с регулярными испытаниями; учёт неподтверждённых локальных изменений отдельно | частично | see R-BACKUP-001; tests/resilience/pitr.test.ts; Test scale only | tests/resilience/pitr.test.ts: recovers database and files to the moment before the incident; later damage is absent, ear |
+| R-BACKUP-018 | P0 | RPO ≤5 минут и RTO ≤2 часа с регулярными испытаниями; учёт неподтверждённых локальных изменений отдельно | реализовано | tests/resilience/dr-drill.test.ts (npm run restore:drill): whole site lost, restored only from the encrypted second-medium copy into a new independent PostgreSQL cluster + new app process; measured 2026-10-23 (docs/drills/latest.json, archive_timeout 60 s, sync every 30 s, 256 MB files): RPO db 25.6 s / files 27.8 s (bound 93 s), RTO 5.9 s to serving API, 7.5 s verified; PITR to T serving in 5.9 s; regular: CI on every push + release gate requires a protocol ≤31 days + monthly verify-pitr.sh; unconfirmed local edits are client-side (IndexedDB queue, never shown as saved, re-sent after restore — tests/resilience/crash-restart.test.ts) and documented separately in docs/BACKUP_RESTORE.md §8; Drill scale; see R-BACKUP-001 | tests/resilience/pitr.test.ts: recovers database and files to the moment before the incident; later damage is absent, ear |
 
 ### HISTORY
 
@@ -5172,7 +5161,7 @@
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| R-OPS-022 | P0 | Поставка: deployment без секретов в репо, миграции и откат, health/readiness, метрики/логи/трейсы, алерты, бэкапы и restore-тесты … | частично | Dockerfile, deploy/*, migrations + rollback + enforced pre-migration backup, health/readiness, metrics/logs/OpenTelemetry traces (tests/integration/io-p0-ops.test.ts), alerts, backup + restore tests, docs; CD pipeline and operations passport missing | tests/integration/ops-delivery.test.ts: health, readiness, metrics and structured logs of the server process (R-OPS-003, R-OPS-022<br>tests/integration/ops-delivery.test.ts: /healthz, /readyz (database, storage, migrations) and Prometheus /metrics answer; logs are<br>tests/integration/ops-delivery.test.ts: deployment kit without secrets (R-OPS-022)<br>… ещё 8 |
+| R-OPS-022 | P0 | Поставка: deployment без секретов в репо, миграции и откат, health/readiness, метрики/логи/трейсы, алерты, бэкапы и restore-тесты … | частично | Deployment without secrets in the repository (tests/integration/ops-delivery.test.ts: no keys/tokens in any file, env.example placeholders only, compose takes every secret from ${VAR}, production refuses missing/short SECRET_KEY); migrations + rollback on a fresh DB (tests/resilience/migrations-fresh.test.ts) and with data (migrations.test.ts); health/readiness/metrics/logs (ops-delivery.test.ts), traces + alerts (io-p0-ops.test.ts); backups + restore tests (dr-drill, pitr, backup-restore); audit chain; runbooks docs/OPERATIONS.md; Missing from the kit: CD pipeline, operations/limitations passport; other kit items (help, templates, browsers, data schema, sync protocol, report) assessed under their own requirements | tests/integration/ops-delivery.test.ts: health, readiness, metrics and structured logs of the server process (R-OPS-003, R-OPS-022<br>tests/integration/ops-delivery.test.ts: /healthz, /readyz (database, storage, migrations) and Prometheus /metrics answer; logs are<br>tests/integration/ops-delivery.test.ts: deployment kit without secrets (R-OPS-022)<br>… ещё 8 |
 
 ### PROCESS
 
@@ -5656,7 +5645,7 @@
 
 | ID | Пр. | Требование | Статус | Реализация / доказательство | Тесты |
 |---|---|---|---|---|---|
-| R-BACKUP-019 | P0 | Регулярная проверка бэкапов реальным восстановлением, контрольными суммами и сравнением импорт-экспорт-импорт | частично | tests/resilience/backup-restore.test.ts, verify-backup.sh, archive round trip tests/integration/archive.test.ts; Regular production verification is an operational process | tests/integration/download-integrity.test.ts: attachment downloads are byte-exact (R-BACKUP-008, R-BACKUP-019)<br>tests/integration/download-integrity.test.ts: gzip files, zlib-looking and random binary files download unchanged with and without Accep<br>tests/resilience/backup-restore.test.ts: restores content, attachment bytes, history, permissions and the audit chain into a new in<br>… ещё 1 |
+| R-BACKUP-019 | P0 | Регулярная проверка бэкапов реальным восстановлением, контрольными суммами и сравнением импорт-экспорт-импорт | реализовано | Protocols: docs/drills/LATEST.md + latest.json (npm run restore:drill: real restore, sha256 of every object and WAL segment, SHA256SUMS + pg_verifybackup, row counts, audit chain, document decode, export before backup = export after restore), verify-backup.sh (weekly) and verify-pitr.sh (monthly) JSON reports; import-export-import round trip tests/integration/archive.test.ts, tests/integration/io-p0-import.test.ts; tests/resilience/dr-drill.test.ts, tests/resilience/backup-restore.test.ts | tests/integration/download-integrity.test.ts: attachment downloads are byte-exact (R-BACKUP-008, R-BACKUP-019)<br>tests/integration/download-integrity.test.ts: gzip files, zlib-looking and random binary files download unchanged with and without Accep<br>tests/resilience/backup-restore.test.ts: restores content, attachment bytes, history, permissions and the audit chain into a new in<br>… ещё 1 |
 
 ### UI
 
