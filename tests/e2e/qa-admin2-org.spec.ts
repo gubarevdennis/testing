@@ -23,7 +23,7 @@ test('QA admin2 org setup', async ({ page }) => {
   await ensureOwner(page);
 });
 
-test('R-QA-004 departments tree: a department opens its card; «Подотдел» creates a child with «Описание» and «Входит в отдел» preset; «Свернуть»/«Развернуть» the branch; «← Назад» closes the card; a plain group opens from «Группы»', async ({ page }) => {
+test('R-QA-004 departments tree: a department opens its card; «Подотдел» creates a child with «Описание» and «Входит в отдел» preset; «Свернуть»/«Развернуть» the branch; «← Назад» (narrow screen) closes the card; a plain group opens from «Группы»', async ({ page }) => {
   const errors = pageErrors(page);
   await ensureOwner(page);
   const tag = uniq();
@@ -52,8 +52,13 @@ test('R-QA-004 departments tree: a department opens its card; «Подотдел
   await expect(childRow).toBeHidden();
   await branch.getByRole('button', { name: 'Развернуть' }).first().click();
   await expect(childRow).toBeVisible();
-  // back to the list
+  // a narrow screen shows either the tree or the card: «← Назад» returns to the tree
+  await page.setViewportSize({ width: 700, height: 900 });
+  await expect(tree(page)).toBeHidden();
   await page.getByRole('button', { name: '← Назад' }).click();
+  await expect(tree(page)).toBeVisible();
+  await expect(page.getByRole('heading', { name: `Отдел кадров ${tag}`, exact: true })).toBeHidden();
+  await page.setViewportSize({ width: 1440, height: 900 });
   await expect(page.getByRole('heading', { name: 'Выберите отдел или группу' })).toBeVisible();
   await tree(page).getByRole('button', { name: new RegExp(`^Команда ${tag}`) }).click();
   await expect(page.getByRole('heading', { name: `Команда ${tag}`, exact: true })).toBeVisible();

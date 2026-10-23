@@ -36,6 +36,40 @@ async function more(page: Page, item: string, sub?: string) {
   await page.getByRole('menuitem', { name: sub, exact: true }).or(page.getByRole('menuitemcheckbox', { name: sub, exact: true })).click();
 }
 
+/** «Тип блока» → item; a list/quote/callout is applied to plain text, so the block is turned back into «Текст» first */
+async function turn(page: Page, id: string, label: string, pred: (b: Node) => boolean, css: string, fromText = false) {
+  if (fromText) {
+    await selectFirst(page);
+    await bar(page).getByRole('button', { name: 'Тип блока' }).click();
+    await page.getByRole('menuitem', { name: 'Текст' }).click();
+    await expectSaved(page);
+    await expect.poll(async () => (await first(page, id)).type).toBe('paragraph');
+  }
+  await selectFirst(page);
+  await bar(page).getByRole('button', { name: 'Тип блока' }).click();
+  await page.getByRole('menuitem', { name: label }).click();
+  await expectSaved(page);
+  await expect.poll(async () => pred(await first(page, id)), { message: label }).toBe(true);
+  await expect(editor(page).locator(css).first()).toContainText('Строка для преобразования');
+  expect(textOf(await first(page, id))).toBe('Строка для преобразования');
+}
+
+// items carry a sample swatch («A») and a ✓ for the current value in their accessible name
+async function pick(page: Page, item: string) {
+  await selectFirst(page);
+  await bar(page).getByRole('button', { name: 'Цвет', exact: true }).click();
+  await page.getByRole('menuitemcheckbox', { name: new RegExp(item + '( ✓)?$') }).click();
+  await expectSaved(page);
+}
+
+async function alignTo(page: Page, id: string, item: string, value: string) {
+  await selectFirst(page);
+  await more(page, item);
+  await expectSaved(page);
+  await expect.poll(async () => (await first(page, id)).attrs?.textAlign ?? null, { message: item }).toBe(value);
+  await expect(editor(page).locator('p').first()).toHaveCSS('text-align', value === 'left' ? /left|start/ : value);
+}
+
 test('R-EDITOR-005, QA26-07 «Тип блока»: Текст, Заголовок 1–3, Маркированный/Нумерованный список, Чек-лист, Цитата, Выделенный блок — stored, Esc closes the menu without change, Undo/Redo, after reload', async ({ page }) => {
   await ensureOwner(page);
   const id = await newPage(page, 'Тип блока из панели');
@@ -49,34 +83,15 @@ test('R-EDITOR-005, QA26-07 «Тип блока»: Текст, Заголово�
   await page.keyboard.press('Escape');
   await expect(page.getByRole('menuitem', { name: 'Заголовок 1' })).toHaveCount(0);
   expect((await first(page, id)).type).toBe('paragraph');
-  const cases: Array<[string, (b: Node) => boolean, string]> = [
-    ['Заголовок 1', (b) => b.type === 'heading' && b.attrs?.level === 1, 'h1'],
-    ['Заголовок 2', (b) => b.type === 'heading' && b.attrs?.level === 2, 'h2'],
-    ['Заголовок 3', (b) => b.type === 'heading' && b.attrs?.level === 3, 'h3'],
-    ['Текст', (b) => b.type === 'paragraph', 'p'],
-    ['Маркированный список', (b) => b.type === 'bulletList', 'ul li'],
-    ['Нумерованный список', (b) => b.type === 'orderedList', 'ol li'],
-    ['Чек-лист', (b) => b.type === 'taskList', 'ul[data-type="taskList"] li'],
-    ['Цитата', (b) => b.type === 'blockquote', 'blockquote'],
-    ['Выделенный блок', (b) => b.type === 'callout', '.kb-callout, [data-type="callout"]'],
-  ];
-  for (const [label, pred, css] of cases) {
-    // lists toggle: go back to a paragraph first so each item is applied to plain text
-    if (/список|Чек-лист|Цитата|Выделенный/.test(label)) {
-      await selectFirst(page);
-      await typeMenu().click();
-      await page.getByRole('menuitem', { name: 'Текст' }).click();
-      await expectSaved(page);
-      await expect.poll(async () => (await first(page, id)).type).toBe('paragraph');
-    }
-    await selectFirst(page);
-    await typeMenu().click();
-    await page.getByRole('menuitem', { name: label }).click();
-    await expectSaved(page);
-    await expect.poll(async () => pred(await first(page, id)), { message: label }).toBe(true);
-    await expect(editor(page).locator(css).first()).toContainText('Строка для преобразования');
-    expect(textOf(await first(page, id))).toBe('Строка для преобразования');
-  }
+  await turn(page, id, 'Заголовок 1', (b) => b.type === 'heading' && b.attrs?.level === 1, 'h1');
+  await turn(page, id, 'Заголовок 2', (b) => b.type === 'heading' && b.attrs?.level === 2, 'h2');
+  await turn(page, id, 'Заголовок 3', (b) => b.type === 'heading' && b.attrs?.level === 3, 'h3');
+  await turn(page, id, 'Текст', (b) => b.type === 'paragraph', 'p');
+  await turn(page, id, 'Маркированный список', (b) => b.type === 'bulletList', 'ul li', true);
+  await turn(page, id, 'Нумерованный список', (b) => b.type === 'orderedList', 'ol li', true);
+  await turn(page, id, 'Чек-лист', (b) => b.type === 'taskList', 'ul[data-type="taskList"] li', true);
+  await turn(page, id, 'Цитата', (b) => b.type === 'blockquote', 'blockquote', true);
+  await turn(page, id, 'Выделенный блок', (b) => b.type === 'callout', '.kb-callout, [data-type="callout"]', true);
   // Undo returns the quote, Redo the callout
   await page.keyboard.press(UNDO);
   await expectSaved(page);
@@ -94,28 +109,21 @@ test('R-EDITOR-010 «Цвет»: a text colour and a background, «По умол
   await page.keyboard.type('Цветная строка');
   await expectSaved(page);
   const colorMenu = () => bar(page).getByRole('button', { name: 'Цвет', exact: true });
-  // items carry a sample swatch («A») and a ✓ for the current value in their accessible name
-  const pick = async (item: RegExp) => {
-    await selectFirst(page);
-    await colorMenu().click();
-    await page.getByRole('menuitemcheckbox', { name: item }).click();
-    await expectSaved(page);
-  };
   // the trigger shows the tooltip «Цвет текста и фона»
   await selectFirst(page);
   await colorMenu().hover();
   await expect(page.getByRole('tooltip').or(page.locator('.tooltip')).filter({ hasText: 'Цвет текста и фона' })).toBeVisible();
-  await pick(/Красный( ✓)?$/);
-  await pick(/Жёлтый фон( ✓)?$/);
+  await pick(page, 'Красный');
+  await pick(page, 'Жёлтый фон');
   await expect.poll(async () => marksOf(await first(page, id)).map((m) => m.type).sort()).toEqual(['highlight', 'textStyle']);
   expect(JSON.stringify(marksOf(await first(page, id)))).toContain('#b4372b');
   await expect(editor(page).locator('mark')).toHaveText('Цветная строка');
   // «По умолчанию» removes the text colour, the background stays
-  await pick(/По умолчанию( ✓)?$/);
+  await pick(page, 'По умолчанию');
   await expect.poll(async () => JSON.stringify(marksOf(await first(page, id)))).not.toContain('#b4372b');
   expect(marksOf(await first(page, id)).map((m) => m.type)).toContain('highlight');
   // «Без фона» removes the background
-  await pick(/Без фона( ✓)?$/);
+  await pick(page, 'Без фона');
   await expect.poll(async () => marksOf(await first(page, id)).filter((m) => m.type === 'highlight')).toEqual([]);
   await expect(editor(page).locator('mark')).toHaveCount(0);
   // Undo brings the background back, Redo removes it again
@@ -146,13 +154,9 @@ test('R-EDITOR-010 «Ещё»: «По левому краю», «По центр
   await page.keyboard.type('Абзац для оформления');
   await expectSaved(page);
   const align = async () => (await first(page, id)).attrs?.textAlign ?? null;
-  for (const [item, value] of [['По центру', 'center'], ['По ширине', 'justify'], ['По левому краю', 'left']] as const) {
-    await selectFirst(page);
-    await more(page, item);
-    await expectSaved(page);
-    await expect.poll(align, { message: item }).toBe(value);
-    await expect(editor(page).locator('p').first()).toHaveCSS('text-align', value === 'left' ? /left|start/ : value);
-  }
+  await alignTo(page, id, 'По центру', 'center');
+  await alignTo(page, id, 'По ширине', 'justify');
+  await alignTo(page, id, 'По левому краю', 'left');
   await page.keyboard.press(UNDO);
   await expectSaved(page);
   await expect.poll(align).toBe('justify');

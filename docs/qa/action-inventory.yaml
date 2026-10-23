@@ -1,10 +1,10 @@
 # Action inventory (QA26-01, QA26-04). Generated from apps/web/src and docs/qa/runtime-controls.json.
 generated_by: node --import tsx scripts/qa/inventory.ts (do not edit by hand)
 summary:
-  total: 1009
+  total: 998
   critical: 292
   by_kind:
-    button: 404
+    button: 393
     command: 33
     dialog: 71
     input: 107
@@ -23,7 +23,7 @@ summary:
     app: 14
     auth: 13
     common: 40
-    editor: 214
+    editor: 205
     help: 10
     home: 12
     import: 38
@@ -31,7 +31,7 @@ summary:
     runtime: 21
     search: 21
     settings: 41
-    shell: 73
+    shell: 71
     space: 66
     templates: 33
     trash: 14
@@ -1077,14 +1077,14 @@ actions:
     screen: admin
     component: GroupDialog
     label: Отмена
-    source: apps/web/src/admin/GroupsSection.tsx:240
+    source: apps/web/src/admin/GroupsSection.tsx:241
     critical: false
   - id: admin/GroupDialog/sohranit
     kind: button
     screen: admin
     component: GroupDialog
     label: Сохранить
-    source: apps/web/src/admin/GroupsSection.tsx:243
+    source: apps/web/src/admin/GroupsSection.tsx:244
     critical: true
     seen:
       - /admin/settings
@@ -1094,28 +1094,28 @@ actions:
     screen: admin
     component: GroupDialog
     label: Название
-    source: apps/web/src/admin/GroupsSection.tsx:264
+    source: apps/web/src/admin/GroupsSection.tsx:265
     critical: false
   - id: admin/GroupDialog/opisanie
     kind: input
     screen: admin
     component: GroupDialog
     label: Описание
-    source: apps/web/src/admin/GroupsSection.tsx:268
+    source: apps/web/src/admin/GroupsSection.tsx:269
     critical: false
   - id: admin/GroupDialog/vhodit-v-otdel
     kind: select
     screen: admin
     component: GroupDialog
     label: Входит в отдел
-    source: apps/web/src/admin/GroupsSection.tsx:273
+    source: apps/web/src/admin/GroupsSection.tsx:274
     critical: false
   - id: admin/GroupDetail/confirm.isklyuchit-uchastnika
     kind: dialog
     screen: admin
     component: GroupDetail
     label: Исключить участника?
-    source: apps/web/src/admin/GroupsSection.tsx:320
+    source: apps/web/src/admin/GroupsSection.tsx:321
     confirm: true
     critical: true
   - id: admin/GroupDetail/confirm.isklyuchit-uchastnika.isklyuchit
@@ -1123,7 +1123,7 @@ actions:
     screen: admin
     component: GroupDetail
     label: Исключить
-    source: apps/web/src/admin/GroupsSection.tsx:320
+    source: apps/web/src/admin/GroupsSection.tsx:321
     confirm: true
     critical: false
   - id: admin/GroupDetail/nazad
@@ -1131,28 +1131,28 @@ actions:
     screen: admin
     component: GroupDetail
     label: ← Назад
-    source: apps/web/src/admin/GroupsSection.tsx:341
+    source: apps/web/src/admin/GroupsSection.tsx:342
     critical: false
   - id: admin/GroupDetail/podotdel
     kind: button
     screen: admin
     component: GroupDetail
     label: Подотдел
-    source: apps/web/src/admin/GroupsSection.tsx:354
+    source: apps/web/src/admin/GroupsSection.tsx:355
     critical: false
   - id: admin/GroupDetail/izmenit
     kind: button
     screen: admin
     component: GroupDetail
     label: Изменить
-    source: apps/web/src/admin/GroupsSection.tsx:358
+    source: apps/web/src/admin/GroupsSection.tsx:359
     critical: false
   - id: admin/GroupDetail/udalit
     kind: button
     screen: admin
     component: GroupDetail
     label: Удалить
-    source: apps/web/src/admin/GroupsSection.tsx:361
+    source: apps/web/src/admin/GroupsSection.tsx:362
     critical: true
     seen:
       - /p/:pageId
@@ -1161,7 +1161,7 @@ actions:
     screen: admin
     component: GroupDetail
     label: Роль
-    source: apps/web/src/admin/GroupsSection.tsx:381
+    source: apps/web/src/admin/GroupsSection.tsx:382
     critical: true
     seen:
       - /admin/users
@@ -1170,14 +1170,14 @@ actions:
     screen: admin
     component: GroupDetail
     label: До (необязательно)
-    source: apps/web/src/admin/GroupsSection.tsx:388
+    source: apps/web/src/admin/GroupsSection.tsx:389
     critical: false
   - id: admin/GroupDetail/dobavit
     kind: button
     screen: admin
     component: GroupDetail
     label: Добавить
-    source: apps/web/src/admin/GroupsSection.tsx:390
+    source: apps/web/src/admin/GroupsSection.tsx:391
     critical: false
     seen:
       - /admin/users
@@ -1187,7 +1187,7 @@ actions:
     component: GroupDetail
     label: Роль {…}
     dynamic: true
-    source: apps/web/src/admin/GroupsSection.tsx:433
+    source: apps/web/src/admin/GroupsSection.tsx:434
     critical: true
   - id: admin/GroupDetail/isklyuchit
     kind: button
@@ -1195,7 +1195,7 @@ actions:
     component: GroupDetail
     label: Исключить {…}
     dynamic: true
-    source: apps/web/src/admin/GroupsSection.tsx:445
+    source: apps/web/src/admin/GroupsSection.tsx:446
     critical: false
   - id: admin/HealthSection/obnovit
     kind: button
@@ -4605,26 +4605,12 @@ actions:
     label: Действия с блоком
     source: apps/web/src/editor/menus/BlockHandle.tsx:189
     critical: false
-  - id: editor/BlockHandle/peretaschite-ili-nazhmite-dlya-deystviy
-    kind: button
-    screen: editor
-    component: BlockHandle
-    label: Перетащите или нажмите для действий
-    source: apps/web/src/editor/menus/BlockHandle.tsx:198
-    critical: false
   - id: editor/TouchBlockActions/deystviya-s-blokom
     kind: menu
     screen: editor
     component: TouchBlockActions
     label: Действия с блоком
     source: apps/web/src/editor/menus/BlockHandle.tsx:236
-    critical: false
-  - id: editor/TouchBlockActions/deystviya-s-blokom~2
-    kind: button
-    screen: editor
-    component: TouchBlockActions
-    label: Действия с блоком
-    source: apps/web/src/editor/menus/BlockHandle.tsx:246
     critical: false
   - id: editor/BubbleToolbar/confirm.preobrazovat-v-blok-koda
     kind: dialog
@@ -4748,6 +4734,8 @@ actions:
     screen: editor
     component: BubbleToolbar
     label: Цвет
+    aliases:
+      - Цвет текста и фона
     source: apps/web/src/editor/menus/BubbleToolbar.tsx:183
     critical: false
   - id: editor/BubbleToolbar/c-default
@@ -4763,13 +4751,6 @@ actions:
     component: BubbleToolbar
     label: Без фона
     source: apps/web/src/editor/menus/BubbleToolbar.tsx:190
-    critical: false
-  - id: editor/BubbleToolbar/cvet-teksta-i-fona
-    kind: button
-    screen: editor
-    component: BubbleToolbar
-    label: Цвет текста и фона
-    source: apps/web/src/editor/menus/BubbleToolbar.tsx:195
     critical: false
   - id: editor/BubbleToolbar/esche
     kind: menu
@@ -4883,13 +4864,6 @@ actions:
     label: Очистить форматирование
     source: apps/web/src/editor/menus/BubbleToolbar.tsx:242
     critical: true
-  - id: editor/BubbleToolbar/esche~2
-    kind: button
-    screen: editor
-    component: BubbleToolbar
-    label: Ещё
-    source: apps/web/src/editor/menus/BubbleToolbar.tsx:246
-    critical: false
   - id: editor/PasteOptionsMenu/button-data
     kind: button
     screen: editor
@@ -4929,6 +4903,8 @@ actions:
     screen: editor
     component: TableToolbar
     label: Цвет ячейки
+    aliases:
+      - Заливка ячеек
     source: apps/web/src/editor/menus/TableToolbar.tsx:83
     critical: false
   - id: editor/TableToolbar/none
@@ -4938,18 +4914,13 @@ actions:
     label: Без заливки
     source: apps/web/src/editor/menus/TableToolbar.tsx:86
     critical: false
-  - id: editor/TableToolbar/zalivka-yacheek
-    kind: button
-    screen: editor
-    component: TableToolbar
-    label: Заливка ячеек
-    source: apps/web/src/editor/menus/TableToolbar.tsx:91
-    critical: false
   - id: editor/TableToolbar/vyravnivanie
     kind: menu
     screen: editor
     component: TableToolbar
     label: Выравнивание
+    aliases:
+      - Выравнивание в ячейках
     source: apps/web/src/editor/menus/TableToolbar.tsx:97
     critical: false
   - id: editor/TableToolbar/l
@@ -4994,18 +4965,13 @@ actions:
     label: По низу
     source: apps/web/src/editor/menus/TableToolbar.tsx:106
     critical: false
-  - id: editor/TableToolbar/vyravnivanie-v-yacheykah
-    kind: button
-    screen: editor
-    component: TableToolbar
-    label: Выравнивание в ячейках
-    source: apps/web/src/editor/menus/TableToolbar.tsx:110
-    critical: false
   - id: editor/TableToolbar/tablica
     kind: menu
     screen: editor
     component: TableToolbar
     label: Таблица
+    aliases:
+      - Ещё
     source: apps/web/src/editor/menus/TableToolbar.tsx:117
     critical: false
   - id: editor/TableToolbar/mrup
@@ -5103,13 +5069,6 @@ actions:
     label: Удалить таблицу
     source: apps/web/src/editor/menus/TableToolbar.tsx:136
     critical: true
-  - id: editor/TableToolbar/esche
-    kind: button
-    screen: editor
-    component: TableToolbar
-    label: Ещё
-    source: apps/web/src/editor/menus/TableToolbar.tsx:140
-    critical: false
   - id: editor/LoadedImageView/po-levomu-krayu
     kind: button
     screen: editor
@@ -5345,13 +5304,6 @@ actions:
     label: Свой значок…
     source: apps/web/src/editor/nodeviews/blocks.tsx:31
     critical: false
-  - id: editor/CalloutView/izmenit-vid-vydelennogo-bloka
-    kind: button
-    screen: editor
-    component: CalloutView
-    label: Изменить вид выделенного блока
-    source: apps/web/src/editor/nodeviews/blocks.tsx:34
-    critical: false
   - id: editor/LoadedFileView/predprosmotr
     kind: button
     screen: editor
@@ -5393,13 +5345,6 @@ actions:
     component: LoadedFileView
     label: Карточкой
     source: apps/web/src/editor/nodeviews/blocks.tsx:117
-    critical: false
-  - id: editor/LoadedFileView/vid-fayla
-    kind: button
-    screen: editor
-    component: LoadedFileView
-    label: Вид файла
-    source: apps/web/src/editor/nodeviews/blocks.tsx:120
     critical: false
   - id: editor/EmbedView/ssylka
     kind: link
@@ -6785,13 +6730,6 @@ actions:
       - /settings/tokens
       - /templates
       - /trash
-  - id: shell/TreeRow/deystviya
-    kind: button
-    screen: shell
-    component: TreeRow
-    label: Действия
-    source: apps/web/src/layout/SidebarTree.tsx:569
-    critical: false
   - id: shell/TreeRow/svernut~2
     kind: button
     screen: shell
@@ -6890,13 +6828,6 @@ actions:
       - /settings/tokens
       - /templates
       - /trash
-  - id: shell/TreeRow/deystviya~2
-    kind: button
-    screen: shell
-    component: TreeRow
-    label: Действия
-    source: apps/web/src/layout/SidebarTree.tsx:638
-    critical: false
   - id: shell/RenameInput/novoe-nazvanie
     kind: input
     screen: shell

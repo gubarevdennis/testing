@@ -69,6 +69,9 @@ function popupRenderer(label: string, empty?: string, hideEmpty = false) {
 function suggestionExt(name: string, opts: Omit<SuggestionOptions<Item>, 'editor'>) {
   return Extension.create({
     name,
+    // an open menu gets Escape/Enter/arrows before the block keymap (BlockOps: Esc selects the block, ↓ leaves the last
+    // block): Esc closing the «/» menu used to select the whole block, and the next key replaced it (QA-E9)
+    priority: 200,
     addProseMirrorPlugins() {
       return [Suggestion<Item>({ editor: this.editor, ...opts })];
     },

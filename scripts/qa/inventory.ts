@@ -309,6 +309,25 @@ function isMenuTrigger(el: ts.JsxOpeningLikeElement, sf: ts.SourceFile): boolean
   return false;
 }
 
+/** `trigger={…}` of a <Menu label="…">: the control rendered there is the menu (see the Menu branch of scanSource). */
+function isLabelledMenuTriggerAttr(n: ts.Node, sf: ts.SourceFile): boolean {
+  if (!ts.isJsxAttribute(n) || n.name.getText(sf) !== 'trigger') return false;
+  const el = n.parent.parent;
+  return (ts.isJsxSelfClosingElement(el) || ts.isJsxOpeningElement(el)) && el.tagName.getText(sf) === 'Menu' && !!attr(el, 'label');
+}
+
+/** Tooltip labels around the trigger control of a <Menu>. */
+function menuTriggerTooltips(menu: ts.JsxOpeningLikeElement, sf: ts.SourceFile): string[] {
+  const out: string[] = [];
+  const t = attr(menu, 'trigger');
+  const scan = (n: ts.Node) => {
+    if ((ts.isJsxOpeningElement(n) || ts.isJsxSelfClosingElement(n)) && n.tagName.getText(sf) === 'Tooltip') out.push(...(attrText(n, 'label', sf)?.text ?? []));
+    n.forEachChild(scan);
+  };
+  if (t) scan(t);
+  return out;
+}
+
 const ROLE_KIND: Record<string, Kind> = { button: 'button', menuitem: 'menu-item', menuitemcheckbox: 'menu-item', menuitemradio: 'menu-item', tab: 'tab', switch: 'toggle', checkbox: 'toggle', option: 'option', link: 'link', combobox: 'select', textbox: 'input', searchbox: 'input' };
 const ROUTE_PREFIX: Record<string, string> = { 'pages/SettingsPage.tsx': '/settings/', 'admin/AdminPage.tsx': '/admin/' };
 
@@ -333,6 +352,7 @@ export function scanSource(): { raws: Raw[]; dynamicUnnamed: Array<{ source: str
     };
 
     const visit = (n: ts.Node) => {
+      if (isLabelledMenuTriggerAttr(n, sf)) return;
       if (ts.isJsxSelfClosingElement(n) || ts.isJsxOpeningElement(n)) {
         const el = n;
         const tag = el.tagName.getText(sf);
@@ -355,7 +375,9 @@ export function scanSource(): { raws: Raw[]; dynamicUnnamed: Array<{ source: str
           if (t) push(el, 'dialog', t.text, t.dynamic);
         } else if (tag === 'Menu') {
           const l = attrText(el, 'label', sf);
-          if (l) push(el, 'menu', l.text, l.dynamic);
+          // the trigger of a labelled <Menu> gets the menu's label as its accessible name (Menu passes aria-label in its
+          // props): it is the menu itself, not a second control; its tooltip text is another name of the menu
+          if (l) push(el, 'menu', [...l.text, ...menuTriggerTooltips(el, sf)], l.dynamic);
         } else if (tag === 'Toggle' || tag === 'CopyField') {
           const l = attrText(el, 'label', sf) ?? aria;
           if (l) push(el, tag === 'Toggle' ? 'toggle' : 'input', l.text, l.dynamic);

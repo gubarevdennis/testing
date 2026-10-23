@@ -404,3 +404,58 @@ mappings:
       - test: 'tests/e2e/qa-admin-users.spec.ts › R-QA-004 «Перевести в другой отдел…»: «Сравнить доступы»…'
         states: [error]
     note: 'checkbox per group, named by the group («Исключить из» / «Добавить в»)'
+  - action: admin/GroupsSection/renderdept.button-data
+    tests:
+      - test: 'tests/e2e/qa-admin2-org.spec.ts › R-QA-004 departments tree…'
+      - test: 'tests/e2e/qa-admin2-org.spec.ts › R-QA-004 «Изменить» a department…'
+    na: { empty: 'a tree row exists only for an existing department', loading: 'local selection; the card loads its members (see «Добавить участника»)', error: 'local selection', offline: 'local selection of loaded data', cancel: 'selecting another row or «← Назад»', double-click: 'selecting is idempotent', no-permission: 'the groups section is hidden without people rights (qa-admin-users no-permission test)' }
+    note: 'a department row of the tree, named by the department'
+  - action: admin/GroupsSection/button-data
+    tests:
+      - test: 'tests/e2e/qa-admin2-org.spec.ts › R-QA-004 departments tree…'
+    na: { empty: 'a row exists only for an existing group', loading: 'local selection', error: 'local selection', offline: 'local selection of loaded data', cancel: 'selecting another row', double-click: 'selecting is idempotent', no-permission: 'the groups section is hidden without people rights' }
+    note: 'a plain group row («Группы» list), named by the group'
+  - action: admin/OrgSettingsSection/toggle-data
+    tests:
+      - test: 'tests/e2e/qa-admin-org.spec.ts › R-QA-004 «Сохранить» organisation settings…'
+        states: [cancel]
+      - test: 'tests/e2e/qa-admin-org.spec.ts › QA-A4 (fixed) no permission…'
+        states: [no-permission]
+    na: { loading: 'a local switch; saving is «Сохранить»', error: 'a local switch; the save error is covered on «Сохранить»', offline: 'a local switch; offline saving is covered on «Сохранить»' }
+    note: 'switches labelled by their setting («Гостевые учётные записи»): the policy question «Применить изменения политики?» cancel keeps it'
+  - action: admin/OrgSettingsSection/input-data
+    tests:
+      - test: 'tests/e2e/qa-admin-org.spec.ts › R-QA-004 «Сохранить» organisation settings…'
+        states: [empty, cancel, error, offline]
+      - test: 'tests/e2e/qa-admin-org.spec.ts › QA-A4 (fixed) no permission…'
+        states: [no-permission]
+    note: 'number fields labelled by their setting («Срок хранения в корзине», «Квота файлов на пользователя»): out of range / empty, «Отменить изменения», server error and offline keep the value'
+  - action: admin/CheckAccess/bez-nazvaniya
+    tests:
+      - test: 'tests/e2e/qa-admin2-access.spec.ts › R-ADMIN-018 «Проверить доступ»…'
+        states: [empty]
+    note: 'a document suggestion is named by the page title («Без названия» for an untitled page)'
+  - action: admin/ExpiringSection/bez-nazvaniya
+    tests:
+      - test: 'tests/e2e/qa-admin2-org.spec.ts › QA-A11 (fixed)…'
+    note: 'the resource link of an expiring grant; the fallback name for an untitled page'
+  - action: admin/AuditSection/s
+    tests:
+      - test: 'tests/e2e/qa-admin2-org.spec.ts › R-QA-004 audit log filters…'
+        states: [empty]
+    note: 'one-letter label «С» (period start) is below the matcher minimum; the test fills it and checks the filtered rows'
+  - action: admin/GroupDetail/izmenit
+    tests:
+      - test: 'tests/e2e/qa-admin2-org.spec.ts › R-QA-004 «Изменить» a department…'
+        states: [error, cancel]
+    note: '«Изменить» of the group card (the word is shared by many components)'
+  - action: settings/SettingsPage/link-data
+    tests:
+      - test: 'tests/e2e/qa-admin-spaces.spec.ts › R-AUTH-012 sessions…'
+    na: { empty: 'navigation link', loading: 'client-side route change', error: 'client-side route change', offline: 'client-side route change of a loaded page', cancel: 'navigation', double-click: 'idempotent navigation', no-permission: '«API-токены» is absent for a guest (kind check in SettingsPage); the other tabs are personal' }
+    note: 'settings tabs («Профиль», «Пароль и вход», «API-токены»…) are rendered from a path table without ids; the QA-A8 test clicks them from another tab'
+  - action: settings/AppearanceTab/toggle-data
+    tests:
+      - test: 'tests/e2e/qa-admin2-settings.spec.ts › R-UI-061 theme…'
+        states: [error, loading]
+    note: 'editor switches labelled by the setting («Широкие страницы по умолчанию», «Умная типографика», «Проверка орфографии»): saved on the server, a failed save is reported and the switch keeps the stored state'
