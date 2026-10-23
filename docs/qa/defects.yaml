@@ -118,7 +118,7 @@ defects:
   - id: QA-D6
     title: 'Редактор: необработанная ошибка RangeError «Position N out of range» в обработчике подсказки-плейсхолдера (editor/clientExtensions.ts) после вставки колонок из меню «/»'
     severity: medium
-    status: open
+    status: fixed
     owner: команда «Редактор»
     test: tests/e2e/qa-actions.spec.ts › QA-D6 (known defect) (test.fail)
     requirements: [R-UI-011]
@@ -127,7 +127,7 @@ defects:
   - id: QA-D7
     title: 'Меню блока «Действия с блоком» продолжает действовать на блок, для которого его открыли первым: после Esc или выполненного действия меню, открытое у другого блока, перемещает (удаляет, дублирует) прежний блок'
     severity: high
-    status: open
+    status: fixed
     owner: команда «Редактор»
     test: tests/e2e/qa-actions.spec.ts › QA-D7 (known defect) (test.fail)
     requirements: [R-EDITOR-069, R-EDITOR-073]
@@ -136,7 +136,7 @@ defects:
   - id: QA-D8
     title: 'Меню блока: подменю «Цвет текста» (и другие подменю) у блока рядом с боковой панелью открывается за пределами окна (x < 0, под панелью) — мышью пункт не нажать, только клавиатурой'
     severity: high
-    status: open
+    status: fixed
     owner: команда «Навигация и оболочка»
     test: tests/e2e/qa-actions.spec.ts › QA-D8 (known defect) (test.fail)
     requirements: [R-UI-059, R-UI-068]

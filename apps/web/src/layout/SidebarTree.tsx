@@ -125,13 +125,32 @@ export function SidebarTree({ personal, spaces, shared, onNavigate }: Props) {
   const virtualizer = useVirtualizer({ count: rows.length, getScrollElement: () => scrollRef.current, estimateSize: () => ROW_H, overscan: 12 });
   useTreeScrollMemory(scrollRef, rows.length);
   useRevealCurrentPage(currentPage);
-  // scroll the open page into view once its row exists (ancestors may expand and load after navigation)
-  const revealed = useRef<string | null>(null);
+  // keep the open page in view while rows load around it (spaces and ancestors load lazily and shift it), until the
+  // user scrolls the tree themselves
+  const userScrolled = useRef(false);
   useEffect(() => {
-    if (!currentPage || revealed.current === currentPage) return;
+    userScrolled.current = false;
+    const el = scrollRef.current;
+    if (!el) return;
+    const mark = () => (userScrolled.current = true);
+    el.addEventListener('wheel', mark, { passive: true });
+    el.addEventListener('touchmove', mark, { passive: true });
+    el.addEventListener('keydown', mark);
+    return () => {
+      el.removeEventListener('wheel', mark);
+      el.removeEventListener('touchmove', mark);
+      el.removeEventListener('keydown', mark);
+    };
+  }, [currentPage]);
+  useEffect(() => {
+    if (!currentPage || userScrolled.current) return;
     const idx = rows.findIndex((r) => r.kind === 'node' && r.node.id === currentPage);
     if (idx < 0) return;
-    revealed.current = currentPage;
+    const el = scrollRef.current;
+    if (el) {
+      const top = idx * ROW_H;
+      if (top >= el.scrollTop && top + ROW_H <= el.scrollTop + el.clientHeight) return; // already visible
+    }
     virtualizer.scrollToIndex(idx, { align: 'auto' });
   }, [currentPage, rows, virtualizer]);
 

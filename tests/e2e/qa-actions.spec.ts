@@ -10,13 +10,11 @@ import { ensureOwner, newPage, createUser, login_, api, treeLink, editor, expect
 test.describe.configure({ mode: 'serial' });
 
 const errors: string[] = [];
-// uncaught page errors are collected per test; QA-D6 («Position N out of range» from the editor placeholder) is an open,
-// registered defect reproduced by its own test and is not counted again elsewhere
+// uncaught page errors are collected per test
 test.beforeEach(() => {
   errors.length = 0;
 });
-const KNOWN = /^Position \d+ out of range$/;
-const watch = (p: Page) => p.on('pageerror', (e) => (KNOWN.test(e.message) || errors.push(e.message), process.env.QA_STACKS && console.log('PAGEERROR', e.stack)));
+const watch = (p: Page) => p.on('pageerror', (e) => (errors.push(e.message), process.env.QA_STACKS && console.log('PAGEERROR', e.stack)));
 const toasts = (p: Page) => p.locator('.toasts');
 
 /** Delays every matching request by `ms` and counts how many were sent. */
@@ -528,8 +526,7 @@ test('R-QA-004 editor "/" menu: every block command inserts its block; dialog co
   expect(errors).toEqual([]);
 });
 
-test('QA-D6 (known defect): inserting column blocks from the "/" menu raises no uncaught editor error', async ({ page }) => {
-  test.fail(!process.env.QA_SHOW_DEFECTS, 'QA-D6: the placeholder callback (editor/clientExtensions.ts) resolves a decoration position against editor.state and throws RangeError «Position N out of range» after a columns block is inserted');
+test('QA-D6 (fixed): inserting column blocks from the "/" menu raises no uncaught editor error', async ({ page }) => {
   const own: string[] = [];
   page.on('pageerror', (e) => own.push(e.message));
   await ensureOwner(page);
@@ -604,8 +601,7 @@ test('R-QA-004 block menu «Действия с блоком»: «Дублиро
   expect(errors).toEqual([]);
 });
 
-test('QA-D7 (known defect): the block menu acts on the block it is opened next to, also after it was opened for another block', async ({ page }) => {
-  test.fail(!process.env.QA_SHOW_DEFECTS, 'QA-D7: once the block menu was opened for one block (and closed with Esc or after an action), opening it next to another block still applies «Переместить вверх» to the first block');
+test('QA-D7 (fixed): the block menu acts on the block it is opened next to, also after it was opened for another block', async ({ page }) => {
   watch(page);
   await ensureOwner(page);
   const id = await newPage(page, 'Меню блока: цель');
@@ -625,8 +621,7 @@ test('QA-D7 (known defect): the block menu acts on the block it is opened next t
   await expect.poll(texts, { timeout: 3000 }).toEqual(['Блок А', 'Блок В', 'Блок Б']);
 });
 
-test('QA-D8 (known defect): the «Цвет текста» submenu of the block menu opens inside the window and can be clicked', async ({ page }) => {
-  test.fail(!process.env.QA_SHOW_DEFECTS, 'QA-D8: for a block next to the sidebar the submenu is positioned off-screen (x < 0, under the sidebar) — its items cannot be clicked');
+test('QA-D8 (fixed): the «Цвет текста» submenu of the block menu opens inside the window and can be clicked', async ({ page }) => {
   await ensureOwner(page);
   const id = await newPage(page, 'Подменю в пределах окна');
   created.push(id);

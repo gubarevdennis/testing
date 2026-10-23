@@ -44,6 +44,8 @@ export function Menu({ trigger, items, placement = 'bottom-start', label, onOpen
     open,
     onOpenChange: setOpen,
     placement,
+    // top/left instead of a transform: a transformed menu would become the containing block of its fixed submenus
+    transform: false,
     whileElementsMounted: autoUpdate,
     middleware: [
       offset(4),
@@ -111,7 +113,14 @@ export function Menu({ trigger, items, placement = 'bottom-start', label, onOpen
 
 function SubMenu({ item, onClose, itemRef, itemProps, active }: { item: MenuItemDef; onClose: () => void; itemRef: (el: HTMLElement | null) => void; itemProps: Record<string, unknown>; active: boolean }) {
   const [open, setOpen] = useState(false);
-  const { refs, floatingStyles } = useFloating({ open, placement: 'right-start', whileElementsMounted: autoUpdate, middleware: [offset(2), flip({ padding: 8 }), shift({ padding: 8 })] });
+  const { refs, floatingStyles } = useFloating({
+    open,
+    placement: 'right-start',
+    // relative to the window, not to the scrolling parent menu: flip/shift keep it on screen next to the sidebar (QA-D8)
+    strategy: 'fixed',
+    whileElementsMounted: autoUpdate,
+    middleware: [offset(2), flip({ padding: 8, fallbackPlacements: ['left-start', 'bottom-start', 'top-start'] }), shift({ padding: 8, crossAxis: true })],
+  });
   const closeTimer = useRef<number | null>(null);
   useEffect(() => () => void (closeTimer.current && clearTimeout(closeTimer.current)), []);
   const onKey = (ev: RKeyboardEvent) => {

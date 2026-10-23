@@ -188,7 +188,9 @@ export function BlockHandle({
         </Tooltip>
         <Menu
           label="Действия с блоком"
-          items={items()}
+          // built when the menu opens: the handle does not re-render while hovering blocks of the same type (PERF-D1), so
+          // items built at render time would act on the block it was last rendered for (QA-D7)
+          items={items}
           placement="left-start"
           // with several blocks selected (Esc, Shift+↑/↓) the selection is kept: «Переместить на страницу…» moves them all
           onOpenChange={(o) => o && !blockRangeKey.getState(editor.state) && selectCurrent()}

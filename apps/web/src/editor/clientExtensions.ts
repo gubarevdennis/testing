@@ -80,8 +80,12 @@ export function clientExtensions(o: ClientExtensionOptions): AnyExtension[] {
         if (node.type.name === 'heading') return `Заголовок ${node.attrs.level}`;
         if (node.type.name === 'detailsSummary') return 'Заголовок раскрывающегося блока';
         if (node.type.name === 'paragraph') {
-          const $p = editor.state.doc.resolve(pos);
-          if ($p.depth === 0 && editor.state.doc.childCount === 1) return 'Начните писать или нажмите «/» для вставки блока';
+          // decorations are computed while the new state is being built, so editor.state may still be the previous one:
+          // a position past its end must not throw (QA-D6, e.g. right after inserting columns)
+          const doc = editor.state.doc;
+          if (pos < 0 || pos > doc.content.size) return '';
+          const $p = doc.resolve(pos);
+          if ($p.depth === 0 && doc.childCount === 1) return 'Начните писать или нажмите «/» для вставки блока';
           return $p.depth === 0 ? 'Нажмите «/» для команд' : '';
         }
         return '';
