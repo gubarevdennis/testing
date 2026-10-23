@@ -33,6 +33,8 @@ export const SHORTCUTS: Array<{ group: string; keys: string; action: string }> =
   { group: 'Редактор', keys: 'Tab / Shift+Tab', action: 'Вложенность списка или переход по ячейкам таблицы' },
   { group: 'Редактор', keys: 'Alt+Shift+↑/↓', action: 'Переместить блок вверх/вниз' },
   { group: 'Редактор', keys: 'Alt+Shift+↑/↓/←/→', action: 'В таблице — переместить строку или столбец' },
+  { group: 'Редактор', keys: 'Esc, Esc', action: 'Выделить блок, затем весь контейнер (колонки, выноску) — для переноса целиком' },
+  { group: 'Редактор', keys: 'Alt+Shift+←/→', action: 'Выделенное изображение — уменьшить / увеличить на 10 % ширины' },
   { group: 'Редактор', keys: 'Mod+D', action: 'Дублировать блок' },
   { group: 'Редактор', keys: 'Esc', action: 'Выделить текущий блок / закрыть меню' },
   // R-EDITOR-065, R-EDITOR-034: the rules below are covered by tests/e2e/editor-p0-core.spec.ts ("key matrix…")

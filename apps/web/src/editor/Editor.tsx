@@ -10,7 +10,7 @@ import { yXmlFragmentToProsemirrorJSON } from '@tiptap/y-tiptap';
 import { openCollab, useSyncState, type CollabSession } from '../sync/collab';
 import { clientExtensions } from './clientExtensions';
 import { BubbleToolbar } from './menus/BubbleToolbar';
-import { BlockHandle } from './menus/BlockHandle';
+import { BlockHandle, TouchBlockActions } from './menus/BlockHandle';
 import { TableToolbar } from './menus/TableToolbar';
 import { PasteOptionsMenu } from './menus/PasteOptionsMenu';
 import { startUploads, resumeUploads } from './extensions/uploads';
@@ -509,6 +509,17 @@ function EditorInner(p: Props & { session: CollabSession }) {
           )}
           {!p.canEdit && <ReadOnlyCommentButton editor={editor} onComment={() => requestComment()} />}
           {p.canEdit && <TouchInsertButton editor={editor} />}
+          {p.canEdit && (
+            <TouchBlockActions
+              editor={editor}
+              pageId={p.pageId}
+              onComment={(id) => requestComment(id)}
+              onMoveToPage={(pos) => {
+                const node = editor.state.doc.nodeAt(pos);
+                if (node) setMoveRange({ from: pos, to: pos + node.nodeSize });
+              }}
+            />
+          )}
         </>
       )}
       <input

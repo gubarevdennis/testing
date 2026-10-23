@@ -246,6 +246,21 @@ function resetTypeAtStart(editor: Editor): boolean {
   return false;
 }
 
+/** Keyboard resize of a selected image (R-EDITOR-052): ±10 % of the text width, 80 px at least, never wider than the text. */
+export function resizeSelectedImage(editor: Editor, dir: -1 | 1): boolean {
+  const sel = editor.state.selection;
+  if (!(sel instanceof NodeSelection) || sel.node.type.name !== 'image' || sel.node.attrs.align === 'full') return false;
+  const container = editor.view.dom.clientWidth || 720;
+  const natural = sel.node.attrs.naturalWidth as number | null;
+  const cur = (sel.node.attrs.width as number | null) ?? Math.min(natural ?? container, container);
+  const next = Math.max(80, Math.min(container, Math.round(cur + dir * container * 0.1)));
+  if (next === cur) return true;
+  const tr = editor.state.tr.setNodeMarkup(sel.from, undefined, { ...sel.node.attrs, width: next });
+  tr.setSelection(NodeSelection.create(tr.doc, sel.from));
+  dispatchAtomic(editor, tr);
+  return true;
+}
+
 function inTableNoRange(editor: Editor) {
   return isInTable(editor.state) && !blockRangeKey.getState(editor.state);
 }
@@ -282,8 +297,8 @@ export const BlockOps = Extension.create({
       // inside a table the same keys move rows/columns (R-TABLE-003); the table itself moves via the block menu
       'Alt-Shift-ArrowUp': () => (inTableNoRange(this.editor) ? (moveTableRow(this.editor, -1), true) : moveBlock(this.editor, -1)),
       'Alt-Shift-ArrowDown': () => (inTableNoRange(this.editor) ? (moveTableRow(this.editor, 1), true) : moveBlock(this.editor, 1)),
-      'Alt-Shift-ArrowLeft': () => inTableNoRange(this.editor) && (moveTableColumn(this.editor, -1), true),
-      'Alt-Shift-ArrowRight': () => inTableNoRange(this.editor) && (moveTableColumn(this.editor, 1), true),
+      'Alt-Shift-ArrowLeft': () => resizeSelectedImage(this.editor, -1) || (inTableNoRange(this.editor) && (moveTableColumn(this.editor, -1), true)),
+      'Alt-Shift-ArrowRight': () => resizeSelectedImage(this.editor, 1) || (inTableNoRange(this.editor) && (moveTableColumn(this.editor, 1), true)),
       Escape: () => {
         const sel = this.editor.state.selection;
         // a selected block inside a column / callout / quote: Esc again selects the enclosing block (to move it whole)

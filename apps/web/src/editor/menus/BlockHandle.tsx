@@ -2,11 +2,11 @@ import DragHandle from '@tiptap/extension-drag-handle-react';
 import type { Editor } from '@tiptap/core';
 import { NodeSelection, TextSelection } from '@tiptap/pm/state';
 import { useEffect, useRef, useState } from 'react';
-import { GripVertical, Plus, Copy, Trash2, Link2, ArrowUp, ArrowDown, MessageSquarePlus, FileDown, Repeat2, Palette, ClipboardCopy, FileInput } from 'lucide-react';
+import { GripVertical, Plus, MoreVertical, Copy, Trash2, Link2, ArrowUp, ArrowDown, MessageSquarePlus, FileDown, Repeat2, Palette, ClipboardCopy, FileInput } from 'lucide-react';
 import { loadMarkdown } from '../../lib/markdown';
 import { Menu } from '../../components/ui/Menu';
 import { Tooltip } from '../../components/ui/Tooltip';
-import { duplicateBlock, deleteBlock, moveBlock, blockRangeKey } from '../extensions/blockOps';
+import { duplicateBlock, deleteBlock, moveBlock, blockRangeKey, currentBlock } from '../extensions/blockOps';
 import { turnIntoItems } from './BubbleToolbar';
 import { TEXT_COLORS } from '../palette';
 import { copyWithFeedback, copyBlocks } from '../clipboard/copy';
@@ -22,6 +22,93 @@ const NESTED = {
   edgeDetection: 'none' as const,
   rules: [{ id: 'kbMovable', evaluate: ({ node, parent }: { node: { isInline: boolean; type: { name: string } }; parent: { type: { name: string } } | null }) => (node.isInline || !parent || !(parent.type.name === 'doc' || parent.type.name === 'column') ? 1000 : 0) }],
 };
+
+/** Actions of a block (block handle menu, touch block menu): turn into, colour, duplicate, move, copy, comment, delete. */
+export function blockActionItems(editor: Editor, c: { pos: number; node: any } | null, pageId: string, onComment: (blockId: string | null) => void, onMoveToPage?: (pos: number) => void) {
+  const selectCurrent = () => {
+    if (!c) return false;
+    try {
+      editor.chain().setNodeSelection(c.pos).run();
+      return true;
+    } catch {
+      return false;
+    }
+  };
+  const textInside = () => {
+    if (!c) return;
+    editor
+      .chain()
+      .setTextSelection({ from: c.pos + 1, to: c.pos + c.node.nodeSize - 1 })
+      .run();
+  };
+  const blockId = () => c?.node.attrs?.id ?? null;
+  const isText = !!c?.node.isTextblock || ['bulletList', 'orderedList', 'taskList', 'blockquote'].includes(c?.node.type.name);
+  return [
+    ...(isText
+      ? [
+          {
+            id: 'turn',
+            label: 'Превратить в',
+            icon: <Repeat2 size={15} />,
+            children: turnIntoItems(editor).map((i) => ({ ...i, onSelect: () => (textInside(), i.onSelect()) })),
+          },
+          {
+            id: 'color',
+            label: 'Цвет текста',
+            icon: <Palette size={15} />,
+            children: [
+              { id: 'none', label: 'По умолчанию', onSelect: () => (textInside(), editor.chain().focus().unsetColor().run()) },
+              ...TEXT_COLORS.map((col) => ({ id: col.id, label: col.label, icon: <span className="swatch-text" style={{ color: col.value }}>A</span>, onSelect: () => (textInside(), editor.chain().focus().setColor(col.value).run()) })),
+            ],
+          },
+          { separator: true as const },
+        ]
+      : []),
+    { id: 'dup', label: 'Дублировать', icon: <Copy size={15} />, shortcut: 'Mod+D', onSelect: () => c && duplicateBlock(editor, c.pos) },
+    { id: 'up', label: 'Переместить вверх', icon: <ArrowUp size={15} />, shortcut: 'Alt+Shift+↑', onSelect: () => c && moveBlock(editor, -1, c.pos) },
+    { id: 'down', label: 'Переместить вниз', icon: <ArrowDown size={15} />, shortcut: 'Alt+Shift+↓', onSelect: () => c && moveBlock(editor, 1, c.pos) },
+    ...(onMoveToPage ? [{ id: 'move-page', label: 'Переместить на страницу…', icon: <FileInput size={15} />, onSelect: () => c && onMoveToPage(c.pos) }] : []),
+    { separator: true as const },
+    // R-CLIPBOARD-001: a block / a heading's section with formatting (text/html + text/plain)
+    { id: 'copy', label: 'Копировать блок', icon: <ClipboardCopy size={15} />, onSelect: () => c && void copyBlocks(editor, c.pos, c.pos + c.node.nodeSize, 'Блок скопирован') },
+    ...(c?.node.type.name === 'heading'
+      ? [
+          {
+            id: 'copy-section',
+            label: 'Копировать раздел',
+            icon: <ClipboardCopy size={15} />,
+            onSelect: () => {
+              const r = c && sectionRange(editor.state.doc, c.pos);
+              if (r) void copyBlocks(editor, r.from, r.to, 'Раздел скопирован');
+            },
+          },
+        ]
+      : []),
+    {
+      id: 'link',
+      label: 'Копировать ссылку на блок',
+      icon: <Link2 size={15} />,
+      onSelect: () => {
+        const id = blockId();
+        void copyWithFeedback({ text: `${location.origin}/p/${pageId}${id ? '?block=' + id : ''}` }, 'Ссылка на блок скопирована');
+      },
+    },
+    {
+      id: 'md',
+      label: 'Копировать как Markdown',
+      icon: <FileDown size={15} />,
+      onSelect: async () => {
+        if (!c) return;
+        const { docToMarkdown } = await loadMarkdown();
+        const { markdown } = docToMarkdown({ type: 'doc', content: [c.node.toJSON()] } as any, { markers: false });
+        await copyWithFeedback({ text: markdown }, 'Скопировано в формате Markdown');
+      },
+    },
+    { id: 'comment', label: 'Комментировать', icon: <MessageSquarePlus size={15} />, onSelect: () => (isText ? textInside() : selectCurrent(), onComment(blockId())) },
+    { separator: true as const },
+    { id: 'del', label: 'Удалить', icon: <Trash2 size={15} />, shortcut: 'Del', danger: true, onSelect: () => c && deleteBlock(editor, c.pos) },
+  ];
+}
 
 /** Block controls on hover: "+" inserts a block below (opens the "/" menu), the grip drags or opens block actions. */
 export function BlockHandle({
@@ -63,14 +150,6 @@ export function BlockHandle({
       return false;
     }
   };
-  const textInside = () => {
-    const c = current.current;
-    if (!c) return;
-    editor
-      .chain()
-      .setTextSelection({ from: c.pos + 1, to: c.pos + c.node.nodeSize - 1 })
-      .run();
-  };
   const addBelow = () => {
     const c = current.current;
     if (!c) return;
@@ -85,76 +164,7 @@ export function BlockHandle({
     editor.view.dispatch(tr);
     editor.chain().focus().insertContent('/').run();
   };
-  const blockId = () => current.current?.node.attrs?.id ?? null;
-  const items = () => {
-    const c = current.current;
-    const isText = !!c?.node.isTextblock || ['bulletList', 'orderedList', 'taskList', 'blockquote'].includes(c?.node.type.name);
-    return [
-      ...(isText
-        ? [
-            {
-              id: 'turn',
-              label: 'Превратить в',
-              icon: <Repeat2 size={15} />,
-              children: turnIntoItems(editor).map((i) => ({ ...i, onSelect: () => (textInside(), i.onSelect()) })),
-            },
-            {
-              id: 'color',
-              label: 'Цвет текста',
-              icon: <Palette size={15} />,
-              children: [
-                { id: 'none', label: 'По умолчанию', onSelect: () => (textInside(), editor.chain().focus().unsetColor().run()) },
-                ...TEXT_COLORS.map((col) => ({ id: col.id, label: col.label, icon: <span className="swatch-text" style={{ color: col.value }}>A</span>, onSelect: () => (textInside(), editor.chain().focus().setColor(col.value).run()) })),
-              ],
-            },
-            { separator: true as const },
-          ]
-        : []),
-      { id: 'dup', label: 'Дублировать', icon: <Copy size={15} />, shortcut: 'Mod+D', onSelect: () => c && duplicateBlock(editor, c.pos) },
-      { id: 'up', label: 'Переместить вверх', icon: <ArrowUp size={15} />, shortcut: 'Alt+Shift+↑', onSelect: () => c && moveBlock(editor, -1, c.pos) },
-      { id: 'down', label: 'Переместить вниз', icon: <ArrowDown size={15} />, shortcut: 'Alt+Shift+↓', onSelect: () => c && moveBlock(editor, 1, c.pos) },
-      ...(onMoveToPage ? [{ id: 'move-page', label: 'Переместить на страницу…', icon: <FileInput size={15} />, onSelect: () => c && onMoveToPage(c.pos) }] : []),
-      { separator: true as const },
-      // R-CLIPBOARD-001: a block / a heading's section with formatting (text/html + text/plain)
-      { id: 'copy', label: 'Копировать блок', icon: <ClipboardCopy size={15} />, onSelect: () => c && void copyBlocks(editor, c.pos, c.pos + c.node.nodeSize, 'Блок скопирован') },
-      ...(c?.node.type.name === 'heading'
-        ? [
-            {
-              id: 'copy-section',
-              label: 'Копировать раздел',
-              icon: <ClipboardCopy size={15} />,
-              onSelect: () => {
-                const r = c && sectionRange(editor.state.doc, c.pos);
-                if (r) void copyBlocks(editor, r.from, r.to, 'Раздел скопирован');
-              },
-            },
-          ]
-        : []),
-      {
-        id: 'link',
-        label: 'Копировать ссылку на блок',
-        icon: <Link2 size={15} />,
-        onSelect: () => {
-          const id = blockId();
-          void copyWithFeedback({ text: `${location.origin}/p/${pageId}${id ? '?block=' + id : ''}` }, 'Ссылка на блок скопирована');
-        },
-      },
-      {
-        id: 'md',
-        label: 'Копировать как Markdown',
-        icon: <FileDown size={15} />,
-        onSelect: async () => {
-          if (!c) return;
-          const { docToMarkdown } = await loadMarkdown();
-          const { markdown } = docToMarkdown({ type: 'doc', content: [c.node.toJSON()] } as any, { markers: false });
-          await copyWithFeedback({ text: markdown }, 'Скопировано в формате Markdown');
-        },
-      },
-      { id: 'comment', label: 'Комментировать', icon: <MessageSquarePlus size={15} />, onSelect: () => (isText ? textInside() : selectCurrent(), onComment(blockId())) },
-      { separator: true as const },
-      { id: 'del', label: 'Удалить', icon: <Trash2 size={15} />, shortcut: 'Del', danger: true, onSelect: () => c && deleteBlock(editor, c.pos) },
-    ];
-  };
+  const items = () => blockActionItems(editor, current.current, pageId, onComment, onMoveToPage);
   if (!editor.isEditable) return null;
   return (
     <DragHandle
@@ -210,3 +220,31 @@ export function BlockHandle({
 }
 
 export { NodeSelection };
+
+/**
+ * Block actions on touch screens (R-EDITOR-052, SPEC «на touch — … доступное меню «Переместить»»): there is no hover
+ * handle, so a floating button next to «+» opens the same block menu for the block at the caret — move up / down,
+ * to another page, duplicate, turn into, copy, delete.
+ */
+export function TouchBlockActions({ editor, pageId, onComment, onMoveToPage }: { editor: Editor; pageId: string; onComment(blockId: string | null): void; onMoveToPage?(pos: number): void }) {
+  const [block, setBlock] = useState<{ pos: number; node: any } | null>(null);
+  const coarse = typeof matchMedia !== 'undefined' && matchMedia('(pointer: coarse)').matches;
+  if (!coarse || !editor.isEditable) return null;
+  return (
+    <Menu
+      label="Действия с блоком"
+      items={blockActionItems(editor, block, pageId, onComment, onMoveToPage)}
+      placement="top-end"
+      onOpenChange={(o) => {
+        if (!o) return;
+        const b = currentBlock(editor.state);
+        setBlock(b ? { pos: b.pos, node: b.node } : null);
+      }}
+      trigger={({ ref, props }) => (
+        <button ref={ref} className="touch-block-actions" aria-label="Действия с блоком" {...props} onMouseDown={(e) => e.preventDefault()}>
+          <MoreVertical size={22} />
+        </button>
+      )}
+    />
+  );
+}

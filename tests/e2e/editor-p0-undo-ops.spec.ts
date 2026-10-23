@@ -110,8 +110,20 @@ test('image resize by the handle and by a preset, table column resize: each is o
   await page.keyboard.press('Control+y');
   await expect.poll(imgWidth).toBe(resized);
 
-  // a preset (50 %) from the image toolbar
+  // keyboard resize of the selected image (Alt+Shift+← / →, R-EDITOR-052): one undo step
   await fig.locator('img').click();
+  await page.keyboard.press('Alt+Shift+ArrowLeft');
+  await expect.poll(imgWidth).toBeLessThan(resized);
+  const smaller = await imgWidth();
+  await page.keyboard.press('Alt+Shift+ArrowRight');
+  await expect.poll(imgWidth).toBeGreaterThan(smaller);
+  await page.keyboard.press('Control+z');
+  await expect.poll(imgWidth).toBe(smaller);
+  await page.keyboard.press('Control+z');
+  await expect.poll(imgWidth).toBe(resized);
+
+  // a preset (50 %) from the image toolbar (the image is still selected; a second click would open the viewer)
+  if (!(await page.getByRole('button', { name: '50%' }).isVisible())) await fig.locator('img').click();
   await page.getByRole('button', { name: '50%' }).click();
   await expect.poll(imgWidth).not.toBe(resized);
   await page.keyboard.press('Control+z');

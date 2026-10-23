@@ -1,4 +1,4 @@
-import { test, expect, type Page, type Locator } from '@playwright/test';
+import { test, expect, devices, type Page, type Locator } from '@playwright/test';
 import { ensureOwner, editor, expectSaved, apiContent, treeLink, caretIn, createUser, login_ } from './helpers';
 import { newPage, cleanupCreatedPages, settle } from './editor-p0-helpers';
 
@@ -509,5 +509,40 @@ test('tree: a section (space) the user may only read is an explicit invalid targ
   await p2.mouse.up();
   const moved = (await (await p2.request.get(`/api/v1/pages/${own}`)).json()).page;
   expect(moved.spaceId).not.toBe(space.id);
+  await ctx.close();
+});
+
+test('touch: the block menu (no hover handle) moves and deletes the block at the caret; one Undo each (R-EDITOR-052, R-EDITOR-069)', async ({ browser }) => {
+  const ctx = await browser.newContext({ ...devices['Pixel 7'], locale: 'ru-RU', timezoneId: 'Europe/Moscow' });
+  const page = await ctx.newPage();
+  await ensureOwner(page);
+  await page.evaluate(() => localStorage.setItem('kb:debug', '1'));
+  const id = await newPage(page, 'DnD касание');
+  await page.waitForFunction(() => (window as any).__kbEditor);
+  await page.evaluate((c) => (window as any).__kbEditor.chain().setContent({ type: 'doc', content: c }).run(), [p('a', 'Альфа'), p('b', 'Бета'), p('c', 'Гамма')] as any);
+  await expectSaved(page);
+  await page.waitForTimeout(600);
+  const ed = editor(page);
+  await ed.locator('p', { hasText: 'Гамма' }).tap();
+  const actions = page.getByRole('button', { name: 'Действия с блоком' });
+  await expect(actions).toBeVisible();
+  const box = (await actions.boundingBox())!;
+  expect(Math.min(box.width, box.height)).toBeGreaterThanOrEqual(44);
+  await actions.tap();
+  await page.getByRole('menuitem', { name: 'Переместить вверх' }).tap();
+  expect(await order(page)).toEqual(['a', 'c', 'b']);
+  await actions.tap();
+  await page.getByRole('menuitem', { name: 'Переместить вверх' }).tap();
+  expect(await order(page)).toEqual(['c', 'a', 'b']);
+  await actions.tap();
+  await page.getByRole('menuitem', { name: 'Удалить' }).tap();
+  expect(await order(page)).toEqual(['a', 'b']);
+  // the menu's actions are undoable one by one
+  await page.evaluate(() => (window as any).__kbEditor.commands.undo());
+  expect(await order(page)).toEqual(['c', 'a', 'b']);
+  await page.evaluate(() => (window as any).__kbEditor.commands.undo());
+  expect(await order(page)).toEqual(['a', 'c', 'b']);
+  await expectSaved(page);
+  expect(((await apiContent(page.request, id)).content.content as any[]).map((n) => n.attrs.id)).toEqual(['a', 'c', 'b']);
   await ctx.close();
 });
