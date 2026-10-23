@@ -20,7 +20,10 @@ import { useTreeScrollMemory, useRevealCurrentPage } from './treeState';
 const ROW_H = typeof matchMedia !== 'undefined' && matchMedia('(pointer: coarse)').matches ? 44 : 32;
 const INDENT = 14;
 
-export type Row =
+export /** Opening a page from the tree returns the reader to where they were on it (see hooks/useScrollRestore.ts). */
+const TREE_NAV = { kbRestoreScroll: true };
+
+type Row =
   | { kind: 'section'; key: string; id: string; label: string; collapsed: boolean; action?: () => void; actionLabel?: string }
   | { kind: 'space'; key: string; space: Space; expanded: boolean; depth: 0 }
   | { kind: 'node'; key: string; node: TreeNode; depth: number; expanded: boolean; parentKey: string | null }
@@ -190,7 +193,7 @@ export function SidebarTree({ personal, spaces, shared, onNavigate }: Props) {
       case 'Enter':
         e.preventDefault();
         if (r.kind === 'node') {
-          navigate('/p/' + r.node.id);
+          navigate('/p/' + r.node.id, { state: TREE_NAV });
           onNavigate?.();
         } else if (r.kind === 'space') navigate('/s/' + r.space.id);
         else toggleRow(r);
@@ -347,7 +350,7 @@ export function SidebarTree({ personal, spaces, shared, onNavigate }: Props) {
   const [iconFor, setIconFor] = useState<{ node: TreeNode; anchor: HTMLElement } | null>(null);
 
   const openPage = (id: string) => {
-    navigate('/p/' + id);
+    navigate('/p/' + id, { state: TREE_NAV });
     onNavigate?.();
   };
 

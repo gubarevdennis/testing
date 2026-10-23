@@ -3,8 +3,8 @@ import { useLocation, useNavigationType } from 'react-router-dom';
 
 /**
  * Remembers the scroll position of a scroll container per history entry and restores it on Back/Forward.
- * Opening a page again from the tree or a link returns to where the reader was on that page (R-EDITOR-047), unless the
- * link points to a block (?block=… / #anchor). Content may render late (editor sync), so restoring retries briefly.
+ * Opening a page again from the tree returns to where the reader was on that page (R-EDITOR-047); any other fresh
+ * navigation (search, links, quick switcher) starts at the top (UX-131), as does a link to a block (?block=… / #anchor). Content may render late (editor sync), so restoring retries briefly.
  */
 export function useScrollRestore<T extends HTMLElement>() {
   const ref = useRef<T>(null);
@@ -25,7 +25,8 @@ export function useScrollRestore<T extends HTMLElement>() {
       }
     };
     const targeted = /[?&]block=/.test(location.search) || !!location.hash;
-    const saved = navType === 'POP' ? read(key) : targeted ? NaN : read(pathKey);
+    const fromTree = !!(location.state as { kbRestoreScroll?: boolean } | null)?.kbRestoreScroll;
+    const saved = navType === 'POP' ? read(key) : targeted || !fromTree ? NaN : read(pathKey);
     if (Number.isFinite(saved)) {
       const restore = () => {
         el.scrollTop = saved;
@@ -46,6 +47,6 @@ export function useScrollRestore<T extends HTMLElement>() {
       if (timer) clearTimeout(timer);
       el.removeEventListener('scroll', onScroll);
     };
-  }, [location.key, location.pathname, location.search, location.hash, navType]);
+  }, [location.key, location.pathname, location.search, location.hash, location.state, navType]);
   return ref;
 }

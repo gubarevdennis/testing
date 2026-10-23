@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
-import { ensureOwner, newPage, editor, expectSaved, createUser, login_, api } from './helpers';
+import { ensureOwner, newPage, editor, expectSaved, createUser, login_, api, treeLink } from './helpers';
 import { spaceOf } from './perf-helpers';
 
 /**
@@ -103,7 +103,7 @@ test('R-UI-059, R-UI-053: dialogs trap focus, always have a visible exit and Esc
   const openers: Array<{ name: string; open: () => Promise<void>; focusBack: () => Promise<void> }> = [
     { name: 'Поделиться', open: () => header(page).getByRole('button', { name: 'Поделиться' }).click(), focusBack: () => expect(header(page).getByRole('button', { name: 'Поделиться' })).toBeFocused() },
     { name: 'Экспорт', open: async () => (await actions.click(), await page.getByRole('menuitem', { name: 'Экспорт…' }).click()), focusBack: async () => expect.poll(() => page.evaluate(() => document.activeElement !== document.body)).toBe(true) },
-    { name: 'Переместить', open: async () => (await page.getByRole('tree', { name: 'Страницы' }).getByRole('link', { name: 'Строка дерева 00' }).focus(), await page.keyboard.press('Shift+F10'), await page.getByRole('menuitem', { name: 'Переместить в…' }).click()), focusBack: async () => expect.poll(() => page.evaluate(() => document.activeElement !== document.body)).toBe(true) },
+    { name: 'Переместить', open: async () => (await (await treeLink(page, 'Строка дерева 00')).focus(), await page.keyboard.press('Shift+F10'), await page.getByRole('menuitem', { name: 'Переместить в…' }).click()), focusBack: async () => expect.poll(() => page.evaluate(() => document.activeElement !== document.body)).toBe(true) },
     { name: 'Справка', open: async () => (await page.locator('body').click({ position: { x: 5, y: 5 } }), await page.keyboard.press('?')), focusBack: async () => undefined },
   ];
   for (const o of openers) {

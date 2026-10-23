@@ -42,7 +42,6 @@ export function QuickSwitcher() {
     if (!isOpen) return;
     setQ('');
     setActive(0);
-    setTimeout(() => inputRef.current?.focus(), 0);
   }, [isOpen]);
   useEffect(() => {
     if (!isOpen) return;
@@ -85,6 +84,8 @@ export function QuickSwitcher() {
           <Search size={18} className="muted" />
           <input
             ref={inputRef}
+            // focus during commit, not in a timeout: keys typed right after Ctrl+K must land in the field
+            autoFocus
             value={q}
             placeholder="Найти страницу или команду…"
             aria-label="Найти страницу или команду"

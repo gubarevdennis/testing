@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
-import { ensureOwner, newPage, editor, expectSaved, paste } from './helpers';
+import { ensureOwner, newPage, editor, expectSaved, paste, treeLink } from './helpers';
 
 /**
  * Layout stability and integrity: cumulative layout shift (CLS) while a page opens and while typing, and a geometric
@@ -144,7 +144,7 @@ test('R-UI-006: switching pages, opening and closing the side panel cause no lay
   test.info().annotations.push({ type: 'cls', description: `home load CLS=${home.total.toFixed(4)}` });
   expect(home.total).toBeLessThan(0.1); // Web Vitals "good"
   await page.evaluate(() => ((window as any).__kbShifts = []));
-  await page.getByRole('tree', { name: 'Страницы' }).getByRole('link', { name: /Макет: проверка перекрытий/ }).click();
+  await (await treeLink(page, /Макет: проверка перекрытий/)).click();
   await expect(editor(page).locator('table')).toBeVisible();
   await page.waitForTimeout(1000);
   await page.locator('.page-header-bar').getByRole('button', { name: 'Комментарии' }).click();
