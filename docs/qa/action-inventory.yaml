@@ -1,60 +1,52 @@
 # Action inventory (QA26-01, QA26-04). Generated from apps/web/src and docs/qa/runtime-controls.json.
 generated_by: node --import tsx scripts/qa/inventory.ts (do not edit by hand)
 summary:
-  total: 1028
+  total: 1014
   critical: 292
   by_kind:
-    button: 411
+    button: 409
     command: 33
     dialog: 71
-    input: 108
-    link: 54
+    input: 107
+    link: 53
     menu: 16
     menu-item: 112
-    option: 47
+    option: 30
     route: 24
-    runtime: 22
+    runtime: 21
     select: 54
-    tab: 14
+    tab: 20
     toast-action: 17
-    toggle: 45
+    toggle: 47
   by_screen:
-    admin: 212
+    admin: 206
     app: 14
     auth: 13
     common: 40
-    editor: 216
+    editor: 215
     help: 10
     home: 12
-    import: 39
-    page: 185
-    runtime: 22
-    search: 22
-    settings: 43
+    import: 38
+    page: 184
+    runtime: 21
+    search: 21
+    settings: 41
     shell: 74
     space: 66
-    templates: 34
+    templates: 33
     trash: 14
     ui: 12
   runtime:
     controls_recorded: 1148
-    static_actions_seen: 226
-    runtime_only_added: 22
+    static_actions_seen: 228
+    runtime_only_added: 21
     select_option_values_skipped: 33
-  dynamic_unnamed: 67
+  dynamic_unnamed: 50
 dynamic_unnamed:
-  - tab apps/web/src/admin/AccessSection.tsx:625
-  - link apps/web/src/admin/AdminPage.tsx:64
-  - button apps/web/src/admin/ArchivesSection.tsx:289
-  - button apps/web/src/admin/ArchivesSection.tsx:544
   - button apps/web/src/admin/GroupsSection.tsx:89
   - button apps/web/src/admin/GroupsSection.tsx:141
-  - button apps/web/src/admin/GroupsSection.tsx:289
   - toggle apps/web/src/admin/OrgSettingsSection.tsx:123
   - input apps/web/src/admin/OrgSettingsSection.tsx:134
-  - button apps/web/src/admin/UsersSection.tsx:567
-  - button apps/web/src/admin/UsersSection.tsx:753
-  - button apps/web/src/admin/UsersSection.tsx:920
   - toggle apps/web/src/admin/UsersSection.tsx:1105
   - input apps/web/src/admin/common.tsx:208
   - select apps/web/src/admin/common.tsx:290
@@ -66,18 +58,15 @@ dynamic_unnamed:
   - input apps/web/src/components/page/CommentsPanel.tsx:436
   - option apps/web/src/components/page/CommentsPanel.tsx:488
   - button apps/web/src/components/page/CommentsPanel.tsx:538
-  - button apps/web/src/components/page/ExportDialog.tsx:192
   - button apps/web/src/components/page/PublishBar.tsx:146
   - input apps/web/src/components/page/PublishBar.tsx:318
   - select apps/web/src/components/page/directory.tsx:105
   - option apps/web/src/components/page/directory.tsx:142
   - button apps/web/src/components/space/SpaceAccess.tsx:56
-  - button apps/web/src/components/space/SpaceAccess.tsx:222
   - button apps/web/src/components/ui/Confirm.tsx:42
   - menu-item apps/web/src/components/ui/Menu.tsx:147
   - link apps/web/src/components/ui/Toast.tsx:51
   - button apps/web/src/components/ui/Toast.tsx:65
-  - button apps/web/src/editor/Editor.tsx:529
   - button apps/web/src/editor/menus/BubbleToolbar.tsx:114
   - button apps/web/src/editor/menus/BubbleToolbar.tsx:171
   - button apps/web/src/editor/menus/PasteOptionsMenu.tsx:34
@@ -92,21 +81,15 @@ dynamic_unnamed:
   - button apps/web/src/layout/SidebarTree.tsx:512
   - button apps/web/src/layout/SidebarTree.tsx:554
   - input apps/web/src/layout/treeActions.tsx:174
-  - button apps/web/src/pages/ImportPage.tsx:416
   - button apps/web/src/pages/PageView.tsx:280
   - option apps/web/src/pages/SearchPage.tsx:124
   - button apps/web/src/pages/SearchPage.tsx:125
-  - button apps/web/src/pages/SearchPage.tsx:327
   - link apps/web/src/pages/SearchPage.tsx:442
   - link apps/web/src/pages/SettingsPage.tsx:34
   - toggle apps/web/src/pages/SettingsPage.tsx:219
-  - toggle apps/web/src/pages/SettingsPage.tsx:231
-  - input apps/web/src/pages/SettingsPage.tsx:297
   - toggle apps/web/src/pages/SpacePage.tsx:72
-  - tab apps/web/src/pages/SpacePage.tsx:522
   - select apps/web/src/pages/TemplatesPage.tsx:76
   - select apps/web/src/pages/TemplatesPage.tsx:89
-  - button apps/web/src/pages/TemplatesPage.tsx:173
   - tab apps/web/src/pages/TemplatesPage.tsx:487
   - button apps/web/src/pages/TemplatesPage.tsx:524
   - link apps/web/src/pages/TrashPage.tsx:248
@@ -392,7 +375,7 @@ actions:
     seen:
       - /admin/audit
   - id: admin/AccessSection/check
-    kind: option
+    kind: tab
     screen: admin
     component: AccessSection
     label: Проверить доступ
@@ -401,7 +384,7 @@ actions:
     seen:
       - /admin/access
   - id: admin/AccessSection/matrix
-    kind: option
+    kind: tab
     screen: admin
     component: AccessSection
     label: Матрица доступа
@@ -410,7 +393,7 @@ actions:
     seen:
       - /admin/access
   - id: admin/AccessSection/emergency
-    kind: option
+    kind: tab
     screen: admin
     component: AccessSection
     label: Экстренный доступ
@@ -419,7 +402,7 @@ actions:
     seen:
       - /admin/access
   - id: admin/AccessSection/links
-    kind: option
+    kind: tab
     screen: admin
     component: AccessSection
     label: Публичные ссылки
@@ -429,20 +412,11 @@ actions:
       - /admin/access
       - /admin/settings
   - id: admin/AccessSection/offboarding
-    kind: option
+    kind: tab
     screen: admin
     component: AccessSection
     label: "Увольнение: личные материалы"
     source: apps/web/src/admin/AccessSection.tsx:616
-    critical: false
-  - id: admin/AccessSection/tab-data
-    kind: tab
-    screen: admin
-    component: AccessSection
-    label: "{…}"
-    dynamic: true
-    source: apps/web/src/admin/AccessSection.tsx:625
-    data_driven: true
     critical: false
   - id: admin/AdminPage/route.admin-users
     kind: route
@@ -596,15 +570,6 @@ actions:
       - /admin/health
       - /admin/settings
       - /admin/users
-  - id: admin/AdminPage/link-data
-    kind: link
-    screen: admin
-    component: AdminPage
-    label: "{…}"
-    dynamic: true
-    source: apps/web/src/admin/AdminPage.tsx:64
-    data_driven: true
-    critical: false
   - id: admin/ArchivesSection/vosstanovit-iz-arhiva
     kind: button
     screen: admin
@@ -699,15 +664,6 @@ actions:
     label: Я подтверждаю выгрузку всех данных организации
     source: apps/web/src/admin/ArchivesSection.tsx:287
     critical: false
-  - id: admin/ExportDialog/button-data
-    kind: button
-    screen: admin
-    component: ExportDialog
-    label: "{…}"
-    dynamic: true
-    source: apps/web/src/admin/ArchivesSection.tsx:289
-    data_driven: true
-    critical: false
   - id: admin/AnalysisReport/polzovateli-v-arhive-naydeno-v-sisteme-ne-nayden
     kind: button
     screen: admin
@@ -788,15 +744,13 @@ actions:
     critical: true
     seen:
       - /trash
-  - id: admin/RestoreDialog/button-data
+  - id: admin/RestoreDialog/fayl-arhiva
     kind: button
     screen: admin
     component: RestoreDialog
-    label: "{…}"
-    dynamic: true
+    label: Файл архива
     source: apps/web/src/admin/ArchivesSection.tsx:544
-    data_driven: true
-    critical: false
+    critical: true
   - id: admin/RestoreDialog/otmena~2
     kind: button
     screen: admin
@@ -1159,15 +1113,6 @@ actions:
     component: GroupDialog
     label: Входит в отдел
     source: apps/web/src/admin/GroupsSection.tsx:273
-    critical: false
-  - id: admin/GroupDialog/button-data
-    kind: button
-    screen: admin
-    component: GroupDialog
-    label: "{…}"
-    dynamic: true
-    source: apps/web/src/admin/GroupsSection.tsx:289
-    data_driven: true
     critical: false
   - id: admin/GroupDetail/confirm.isklyuchit-uchastnika
     kind: dialog
@@ -1753,15 +1698,6 @@ actions:
     label: Пароль
     source: apps/web/src/admin/UsersSection.tsx:565
     critical: true
-  - id: admin/CreateUserDialog/button-data
-    kind: button
-    screen: admin
-    component: CreateUserDialog
-    label: "{…}"
-    dynamic: true
-    source: apps/web/src/admin/UsersSection.tsx:567
-    data_driven: true
-    critical: false
   - id: admin/ImportDialog/propuschennye-stroki
     kind: button
     screen: admin
@@ -1822,14 +1758,12 @@ actions:
     source: apps/web/src/admin/UsersSection.tsx:733
     confirm: true
     critical: true
-  - id: admin/ImportDialog/button-data
+  - id: admin/ImportDialog/fayl-csv
     kind: button
     screen: admin
     component: ImportDialog
-    label: "{…}"
-    dynamic: true
+    label: Файл CSV
     source: apps/web/src/admin/UsersSection.tsx:753
-    data_driven: true
     critical: false
   - id: admin/ImportDialog/ili-vstavte-soderzhimoe
     kind: input
@@ -1937,15 +1871,6 @@ actions:
     label: Доступ действует до
     source: apps/web/src/admin/UsersSection.tsx:917
     critical: true
-  - id: admin/EditUserDialog/button-data
-    kind: button
-    screen: admin
-    component: EditUserDialog
-    label: "{…}"
-    dynamic: true
-    source: apps/web/src/admin/UsersSection.tsx:920
-    data_driven: true
-    critical: false
   - id: admin/StatusDialog/deaktivirovat
     kind: dialog
     screen: admin
@@ -2561,35 +2486,35 @@ actions:
     data_driven: true
     critical: false
   - id: page/ExportDialog/md
-    kind: option
+    kind: button
     screen: page
     component: ExportDialog
     label: Markdown
     source: apps/web/src/components/page/ExportDialog.tsx:13
     critical: false
   - id: page/ExportDialog/mdzip
-    kind: option
+    kind: button
     screen: page
     component: ExportDialog
     label: Markdown + файлы
     source: apps/web/src/components/page/ExportDialog.tsx:14
     critical: false
   - id: page/ExportDialog/docx
-    kind: option
+    kind: button
     screen: page
     component: ExportDialog
     label: Word (DOCX)
     source: apps/web/src/components/page/ExportDialog.tsx:15
     critical: false
   - id: page/ExportDialog/pdf
-    kind: option
+    kind: button
     screen: page
     component: ExportDialog
     label: PDF
     source: apps/web/src/components/page/ExportDialog.tsx:16
     critical: false
   - id: page/ExportDialog/html
-    kind: option
+    kind: button
     screen: page
     component: ExportDialog
     label: HTML
@@ -2625,15 +2550,6 @@ actions:
     label: Экспортировать
     source: apps/web/src/components/page/ExportDialog.tsx:167
     critical: true
-  - id: page/ExportDialog/button-data
-    kind: button
-    screen: page
-    component: ExportDialog
-    label: "{…}"
-    dynamic: true
-    source: apps/web/src/components/page/ExportDialog.tsx:192
-    data_driven: true
-    critical: false
   - id: page/ExportDialog/tolko-etu-stranicu
     kind: toggle
     screen: page
@@ -3760,15 +3676,6 @@ actions:
     dynamic: true
     source: apps/web/src/components/space/SpaceAccess.tsx:208
     critical: false
-  - id: space/CreateSpaceDialog/button-data
-    kind: button
-    screen: space
-    component: CreateSpaceDialog
-    label: "{…}"
-    dynamic: true
-    source: apps/web/src/components/space/SpaceAccess.tsx:222
-    data_driven: true
-    critical: false
   - id: space/SpaceMembersEditor/confirm.otkryt-prostranstvo-vsey-organizacii
     kind: dialog
     screen: space
@@ -4073,15 +3980,6 @@ actions:
     component: EditorInner
     label: Открыть
     source: apps/web/src/editor/Editor.tsx:508
-    critical: false
-  - id: editor/EditorInner/button-data
-    kind: button
-    screen: editor
-    component: EditorInner
-    label: "{…}"
-    dynamic: true
-    source: apps/web/src/editor/Editor.tsx:529
-    data_driven: true
     critical: false
   - id: editor/EditorInner/otkryt~2
     kind: toast-action
@@ -7340,15 +7238,6 @@ actions:
     critical: false
     seen:
       - /import
-  - id: import/ImportPage/button-data
-    kind: button
-    screen: import
-    component: ImportPage
-    label: "{…}"
-    dynamic: true
-    source: apps/web/src/pages/ImportPage.tsx:416
-    data_driven: true
-    critical: false
   - id: import/ImportPage/ubrat
     kind: button
     screen: import
@@ -7923,7 +7812,7 @@ actions:
     source: apps/web/src/pages/PageView.tsx:481
     critical: false
   - id: search/SearchPage/pages
-    kind: option
+    kind: button
     screen: search
     component: SearchPage
     label: Текст страниц
@@ -7932,7 +7821,7 @@ actions:
     seen:
       - /search
   - id: search/SearchPage/files
-    kind: option
+    kind: button
     screen: search
     component: SearchPage
     label: Вложения
@@ -7941,7 +7830,7 @@ actions:
     seen:
       - /search
   - id: search/SearchPage/images
-    kind: option
+    kind: button
     screen: search
     component: SearchPage
     label: Изображения (OCR)
@@ -8008,15 +7897,6 @@ actions:
     critical: false
     seen:
       - /search
-  - id: search/SearchPage/button-data
-    kind: button
-    screen: search
-    component: SearchPage
-    label: "{…}"
-    dynamic: true
-    source: apps/web/src/pages/SearchPage.tsx:327
-    data_driven: true
-    critical: false
   - id: search/SearchPage/prostranstvo
     kind: select
     screen: search
@@ -8193,7 +8073,7 @@ actions:
       - /admin/settings
       - /settings/profile
   - id: settings/AppearanceTab/system
-    kind: option
+    kind: toggle
     screen: settings
     component: AppearanceTab
     label: Как в системе
@@ -8202,7 +8082,7 @@ actions:
     seen:
       - /settings/appearance
   - id: settings/AppearanceTab/light
-    kind: option
+    kind: toggle
     screen: settings
     component: AppearanceTab
     label: Светлая
@@ -8211,7 +8091,7 @@ actions:
     seen:
       - /settings/appearance
   - id: settings/AppearanceTab/dark
-    kind: option
+    kind: toggle
     screen: settings
     component: AppearanceTab
     label: Тёмная
@@ -8219,31 +8099,13 @@ actions:
     critical: false
     seen:
       - /settings/appearance
-  - id: settings/AppearanceTab/toggle.toggle-data
-    kind: toggle
-    screen: settings
-    component: AppearanceTab
-    label: "{…}"
-    dynamic: true
-    source: apps/web/src/pages/SettingsPage.tsx:219
-    data_driven: true
-    critical: false
   - id: settings/AppearanceTab/toggle-data
     kind: toggle
     screen: settings
     component: AppearanceTab
     label: "{…}"
     dynamic: true
-    source: apps/web/src/pages/SettingsPage.tsx:231
-    data_driven: true
-    critical: false
-  - id: settings/SecurityTab/input-data
-    kind: input
-    screen: settings
-    component: SecurityTab
-    label: "{…}"
-    dynamic: true
-    source: apps/web/src/pages/SettingsPage.tsx:297
+    source: apps/web/src/pages/SettingsPage.tsx:219
     data_driven: true
     critical: false
   - id: settings/SecurityTab/tekuschiy-parol
@@ -8747,7 +8609,7 @@ actions:
     source: apps/web/src/pages/SpacePage.tsx:438
     critical: false
   - id: space/SpacePage/pages
-    kind: option
+    kind: tab
     screen: space
     component: SpacePage
     label: Страницы
@@ -8755,6 +8617,26 @@ actions:
     critical: false
     seen:
       - /admin/audit
+      - /s/:spaceId
+      - /s/:spaceId?tab=settings
+  - id: space/SpacePage/access
+    kind: tab
+    screen: space
+    component: SpacePage
+    label: Участники
+    source: apps/web/src/pages/SpacePage.tsx:454
+    critical: false
+    seen:
+      - /s/:spaceId
+      - /s/:spaceId?tab=settings
+  - id: space/SpacePage/settings
+    kind: tab
+    screen: space
+    component: SpacePage
+    label: Настройки
+    source: apps/web/src/pages/SpacePage.tsx:455
+    critical: false
+    seen:
       - /s/:spaceId
       - /s/:spaceId?tab=settings
   - id: space/SpacePage/novaya-stranica
@@ -8825,15 +8707,6 @@ actions:
       - /settings/tokens
       - /templates
       - /trash
-  - id: space/SpacePage/tab-data
-    kind: tab
-    screen: space
-    component: SpacePage
-    label: "{…}"
-    dynamic: true
-    source: apps/web/src/pages/SpacePage.tsx:522
-    data_driven: true
-    critical: false
   - id: templates/ErrorState/povtorit
     kind: button
     screen: templates
@@ -8890,15 +8763,6 @@ actions:
     critical: false
     seen:
       - /p/:pageId
-  - id: templates/CreateFromTemplateDialog/button-data
-    kind: button
-    screen: templates
-    component: CreateFromTemplateDialog
-    label: "{…}"
-    dynamic: true
-    source: apps/web/src/pages/TemplatesPage.tsx:173
-    data_driven: true
-    critical: false
   - id: templates/PreviewDialog/zakryt
     kind: button
     screen: templates
@@ -9231,16 +9095,6 @@ actions:
     critical: false
     seen:
       - /p/:pageId
-  - id: runtime/tab/uchastniki
-    kind: runtime
-    screen: runtime
-    component: tab
-    label: Участники
-    source: runtime tab
-    critical: true
-    seen:
-      - /s/:spaceId
-      - /s/:spaceId?tab=settings
   - id: runtime/radio/vse
     kind: runtime
     screen: runtime

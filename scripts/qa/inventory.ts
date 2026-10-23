@@ -207,6 +207,81 @@ function enclosingNames(node: ts.Node): { component: string | null; group: strin
   return { component, group };
 }
 
+/** `hidden` JSX attribute (bare or `{true}`): an implicit submit button or a hidden file input is not a control a person operates. */
+function isHidden(el: ts.JsxOpeningLikeElement): boolean {
+  const a = attr(el, 'hidden');
+  if (!a) return false;
+  return !a.initializer || (ts.isJsxExpression(a.initializer) && a.initializer.expression?.kind === ts.SyntaxKind.TrueKeyword);
+}
+
+const strip = (e: ts.Expression): ts.Expression => (ts.isParenthesizedExpression(e) || ts.isAsExpression(e) || ts.isSatisfiesExpression(e) || ts.isNonNullExpression(e) ? strip(e.expression) : e);
+
+/** The array literal a `.map` receiver comes from: `TABLE`, `tabs.filter(…)`, `[…].filter(…)`, a local `const visible = tabs.filter(…)`. */
+function resolveArray(e: ts.Expression, sf: ts.SourceFile, depth = 0): ts.ArrayLiteralExpression | null {
+  e = strip(e);
+  if (depth > 4) return null;
+  if (ts.isArrayLiteralExpression(e)) return e;
+  if (ts.isCallExpression(e) && ts.isPropertyAccessExpression(e.expression) && /^(filter|slice|sort|toSorted|concat)$/.test(e.expression.name.text)) return resolveArray(e.expression.expression, sf, depth + 1);
+  if (ts.isIdentifier(e)) {
+    let found: ts.ArrayLiteralExpression | null = null;
+    const name = e.text;
+    const find = (n: ts.Node) => {
+      if (found) return;
+      if (ts.isVariableDeclaration(n) && ts.isIdentifier(n.name) && n.name.text === name && n.initializer && n.getStart(sf) < e.getStart(sf)) found = resolveArray(n.initializer, sf, depth + 1);
+      n.forEachChild(find);
+    };
+    find(sf);
+    return found;
+  }
+  return null;
+}
+
+/** Object literals of an array table, including `...(cond ? [{…}] : [])` parts. */
+function tableObjects(arr: ts.ArrayLiteralExpression): ts.ObjectLiteralExpression[] {
+  const out: ts.ObjectLiteralExpression[] = [];
+  const visit = (e: ts.Expression) => {
+    e = strip(e);
+    if (ts.isObjectLiteralExpression(e)) out.push(e);
+    else if (ts.isArrayLiteralExpression(e)) e.elements.forEach(visit);
+    else if (ts.isSpreadElement(e)) visit(e.expression);
+    else if (ts.isConditionalExpression(e)) (visit(e.whenTrue), visit(e.whenFalse));
+  };
+  arr.elements.forEach(visit);
+  return out;
+}
+
+/**
+ * A control rendered once per entry of a local table (`TABS.map((t) => <button role="tab">{t.label}</button>)`): the
+ * entries carry the names. Returns the table when every entry has an `id` (inventoried as one action each, so the
+ * data-driven control would only duplicate them) or is a route section (`path` + `element`).
+ */
+function renderedTable(whole: ts.Node, sf: ts.SourceFile): ts.ArrayLiteralExpression | null {
+  // the map callback around the control and its parameter
+  let fn: ts.ArrowFunction | ts.FunctionExpression | null = null;
+  for (let p: ts.Node | undefined = whole.parent; p && !ts.isSourceFile(p); p = p.parent) {
+    if ((ts.isArrowFunction(p) || ts.isFunctionExpression(p)) && ts.isCallExpression(p.parent) && ts.isPropertyAccessExpression(p.parent.expression) && p.parent.expression.name.text === 'map') {
+      fn = p;
+      break;
+    }
+  }
+  if (!fn || !fn.parameters[0] || !ts.isIdentifier(fn.parameters[0].name)) return null;
+  const param = fn.parameters[0].name.text;
+  // the control (or the <label> wrapping it) shows `{param.label|title|name}`
+  let named = false;
+  const scan = (n: ts.Node) => {
+    if (ts.isJsxExpression(n) && n.expression && ts.isPropertyAccessExpression(n.expression) && ts.isIdentifier(n.expression.expression) && n.expression.expression.text === param && /^(label|title|name)$/.test(n.expression.name.text)) named = true;
+    n.forEachChild(scan);
+  };
+  scan(whole);
+  if (!named && ts.isJsxElement(whole.parent) && whole.parent.openingElement.tagName.getText(sf) === 'label') scan(whole.parent);
+  if (!named) return null;
+  const arr = resolveArray((fn.parent as ts.CallExpression).expression.expression as ts.Expression, sf);
+  if (!arr) return null;
+  const objs = tableObjects(arr);
+  const has = (o: ts.ObjectLiteralExpression, k: string) => o.properties.some((p) => ts.isPropertyAssignment(p) && p.name.getText(sf) === k);
+  return objs.length && objs.every((o) => has(o, 'id') || (has(o, 'path') && has(o, 'element'))) ? arr : null;
+}
+
 const ROLE_KIND: Record<string, Kind> = { button: 'button', menuitem: 'menu-item', menuitemcheckbox: 'menu-item', menuitemradio: 'menu-item', tab: 'tab', switch: 'toggle', checkbox: 'toggle', option: 'option', link: 'link', combobox: 'select', textbox: 'input', searchbox: 'input' };
 const ROUTE_PREFIX: Record<string, string> = { 'pages/SettingsPage.tsx': '/settings/', 'admin/AdminPage.tsx': '/admin/' };
 
@@ -220,6 +295,9 @@ export function scanSource(): { raws: Raw[]; dynamicUnnamed: Array<{ source: str
     const screen = screenOf(file);
     const fileComp = basename(file).replace(/\.tsx?$/, '');
     const loc = (n: ts.Node) => `apps/web/src/${rel}:${sf.getLineAndCharacterOfPosition(n.getStart(sf)).line + 1}`;
+    // tables whose entries are rendered as controls: entry object → the control's kind
+    const tableKind = new Map<ts.ObjectLiteralExpression, Kind>();
+    const tableControls = new Set<ts.Node>();
     const push = (n: ts.Node, kind: Kind, labels: string[], dynamic: boolean, extra: Partial<Raw> = {}, key?: string) => {
       const ls = [...new Set(labels.map(norm).filter(Boolean))];
       if (!ls.length) return;
@@ -266,6 +344,7 @@ export function scanSource(): { raws: Raw[]; dynamicUnnamed: Array<{ source: str
           else if (tag === 'summary') kind = 'button';
           if (role && ROLE_KIND[role]) kind = ROLE_KIND[role];
           if (role === 'presentation' || role === 'none') kind = null;
+          if (isHidden(el)) kind = null;
           if (kind) {
             const field = kind === 'input' || kind === 'select';
             const placeholder = field ? attrText(el, 'placeholder', sf) : null;
@@ -309,7 +388,8 @@ export function scanSource(): { raws: Raw[]; dynamicUnnamed: Array<{ source: str
               }
             }
             const id = attrText(el, 'id', sf)?.text[0];
-            if (!labels.length && field && id) {
+            const fileInput = tag === 'input' && attrText(el, 'type', sf)?.text[0] === 'file';
+            if (!labels.length && (field || fileInput) && id) {
               // <label htmlFor=id>
               const m = new RegExp(`htmlFor=["']${id}["'][^>]*>([^<{]+)<`).exec(src);
               if (m) labels = [m[1]];
@@ -322,6 +402,8 @@ export function scanSource(): { raws: Raw[]; dynamicUnnamed: Array<{ source: str
             if (labels.length) {
               const shortcut = attrText(el, 'aria-keyshortcuts', sf)?.text[0];
               push(el, kind, labels, dynamic, { ...(disabledReason ? { no_permission: disabledReason } : {}), ...(shortcut ? { shortcut } : {}) });
+            } else if (tableControls.has(whole)) {
+              // named by the entries of a local table, inventoried with them (see renderedTable)
             } else {
               // a control named only by data (a list row, a user, a page title): inventoried by its source location; it is
               // linked to tests only through docs/qa/action-tests.yaml (its name differs for every row)
@@ -344,13 +426,15 @@ export function scanSource(): { raws: Raw[]; dynamicUnnamed: Array<{ source: str
         const props = new Map<string, ts.Expression>();
         for (const p of n.properties) if (ts.isPropertyAssignment(p) && (ts.isIdentifier(p.name) || ts.isStringLiteral(p.name))) props.set(p.name.text, p.initializer);
         for (const p of n.properties) if ((ts.isMethodDeclaration(p) || ts.isShorthandPropertyAssignment(p)) && p.name && ts.isIdentifier(p.name)) props.set(p.name.text, p as unknown as ts.Expression);
-        const idE = props.get('id');
+        const idE = props.get('id') && strip(props.get('id')!);
         const id = idE && (ts.isStringLiteral(idE) || ts.isNoSubstitutionTemplateLiteral(idE)) ? idE.text : null;
         const label = textOf(props.get('label') ?? props.get('title'), sf);
         const actionable = ['onSelect', 'run', 'onClick', 'href', 'element'].some((k) => props.has(k));
         if (label && id && !props.has('header')) {
           let kind: Kind = 'menu-item';
-          if (rel === 'editor/commands.tsx') kind = 'command';
+          const rendered = tableKind.get(n);
+          if (rendered) kind = rendered;
+          else if (rel === 'editor/commands.tsx') kind = 'command';
           else if (rel === 'editor/palette.ts' || props.has('value')) kind = 'option';
           else if (!actionable) kind = 'option';
           const dr = textOf(props.get('disabledReason'), sf)?.text[0];
@@ -374,6 +458,22 @@ export function scanSource(): { raws: Raw[]; dynamicUnnamed: Array<{ source: str
       }
       n.forEachChild(visit);
     };
+    const pre = (n: ts.Node) => {
+      if (ts.isJsxSelfClosingElement(n) || ts.isJsxOpeningElement(n)) {
+        const tag = n.tagName.getText(sf);
+        const role = attrText(n, 'role', sf)?.text[0];
+        let kind: Kind | null = tag === 'button' ? 'button' : tag === 'a' || tag === 'Link' || tag === 'NavLink' ? 'link' : tag === 'input' && /^(checkbox|radio)$/.test(attrText(n, 'type', sf)?.text[0] ?? '') ? 'toggle' : null;
+        if (role && ROLE_KIND[role]) kind = ROLE_KIND[role];
+        const whole = ts.isJsxOpeningElement(n) ? n.parent : n;
+        const arr = kind && !attrText(n, 'aria-label', sf) ? renderedTable(whole, sf) : null;
+        if (arr && kind) {
+          tableControls.add(whole);
+          for (const o of tableObjects(arr)) if (!o.properties.some((p) => ts.isPropertyAssignment(p) && p.name.getText(sf) === 'element')) tableKind.set(o, kind);
+        }
+      }
+      n.forEachChild(pre);
+    };
+    pre(sf);
     visit(sf);
   }
   return { raws, dynamicUnnamed };
