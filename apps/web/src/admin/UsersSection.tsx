@@ -296,7 +296,7 @@ export function UsersSection() {
                         items={() => menuFor(u)}
                         placement="bottom-end"
                         trigger={({ ref, props }) => (
-                          <button ref={ref} className="icon-btn" aria-label={`Действия: ${u.name}`} {...props}>
+                          <button ref={ref} className="icon-btn" {...props}>
                             <Ellipsis size={16} />
                           </button>
                         )}

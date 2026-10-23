@@ -2,7 +2,7 @@
 
 Сгенерировано `npm run qa:report` (`scripts/qa/coverage.ts`) из инвентаризации действий `docs/qa/action-inventory.yaml`. Для каждой операции задано поведение в состояниях R-UI-061 — пусто, успех, загрузка, отмена, ошибка, нет прав, потеря сети, повторный клик: общее правило (таблица ниже) плюс особенности операции из исходного кода (текст причины недоступности, подтверждение, горячая клавиша). В ячейке состояния: ✔ — есть автотест этого состояния (ссылки — в `docs/qa/ACTION_MATRIX.md` и `action-matrix.json`), · — неприменимо (обоснование в `docs/qa/action-tests.yaml`), ✗ — пробел.
 
-Операций: **734**; с хотя бы одним тестом: 431; с особенностями из кода (причина недоступности, подтверждение): 103. Покрыто тестами по состояниям: пусто 92, успех 431, загрузка / медленная сеть 55, отмена 188, ошибка сервера 137, нет прав 52, потеря сети 80, повторный клик 61.
+Операций: **729**; с хотя бы одним тестом: 431; с особенностями из кода (причина недоступности, подтверждение): 103. Покрыто тестами по состояниям: пусто 92, успех 431, загрузка / медленная сеть 55, отмена 188, ошибка сервера 137, нет прав 52, потеря сети 80, повторный клик 61.
 
 Конфликт, «Назад», перезагрузка, мобильный ввод и zoom 200% описаны общими правилами ниже и проверяются сквозными наборами: конфликт — `tests/e2e/conflict.spec.ts`, `tests/integration/conflicts.test.ts`; перезагрузка и «Назад» — `tests/e2e/ui-p0-interaction.spec.ts`, `collab-p0-offline.spec.ts`; мобильный ввод — `tests/e2e/ui-p0-touch.spec.ts`, `mobile.layout.spec.ts`; zoom 200% — `tests/e2e/ui-p0-layout.spec.ts`, `visual.spec.ts`.
 
@@ -126,7 +126,6 @@
 | `admin/UsersSection/deactivate` | Деактивировать (увольнение)… | без прав: «Нельзя отключить себя»; **критичная** | ✗ | ✔ | ✗ | ✔ | ✗ | ✗ | ✗ | ✗ | `e2e/qa-actions.spec.ts` R-QA-004 admin users menu: «Сбросить пароль» (cancel, then link), «Изменить профиль и р… |
 | `admin/UsersSection/import-csv` | Импорт CSV | **критичная** | ✔ | ✔ | ✗ | ✔ | ✔ | ✔ | ✗ | ✗ | `e2e/qa-admin-users.spec.ts` QA-A2 (fixed): «Импорт CSV» with the same email twice in the file flags the repeat in t… (+2) |
 | `admin/UsersSection/dobavit` | Добавить |  | ✔ | ✔ | ✔ | ✗ | ✔ | ✔ | ✗ | ✔ | `e2e/acl-p0-routes.spec.ts` ROUTE-04: administrator route — department → employee → automatic space access → guest … (+4) |
-| `admin/UsersSection/deystviya` | Действия: {…} |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | **нет** |
 | `admin/UsersSection/gotovo` | Готово |  | ✗ | ✔ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | `e2e/acl-p0-routes.spec.ts` ROUTE-04: administrator route — department → employee → automatic space access → guest … (+4) |
 | `admin/CreateUserDialog/polzovatel-sozdan` | Пользователь создан |  | ✗ | ✔ | ✔ | ✗ | ✔ | ✗ | ✗ | ✔ | `e2e/acl-p0-routes.spec.ts` ROUTE-04: administrator route — department → employee → automatic space access → guest … (+2) |
 | `admin/CreateUserDialog/dobavit-esche` | Добавить ещё |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | **нет** |
@@ -334,7 +333,6 @@
 | `editor/BubbleToolbar/quote` | Цитата |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | **нет** |
 | `editor/BubbleToolbar/code` | Блок кода |  | ✗ | ✔ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | `e2e/clipboard.spec.ts` converting formatted text to a code block asks first and keeps the text (R-EDITOR-067, … |
 | `editor/BubbleToolbar/callout` | Выделенный блок |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | **нет** |
-| `editor/BubbleToolbar/btn.button-data` | {…} |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | **нет** |
 | `editor/BubbleToolbar/button-data` | {…} |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | **нет** |
 | `editor/BubbleToolbar/c-default` | По умолчанию |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | **нет** |
 | `editor/BubbleToolbar/h-none` | Без фона |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | **нет** |
@@ -466,7 +464,6 @@
 | `page/CommentsPanel/zakryt-kommentarii` | Закрыть комментарии |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | **нет** |
 | `page/CommentsPanel/povtorit` | Повторить |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | **нет** |
 | `page/ThreadCard/otkryt-obsuzhdenie-zanovo` | Открыть обсуждение заново |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | **нет** |
-| `page/ThreadCard/button-data` | {…} |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | **нет** |
 | `page/ThreadCard/edit` | Изменить |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | **нет** |
 | `page/ThreadCard/del` | Удалить | **критичная** | ✗ | ✔ | ✗ | ✔ | ✔ | ✔ | ✔ | ✗ | `e2e/qa-editor-history.spec.ts` R-COMMENTS-005, QA26-03: «Удалить» a comment — cancel keeps it; a server error and offl… |
 | `page/ThreadCard/confirm.udalit-kommentariy` | Удалить комментарий? | с подтверждением; **критичная** | ✗ | ✔ | · | ✔ | ✔ | ✗ | ✔ | · | `e2e/qa-editor-history.spec.ts` R-COMMENTS-005, QA26-03: «Удалить» a comment — cancel keeps it; a server error and offl… |
@@ -601,7 +598,6 @@
 | `page/PageLoaded/podelitsya` | Поделиться | **критичная** | ✗ | ✔ | ✔ | ✔ | ✗ | ✔ | ✔ | ✔ | `e2e/acl-p0-routes.spec.ts` ROUTE-04: administrator route — department → employee → automatic space access → guest … (+12) |
 | `page/PageLoaded/kommentarii` | Комментарии |  | ✗ | ✔ | ✗ | ✔ | ✗ | ✗ | ✗ | ✗ | `e2e/content.spec.ts` comment on a selection appears in the comments panel (+3) |
 | `page/PageLoaded/izbrannoe` | Избранное |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | **нет** |
-| `page/PageLoaded/button-data` | {…} |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | **нет** |
 | `page/PageLoaded/vosstanovit` | Восстановить | **критичная** | ✗ | ✔ | ✗ | ✔ | ✔ | ✗ | ✔ | ✔ | `e2e/acl-p0-routes.spec.ts` ROUTE-04: administrator route — department → employee → automatic space access → guest … (+7) |
 | `page/PageLoaded/skachat-lokalnuyu-kopiyu` | Скачать локальную копию |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | **нет** |
 | `page/PageLoaded/izmenit-znachok` | Изменить значок |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | **нет** |
@@ -708,7 +704,6 @@
 | `shell/Sidebar/logout` | Выйти | **критичная** | ✔ | ✔ | ✔ | ✔ | ✗ | ✗ | ✗ | ✗ | `e2e/acl-p0-routes.spec.ts` ROUTE-01: employee route — login → own spaces → regulation → search → one-click article… (+2) |
 | `shell/Sidebar/confirm.est-neotpravlennye-izmeneniya` | Есть неотправленные изменения | с подтверждением; **критичная** | ✗ | ✔ | ✔ | ✔ | ✗ | ✗ | ✔ | · | `e2e/qa-editor-shell.spec.ts` R-COLLAB-040: «Выйти» with changes that have not reached the server asks «Есть неотправ… |
 | `shell/Sidebar/confirm.est-neotpravlennye-izmeneniya.vyyti` | Выйти | с подтверждением; **критичная** | ✗ | ✔ | ✔ | ✔ | ✗ | ✗ | ✔ | ✗ | `e2e/qa-editor-shell.spec.ts` R-COLLAB-040: «Выйти» with changes that have not reached the server asks «Есть неотправ… |
-| `shell/Sidebar/button-data` | {…} |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | **нет** |
 | `shell/Sidebar/skryt-bokovuyu-panel` | Скрыть боковую панель |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | **нет** |
 | `shell/Sidebar/poisk-k` | Поиск ⌘K |  | ✔ | ✔ | ✗ | ✔ | ✗ | ✗ | ✗ | ✗ | `e2e/a11y.spec.ts` reduced motion: animations and transitions are effectively disabled (R-A11Y-002, AT-82) (+2) |
 | `shell/Sidebar/vhodyaschie` | Входящие {…} |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | **нет** |

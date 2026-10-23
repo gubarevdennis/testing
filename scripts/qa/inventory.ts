@@ -282,6 +282,18 @@ function renderedTable(whole: ts.Node, sf: ts.SourceFile): ts.ArrayLiteralExpres
   return objs.length && objs.every((o) => has(o, 'id') || (has(o, 'path') && has(o, 'element'))) ? arr : null;
 }
 
+/** `<Menu label="…" trigger={({ props }) => <button {...props}>…}>`: the menu passes its label as the trigger's name. */
+function isMenuTrigger(el: ts.JsxOpeningLikeElement, sf: ts.SourceFile): boolean {
+  if (!el.attributes.properties.some((p) => ts.isJsxSpreadAttribute(p))) return false;
+  for (let p: ts.Node | undefined = el.parent; p && !ts.isSourceFile(p); p = p.parent) {
+    if (ts.isJsxAttribute(p)) {
+      const owner = p.parent.parent;
+      return p.name.getText(sf) === 'trigger' && owner.tagName.getText(sf) === 'Menu' && !!attr(owner, 'label');
+    }
+  }
+  return false;
+}
+
 const ROLE_KIND: Record<string, Kind> = { button: 'button', menuitem: 'menu-item', menuitemcheckbox: 'menu-item', menuitemradio: 'menu-item', tab: 'tab', switch: 'toggle', checkbox: 'toggle', option: 'option', link: 'link', combobox: 'select', textbox: 'input', searchbox: 'input' };
 const ROUTE_PREFIX: Record<string, string> = { 'pages/SettingsPage.tsx': '/settings/', 'admin/AdminPage.tsx': '/admin/' };
 
@@ -402,8 +414,9 @@ export function scanSource(): { raws: Raw[]; dynamicUnnamed: Array<{ source: str
             if (labels.length) {
               const shortcut = attrText(el, 'aria-keyshortcuts', sf)?.text[0];
               push(el, kind, labels, dynamic, { ...(disabledReason ? { no_permission: disabledReason } : {}), ...(shortcut ? { shortcut } : {}) });
-            } else if (tableControls.has(whole)) {
-              // named by the entries of a local table, inventoried with them (see renderedTable)
+            } else if (tableControls.has(whole) || isMenuTrigger(el, sf)) {
+              // named by the entries of a local table (see renderedTable), or the trigger of a <Menu label> that names it
+              // at runtime and is inventoried as that menu
             } else {
               // a control named only by data (a list row, a user, a page title): inventoried by its source location; it is
               // linked to tests only through docs/qa/action-tests.yaml (its name differs for every row)

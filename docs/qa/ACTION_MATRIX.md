@@ -6,15 +6,15 @@
 
 | Показатель | Значение |
 |---|---|
-| Действий в инвентаризации | **1014** |
-| Покрыто хотя бы одним автотестом | **559** (55.1%) |
+| Действий в инвентаризации | **1009** |
+| Покрыто хотя бы одним автотестом | **559** (55.4%) |
 | Критичных действий | 292; покрыто 292 (100%) |
 | Критичных с пройденным тестом в последнем запуске | 171 |
-| Ячеек «действие × состояние» (без N/A) | 6687; покрыто 1398 (20.9%) |
+| Ячеек «действие × состояние» (без N/A) | 6647; покрыто 1398 (21%) |
 | Неоднозначных ссылок тестов, не засчитанных | 229 |
 | Сборка последнего запуска | `dcce5d0b7f7b` (рабочая копия с изменениями), 2026-10-23T09:55:03.978Z |
 
-Состояния: success: покрыто 559, N/A 0, пробел 455; empty: покрыто 130, N/A 205, пробел 679; loading: покрыто 80, N/A 324, пробел 610; cancel: покрыто 222, N/A 272, пробел 520; error: покрыто 176, N/A 96, пробел 742; offline: покрыто 84, N/A 65, пробел 865; no-permission: покрыто 61, N/A 30, пробел 923; double-click: покрыто 86, N/A 433, пробел 495.
+Состояния: success: покрыто 559, N/A 0, пробел 450; empty: покрыто 130, N/A 205, пробел 674; loading: покрыто 80, N/A 324, пробел 605; cancel: покрыто 222, N/A 272, пробел 515; error: покрыто 176, N/A 96, пробел 737; offline: покрыто 84, N/A 65, пробел 860; no-permission: покрыто 61, N/A 30, пробел 918; double-click: покрыто 86, N/A 433, пробел 490.
 
 ## Не покрытые критичные действия (блокируют релиз)
 
@@ -51,7 +51,6 @@
 | `admin/OrgSettingsSection/input-data` | input | {…} | `apps/web/src/admin/OrgSettingsSection.tsx:134` |
 | `admin/UsersSection/status` | select | Статус | `apps/web/src/admin/UsersSection.tsx:187` |
 | `admin/UsersSection/otdel-ili-gruppa` | select | Отдел или группа | `apps/web/src/admin/UsersSection.tsx:209` |
-| `admin/UsersSection/deystviya` | button | Действия: {…} | `apps/web/src/admin/UsersSection.tsx:299` |
 | `admin/CreateUserDialog/dobavit-esche` | button | Добавить ещё | `apps/web/src/admin/UsersSection.tsx:400` |
 | `admin/CreateUserDialog/sotrudnik` | toggle | Сотрудник | `apps/web/src/admin/UsersSection.tsx:477` |
 | `admin/CreateUserDialog/filtr-grupp` | input | Фильтр групп | `apps/web/src/admin/UsersSection.tsx:528` |
@@ -109,7 +108,6 @@
 | `page/CommentsPanel/vse` | tab | Все | `apps/web/src/components/page/CommentsPanel.tsx:120` |
 | `page/CommentsPanel/povtorit` | button | Повторить | `apps/web/src/components/page/CommentsPanel.tsx:147` |
 | `page/ThreadCard/otkryt-obsuzhdenie-zanovo` | button | Открыть обсуждение заново | `apps/web/src/components/page/CommentsPanel.tsx:223` |
-| `page/ThreadCard/button-data` | button | {…} | `apps/web/src/components/page/CommentsPanel.tsx:254` |
 | `page/ThreadCard/edit` | menu-item | Изменить | `apps/web/src/components/page/CommentsPanel.tsx:259` |
 | `page/ThreadCard/otvetit` | button | Ответить | `apps/web/src/components/page/CommentsPanel.tsx:306` |
 | `page/Composer/input-data` | input | {…} | `apps/web/src/components/page/CommentsPanel.tsx:436` |
@@ -228,9 +226,8 @@
 | `editor/BubbleToolbar/todo` | menu-item | Чек-лист | `apps/web/src/editor/menus/BubbleToolbar.tsx:78` |
 | `editor/BubbleToolbar/quote` | menu-item | Цитата | `apps/web/src/editor/menus/BubbleToolbar.tsx:79` |
 | `editor/BubbleToolbar/callout` | menu-item | Выделенный блок | `apps/web/src/editor/menus/BubbleToolbar.tsx:81` |
-| `editor/BubbleToolbar/btn.button-data` | button | {…} | `apps/web/src/editor/menus/BubbleToolbar.tsx:114` |
+| `editor/BubbleToolbar/button-data` | button | {…} | `apps/web/src/editor/menus/BubbleToolbar.tsx:114` |
 | `editor/BubbleToolbar/adres-ssylki` | input | Адрес ссылки | `apps/web/src/editor/menus/BubbleToolbar.tsx:141` |
-| `editor/BubbleToolbar/button-data` | button | {…} | `apps/web/src/editor/menus/BubbleToolbar.tsx:171` |
 | `editor/BubbleToolbar/cvet` | menu | Цвет | `apps/web/src/editor/menus/BubbleToolbar.tsx:183` |
 | `editor/BubbleToolbar/c-default` | menu-item | По умолчанию | `apps/web/src/editor/menus/BubbleToolbar.tsx:187` |
 | `editor/BubbleToolbar/h-none` | menu-item | Без фона | `apps/web/src/editor/menus/BubbleToolbar.tsx:190` |
@@ -328,7 +325,6 @@
 | `shell/Sidebar/light` | menu-item | Светлая | `apps/web/src/layout/Sidebar.tsx:81` |
 | `shell/Sidebar/dark` | menu-item | Тёмная | `apps/web/src/layout/Sidebar.tsx:82` |
 | `shell/Sidebar/help` | menu-item | Справка и горячие клавиши | `apps/web/src/layout/Sidebar.tsx:86` |
-| `shell/Sidebar/button-data` | button | {…} | `apps/web/src/layout/Sidebar.tsx:103` |
 | `shell/Sidebar/skryt-bokovuyu-panel` | button | Скрыть боковую панель | `apps/web/src/layout/Sidebar.tsx:114` |
 | `shell/Sidebar/glavnaya` | link | Главная | `apps/web/src/layout/Sidebar.tsx:124` |
 | `shell/Sidebar/vhodyaschie` | button | Входящие {…} | `apps/web/src/layout/Sidebar.tsx:129` |
@@ -399,7 +395,6 @@
 | `page/PageLoaded/wide` | menu-item | Широкая страница | `apps/web/src/pages/PageView.tsx:232` |
 | `page/PageLoaded/lock` | menu-item | Снять защиту от изменений | `apps/web/src/pages/PageView.tsx:233` |
 | `page/PageLoaded/izbrannoe` | button | Избранное | `apps/web/src/pages/PageView.tsx:271` |
-| `page/PageLoaded/button-data` | button | {…} | `apps/web/src/pages/PageView.tsx:280` |
 | `page/PageLoaded/skachat-lokalnuyu-kopiyu` | button | Скачать локальную копию | `apps/web/src/pages/PageView.tsx:312` |
 | `page/PageLoaded/izmenit-znachok` | button | Изменить значок | `apps/web/src/pages/PageView.tsx:320` |
 | `page/PageLoaded/dobavit-znachok` | button | Добавить значок | `apps/web/src/pages/PageView.tsx:325` |
@@ -484,7 +479,7 @@
 
 Состояния: ✔ покрыто тестом, · N/A (обоснование в `action-matrix.json`), ✗ пробел. Факт — результат последнего запуска покрывающих тестов.
 
-### admin (158/206 покрыто)
+### admin (158/205 покрыто)
 
 | ID | Название | Крит. | ok | пусто | загр | отм | ошиб | офл | прав | 2× | Факт | Тесты |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
@@ -627,7 +622,6 @@
 | `admin/UsersSection/rol` | Роль | **да** | ✔ | ✔ | · | · | ✗ | ✗ | ✗ | · | BLOCKED | `e2e/qa-admin-users.spec.ts` R-QA-004 filter «Роль»: auditors only; a role with nobody shows the empty state «Никого… |
 | `admin/UsersSection/otdel-ili-gruppa` | Отдел или группа |  | ✗ | ✗ | · | · | ✗ | ✗ | ✗ | · | — | **нет теста** |
 | `admin/UsersSection/deystviya-s-polzovatelem` | Действия с пользователем {…} |  | ✔ | · | · | · | · | · | ✗ | · | PASS | `e2e/acl-p0-routes.spec.ts` ROUTE-04: administrator route — department → employee → automatic space access → guest …<br>`e2e/qa-admin-users.spec.ts` R-QA-004 «Изменить профиль и роль»: «Роль в организации» → administrator asks «Назначит…<br>`e2e/qa-admin-users.spec.ts` R-QA-004 «Перевести в другой отдел…»: «Сравнить доступы» shows the space access change …<br>… ещё 2 |
-| `admin/UsersSection/deystviya` | Действия: {…} |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | — | **нет теста** |
 | `admin/UsersSection/gotovo` | Готово |  | ✔ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | PASS | `e2e/acl-p0-routes.spec.ts` ROUTE-04: administrator route — department → employee → automatic space access → guest …<br>`e2e/qa-actions.spec.ts` R-QA-004 admin users menu: «Сбросить пароль» (cancel, then link), «Изменить профиль и р…<br>`e2e/qa-admin-users.spec.ts` R-QA-004 «Добавить» user: empty form disabled; server error keeps the input; slow netwo…<br>… ещё 2 |
 | `admin/UsersSection/ssylka` | Ссылка |  | ✔ | ✗ | · | · | ✗ | ✗ | ✗ | · | BLOCKED | `e2e/qa-admin-users.spec.ts` R-QA-004 invitations: «Отправить приглашение повторно» issues a new link and kills the … |
 | `admin/CreateUserDialog/polzovatel-sozdan` | Пользователь создан |  | ✔ | ✗ | ✔ | ✗ | ✔ | ✗ | ✗ | ✔ | PASS | `e2e/acl-p0-routes.spec.ts` ROUTE-04: administrator route — department → employee → automatic space access → guest …<br>`e2e/qa-admin-users.spec.ts` QA-A1 (fixed): an instantaneous double activation of «Создать» in «Новый пользователь» …<br>`e2e/qa-admin-users.spec.ts` R-QA-004 «Добавить» user: empty form disabled; server error keeps the input; slow netwo… |
@@ -777,7 +771,7 @@
 | `common/OcrDialog/raspoznannyy-tekst` | Распознанный текст |  | ✔ | ✗ | · | ✔ | ✗ | ✗ | ✗ | · | PASS | `e2e/ocr-view.spec.ts` SC-22: the OCR view shows the original image, confidence with uncertain words, correcti… |
 | `common/useEvents/otkryt-versiyu` | Открыть версию {…} | **да** | ✔ | · | · | ✗ | ✗ | ✗ | ✔ | ✗ | BLOCKED | `e2e/qa-editor-history.spec.ts` R-HISTORY-014: a co-author sees «Открыть версию N» after the owner restores a version; … |
 
-### editor (85/215 покрыто)
+### editor (85/214 покрыто)
 
 | ID | Название | Крит. | ok | пусто | загр | отм | ошиб | офл | прав | 2× | Факт | Тесты |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
@@ -890,10 +884,9 @@
 | `editor/BubbleToolbar/quote` | Цитата |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | — | **нет теста** |
 | `editor/BubbleToolbar/code` | Блок кода |  | ✔ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | PASS | `e2e/clipboard.spec.ts` converting formatted text to a code block asks first and keeps the text (R-EDITOR-067, … |
 | `editor/BubbleToolbar/callout` | Выделенный блок |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | — | **нет теста** |
-| `editor/BubbleToolbar/btn.button-data` | {…} |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | — | **нет теста** |
+| `editor/BubbleToolbar/button-data` | {…} |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | — | **нет теста** |
 | `editor/BubbleToolbar/adres-ssylki` | Адрес ссылки |  | ✗ | ✗ | · | · | ✗ | ✗ | ✗ | · | — | **нет теста** |
 | `editor/BubbleToolbar/tip-bloka` | Тип блока |  | ✔ | · | · | · | · | · | ✗ | · | PASS | `e2e/clipboard.spec.ts` converting formatted text to a code block asks first and keeps the text (R-EDITOR-067, … |
-| `editor/BubbleToolbar/button-data` | {…} |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | — | **нет теста** |
 | `editor/BubbleToolbar/cvet` | Цвет |  | ✗ | · | · | · | · | · | ✗ | · | — | **нет теста** |
 | `editor/BubbleToolbar/c-default` | По умолчанию |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | — | **нет теста** |
 | `editor/BubbleToolbar/h-none` | Без фона |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | — | **нет теста** |
@@ -1072,7 +1065,7 @@
 | `import/ImportPage/k-prostranstvu` | К пространству |  | ✗ | · | ✗ | · | ✗ | ✗ | ✗ | · | — | **нет теста** |
 | `import/ImportPage/otkryt` | Открыть |  | ✗ | · | ✗ | · | ✗ | ✗ | ✗ | · | — | **нет теста** |
 
-### page (121/184 покрыто)
+### page (121/182 покрыто)
 
 | ID | Название | Крит. | ok | пусто | загр | отм | ошиб | офл | прав | 2× | Факт | Тесты |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
@@ -1083,7 +1076,6 @@
 | `page/CommentsPanel/povtorit` | Повторить |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | — | **нет теста** |
 | `page/ThreadCard/otkryt-obsuzhdenie-zanovo` | Открыть обсуждение заново |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | — | **нет теста** |
 | `page/ThreadCard/deystviya-s-kommentariem` | Действия с комментарием |  | ✔ | · | · | · | · | · | ✗ | · | BLOCKED | `e2e/qa-editor-history.spec.ts` R-COMMENTS-005, QA26-03: «Удалить» a comment — cancel keeps it; a server error and offl… |
-| `page/ThreadCard/button-data` | {…} |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | — | **нет теста** |
 | `page/ThreadCard/edit` | Изменить |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | — | **нет теста** |
 | `page/ThreadCard/del` | Удалить | **да** | ✔ | ✗ | ✗ | ✔ | ✔ | ✔ | ✔ | ✗ | BLOCKED | `e2e/qa-editor-history.spec.ts` R-COMMENTS-005, QA26-03: «Удалить» a comment — cancel keeps it; a server error and offl… |
 | `page/ThreadCard/confirm.udalit-kommentariy` | Удалить комментарий? | **да** | ✔ | ✗ | · | ✔ | ✔ | ✔ | ✗ | · | BLOCKED | `e2e/qa-editor-history.spec.ts` R-COMMENTS-005, QA26-03: «Удалить» a comment — cancel keeps it; a server error and offl… |
@@ -1252,7 +1244,6 @@
 | `page/PageLoaded/kommentarii` | Комментарии |  | ✔ | ✗ | ✗ | ✔ | ✗ | ✗ | ✗ | ✗ | PASS | `e2e/content.spec.ts` comment on a selection appears in the comments panel<br>`e2e/qa-editor-history.spec.ts` R-COMMENTS-005, QA26-03: «Удалить» a comment — cancel keeps it; a server error and offl…<br>`e2e/ui-p0-interaction.spec.ts` R-UI-059, R-UI-008, E224: menus at viewport edges flip/shift inside the window, keep ke…<br>… ещё 1 |
 | `page/PageLoaded/izbrannoe` | Избранное |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | — | **нет теста** |
 | `page/PageLoaded/deystviya-so-stranicey` | Действия со страницей |  | ✔ | ✔ | · | ✔ | · | ✔ | ✔ | · | PASS | `e2e/acl-p0-ui.spec.ts` AT-79: copying a page does not put titles of linked pages the reader cannot open on the…<br>`e2e/clipboard.spec.ts` page menu copies the page with formatting, as text and as Markdown (R-CLIPBOARD-002, R-…<br>`e2e/collab.spec.ts` history: save a version, change text, restore the version (R-HISTORY-004, UX13-14, UX21…<br>… ещё 21 |
-| `page/PageLoaded/button-data` | {…} |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | — | **нет теста** |
 | `page/PageLoaded/vosstanovit` | Восстановить | **да** | ✔ | ✗ | ✗ | ✔ | ✔ | ✔ | ✗ | ✔ | PASS | `e2e/acl-p0-routes.spec.ts` ROUTE-04: administrator route — department → employee → automatic space access → guest …<br>`e2e/collab.spec.ts` history: save a version, change text, restore the version (R-HISTORY-004, UX13-14, UX21…<br>`e2e/history-p0.spec.ts` R-HISTORY-013, V16-S11: compare shows text and property changes highlighted; restore sh…<br>… ещё 5 |
 | `page/PageLoaded/skachat-lokalnuyu-kopiyu` | Скачать локальную копию |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | — | **нет теста** |
 | `page/PageLoaded/izmenit-znachok` | Изменить значок |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | — | **нет теста** |
@@ -1359,7 +1350,7 @@
 | `settings/TokensTab/sozdat-token` | Создать токен | **да** | ✔ | ✔ | ✔ | ✔ | ✔ | ✔ | ✗ | ✔ | PASS | `e2e/qa-actions.spec.ts` QA-D3 (fixed): an instantaneous double activation of «Создать токен» sends one request<br>`e2e/qa-actions.spec.ts` R-QA-004 API tokens: empty name disables «Создать токен»; slow network shows progress a…<br>`e2e/qa-actions.spec.ts` R-QA-029 offline: «Создать токен» without a network explains the failure and works afte… |
 | `settings/TokensTab/otozvat` | Отозвать | **да** | ✔ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | PASS | `e2e/qa-actions.spec.ts` R-QA-004 API tokens: empty name disables «Создать токен»; slow network shows progress a… |
 
-### shell (35/74 покрыто)
+### shell (35/73 покрыто)
 
 | ID | Название | Крит. | ok | пусто | загр | отм | ошиб | офл | прав | 2× | Факт | Тесты |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
@@ -1387,7 +1378,6 @@
 | `shell/Sidebar/logout` | Выйти | **да** | ✔ | ✔ | ✔ | ✔ | ✗ | ✗ | ✗ | ✗ | PASS | `e2e/acl-p0-routes.spec.ts` ROUTE-01: employee route — login → own spaces → regulation → search → one-click article…<br>`e2e/qa-editor-shell.spec.ts` R-COLLAB-040: «Выйти» with changes that have not reached the server asks «Есть неотправ…<br>`e2e/sso-oidc.spec.ts` SEC-L3: «Войти через корпоративный SSO» → IdP login page → back signed in; logout also … |
 | `shell/Sidebar/confirm.est-neotpravlennye-izmeneniya` | Есть неотправленные изменения | **да** | ✔ | ✗ | ✔ | ✔ | ✗ | ✔ | ✗ | · | BLOCKED | `e2e/qa-editor-shell.spec.ts` R-COLLAB-040: «Выйти» with changes that have not reached the server asks «Есть неотправ… |
 | `shell/Sidebar/confirm.est-neotpravlennye-izmeneniya.vyyti` | Выйти | **да** | ✔ | ✗ | ✔ | ✔ | ✗ | ✔ | ✗ | ✗ | BLOCKED | `e2e/qa-editor-shell.spec.ts` R-COLLAB-040: «Выйти» with changes that have not reached the server asks «Есть неотправ… |
-| `shell/Sidebar/button-data` | {…} |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | — | **нет теста** |
 | `shell/Sidebar/skryt-bokovuyu-panel` | Скрыть боковую панель |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | — | **нет теста** |
 | `shell/Sidebar/poisk-k` | Поиск ⌘K |  | ✔ | ✔ | ✗ | ✔ | ✗ | ✗ | ✗ | ✗ | PASS | `e2e/a11y.spec.ts` reduced motion: animations and transitions are effectively disabled (R-A11Y-002, AT-82)<br>`e2e/qa-actions.spec.ts` R-QA-004 navigation: sidebar «Шаблоны», «Импорт», «Корзина» and the quick switcher comm…<br>`e2e/qa-editor-shell.spec.ts` R-SEARCH-010: quick switcher commands «Импорт документов» and «Корзина» (empty query li… |
 | `shell/Sidebar/glavnaya` | Главная |  | ✗ | · | ✗ | · | ✗ | ✗ | ✗ | · | — | **нет теста** |
