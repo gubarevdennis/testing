@@ -97,9 +97,9 @@ export async function caretIn(page: Page, text: string) {
  * A page link in the sidebar tree. The tree is virtualized, so in a database shared by many tests the row may not be
  * rendered yet: scroll the tree from the top until it appears.
  */
-export async function treeLink(page: Page, name: string | RegExp) {
+export async function treeLink(page: Page, name: string | RegExp, role: 'link' | 'button' = 'link') {
   const tree = page.getByRole('tree', { name: 'Страницы' });
-  const link = tree.getByRole('link', { name });
+  const link = tree.getByRole(role, { name });
   await expect(tree).toBeVisible();
   await page.waitForTimeout(200);
   if (await link.count()) return link.first();

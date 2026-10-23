@@ -167,4 +167,31 @@ describe('organisation archive round trip (F06, V18-A01, V18-A02, V18-A03, V18-A
     expect(live.provider.synced).toBe(true);
     live.close();
   }, 240_000);
+
+  it('files and comments of a page in the trash do not break the archive: it restores and verifies (regression)', async () => {
+    const o = orgA.owner;
+    const sp = (await o.get('/api/v1/spaces')).spaces.find((x: any) => x.kind === 'org');
+    const page = (await o.post('/api/v1/pages', { spaceId: sp.id, title: 'В корзину с файлом' })).page;
+    const fd = new FormData();
+    fd.append('pageId', page.id);
+    fd.append('file', new Blob([Buffer.from('файл удалённой страницы')], { type: 'text/plain' }), 'note.txt');
+    await o.req('POST', '/api/v1/attachments', fd);
+    await o.post(`/api/v1/pages/${page.id}/comments`, { text: 'Комментарий удалённой страницы' });
+    await o.req('DELETE', `/api/v1/pages/${page.id}`);
+    const { jobId } = await o.post('/api/v1/admin/archives', { password: OWNER.password, confirm: true });
+    const job = await waitJob(o, `/api/v1/admin/archives/${jobId}`);
+    expect(job.status).toBe('succeeded');
+    const zip = Buffer.from(await (await o.raw('GET', `/api/v1/admin/archives/${jobId}/download`)).arrayBuffer());
+    const files = await unzip(zip);
+    const atts = JSON.parse(files.get('knowledge-export/metadata/attachments.json')!.toString());
+    for (const a of atts) expect(a.path, `attachment ${a.filename} has a file in the archive`).toBeTruthy();
+    expect(atts.some((a: any) => a.page_id === page.id)).toBe(false);
+    const fd2 = new FormData();
+    fd2.append('file', new Blob([zip]), 'archive.zip');
+    const an = await o.req('POST', '/api/v1/admin/archives/restore', fd2);
+    expect(an.analysis.ok).toBe(true);
+    const res = await o.post(`/api/v1/admin/archives/restore/${an.jobId}/commit`, { password: OWNER.password, confirm: true, target: { mode: 'new-space', name: 'Проверка корзины в архиве' } });
+    expect(res.verification.problems).toEqual([]);
+  }, 240_000);
 });
+

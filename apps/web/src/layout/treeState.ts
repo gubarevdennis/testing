@@ -23,10 +23,12 @@ function writeJson(key: string, v: unknown) {
 
 /**
  * Keeps the scroll position of the sidebar tree across reloads (R-TREE-019, R-TREE-023). Rows load lazily, so the
- * saved position is re-applied while the list grows until it can actually be reached.
+ * saved position is re-applied while the list grows until it can actually be reached. Applies when no page is open:
+ * otherwise the open page is revealed (useRevealCurrentPage / SidebarTree).
  */
-export function useTreeScrollMemory(ref: RefObject<HTMLElement | null>, rowCount: number) {
-  const restored = useRef(false);
+export function useTreeScrollMemory(ref: RefObject<HTMLElement | null>, rowCount: number, pageOpen = false) {
+  // with a page open, the tree scrolls to that page instead (the saved position would fight it while rows load)
+  const restored = useRef(pageOpen);
   const target = useRef<number | null>(readJson<number>(SCROLL_KEY));
   useEffect(() => {
     const el = ref.current;

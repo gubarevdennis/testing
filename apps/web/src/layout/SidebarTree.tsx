@@ -1,6 +1,6 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent as RKeyboardEvent, type PointerEvent as RPointerEvent } from 'react';
 import { useQueries } from '@tanstack/react-query';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useMatch, useNavigate } from 'react-router-dom';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { ChevronRight, Plus, MoreHorizontal, FileText, Lock, Users, Building2, Star, RotateCw, GripVertical, Table2 } from 'lucide-react';
 import { get } from '../api/client';
@@ -45,7 +45,8 @@ type ChildResult = { nodes: TreeNode[]; nextCursor: string | null };
 export function SidebarTree({ personal, spaces, shared, onNavigate }: Props) {
   const { expanded, toggleExpanded, collapsedSections, toggleSection } = useUi();
   const navigate = useNavigate();
-  const { pageId: currentPage } = useParams();
+  // the sidebar is rendered outside <Routes> (AppShell), so useParams() never sees :pageId — match the URL directly
+  const currentPage = useMatch('/p/:pageId/*')?.params.pageId;
   const teamSpaces = spaces.filter((s) => !s.isPersonal && s.member);
   const discoverable = spaces.filter((s) => !s.isPersonal && !s.member);
 
@@ -123,34 +124,28 @@ export function SidebarTree({ personal, spaces, shared, onNavigate }: Props) {
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const virtualizer = useVirtualizer({ count: rows.length, getScrollElement: () => scrollRef.current, estimateSize: () => ROW_H, overscan: 12 });
-  useTreeScrollMemory(scrollRef, rows.length);
+  useTreeScrollMemory(scrollRef, rows.length, !!currentPage);
   useRevealCurrentPage(currentPage);
-  // keep the open page in view while rows load around it (spaces and ancestors load lazily and shift it), until the
-  // user scrolls the tree themselves
-  const userScrolled = useRef(false);
+  // keep the open page in view while rows load around it: spaces and ancestors load lazily and shift its row. Only
+  // shortly after navigating, only when its row actually moved, and never once the user has touched the tree.
+  const reveal = useRef<{ page: string | undefined; at: number; idx: number; user: boolean }>({ page: undefined, at: 0, idx: -1, user: false });
   useEffect(() => {
-    userScrolled.current = false;
+    reveal.current = { page: currentPage, at: Date.now(), idx: -1, user: false };
     const el = scrollRef.current;
     if (!el) return;
-    const mark = () => (userScrolled.current = true);
-    el.addEventListener('wheel', mark, { passive: true });
-    el.addEventListener('touchmove', mark, { passive: true });
-    el.addEventListener('keydown', mark);
+    const mark = () => (reveal.current.user = true);
+    const evs = ['wheel', 'touchmove', 'keydown', 'pointerdown'] as const;
+    for (const e of evs) el.addEventListener(e, mark, { passive: true });
     return () => {
-      el.removeEventListener('wheel', mark);
-      el.removeEventListener('touchmove', mark);
-      el.removeEventListener('keydown', mark);
+      for (const e of evs) el.removeEventListener(e, mark);
     };
   }, [currentPage]);
   useEffect(() => {
-    if (!currentPage || userScrolled.current) return;
+    const st = reveal.current;
+    if (!currentPage || st.user || Date.now() - st.at > 5000) return;
     const idx = rows.findIndex((r) => r.kind === 'node' && r.node.id === currentPage);
-    if (idx < 0) return;
-    const el = scrollRef.current;
-    if (el) {
-      const top = idx * ROW_H;
-      if (top >= el.scrollTop && top + ROW_H <= el.scrollTop + el.clientHeight) return; // already visible
-    }
+    if (idx < 0 || idx === st.idx) return;
+    st.idx = idx;
     virtualizer.scrollToIndex(idx, { align: 'auto' });
   }, [currentPage, rows, virtualizer]);
 

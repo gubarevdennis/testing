@@ -395,9 +395,8 @@ test('QA-D5 (fixed): «Настройки и участники» in the sidebar
   watch(page);
   await ensureOwner(page);
   await page.goto('/');
-  const row = page.getByRole('tree', { name: 'Страницы' }).getByRole('button', { name: 'Действия пространства «Проверка действий»' });
-  await row.scrollIntoViewIfNeeded();
-  await row.click();
+  // the tree re-renders while spaces load: click() re-resolves the (virtualized) row instead of holding a stale element
+  await (await treeLink(page, 'Действия пространства «Проверка действий»', 'button')).click();
   await page.getByRole('menuitem', { name: 'Настройки и участники' }).click();
   await page.waitForURL(/tab=settings/);
   await expect(page.getByRole('tablist', { name: 'Разделы пространства' })).toBeVisible();

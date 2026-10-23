@@ -9,9 +9,9 @@
 | Приоритет | Всего | реализовано | частично | не реализовано | требует ручной проверки | ограничение окружения | процесс/документ | заменено | не оценено | покрыто тестами |
 |---|---|---|---|---|---|---|---|---|---|---|
 | P0 | 637 | 563 | 45 | 1 | 1 | 12 | 14 | 1 | 0 | 454 |
-| P1 | 588 | 227 | 276 | 30 | 32 | 7 | 15 | 1 | 0 | 95 |
+| P1 | 588 | 227 | 276 | 30 | 32 | 7 | 15 | 1 | 0 | 96 |
 | P2 | 73 | 26 | 24 | 6 | 7 | 0 | 9 | 1 | 0 | 1 |
-| **Итого** | 1298 | 816 | 345 | 37 | 40 | 19 | 38 | 3 | 0 | 550 |
+| **Итого** | 1298 | 816 | 345 | 37 | 40 | 19 | 38 | 3 | 0 | 551 |
 
 ## По модулям
 
@@ -50,7 +50,7 @@
 | SPACE | 15 | 13 | 1 | 1 | 0 | 0 | 0 | 8 |
 | TABLE | 9 | 5 | 4 | 0 | 0 | 0 | 0 | 2 |
 | TEMPLATES | 14 | 10 | 4 | 0 | 0 | 0 | 0 | 0 |
-| TREE | 63 | 50 | 11 | 1 | 1 | 0 | 0 | 24 |
+| TREE | 63 | 50 | 11 | 1 | 1 | 0 | 0 | 25 |
 | UI | 89 | 19 | 54 | 1 | 14 | 1 | 0 | 17 |
 
 ## Открытые P0/P1 (частично / не реализовано / не оценено)
@@ -2984,7 +2984,7 @@
 | R-TREE-010 | P1 | Строка узла: отдельные зоны стрелки, иконки, названия, действий; стрелка только раскрывает, название только открывает; высота 36 px … | частично | apps/web/src/styles/tokens.css (--row-h: 32px), apps/web/src/styles/layout.css; Зоны разделены; высота строки 32 px вместо 36, на touch 40 px вместо 44 |  |
 | R-TREE-011 | P1 | Ширина 280 px, настройка 240–420 px; многоточие, tooltip, фокус, полное название; глубокая вложенность — фокус ветки и breadcrumbs … | частично | apps/web/src/state/ui.ts#setSidebarWidth (240–420, по умолчанию 280), apps/web/src/layout/SidebarTree.tsx; Нет «фокуса ветки» для глубокой вложенности |  |
 | R-TREE-012 | P1 | Выравнивание по сетке; hover-кнопки не перекрывают текст; без скачков строк | реализовано | apps/web/src/styles/layout.css (.tree-row grid, .tree-actions opacity) |  |
-| R-TREE-013 | P1 | Раскрытие 120–180 мс с reduced-motion; не анимировать тысячи элементов; раскрытие per-user; при переходе раскрываются предки | реализовано | apps/web/src/layout/treeState.ts#useRevealCurrentPage (раскрытие пространства и предков открытой страницы), styles/layout.css; нет автотеста |  |
+| R-TREE-013 | P1 | Раскрытие 120–180 мс с reduced-motion; не анимировать тысячи элементов; раскрытие per-user; при переходе раскрываются предки | реализовано | apps/web/src/layout/treeState.ts#useRevealCurrentPage, apps/web/src/layout/SidebarTree.tsx; tests/e2e/content.spec.ts 'the open page is revealed in the tree (R-TREE-013)'; найден дефект — дерево вне <Routes> не видело :pageId (useParams), раскрытие и выделение не работали; исправлено (useMatch) | tests/e2e/content.spec.ts: the open page is revealed in the tree: ancestors expanded, row scrolled into view and sele |
 | R-TREE-014 | P1 | DnD: цели перед/после/внутрь; клавиатурные аналоги, Undo, автопрокрутка, предупреждение об изменении прав | реализовано | apps/web/src/layout/SidebarTree.tsx (before/after/inside, Alt+Shift+↑/↓), apps/web/src/layout/treeActions.tsx (undo-тост, подтверждение аудитории), MoveDialog | tests/integration/acl.test.ts: moving a private page to an open space requires confirmation and shows who gains access; u |
 | R-TREE-015 | P1 | Lazy-load, виртуализация с доступностью, без мигания; поиск по дереву не раскрывает запрещённые страницы | реализовано | apps/web/src/layout/SidebarTree.tsx (useVirtualizer, lazy), apps/server/src/services/tree.ts#visibleChildren; Поиска по дереву нет (см. R-TREE-006) |  |
 | R-TREE-016 | P1 | Контекстное меню: подстраница, переименовать, иконка, переместить, дублировать, ссылка, избранное, права, архив/корзина … | частично | apps/web/src/layout/SidebarTree.tsx#nodeMenu; Нет пункта «Права/Поделиться» в контекстном меню дерева |  |

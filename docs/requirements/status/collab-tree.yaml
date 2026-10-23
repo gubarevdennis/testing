@@ -455,8 +455,8 @@
   evidence: apps/web/src/styles/layout.css (.tree-row grid, .tree-actions opacity)
 - id: R-TREE-013
   status: done
-  evidence: apps/web/src/layout/treeState.ts#useRevealCurrentPage (раскрытие пространства и предков открытой страницы), styles/layout.css
-  note: нет автотеста
+  evidence: "apps/web/src/layout/treeState.ts#useRevealCurrentPage, apps/web/src/layout/SidebarTree.tsx; tests/e2e/content.spec.ts 'the open page is revealed in the tree (R-TREE-013)'"
+  note: найден дефект — дерево вне <Routes> не видело :pageId (useParams), раскрытие и выделение не работали; исправлено (useMatch)
 - id: R-TREE-014
   status: done
   evidence: apps/web/src/layout/SidebarTree.tsx (before/after/inside, Alt+Shift+↑/↓), apps/web/src/layout/treeActions.tsx (undo-тост, подтверждение аудитории), MoveDialog

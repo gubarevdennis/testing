@@ -5,6 +5,8 @@ import { ensureOwner, newPage, expectSaved, paste } from './helpers';
 test.describe.configure({ mode: 'serial' });
 
 async function axe(page: Page, label: string) {
+  // contrast is measured on the final appearance: an element fading in (opacity animation) is not a violation
+  await page.waitForFunction(() => document.getAnimations().every((a) => a.playState !== 'running' || a.effect?.getTiming().iterations === Infinity), undefined, { timeout: 5000 }).catch(() => undefined);
   const r = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze();
   const serious = r.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical');
   for (const v of serious) console.log(`[axe ${label}] ${v.id}: ${v.help} — ${v.nodes.slice(0, 3).map((n) => n.target.join(' ')).join(' | ')}`);

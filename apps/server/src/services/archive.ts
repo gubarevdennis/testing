@@ -75,6 +75,11 @@ export async function buildOrgArchive(s: Services, orgId: string, opts: ArchiveO
   await progress?.({ stage: 'metadata', pages: data.pages.length });
   const pageIds = new Set(data.pages.map((p: any) => p.id));
   data.pages = data.pages.filter((p: any) => !p.parent_id || pageIds.has(p.parent_id));
+  // Files and comments only of the pages in the archive: those of trashed pages would have no place in it (their
+  // metadata had no file path, and restoring such an archive failed with «В архиве нет файла undefined»).
+  const kept = new Set(data.pages.map((p: any) => p.id));
+  data.attachments = data.attachments.filter((a: any) => kept.has(a.page_id));
+  data.comments = data.comments.filter((c: any) => kept.has(c.page_id));
 
   // Readable tree per space.
   const pathOf = new Map<string, string>();

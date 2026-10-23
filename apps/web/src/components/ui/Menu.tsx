@@ -131,7 +131,11 @@ function SubMenu({ item, onClose, itemRef, itemProps, active }: { item: MenuItem
     }
   };
   return (
-    <div onMouseEnter={() => (closeTimer.current && clearTimeout(closeTimer.current), setOpen(true))} onMouseLeave={() => (closeTimer.current = window.setTimeout(() => setOpen(false), 160))}>
+    <div
+      // hover opens submenus for a mouse only: a tap emulates hover and would open a submenu over the item being tapped
+      onPointerEnter={(e) => e.pointerType === 'mouse' && (closeTimer.current && clearTimeout(closeTimer.current), setOpen(true))}
+      onPointerLeave={(e) => e.pointerType === 'mouse' && (closeTimer.current = window.setTimeout(() => setOpen(false), 160))}
+    >
       <button
         ref={(el) => {
           itemRef(el);

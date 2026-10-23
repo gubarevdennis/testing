@@ -150,7 +150,7 @@ test('R-UI-060, UX-141: hovering controls performs no action; hover-only tree ac
   expect(after).toEqual(before);
 
   // keyboard equivalent of the hover "+" on a tree row: Shift+F10 → «Новая вложенная страница»
-  const row = page.getByRole('tree', { name: 'Страницы' }).getByRole('link', { name: 'Взаимодействие: меню и фокус' });
+  const row = await treeLink(page, 'Взаимодействие: меню и фокус');
   await row.focus();
   await page.keyboard.press('Shift+F10');
   await expect(page.getByRole('menuitem', { name: 'Новая вложенная страница' })).toBeEnabled();
