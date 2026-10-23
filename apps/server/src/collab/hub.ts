@@ -144,10 +144,12 @@ export class CollabHub {
           replaceContent(doc, r.doc, 'migration');
         },
         `migrate:${pageId}:${reg.version}`,
+        // the format version is stored with the migrated content: a crash in between would otherwise leave migrated
+        // content marked as the old format, and the next open would migrate it a second time
+        async (c) => void (await c.query('update pages set content_schema_version = $2, version = version + 1 where id = $1', [pageId, reg.version])),
       );
       const snap = await this.snapshot(pageId);
       await tx(this.pool, async (c) => {
-        await c.query('update pages set content_schema_version = $2, version = version + 1 where id = $1', [pageId, reg.version]);
         const title = (await c.query('select title from pages where id = $1', [pageId])).rows[0]?.title ?? '';
         const rev = await createRevision(c, { pageId, kind: 'migration', title, state: snap.state, content: res.json, seqUpto: res.seq, authors: [], createdBy: userId, label: `Миграция формата документа ${from} → ${reg.version}` });
         await c.query(`insert into page_events (org_id, page_id, actor_id, type, data) values ($1, $2, $3, 'schema-migrated', $4)`, [row.org_id, pageId, userId, { from, to: reg.version, applied, seq: res.seq, preRevision: pre?.number ?? null, revision: rev.number }]);
@@ -243,7 +245,14 @@ export class CollabHub {
    * Appends an update to the durable journal. Idempotent by opId: a re-sent operation returns the original seq.
    * Returns null if the page is no longer editable (deleted).
    */
-  private async persist(live: LiveDoc, update: Uint8Array, userId: string | null, clientId: number | null, opId: string): Promise<{ seq: number; duplicate: boolean }> {
+  private async persist(
+    live: LiveDoc,
+    update: Uint8Array,
+    userId: string | null,
+    clientId: number | null,
+    opId: string,
+    inTx?: (c: pg.PoolClient) => Promise<void>,
+  ): Promise<{ seq: number; duplicate: boolean }> {
     const started = performance.now();
     if (this.faults.persistFailures > 0) {
       this.faults.persistFailures--;
@@ -256,6 +265,7 @@ export class CollabHub {
       const seq = st.last_seq + 1;
       await c.query('insert into doc_updates (page_id, seq, update, user_id, client_id, op_id) values ($1, $2, $3, $4, $5, $6)', [live.pageId, seq, Buffer.from(update), userId, clientId, opId]);
       await c.query('update doc_state set last_seq = $2, updated_at = now() where page_id = $1', [live.pageId, seq]);
+      if (inTx) await inTx(c);
       return { seq, duplicate: false };
     });
     this.metrics.collabPersistSeconds.observe((performance.now() - started) / 1000);
@@ -520,7 +530,14 @@ export class CollabHub {
    * Server-originated change (version restore, import into existing page, template apply, migration).
    * Runs through the same durable path and is broadcast to editors.
    */
-  async applyServerChange(pageId: string, userId: string | null, change: (doc: Y.Doc) => void, opId = 'srv:' + randomUUID()): Promise<{ seq: number; json: PMNode }> {
+  /** `inTx` runs in the transaction that stores the change (metadata that must never disagree with the content). */
+  async applyServerChange(
+    pageId: string,
+    userId: string | null,
+    change: (doc: Y.Doc) => void,
+    opId = 'srv:' + randomUUID(),
+    inTx?: (c: pg.PoolClient) => Promise<void>,
+  ): Promise<{ seq: number; json: PMNode }> {
     const live = await this.load(pageId);
     return this.run(live, async () => {
       const sv = Y.encodeStateVector(live.ydoc);
@@ -534,7 +551,7 @@ export class CollabHub {
       let seq = live.lastSeq;
       if (update.byteLength > 2) {
         try {
-          const res = await this.persist(live, update, userId, null, opId);
+          const res = await this.persist(live, update, userId, null, opId, inTx);
           seq = res.seq;
         } catch (err) {
           await this.reloadOrEvict(live);
@@ -544,7 +561,7 @@ export class CollabHub {
         this.broadcast(live, { type: MSG.REMOTE, update, seq }, null);
         this.bus.emit({ type: 'doc-update', pageId, seq, origin: this.bus.instanceId });
         this.markDirty(live, userId);
-      }
+      } else if (inTx) await tx(this.pool, inTx); // nothing to store: the metadata is still written
       await this.flushNow(live, { revision: false });
       if (live.conns.size === 0 && !live.idleTimer) live.idleTimer = setTimeout(() => void this.unload(live), IDLE_UNLOAD_MS);
       return { seq, json: check.json };
