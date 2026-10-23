@@ -183,7 +183,7 @@
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | `app/Authenticated/povtorit` | Повторить |  | ✔ | ✔ | ✔ | ✗ | ✔ | ✗ | ✗ | ✗ | `e2e/editor-p0-dnd.spec.ts` autoscroll near the bottom edge while dragging, drop far below (QA26-09) (+8) |
 | `app/Authenticated/povtorit~2` | Повторить |  | ✔ | ✔ | ✔ | ✗ | ✔ | ✗ | ✗ | ✗ | `e2e/editor-p0-dnd.spec.ts` autoscroll near the bottom edge while dragging, drop far below (QA26-09) (+8) |
-| `app/Authenticated/route.root` | / | **критичная** | ✗ | ✔ | ✔ | ✔ | ✔ | ✗ | ✗ | · | `e2e/a11y.spec.ts` keyboard only: quick switcher, help, dialogs close with Esc and return focus (UX-136, S… (+165) |
+| `app/Authenticated/route.root` | / | **критичная** | ✗ | ✔ | ✔ | ✔ | ✔ | ✗ | ✗ | · | `e2e/a11y.spec.ts` keyboard only: quick switcher, help, dialogs close with Esc and return focus (UX-136, S… (+166) |
 | `app/Authenticated/route.p-pageid` | /p/:pageId | **критичная** | ✗ | ✔ | ✗ | ✔ | ✔ | ✔ | ✔ | · | `e2e/a11y.spec.ts` keyboard only: quick switcher, help, dialogs close with Esc and return focus (UX-136, S… (+47) |
 | `app/Authenticated/route.p-pageid-slug` | /p/:pageId/:slug | **критичная** | ✗ | ✔ | ✗ | · | ✗ | ✗ | ✗ | · | `e2e/qa-crawl.spec.ts` QA26-01, QA26-04, R-UI-026: every route rendered as owner exposes only named controls; … |
 | `app/Authenticated/route.s-spaceid` | /s/:spaceId | **критичная** | ✗ | ✔ | ✗ | ✔ | ✗ | ✗ | ✗ | · | `e2e/acl-p0-routes.spec.ts` ROUTE-01: employee route — login → own spaces → regulation → search → one-click article… (+3) |
@@ -200,7 +200,7 @@
 | ID | Операция | Особенности из кода | Пусто | Успех | Загрузка / медленная сеть | Отмена | Ошибка сервера | Нет прав | Потеря сети | Повторный клик | Тест |
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | `auth/LoginPage/podtverdit` | Подтвердить | **критичная** | ✗ | ✔ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | `e2e/editor-p0-dnd.spec.ts` autoscroll near the bottom edge while dragging, drop far below (QA26-09) (+5) |
-| `auth/SetupPage/sozdat-organizaciyu` | Создать организацию | **критичная** | ✗ | ✔ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | `e2e/a11y.spec.ts` keyboard only: quick switcher, help, dialogs close with Esc and return focus (UX-136, S… (+165) |
+| `auth/SetupPage/sozdat-organizaciyu` | Создать организацию | **критичная** | ✗ | ✔ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | `e2e/a11y.spec.ts` keyboard only: quick switcher, help, dialogs close with Esc and return focus (UX-136, S… (+166) |
 | `auth/InvitePage/prodolzhit` | Продолжить |  | ✔ | ✔ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | `e2e/editor-p0-dnd.spec.ts` autoscroll near the bottom edge while dragging, drop far below (QA26-09) (+7) |
 
 ### common
@@ -312,7 +312,7 @@
 | `editor/suggest/new` | Создать вложенную страницу «{…}» | **критичная** | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | **нет** |
 | `editor/BlockHandle/none` | По умолчанию |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | **нет** |
 | `editor/BlockHandle/dup` | Дублировать | клавиша Mod+D; **критичная** | ✗ | ✔ | ✗ | ✔ | ✗ | ✗ | ✗ | ✗ | `e2e/qa-actions.spec.ts` R-QA-004 block menu «Действия с блоком»: «Дублировать», «Переместить вверх», «Цвет текс… |
-| `editor/BlockHandle/up` | Переместить вверх | клавиша Alt+Shift+↑; **критичная** | ✗ | ✔ | ✗ | ✔ | ✗ | ✗ | ✗ | ✗ | `e2e/qa-actions.spec.ts` QA-D7 (known defect): the block menu acts on the block it is opened next to, also after… (+1) |
+| `editor/BlockHandle/up` | Переместить вверх | клавиша Alt+Shift+↑; **критичная** | ✗ | ✔ | ✗ | ✔ | ✗ | ✗ | ✗ | ✗ | `e2e/editor-p0-dnd.spec.ts` touch: the block menu (no hover handle) moves and deletes the block at the caret; one U… (+2) |
 | `editor/BlockHandle/down` | Переместить вниз | клавиша Alt+Shift+↓; **критичная** | ✗ | ✔ | ✗ | ✔ | ✗ | ✗ | ✗ | ✗ | `e2e/editor-p0-blocks.spec.ts` moving blocks: one block by keyboard and block menu, several selected blocks together —… |
 | `editor/BlockHandle/move-page` | Переместить на страницу… | **критичная** | ✗ | ✔ | ✗ | ✔ | ✗ | ✗ | ✗ | ✗ | `e2e/editor-p0-nav.spec.ts` blocks move to another page: removed here only after the target saved them, order, cont… |
 | `editor/BlockHandle/copy` | Копировать блок |  | ✗ | ✔ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | `e2e/editor-p0-clipboard.spec.ts` copy: a text selection, a block and a section of a heading go to the clipboard as text/… |
@@ -320,7 +320,7 @@
 | `editor/BlockHandle/link` | Копировать ссылку на блок |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | **нет** |
 | `editor/BlockHandle/md` | Копировать как Markdown |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | **нет** |
 | `editor/BlockHandle/comment` | Комментировать |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | **нет** |
-| `editor/BlockHandle/del` | Удалить | клавиша Del; **критичная** | ✗ | ✔ | ✗ | ✔ | ✗ | ✗ | ✗ | ✗ | `e2e/qa-actions.spec.ts` R-QA-004 block menu «Действия с блоком»: «Дублировать», «Переместить вверх», «Цвет текс… |
+| `editor/BlockHandle/del` | Удалить | клавиша Del; **критичная** | ✗ | ✔ | ✗ | ✔ | ✗ | ✗ | ✗ | ✗ | `e2e/editor-p0-dnd.spec.ts` touch: the block menu (no hover handle) moves and deletes the block at the caret; one U… (+1) |
 | `editor/BlockHandle/dobavit-blok-nizhe` | Добавить блок ниже |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | **нет** |
 | `editor/BlockHandle/peretaschite-ili-nazhmite-dlya-deystviy` | Перетащите или нажмите для действий |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | **нет** |
 | `editor/BubbleToolbar/confirm.preobrazovat-v-blok-koda` | Преобразовать в блок кода? | с подтверждением | ✗ | ✔ | · | ✗ | ✗ | ✗ | ✗ | · | `e2e/clipboard.spec.ts` converting formatted text to a code block asks first and keeps the text (R-EDITOR-067, … |
@@ -644,7 +644,7 @@
 | `settings/SettingsPage/route.settings-appearance` | /settings/appearance | **критичная** | ✗ | ✔ | ✗ | · | ✗ | ✗ | ✗ | · | `e2e/qa-crawl.spec.ts` QA26-01, QA26-04, R-UI-026: every route rendered as owner exposes only named controls; … |
 | `settings/SettingsPage/route.settings-security` | /settings/security | **критичная** | ✔ | ✔ | ✔ | · | ✗ | ✗ | ✗ | ✔ | `e2e/qa-actions.spec.ts` R-QA-004 password change (separate account): empty form is disabled, mismatch and wrong… |
 | `settings/SettingsPage/route.settings-sessions` | /settings/sessions | **критичная** | ✗ | ✔ | ✗ | ✔ | ✗ | ✗ | ✗ | · | `e2e/qa-actions.spec.ts` R-QA-004 sessions: «Завершить остальные» — cancel keeps the other device signed in, con… |
-| `settings/SettingsPage/route.settings-tokens` | /settings/tokens | **критичная** | ✗ | ✔ | ✔ | · | ✔ | ✗ | ✔ | ✔ | `e2e/qa-actions.spec.ts` QA-D3 (known defect): an instantaneous double activation of «Создать токен» sends one r… (+2) |
+| `settings/SettingsPage/route.settings-tokens` | /settings/tokens | **критичная** | ✗ | ✔ | ✔ | · | ✔ | ✗ | ✔ | ✔ | `e2e/qa-actions.spec.ts` QA-D3 (fixed): an instantaneous double activation of «Создать токен» sends one request (+2) |
 | `settings/ProfileForm/otmenit` | Отменить |  | ✗ | ✔ | ✗ | ✔ | ✔ | ✗ | ✗ | ✗ | `e2e/qa-actions.spec.ts` R-QA-004 profile (separate account): «Сохранить» needs a change, «Отменить» restores th… |
 | `settings/ProfileForm/sohranit` | Сохранить | **критичная** | ✗ | ✔ | ✗ | ✔ | ✔ | ✗ | ✗ | ✗ | `e2e/qa-actions.spec.ts` R-QA-004 profile (separate account): «Сохранить» needs a change, «Отменить» restores th… |
 | `settings/AppearanceTab/toggle.toggle-data` | {…} |  | · | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | · | **нет** |
@@ -665,7 +665,7 @@
 | `settings/TokensTab/confirm.otozvat-token` | Отозвать токен «{…}»? | с подтверждением; **критичная** | ✗ | ✔ | · | ✗ | ✗ | ✗ | ✗ | · | `e2e/qa-actions.spec.ts` R-QA-004 API tokens: empty name disables «Создать токен»; slow network shows progress a… |
 | `settings/TokensTab/confirm.otozvat-token.otozvat` | Отозвать | с подтверждением; **критичная** | ✗ | ✔ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | `e2e/qa-actions.spec.ts` R-QA-004 API tokens: empty name disables «Создать токен»; slow network shows progress a… |
 | `settings/TokensTab/ya-sohranil-token` | Я сохранил токен | **критичная** | ✔ | ✔ | ✔ | ✔ | ✔ | ✗ | ✔ | ✔ | `e2e/qa-actions.spec.ts` R-QA-004 API tokens: empty name disables «Создать токен»; slow network shows progress a… (+1) |
-| `settings/TokensTab/sozdat-token` | Создать токен | **критичная** | ✔ | ✔ | ✔ | ✔ | ✔ | ✗ | ✔ | ✔ | `e2e/qa-actions.spec.ts` QA-D3 (known defect): an instantaneous double activation of «Создать токен» sends one r… (+2) |
+| `settings/TokensTab/sozdat-token` | Создать токен | **критичная** | ✔ | ✔ | ✔ | ✔ | ✔ | ✗ | ✔ | ✔ | `e2e/qa-actions.spec.ts` QA-D3 (fixed): an instantaneous double activation of «Создать токен» sends one request (+2) |
 | `settings/TokensTab/otozvat` | Отозвать | **критичная** | ✗ | ✔ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | `e2e/qa-actions.spec.ts` R-QA-004 API tokens: empty name disables «Создать токен»; slow network shows progress a… |
 
 ### shell
@@ -701,7 +701,7 @@
 | `shell/Sidebar/izbrannoe` | Избранное |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | **нет** |
 | `shell/Sidebar/povtorit` | Повторить |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | **нет** |
 | `shell/SidebarTree/nodemenu.new` | Новая вложенная страница | без прав: «Нет права создавать страницы здесь» | ✗ | ✔ | ✗ | ✔ | ✗ | ✗ | ✗ | ✗ | `e2e/ui-p0-interaction.spec.ts` R-UI-060, UX-141: hovering controls performs no action; hover-only tree actions have a … |
-| `shell/SidebarTree/rename` | Переименовать | без прав: «Нужно право на редактирование — запросите его у владельца страницы»; клавиша F2; **критичная** | ✗ | ✔ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | `e2e/qa-actions.spec.ts` QA-D4 (known defect): «Переименовать» in the tree row menu opens the inline title editor |
+| `shell/SidebarTree/rename` | Переименовать | без прав: «Нужно право на редактирование — запросите его у владельца страницы»; клавиша F2; **критичная** | ✗ | ✔ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | `e2e/qa-actions.spec.ts` QA-D4 (fixed): «Переименовать» in the tree row menu opens the inline title editor |
 | `shell/SidebarTree/icon` | Изменить иконку | без прав: «Нужно право на редактирование — запросите его у владельца страницы» | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | **нет** |
 | `shell/SidebarTree/move` | Переместить в… | без прав: «Нужно право на редактирование — запросите его у владельца страницы»; **критичная** | ✗ | ✔ | ✗ | ✔ | ✔ | ✗ | ✗ | ✗ | `e2e/qa-actions.spec.ts` R-QA-004 tree row: rename (F2) — Esc cancels, Enter saves, server error keeps the old t… |
 | `shell/SidebarTree/dup` | Дублировать | **критичная** | ✗ | ✔ | ✗ | ✔ | ✔ | ✗ | ✗ | ✗ | `e2e/qa-actions.spec.ts` R-QA-004 tree row: rename (F2) — Esc cancels, Enter saves, server error keeps the old t… |
@@ -710,7 +710,7 @@
 | `shell/SidebarTree/trash` | Удалить в корзину | без прав: «Нужно право на редактирование — запросите его у владельца страницы»; **критичная** | ✗ | ✔ | ✔ | ✔ | ✔ | ✗ | ✗ | ✔ | `e2e/acl-p0-routes.spec.ts` ROUTE-03: space manager route — members and group access → template → tree drag-and-dro… (+1) |
 | `shell/SidebarTree/spacemenu.new` | Новая страница | без прав: «Нет права создавать страницы в этом пространстве»; **критичная** | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | **нет** |
 | `shell/SidebarTree/open` | Обзор пространства |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | **нет** |
-| `shell/SidebarTree/settings` | Настройки и участники | без прав: «Настройки доступны администраторам пространства»; **критичная** | ✗ | ✔ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | `e2e/qa-actions.spec.ts` QA-D5 (known defect): «Настройки и участники» in the sidebar space menu opens the space… |
+| `shell/SidebarTree/settings` | Настройки и участники | без прав: «Настройки доступны администраторам пространства»; **критичная** | ✗ | ✔ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | `e2e/qa-actions.spec.ts` QA-D5 (fixed): «Настройки и участники» in the sidebar space menu opens the space settings |
 | `shell/TreeRow/button-data` | {…} |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | **нет** |
 | `shell/TreeRow/povtorit-zagruzku` | Повторить загрузку |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | **нет** |
 | `shell/TreeRow/sozdat-pervuyu-stranicu` | Создать первую страницу | **критичная** | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | **нет** |
