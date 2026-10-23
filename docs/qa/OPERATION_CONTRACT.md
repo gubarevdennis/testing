@@ -2,7 +2,7 @@
 
 Сгенерировано `npm run qa:report` (`scripts/qa/coverage.ts`) из инвентаризации действий `docs/qa/action-inventory.yaml`. Для каждой операции задано поведение в состояниях R-UI-061 — пусто, успех, загрузка, отмена, ошибка, нет прав, потеря сети, повторный клик: общее правило (таблица ниже) плюс особенности операции из исходного кода (текст причины недоступности, подтверждение, горячая клавиша). В ячейке состояния: ✔ — есть автотест этого состояния (ссылки — в `docs/qa/ACTION_MATRIX.md` и `action-matrix.json`), · — неприменимо (обоснование в `docs/qa/action-tests.yaml`), ✗ — пробел.
 
-Операций: **718**; с хотя бы одним тестом: 502; с особенностями из кода (причина недоступности, подтверждение): 103. Покрыто тестами по состояниям: пусто 101, успех 502, загрузка / медленная сеть 72, отмена 219, ошибка сервера 158, нет прав 62, потеря сети 83, повторный клик 65.
+Операций: **718**; с хотя бы одним тестом: 512; с особенностями из кода (причина недоступности, подтверждение): 103. Покрыто тестами по состояниям: пусто 103, успех 512, загрузка / медленная сеть 72, отмена 225, ошибка сервера 161, нет прав 67, потеря сети 83, повторный клик 67.
 
 Конфликт, «Назад», перезагрузка, мобильный ввод и zoom 200% описаны общими правилами ниже и проверяются сквозными наборами: конфликт — `tests/e2e/conflict.spec.ts`, `tests/integration/conflicts.test.ts`; перезагрузка и «Назад» — `tests/e2e/ui-p0-interaction.spec.ts`, `collab-p0-offline.spec.ts`; мобильный ввод — `tests/e2e/ui-p0-touch.spec.ts`, `mobile.layout.spec.ts`; zoom 200% — `tests/e2e/ui-p0-layout.spec.ts`, `visual.spec.ts`.
 
@@ -52,7 +52,7 @@
 | `admin/ArchivesSection/skachat` | Скачать | без прав: «Срок хранения для скачивания (72 ч) истёк — сформируйте заново» | ✗ | ✔ | ✔ | ✗ | ✗ | ✗ | ✗ | ✔ | `e2e/acl-p0-routes.spec.ts` ROUTE-04: administrator route — department → employee → automatic space access → guest … (+1) |
 | `admin/ArchivesSection/prodolzhit` | Продолжить |  | ✗ | ✔ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | `e2e/io-p0-roundtrip.spec.ts` archive restore dialog: the administrator chooses a new isolated space as the target (R… |
 | `admin/ArchivesSection/otchet` | Отчёт |  | ✗ | ✔ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | `e2e/qa-admin-access.spec.ts` R-ARCHIVE-006 restore from archive: analysis report («Пользователи в архиве: …») before… |
-| `admin/ExportDialog/x` | {…} — {…} |  | · | ✔ | ✗ | ✗ | ✗ | ✗ | ✔ | · | `e2e/collab-p0-editing.spec.ts` two editors change a paragraph, one table and the structure while one loses the connect… (+1) |
+| `admin/ExportDialog/x` | {…} — {…} |  | · | ✔ | ✗ | ✗ | ✗ | ✗ | ✔ | · | `e2e/collab-p0-editing.spec.ts` two editors change a paragraph, one table and the structure while one loses the connect… (+2) |
 | `admin/ExportDialog/arhiv-organizacii` | Архив организации | **критичная** | ✗ | ✔ | ✔ | ✔ | ✗ | ✗ | ✗ | ✔ | `e2e/acl-p0-routes.spec.ts` ROUTE-04: administrator route — department → employee → automatic space access → guest … (+2) |
 | `admin/ExportDialog/otmena` | Отмена |  | ✗ | ✔ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | `e2e/qa-admin-access.spec.ts` R-ARCHIVE-006 restore: a server error while checking the archive is explained and the d… (+1) |
 | `admin/ExportDialog/sozdat-arhiv` | Создать архив | **критичная** | ✗ | ✔ | ✔ | ✗ | ✗ | ✗ | ✗ | ✔ | `e2e/acl-p0-routes.spec.ts` ROUTE-04: administrator route — department → employee → automatic space access → guest … (+3) |
@@ -131,11 +131,11 @@
 | `admin/CreateUserDialog/dobavit-esche` | Добавить ещё |  | ✔ | ✔ | ✗ | ✗ | ✗ | ✔ | ✗ | ✗ | `e2e/qa-admin2-users.spec.ts` R-QA-004 «Новый пользователь»: «Гость» ↔ «Сотрудник» switches the form; «Фильтр групп» … |
 | `admin/CreateUserDialog/gotovo` | Готово |  | ✗ | ✔ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | `e2e/acl-p0-routes.spec.ts` ROUTE-04: administrator route — department → employee → automatic space access → guest … (+4) |
 | `admin/CreateUserDialog/novyy-polzovatel` | Новый пользователь |  | ✔ | ✔ | ✔ | ✔ | ✔ | ✔ | ✔ | ✔ | `e2e/acl-p0-routes.spec.ts` ROUTE-04: administrator route — department → employee → automatic space access → guest … (+7) |
-| `admin/CreateUserDialog/otmena` | Отмена |  | ✗ | ✔ | ✗ | ✔ | ✗ | ✗ | ✔ | ✗ | `e2e/qa-actions.spec.ts` R-QA-004 admin users menu: «Сбросить пароль» (cancel, then link), «Изменить профиль и р… (+5) |
+| `admin/CreateUserDialog/otmena` | Отмена |  | ✗ | ✔ | ✗ | ✔ | ✗ | ✗ | ✔ | ✗ | `e2e/qa-actions.spec.ts` R-QA-004 admin users menu: «Сбросить пароль» (cancel, then link), «Изменить профиль и р… (+6) |
 | `admin/CreateUserDialog/sozdat` | Создать | **критичная** | ✔ | ✔ | ✔ | ✗ | ✔ | ✗ | ✗ | ✔ | `e2e/acl-p0-routes.spec.ts` ROUTE-03: space manager route — members and group access → template → tree drag-and-dro… (+6) |
 | `admin/CreateUserDialog/sotrudnik` | Сотрудник |  | ✔ | ✔ | ✗ | ✗ | ✗ | ✔ | ✗ | · | `e2e/qa-admin2-users.spec.ts` R-QA-004 «Новый пользователь»: «Гость» ↔ «Сотрудник» switches the form; «Фильтр групп» … |
 | `admin/CreateUserDialog/gost` | Гость |  | ✔ | ✔ | ✗ | ✗ | ✗ | ✔ | ✗ | · | `e2e/acl-p0-routes.spec.ts` ROUTE-04: administrator route — department → employee → automatic space access → guest … (+1) |
-| `admin/CreateUserDialog/otdel` | {…} отдел |  | ✔ | ✔ | ✔ | ✗ | ✗ | ✔ | ✗ | ✔ | `e2e/acl-p0-routes.spec.ts` ROUTE-03: space manager route — members and group access → template → tree drag-and-dro… (+5) |
+| `admin/CreateUserDialog/otdel` | {…} отдел |  | ✔ | ✔ | ✔ | ✗ | ✗ | ✔ | ✗ | ✔ | `e2e/acl-p0-routes.spec.ts` ROUTE-03: space manager route — members and group access → template → tree drag-and-dro… (+7) |
 | `admin/CreateUserDialog/sozdat-ssylku-priglashenie-sotrudnik-sam-zadast` | Создать ссылку-приглашение (сотрудник сам задаст пароль) | **критичная** | ✔ | ✔ | ✔ | ✗ | ✔ | ✗ | ✗ | ✔ | `e2e/qa-admin-users.spec.ts` R-QA-004 «Добавить» user: empty form disabled; server error keeps the input; slow netwo… |
 | `admin/CreateUserDialog/zadat-parol-vruchnuyu` | Задать пароль вручную | **критичная** | · | ✔ | ✗ | ✗ | ✗ | ✗ | ✗ | · | `e2e/acl-p0-routes.spec.ts` ROUTE-04: administrator route — department → employee → automatic space access → guest … |
 | `admin/ImportDialog/propuschennye-stroki` | Пропущенные строки ({…}) |  | ✗ | ✔ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | `e2e/qa-admin2-users.spec.ts` R-QA-004 «Импорт CSV» from «Файл CSV»: the file fills the text, a file over 2 MB is ref… |
@@ -147,24 +147,24 @@
 | `admin/ImportDialog/confirm.importirovat-polzovateley` | Импортировать пользователей? | с подтверждением; **критичная** | ✔ | ✔ | · | ✔ | ✔ | ✗ | ✗ | · | `e2e/qa-admin-users.spec.ts` QA-A2 (fixed): «Импорт CSV» with the same email twice in the file flags the repeat in t… (+2) |
 | `admin/ImportDialog/confirm.importirovat-polzovateley.importirovat` | Импортировать | с подтверждением; **критичная** | ✔ | ✔ | ✔ | ✔ | ✔ | ✗ | ✗ | ✔ | `e2e/import-collection.spec.ts` R-COLLECTION-003: import into an existing collection in «replace» mode — dry run lists … (+7) |
 | `admin/ImportDialog/fayl-csv` | Файл CSV |  | ✗ | ✔ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | `e2e/qa-admin2-users.spec.ts` R-QA-004 «Импорт CSV» from «Файл CSV»: the file fills the text, a file over 2 MB is ref… |
-| `admin/ImportDialog/otmena` | Отмена |  | ✗ | ✔ | ✗ | ✔ | ✗ | ✗ | ✔ | ✗ | `e2e/qa-actions.spec.ts` R-QA-004 admin users menu: «Сбросить пароль» (cancel, then link), «Изменить профиль и р… (+5) |
+| `admin/ImportDialog/otmena` | Отмена |  | ✗ | ✔ | ✗ | ✔ | ✗ | ✗ | ✔ | ✗ | `e2e/qa-actions.spec.ts` R-QA-004 admin users menu: «Сбросить пароль» (cancel, then link), «Изменить профиль и р… (+6) |
 | `admin/ImportDialog/proverit` | Проверить |  | ✗ | ✔ | ✗ | ✗ | ✔ | ✗ | ✗ | ✗ | `e2e/editor-p0-clipboard.spec.ts` copy: a text selection, a block and a section of a heading go to the clipboard as text/… (+3) |
 | `admin/ImportDialog/import-sotrudnikov-iz-csv` | Импорт сотрудников из CSV | **критичная** | ✗ | ✔ | · | ✔ | ✔ | ✗ | ✗ | · | `e2e/qa-admin-users.spec.ts` QA-A2 (fixed): «Импорт CSV» with the same email twice in the file flags the repeat in t… (+3) |
 | `admin/EditUserDialog/confirm.naznachit-administrativnuyu-rol` | Назначить административную роль? | с подтверждением; **критичная** | ✗ | ✔ | · | ✔ | ✔ | ✗ | ✗ | · | `e2e/qa-admin-users.spec.ts` R-QA-004 «Изменить профиль и роль»: «Роль в организации» → administrator asks «Назначит… |
 | `admin/EditUserDialog/confirm.naznachit-administrativnuyu-rol.naznachit` | Назначить | с подтверждением | ✗ | ✔ | ✗ | ✔ | ✔ | ✗ | ✗ | ✗ | `e2e/qa-admin-users.spec.ts` R-QA-004 «Изменить профиль и роль»: «Роль в организации» → administrator asks «Назначит… |
 | `admin/EditUserDialog/izmenit` | Изменить: {…} |  | ✗ | ✔ | · | ✗ | ✔ | ✔ | ✗ | · | `e2e/qa-actions.spec.ts` R-QA-004 admin users menu: «Сбросить пароль» (cancel, then link), «Изменить профиль и р… (+4) |
-| `admin/EditUserDialog/otmena` | Отмена |  | ✗ | ✔ | ✗ | ✔ | ✗ | ✗ | ✔ | ✗ | `e2e/qa-actions.spec.ts` R-QA-004 admin users menu: «Сбросить пароль» (cancel, then link), «Изменить профиль и р… (+5) |
+| `admin/EditUserDialog/otmena` | Отмена |  | ✗ | ✔ | ✗ | ✔ | ✗ | ✗ | ✔ | ✗ | `e2e/qa-actions.spec.ts` R-QA-004 admin users menu: «Сбросить пароль» (cancel, then link), «Изменить профиль и р… (+6) |
 | `admin/EditUserDialog/sohranit` | Сохранить | **критичная** | ✗ | ✔ | ✗ | ✗ | ✔ | ✔ | ✗ | ✗ | `e2e/acl-p0-routes.spec.ts` ROUTE-03: space manager route — members and group access → template → tree drag-and-dro… (+6) |
 | `admin/StatusDialog/deaktivirovat` | Деактивировать {…}? | **критичная** | ✗ | ✔ | · | ✗ | ✗ | ✗ | ✗ | · | `e2e/acl-p0-routes.spec.ts` ROUTE-04: administrator route — department → employee → automatic space access → guest … (+1) |
-| `admin/StatusDialog/otmena` | Отмена |  | ✗ | ✔ | ✗ | ✔ | ✗ | ✗ | ✔ | ✗ | `e2e/qa-actions.spec.ts` R-QA-004 admin users menu: «Сбросить пароль» (cancel, then link), «Изменить профиль и р… (+5) |
+| `admin/StatusDialog/otmena` | Отмена |  | ✗ | ✔ | ✗ | ✔ | ✗ | ✗ | ✔ | ✗ | `e2e/qa-actions.spec.ts` R-QA-004 admin users menu: «Сбросить пароль» (cancel, then link), «Изменить профиль и р… (+6) |
 | `admin/StatusDialog/deaktivirovat~2` | Деактивировать | **критичная** | ✗ | ✔ | ✗ | ✔ | ✗ | ✗ | ✗ | ✗ | `e2e/qa-actions.spec.ts` R-QA-004 admin users menu: «Сбросить пароль» (cancel, then link), «Изменить профиль и р… |
 | `admin/StatusDialog/ya-ponimayu-posledstviya` | Я понимаю последствия |  | · | ✔ | ✗ | ✗ | ✗ | ✗ | ✗ | · | `e2e/acl-p0-routes.spec.ts` ROUTE-04: administrator route — department → employee → automatic space access → guest … (+1) |
 | `admin/TransferDialog/perevod` | Перевод: {…} |  | ✗ | ✔ | · | ✗ | ✔ | ✗ | ✗ | · | `e2e/qa-admin-users.spec.ts` R-QA-004 «Перевести в другой отдел…»: «Сравнить доступы» shows the space access change … (+1) |
-| `admin/TransferDialog/otmena` | Отмена |  | ✗ | ✔ | ✗ | ✔ | ✗ | ✗ | ✔ | ✗ | `e2e/qa-actions.spec.ts` R-QA-004 admin users menu: «Сбросить пароль» (cancel, then link), «Изменить профиль и р… (+5) |
+| `admin/TransferDialog/otmena` | Отмена |  | ✗ | ✔ | ✗ | ✔ | ✗ | ✗ | ✔ | ✗ | `e2e/qa-actions.spec.ts` R-QA-004 admin users menu: «Сбросить пароль» (cancel, then link), «Изменить профиль и р… (+6) |
 | `admin/TransferDialog/sravnit-dostupy` | Сравнить доступы | **критичная** | ✗ | ✔ | ✗ | ✗ | ✔ | ✗ | ✗ | ✗ | `e2e/qa-admin-users.spec.ts` R-QA-004 «Перевести в другой отдел…»: «Сравнить доступы» shows the space access change … (+1) |
 | `admin/TransferDialog/primenit` | Применить |  | ✗ | ✔ | ✗ | ✗ | ✔ | ✗ | ✗ | ✗ | `e2e/acl-p0-routes.spec.ts` ROUTE-04: administrator route — department → employee → automatic space access → guest … (+2) |
 | `admin/TransferDialog/toggle-data` | {…} |  | · | ✔ | ✗ | ✗ | ✔ | ✗ | ✗ | · | `e2e/qa-admin-users.spec.ts` R-QA-004 «Перевести в другой отдел…»: «Сравнить доступы» shows the space access change … (+1) |
-| `admin/TransferDialog/otdel` | {…} отдел |  | ✔ | ✔ | ✔ | ✗ | ✗ | ✔ | ✗ | ✔ | `e2e/acl-p0-routes.spec.ts` ROUTE-03: space manager route — members and group access → template → tree drag-and-dro… (+5) |
+| `admin/TransferDialog/otdel` | {…} отдел |  | ✔ | ✔ | ✔ | ✗ | ✗ | ✔ | ✗ | ✔ | `e2e/acl-p0-routes.spec.ts` ROUTE-03: space manager route — members and group access → template → tree drag-and-dro… (+7) |
 | `admin/TransferDialog/sdelat-osnovnym-otdelom` | Сделать «{…}» основным отделом |  | · | ✔ | ✗ | ✗ | ✗ | ✗ | ✗ | · | `e2e/qa-admin2-users.spec.ts` R-QA-004 «Перевести в другой отдел…»: «Исключить из» the current department and «Добави… |
 | `admin/ErrorState/povtorit` | Повторить |  | ✗ | ✔ | ✔ | ✗ | ✔ | ✗ | ✗ | ✗ | `e2e/qa-admin2-users.spec.ts` R-UI-061 users list load error: «Не удалось загрузить данные.» with «Повторить» — a ret… |
 | `admin/CopyField/kopirovat` | Копировать |  | · | ✔ | · | · | ✔ | · | · | · | `e2e/qa-admin2-users.spec.ts` R-QA-004 «Новый пользователь»: «Гость» ↔ «Сотрудник» switches the form; «Фильтр групп» … (+1) |
@@ -176,12 +176,12 @@
 
 | ID | Операция | Особенности из кода | Пусто | Успех | Загрузка / медленная сеть | Отмена | Ошибка сервера | Нет прав | Потеря сети | Повторный клик | Тест |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| `app/Authenticated/povtorit` | Повторить |  | ✔ | ✔ | ✔ | ✗ | ✔ | ✗ | ✔ | ✗ | `e2e/editor-p0-dnd.spec.ts` autoscroll near the bottom edge while dragging, drop far below (QA26-09) (+13) |
-| `app/Authenticated/povtorit~2` | Повторить |  | ✔ | ✔ | ✔ | ✗ | ✔ | ✗ | ✔ | ✗ | `e2e/editor-p0-dnd.spec.ts` autoscroll near the bottom edge while dragging, drop far below (QA26-09) (+13) |
-| `app/Authenticated/route.root` | / | **критичная** | ✔ | ✔ | ✔ | ✔ | ✔ | ✗ | ✔ | ✔ | `e2e/a11y.spec.ts` keyboard only: quick switcher, help, dialogs close with Esc and return focus (UX-136, S… (+313) |
-| `app/Authenticated/route.p-pageid` | /p/:pageId | **критичная** | ✔ | ✔ | ✔ | ✔ | ✔ | ✔ | ✔ | ✔ | `e2e/a11y.spec.ts` keyboard only: quick switcher, help, dialogs close with Esc and return focus (UX-136, S… (+79) |
+| `app/Authenticated/povtorit` | Повторить |  | ✔ | ✔ | ✔ | ✗ | ✔ | ✗ | ✔ | ✗ | `e2e/editor-p0-dnd.spec.ts` autoscroll near the bottom edge while dragging, drop far below (QA26-09) (+14) |
+| `app/Authenticated/povtorit~2` | Повторить |  | ✔ | ✔ | ✔ | ✗ | ✔ | ✗ | ✔ | ✗ | `e2e/editor-p0-dnd.spec.ts` autoscroll near the bottom edge while dragging, drop far below (QA26-09) (+14) |
+| `app/Authenticated/route.root` | / | **критичная** | ✔ | ✔ | ✔ | ✔ | ✔ | ✗ | ✔ | ✔ | `e2e/a11y.spec.ts` keyboard only: quick switcher, help, dialogs close with Esc and return focus (UX-136, S… (+319) |
+| `app/Authenticated/route.p-pageid` | /p/:pageId | **критичная** | ✔ | ✔ | ✔ | ✔ | ✔ | ✔ | ✔ | ✔ | `e2e/a11y.spec.ts` keyboard only: quick switcher, help, dialogs close with Esc and return focus (UX-136, S… (+80) |
 | `app/Authenticated/route.p-pageid-slug` | /p/:pageId/:slug | **критичная** | ✗ | ✔ | ✗ | · | ✗ | ✗ | ✗ | · | `e2e/qa-crawl.spec.ts` QA26-01, QA26-04, R-UI-026: every route rendered as owner exposes only named controls; … |
-| `app/Authenticated/route.s-spaceid` | /s/:spaceId | **критичная** | ✔ | ✔ | ✗ | ✔ | ✗ | ✗ | ✗ | · | `e2e/acl-p0-routes.spec.ts` ROUTE-01: employee route — login → own spaces → regulation → search → one-click article… (+9) |
+| `app/Authenticated/route.s-spaceid` | /s/:spaceId | **критичная** | ✔ | ✔ | ✗ | ✔ | ✔ | ✗ | ✗ | · | `e2e/acl-p0-routes.spec.ts` ROUTE-01: employee route — login → own spaces → regulation → search → one-click article… (+12) |
 | `app/Authenticated/route.search` | /search | **критичная** | ✔ | ✔ | ✗ | · | ✔ | ✗ | ✗ | · | `e2e/a11y.spec.ts` real 200% browser zoom (1280x800 at 2x = 640x400 CSS px) keeps every key screen usable … (+8) |
 | `app/Authenticated/route.trash` | /trash | **критичная** | ✗ | ✔ | ✗ | ✔ | ✔ | ✗ | ✗ | · | `e2e/a11y.spec.ts` WCAG 2.1 AA automated audit of key screens (R-A11Y-003, AT-80, E2E-112) (+7) |
 | `app/Authenticated/route.templates` | /templates | **критичная** | ✗ | ✔ | ✗ | · | ✗ | ✗ | ✗ | · | `e2e/a11y.spec.ts` WCAG 2.1 AA automated audit of key screens (R-A11Y-003, AT-80, E2E-112) (+6) |
@@ -195,7 +195,7 @@
 | ID | Операция | Особенности из кода | Пусто | Успех | Загрузка / медленная сеть | Отмена | Ошибка сервера | Нет прав | Потеря сети | Повторный клик | Тест |
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | `auth/LoginPage/podtverdit` | Подтвердить | **критичная** | ✗ | ✔ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | `e2e/editor-p0-dnd.spec.ts` autoscroll near the bottom edge while dragging, drop far below (QA26-09) (+6) |
-| `auth/SetupPage/sozdat-organizaciyu` | Создать организацию | **критичная** | ✗ | ✔ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | `e2e/a11y.spec.ts` keyboard only: quick switcher, help, dialogs close with Esc and return focus (UX-136, S… (+311) |
+| `auth/SetupPage/sozdat-organizaciyu` | Создать организацию | **критичная** | ✗ | ✔ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | `e2e/a11y.spec.ts` keyboard only: quick switcher, help, dialogs close with Esc and return focus (UX-136, S… (+317) |
 | `auth/InvitePage/prodolzhit` | Продолжить |  | ✔ | ✔ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | `e2e/editor-p0-dnd.spec.ts` autoscroll near the bottom edge while dragging, drop far below (QA26-09) (+8) |
 
 ### common
@@ -318,7 +318,7 @@
 | `editor/BlockHandle/md` | Копировать как Markdown |  | ✗ | ✔ | ✗ | ✔ | ✗ | ✗ | ✗ | ✗ | `e2e/qa-editor2-handle.spec.ts` R-CLIPBOARD-001 «Копировать ссылку на блок» opens the page at that block; «Копировать к… |
 | `editor/BlockHandle/comment` | Комментировать |  | ✗ | ✔ | ✗ | ✔ | ✗ | ✗ | ✗ | ✗ | `e2e/qa-editor2-handle.spec.ts` R-COMMENTS-001 «Комментировать» from the block menu opens a draft quoting the block (Es… |
 | `editor/BlockHandle/del` | Удалить | клавиша Del; **критичная** | ✗ | ✔ | ✗ | ✔ | ✗ | ✗ | ✗ | ✗ | `e2e/editor-p0-dnd.spec.ts` touch: the block menu (no hover handle) moves and deletes the block at the caret; one U… (+1) |
-| `editor/BlockHandle/dobavit-blok-nizhe` | Добавить блок ниже |  | ✗ | ✔ | ✗ | ✔ | ✗ | ✗ | ✗ | ✗ | `e2e/qa-editor2-handle.spec.ts` R-EDITOR-052 «Добавить блок ниже»: opens the «/» menu in a new block under the hovered … |
+| `editor/BlockHandle/dobavit-blok-nizhe` | Добавить блок ниже |  | ✗ | ✔ | ✗ | ✔ | ✗ | ✗ | ✗ | ✗ | `e2e/qa-editor2-handle.spec.ts` R-EDITOR-052, QA-E9 «Добавить блок ниже»: opens the «/» menu in a new block under the h… |
 | `editor/BubbleToolbar/confirm.preobrazovat-v-blok-koda` | Преобразовать в блок кода? | с подтверждением | ✗ | ✔ | · | ✗ | ✗ | ✗ | ✗ | · | `e2e/clipboard.spec.ts` converting formatted text to a code block asks first and keeps the text (R-EDITOR-067, … |
 | `editor/BubbleToolbar/confirm.preobrazovat-v-blok-koda.preobrazovat` | Преобразовать | с подтверждением | ✗ | ✔ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | `e2e/clipboard.spec.ts` converting formatted text to a code block asks first and keeps the text (R-EDITOR-067, … |
 | `editor/BubbleToolbar/p` | Текст |  | ✗ | ✔ | ✗ | ✔ | ✗ | ✗ | ✗ | ✗ | `e2e/qa-editor2-bubble.spec.ts` R-EDITOR-005, QA26-07 «Тип блока»: Текст, Заголовок 1–3, Маркированный/Нумерованный спи… |
@@ -675,7 +675,7 @@
 
 | ID | Операция | Особенности из кода | Пусто | Успех | Загрузка / медленная сеть | Отмена | Ошибка сервера | Нет прав | Потеря сети | Повторный клик | Тест |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| `shell/AppShell/pokazat-bokovuyu-panel` | Показать боковую панель |  | ✗ | ✔ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | `e2e/a11y.spec.ts` real 200% browser zoom (1280x800 at 2x = 640x400 CSS px) keeps every key screen usable … (+81) |
+| `shell/AppShell/pokazat-bokovuyu-panel` | Показать боковую панель |  | ✗ | ✔ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | `e2e/a11y.spec.ts` real 200% browser zoom (1280x800 at 2x = 640x400 CSS px) keeps every key screen usable … (+83) |
 | `shell/QuickSwitcher/c-search` | Расширенный поиск |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | **нет** |
 | `shell/QuickSwitcher/c-home` | Главная |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | **нет** |
 | `shell/QuickSwitcher/c-templates` | Шаблоны |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | **нет** |
@@ -699,7 +699,7 @@
 | `shell/Sidebar/poisk-k` | Поиск ⌘K |  | ✔ | ✔ | ✗ | ✔ | ✗ | ✗ | ✗ | ✗ | `e2e/a11y.spec.ts` reduced motion: animations and transitions are effectively disabled (R-A11Y-002, AT-82) (+2) |
 | `shell/Sidebar/vhodyaschie` | Входящие {…} |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | **нет** |
 | `shell/Sidebar/novaya-stranica` | Новая страница | **критичная** | ✔ | ✔ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | `e2e/acl-p0-routes.spec.ts` ROUTE-01: employee route — login → own spaces → regulation → search → one-click article… (+2) |
-| `shell/Sidebar/novoe-prostranstvo` | Новое пространство |  | ✗ | ✔ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | `e2e/acl-p0-routes.spec.ts` ROUTE-03: space manager route — members and group access → template → tree drag-and-dro… (+2) |
+| `shell/Sidebar/novoe-prostranstvo` | Новое пространство |  | ✔ | ✔ | ✗ | ✗ | ✔ | ✗ | ✗ | ✔ | `e2e/acl-p0-routes.spec.ts` ROUTE-03: space manager route — members and group access → template → tree drag-and-dro… (+4) |
 | `shell/Sidebar/izbrannoe` | Избранное |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | **нет** |
 | `shell/Sidebar/povtorit` | Повторить |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | **нет** |
 | `shell/SidebarTree/nodemenu.new` | Новая вложенная страница | без прав: «Нет права создавать страницы здесь» | ✗ | ✔ | ✗ | ✔ | ✗ | ✗ | ✗ | ✗ | `e2e/ui-p0-interaction.spec.ts` R-UI-060, UX-141: hovering controls performs no action; hover-only tree actions have a … |
@@ -734,19 +734,19 @@
 | ID | Операция | Особенности из кода | Пусто | Успех | Загрузка / медленная сеть | Отмена | Ошибка сервера | Нет прав | Потеря сети | Повторный клик | Тест |
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | `space/ExpiryPresets/button-data` | {…} |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | **нет** |
-| `space/ExpiryPresets/bessrochno` | Бессрочно |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | **нет** |
-| `space/CreateSpaceDialog/novoe-prostranstvo` | Новое пространство |  | ✗ | ✔ | · | ✗ | ✗ | ✗ | ✗ | · | `e2e/acl-p0-routes.spec.ts` ROUTE-03: space manager route — members and group access → template → tree drag-and-dro… (+2) |
-| `space/CreateSpaceDialog/otmena` | Отмена |  | ✗ | ✔ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | `e2e/qa-admin-spaces.spec.ts` R-ADMIN-020 space members: «Доступ до» is saved with the new member; own level: «Понизи… |
-| `space/CreateSpaceDialog/sozdat-prostranstvo` | Создать пространство | **критичная** | ✗ | ✔ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | `e2e/acl-p0-routes.spec.ts` ROUTE-03: space manager route — members and group access → template → tree drag-and-dro… (+2) |
+| `space/ExpiryPresets/bessrochno` | Бессрочно |  | ✗ | ✔ | ✗ | ✔ | ✗ | ✗ | ✗ | ✗ | `e2e/qa-admin2-spaces.spec.ts` R-ADMIN-020 members: term presets «7 дней» / «Бессрочно»; the organisation row raised a… |
+| `space/CreateSpaceDialog/novoe-prostranstvo` | Новое пространство |  | ✔ | ✔ | · | ✗ | ✔ | ✗ | ✗ | ✔ | `e2e/acl-p0-routes.spec.ts` ROUTE-03: space manager route — members and group access → template → tree drag-and-dro… (+4) |
+| `space/CreateSpaceDialog/otmena` | Отмена |  | ✗ | ✔ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | `e2e/qa-admin-spaces.spec.ts` R-ADMIN-020 space members: «Доступ до» is saved with the new member; own level: «Понизи… (+1) |
+| `space/CreateSpaceDialog/sozdat-prostranstvo` | Создать пространство | **критичная** | ✗ | ✔ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | `e2e/acl-p0-routes.spec.ts` ROUTE-03: space manager route — members and group access → template → tree drag-and-dro… (+3) |
 | `space/CreateSpaceDialog/ubrat` | Убрать: {…} |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | **нет** |
-| `space/SpaceMembersEditor/confirm.otkryt-prostranstvo-vsey-organizacii` | Открыть пространство всей организации? | с подтверждением | ✗ | ✗ | · | ✗ | ✗ | ✗ | ✗ | · | **нет** |
-| `space/SpaceMembersEditor/confirm.otkryt-prostranstvo-vsey-organizacii.otkryt-vsem` | Открыть всем | с подтверждением | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | **нет** |
-| `space/SpaceMembersEditor/confirm.ponizit-sobstvennyy-dostup` | Понизить собственный доступ? | с подтверждением; **критичная** | ✗ | ✔ | · | ✔ | ✗ | ✗ | ✗ | · | `e2e/qa-admin-spaces.spec.ts` R-ADMIN-020 space members: «Доступ до» is saved with the new member; own level: «Понизи… |
-| `space/SpaceMembersEditor/confirm.ponizit-sobstvennyy-dostup.ponizit` | Понизить | с подтверждением | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | **нет** |
-| `space/SpaceMembersEditor/confirm.ubrat-iz-prostranstva` | Убрать из пространства: {…}? | с подтверждением | ✗ | ✗ | · | ✗ | ✗ | ✗ | ✗ | · | **нет** |
-| `space/SpaceMembersEditor/confirm.ubrat-iz-prostranstva.ubrat` | Убрать | с подтверждением | ✗ | ✔ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | `e2e/acl-p0-spaces.spec.ts` R-SPACE-001 R-SPACE-010 R-ADMIN-020: a space is created in the UI and a department gets… |
-| `space/SpaceMembersEditor/ubrat` | Убрать |  | ✗ | ✔ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | `e2e/acl-p0-spaces.spec.ts` R-SPACE-001 R-SPACE-010 R-ADMIN-020: a space is created in the UI and a department gets… |
-| `space/SpaceMembersEditor/dobavit-v-prostranstvo` | Добавить в пространство |  | ✗ | ✔ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | `e2e/acl-p0-routes.spec.ts` ROUTE-03: space manager route — members and group access → template → tree drag-and-dro… (+2) |
+| `space/SpaceMembersEditor/confirm.otkryt-prostranstvo-vsey-organizacii` | Открыть пространство всей организации? | с подтверждением | ✗ | ✔ | · | ✔ | ✗ | ✗ | ✗ | · | `e2e/qa-admin2-spaces.spec.ts` R-ADMIN-020 members: term presets «7 дней» / «Бессрочно»; the organisation row raised a… |
+| `space/SpaceMembersEditor/confirm.otkryt-prostranstvo-vsey-organizacii.otkryt-vsem` | Открыть всем | с подтверждением | ✗ | ✔ | ✗ | ✔ | ✗ | ✗ | ✗ | ✗ | `e2e/qa-admin2-spaces.spec.ts` R-ADMIN-020 members: term presets «7 дней» / «Бессрочно»; the organisation row raised a… |
+| `space/SpaceMembersEditor/confirm.ponizit-sobstvennyy-dostup` | Понизить собственный доступ? | с подтверждением; **критичная** | ✗ | ✔ | · | ✔ | ✗ | ✗ | ✗ | · | `e2e/qa-admin-spaces.spec.ts` R-ADMIN-020 space members: «Доступ до» is saved with the new member; own level: «Понизи… (+1) |
+| `space/SpaceMembersEditor/confirm.ponizit-sobstvennyy-dostup.ponizit` | Понизить | с подтверждением | ✗ | ✔ | ✗ | ✔ | ✗ | ✗ | ✗ | ✗ | `e2e/qa-admin2-spaces.spec.ts` R-ADMIN-020 members: term presets «7 дней» / «Бессрочно»; the organisation row raised a… |
+| `space/SpaceMembersEditor/confirm.ubrat-iz-prostranstva` | Убрать из пространства: {…}? | с подтверждением | ✗ | ✔ | · | ✗ | ✗ | ✗ | ✗ | · | `e2e/qa-admin2-spaces.spec.ts` R-ADMIN-020 members: term presets «7 дней» / «Бессрочно»; the organisation row raised a… |
+| `space/SpaceMembersEditor/confirm.ubrat-iz-prostranstva.ubrat` | Убрать | с подтверждением | ✗ | ✔ | ✗ | ✔ | ✗ | ✗ | ✗ | ✗ | `e2e/acl-p0-spaces.spec.ts` R-SPACE-001 R-SPACE-010 R-ADMIN-020: a space is created in the UI and a department gets… (+1) |
+| `space/SpaceMembersEditor/ubrat` | Убрать |  | ✗ | ✔ | ✗ | ✔ | ✗ | ✗ | ✗ | ✗ | `e2e/acl-p0-spaces.spec.ts` R-SPACE-001 R-SPACE-010 R-ADMIN-020: a space is created in the UI and a department gets… (+1) |
+| `space/SpaceMembersEditor/dobavit-v-prostranstvo` | Добавить в пространство |  | ✗ | ✔ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | `e2e/acl-p0-routes.spec.ts` ROUTE-03: space manager route — members and group access → template → tree drag-and-dro… (+3) |
 | `space/SpaceMembersEditor/ubrat-dostup` | Убрать доступ: {…} | **критичная** | ✗ | ✔ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | `e2e/acl-p0-spaces.spec.ts` R-SPACE-001 R-SPACE-010 R-ADMIN-020: a space is created in the UI and a department gets… |
 | `space/ErrorState/povtorit` | Повторить |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | **нет** |
 | `space/Toggle/toggle-data` | {…} |  | · | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | · | **нет** |
@@ -758,15 +758,15 @@
 | `space/SettingsTab/confirm.udalit-prostranstvo` | Удалить пространство? | с подтверждением; **критичная** | ✗ | ✔ | · | ✔ | ✗ | ✗ | ✗ | · | `e2e/qa-actions.spec.ts` R-QA-004 space settings: «Удалить пространство» — cancel keeps it, typed confirmation m… |
 | `space/SettingsTab/confirm.udalit-prostranstvo.udalit` | Удалить | с подтверждением; **критичная** | ✗ | ✔ | ✗ | ✔ | ✗ | ✗ | ✗ | ✗ | `e2e/qa-actions.spec.ts` R-QA-004 space settings: «Удалить пространство» — cancel keeps it, typed confirmation m… |
 | `space/SettingsTab/otkryt-korzinu` | Открыть корзину | **критичная** | · | ✔ | · | ✔ | ✗ | ✗ | ✗ | ✗ | `e2e/qa-actions.spec.ts` R-QA-004 space settings: «Удалить пространство» — cancel keeps it, typed confirmation m… |
-| `space/SettingsTab/vybrat-ikonku` | Выбрать иконку |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | **нет** |
-| `space/SettingsTab/srazu-chitateli-vidyat-tekuschuyu-versiyu` | Сразу — читатели видят текущую версию |  | · | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | · | **нет** |
-| `space/SettingsTab/posle-publikacii-chitateli-vidyat-tolko-opubliko` | После публикации — читатели видят только опубликованные версии |  | · | ✔ | ✗ | ✗ | ✗ | ✗ | ✗ | · | `e2e/acl-p0-routes.spec.ts` ROUTE-03: space manager route — members and group access → template → tree drag-and-dro… |
-| `space/SettingsTab/soglasovanie-pered-publikaciey` | Согласование перед публикацией |  | · | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | · | **нет** |
-| `space/SettingsTab/razreshit-eksport` | Разрешить экспорт |  | · | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | · | **нет** |
-| `space/SettingsTab/razreshit-skachivanie-vlozheniy` | Разрешить скачивание вложений |  | · | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | · | **нет** |
+| `space/SettingsTab/vybrat-ikonku` | Выбрать иконку |  | ✗ | ✔ | ✗ | ✗ | ✗ | ✔ | ✗ | ✗ | `e2e/qa-admin2-spaces.spec.ts` R-SPACE-004 space settings: «Выбрать иконку», «Описание», publication «После публикации… |
+| `space/SettingsTab/srazu-chitateli-vidyat-tekuschuyu-versiyu` | Сразу — читатели видят текущую версию |  | · | ✔ | ✗ | ✗ | ✗ | ✔ | ✗ | · | `e2e/qa-admin2-spaces.spec.ts` R-SPACE-004 space settings: «Выбрать иконку», «Описание», publication «После публикации… |
+| `space/SettingsTab/posle-publikacii-chitateli-vidyat-tolko-opubliko` | После публикации — читатели видят только опубликованные версии |  | · | ✔ | ✗ | ✗ | ✗ | ✗ | ✗ | · | `e2e/acl-p0-routes.spec.ts` ROUTE-03: space manager route — members and group access → template → tree drag-and-dro… (+1) |
+| `space/SettingsTab/soglasovanie-pered-publikaciey` | Согласование перед публикацией |  | · | ✔ | ✗ | ✗ | ✗ | ✔ | ✗ | · | `e2e/qa-admin2-spaces.spec.ts` R-SPACE-004 space settings: «Выбрать иконку», «Описание», publication «После публикации… |
+| `space/SettingsTab/razreshit-eksport` | Разрешить экспорт |  | · | ✔ | ✗ | ✗ | ✗ | ✔ | ✗ | · | `e2e/qa-admin2-spaces.spec.ts` R-SPACE-004 space settings: «Выбрать иконку», «Описание», publication «После публикации… |
+| `space/SettingsTab/razreshit-skachivanie-vlozheniy` | Разрешить скачивание вложений |  | · | ✔ | ✗ | ✗ | ✗ | ✔ | ✗ | · | `e2e/qa-admin2-spaces.spec.ts` R-SPACE-004 space settings: «Выбрать иконку», «Описание», publication «После публикации… |
 | `space/SettingsTab/razreshit-dostup-gostyam` | Разрешить доступ гостям | **критичная** | · | ✔ | ✗ | ✗ | ✗ | ✗ | ✗ | · | `e2e/acl-p0-routes.spec.ts` ROUTE-04: administrator route — department → employee → automatic space access → guest … |
 | `space/SettingsTab/sbrosit` | Сбросить | **критичная** | ✔ | ✔ | ✗ | ✔ | ✔ | ✗ | ✗ | ✗ | `e2e/qa-admin-spaces.spec.ts` R-SPACE-004 settings: «Сбросить» restores the form; empty name is refused; widening vis… |
-| `space/SettingsTab/sohranit` | Сохранить | **критичная** | ✔ | ✔ | ✗ | ✔ | ✔ | ✗ | ✗ | ✗ | `e2e/acl-p0-routes.spec.ts` ROUTE-03: space manager route — members and group access → template → tree drag-and-dro… (+2) |
+| `space/SettingsTab/sohranit` | Сохранить | **критичная** | ✔ | ✔ | ✗ | ✔ | ✔ | ✗ | ✗ | ✗ | `e2e/acl-p0-routes.spec.ts` ROUTE-03: space manager route — members and group access → template → tree drag-and-dro… (+3) |
 | `space/SettingsTab/vernut-iz-arhiva` | Вернуть из архива | **критичная** | ✗ | ✔ | ✗ | ✔ | ✔ | ✔ | ✗ | ✗ | `e2e/qa-admin-page-panels.spec.ts` R-PUBLISH-002 «Снять с публикации?» and «Перенести в архив?»: cancel keeps the status, … (+1) |
 | `space/SettingsTab/udalit-prostranstvo` | Удалить пространство | **критичная** | ✗ | ✔ | ✗ | ✔ | ✗ | ✗ | ✗ | ✗ | `e2e/qa-actions.spec.ts` R-QA-004 space settings: «Удалить пространство» — cancel keeps it, typed confirmation m… |
 | `space/SpacePage/novaya-stranica` | Новая страница | **критичная** | ✗ | ✔ | ✗ | ✔ | ✔ | ✔ | ✗ | ✗ | `e2e/acl-p0-routes.spec.ts` ROUTE-04: administrator route — department → employee → automatic space access → guest … (+2) |
@@ -816,7 +816,7 @@
 
 | ID | Операция | Особенности из кода | Пусто | Успех | Загрузка / медленная сеть | Отмена | Ошибка сервера | Нет прав | Потеря сети | Повторный клик | Тест |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| `ui/ConfirmHost/otmena` | Отмена |  | ✔ | ✔ | ✔ | ✔ | ✔ | ✔ | ✔ | ✔ | `e2e/qa-actions.spec.ts` R-QA-004 admin users menu: «Сбросить пароль» (cancel, then link), «Изменить профиль и р… (+28) |
+| `ui/ConfirmHost/otmena` | Отмена |  | ✔ | ✔ | ✔ | ✔ | ✔ | ✔ | ✔ | ✔ | `e2e/qa-actions.spec.ts` R-QA-004 admin users menu: «Сбросить пароль» (cancel, then link), «Изменить профиль и р… (+29) |
 | `ui/ConfirmHost/button-data` | {…} |  | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | **нет** |
 | `ui/Dialog/zakryt` | Закрыть |  | ✔ | ✔ | ✗ | ✔ | ✗ | ✗ | ✗ | ✗ | `e2e/ocr-view.spec.ts` R-UI-062: a dialog with typed critical input warns before closing; closing without savi… |
 | `ui/Dialog/vernutsya` | Вернуться |  | ✗ | ✔ | ✗ | ✔ | ✔ | ✗ | ✗ | ✗ | `e2e/ocr-view.spec.ts` SC-22: the OCR view shows the original image, confidence with uncertain words, correcti… (+3) |
