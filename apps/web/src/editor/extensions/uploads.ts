@@ -1,4 +1,5 @@
 import { Extension, type Editor } from '@tiptap/core';
+import { useUploadState } from '../../lib/uploadState';
 import { Plugin, PluginKey } from '@tiptap/pm/state';
 import type { Node as PMNode } from '@tiptap/pm/model';
 import { uploadFile, isImageFile, type AttachmentDto } from '../../lib/uploads';
@@ -32,6 +33,10 @@ const editors = new Map<string, Editor>();
 
 function notify(id: string) {
   listeners.get(id)?.forEach((l) => l());
+  const active: Record<string, number> = {};
+  for (const i of items.values()) if (i.state !== 'error') active[i.pageId] = (active[i.pageId] ?? 0) + 1;
+  const prev = useUploadState.getState().active;
+  if (JSON.stringify(prev) !== JSON.stringify(active)) useUploadState.setState({ active });
 }
 
 export function subscribeUpload(id: string, cb: () => void) {
@@ -125,6 +130,7 @@ export function retryUpload(editor: Editor, id: string) {
 function track(file: File, id: string, pageId: string): UploadItem {
   const item: UploadItem = { id, pageId, file, progress: 0, state: 'uploading', controller: new AbortController(), preview: isImageFile(file) && file.size < 30e6 ? URL.createObjectURL(file) : undefined };
   items.set(id, item);
+  notify(id);
   return item;
 }
 

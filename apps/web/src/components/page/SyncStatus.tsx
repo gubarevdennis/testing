@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { useSyncState, type SyncInfo } from '../../sync/collab';
 import { Tooltip } from '../ui/Tooltip';
 import { fullTime } from '../../lib/format';
+import { useUploadState } from '../../lib/uploadState';
 
 /**
  * Honest save indicator: "Сохранено" appears only after the server confirmed a durable commit of every local change.
@@ -17,6 +18,8 @@ export function SyncStatus({ pageId }: { pageId: string }) {
   const status = key ? (key.split('|')[0] as SyncInfo['status']) : null;
   const transport = key ? key.split('|')[1] : 'ws';
   const hasPending = key.endsWith('|1');
+  // R-MEDIA-006: a file still uploading into the page is not saved yet
+  const uploading = useUploadState((s) => s.active[pageId] ?? 0);
   if (!status) return null;
   const map = {
     saved: { icon: <Check size={14} />, text: 'Сохранено', cls: 'ok' },
@@ -26,6 +29,7 @@ export function SyncStatus({ pageId }: { pageId: string }) {
     readonly: { icon: <Eye size={14} />, text: 'Только чтение', cls: 'muted' },
     error: { icon: <AlertTriangle size={14} />, text: 'Ошибка сохранения', cls: 'err' },
   }[status];
+  if (status === 'saved' && uploading > 0) Object.assign(map, { icon: <Loader2 size={14} className="spin" />, text: 'Загрузка файлов…', cls: 'busy' });
   return (
     <Tooltip label={<SyncTip pageId={pageId} />}>
       <span className={'sync-status ' + map.cls} data-transport={transport} role="status" aria-live="polite" tabIndex={0}>

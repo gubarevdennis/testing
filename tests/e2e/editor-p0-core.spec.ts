@@ -1,7 +1,9 @@
 import { test, expect, type Page, type Browser } from '@playwright/test';
-import { ensureOwner, newPage, editor, expectSaved, apiContent, createUser, login_, paste, caretIn } from './helpers';
+import { ensureOwner, editor, expectSaved, apiContent, createUser, login_, paste, caretIn } from './helpers';
+import { newPage, cleanupCreatedPages, settle } from './editor-p0-helpers';
 
 test.describe.configure({ mode: 'serial' });
+cleanupCreatedPages();
 
 const selectionText = (page: Page) => page.evaluate(() => window.getSelection()?.toString() ?? '');
 const paragraphs = (page: Page) => editor(page).locator('p').allInnerTexts();
@@ -247,6 +249,7 @@ test('key matrix: Enter, Enter on empty item, Tab/Shift+Tab, Backspace at the st
   // Backspace at the start of a list item → the item becomes a paragraph
   await page.keyboard.press('ArrowUp'); // from "После списка" to the last item "Временно вложен"
   await page.keyboard.press('Home');
+  await settle(page);
   await page.keyboard.press('Backspace');
   expect(await ed.locator('li', { hasText: 'Временно вложен' }).count()).toBe(0);
   await expect(ed.locator('p', { hasText: 'Временно вложен' })).toHaveCount(1);
@@ -257,6 +260,7 @@ test('key matrix: Enter, Enter on empty item, Tab/Shift+Tab, Backspace at the st
   await page.keyboard.type('## Заголовок');
   await expect(ed.locator('h2', { hasText: 'Заголовок' })).toHaveCount(1);
   await page.keyboard.press('Home');
+  await settle(page);
   await page.keyboard.press('Backspace');
   await expect(ed.locator('h2')).toHaveCount(0);
   await expect(ed.locator('p').filter({ hasText: /^Заголовок$/ })).toHaveCount(1);
@@ -264,18 +268,21 @@ test('key matrix: Enter, Enter on empty item, Tab/Shift+Tab, Backspace at the st
   await page.keyboard.press('Backspace');
   await expect(ed.locator('p', { hasText: 'После спискаЗаголовок' })).toHaveCount(1);
   // Backspace at the start of a quote → the paragraph leaves the quote
-  await page.keyboard.press('End');
+  await page.keyboard.press('Control+End'); // the merged paragraph is the last block
+  await settle(page);
   await page.keyboard.press('Enter');
   await page.keyboard.type('" Цитата');
   await expect(ed.locator('blockquote', { hasText: 'Цитата' })).toHaveCount(1);
   await page.keyboard.press('Home');
+  await settle(page);
   await page.keyboard.press('Backspace');
   await expect(ed.locator('blockquote')).toHaveCount(0);
   await expect(ed.locator('p').filter({ hasText: /^Цитата$/ })).toHaveCount(1);
   await page.keyboard.press('Backspace');
   await expect(ed.locator('p', { hasText: 'После спискаЗаголовокЦитата' })).toHaveCount(1);
   // Backspace on an empty paragraph → removed, caret at the end of the previous block
-  await page.keyboard.press('End');
+  await page.keyboard.press('Control+End');
+  await settle(page);
   await page.keyboard.press('Enter');
   await page.keyboard.press('Backspace');
   await page.keyboard.type('+');

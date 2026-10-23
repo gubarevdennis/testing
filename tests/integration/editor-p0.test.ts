@@ -1,17 +1,33 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import http from 'node:http';
 import { prosemirrorJSONToYXmlFragment, yXmlFragmentToProsemirrorJSON } from '@tiptap/y-tiptap';
 import { getKbSchema, markdownToDoc, docToMarkdown, type PMNode } from '@kb/shared';
-import { startServer, setupOrg, type TestServer } from '../support/harness.js';
+import { startServer, setupOrg, expectStatus, type TestServer } from '../support/harness.js';
 import { openClient } from '../support/collab.js';
 
 let ts: TestServer;
 let org: Awaited<ReturnType<typeof setupOrg>>;
+let site: http.Server;
+let siteUrl = '';
+const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAIAAABLbSncAAAAEklEQVR4nGP8z4AATAxkCAEAJ9cBD8JfOs4AAAAASUVORK5CYII=', 'base64');
 
 beforeAll(async () => {
-  ts = await startServer();
+  // an "external" web site (allow-listed for the test: it runs on a loopback address)
+  site = http.createServer((req, res) => {
+    if (req.url === '/img/Схема_цеха.png' || req.url === '/img/%D0%A1%D1%85%D0%B5%D0%BC%D0%B0_%D1%86%D0%B5%D1%85%D0%B0.png') return res.writeHead(200, { 'content-type': 'image/png' }).end(PNG);
+    if (req.url === '/fake.png') return res.writeHead(200, { 'content-type': 'image/png' }).end('<html><script>alert(1)</script></html>');
+    if (req.url === '/page.html') return res.writeHead(200, { 'content-type': 'text/html' }).end('<html></html>');
+    res.writeHead(404).end();
+  });
+  await new Promise<void>((r) => site.listen(0, '127.0.0.1', () => r()));
+  siteUrl = `http://127.0.0.1:${(site.address() as { port: number }).port}`;
+  ts = await startServer({ remoteFetch: { enabled: true, allowHosts: ['127.0.0.1'], timeoutMs: 5000, maxBytes: 5 * 1024 * 1024 } } as never);
   org = await setupOrg(ts);
 }, 120_000);
-afterAll(async () => ts?.close());
+afterAll(async () => {
+  await ts?.close();
+  site?.close();
+});
 
 const schema = getKbSchema();
 let n = 0;
@@ -98,5 +114,30 @@ describe('save and open keep the structure identical (SC-05)', () => {
     const { markdown } = docToMarkdown(doc, { markers: true });
     const back = markdownToDoc(markdown).doc;
     expect(stripIds(norm(back))).toEqual(stripIds(norm(doc)));
+  });
+});
+
+describe('image by URL (R-MEDIA-009)', () => {
+  it('R-MEDIA-009: the server copies an image from a URL into an attachment of the page; non-images, missing files and internal addresses are refused', async () => {
+    const page = (await org.owner.post('/api/v1/pages', { spaceId: org.personalSpaceId, title: 'Картинка по ссылке' })).page;
+    const r = await org.owner.post('/api/v1/attachments/from-url', { url: `${siteUrl}/img/${encodeURIComponent('Схема_цеха.png')}`, pageId: page.id });
+    expect(r.attachment).toMatchObject({ pageId: page.id, kind: 'image', mime: 'image/png', width: 8, height: 8 });
+    expect(r.attachment.filename).toBe('Схема_цеха.png');
+    const orig = await org.owner.raw('GET', `/api/v1/attachments/${r.attachment.id}/download`);
+    expect(Buffer.from(await orig.arrayBuffer()).equals(PNG)).toBe(true);
+    // the declared type is not trusted: HTML served as image/png is rejected
+    const fake = await expectStatus(org.owner.post('/api/v1/attachments/from-url', { url: `${siteUrl}/fake.png`, pageId: page.id }), 422);
+    expect(JSON.stringify(fake)).toMatch(/не изображение/);
+    await expectStatus(org.owner.post('/api/v1/attachments/from-url', { url: `${siteUrl}/page.html`, pageId: page.id }), 422);
+    await expectStatus(org.owner.post('/api/v1/attachments/from-url', { url: `${siteUrl}/missing.png`, pageId: page.id }), 422);
+    // SSRF: the same loopback service under a name that is not allow-listed, and cloud metadata, are refused
+    const port = new URL(siteUrl).port;
+    const blocked = await expectStatus(org.owner.post('/api/v1/attachments/from-url', { url: `http://localhost:${port}/img/x.png`, pageId: page.id }), 422);
+    expect(JSON.stringify(blocked)).toMatch(/внутренней сети/);
+    await expectStatus(org.owner.post('/api/v1/attachments/from-url', { url: 'http://169.254.169.254/latest/meta-data', pageId: page.id }), 422);
+    await expectStatus(org.owner.post('/api/v1/attachments/from-url', { url: 'file:///etc/passwd', pageId: page.id }), 422);
+    // only editors of the page may add images to it
+    const reader = await org.user('Читатель Картинок', { pageGrants: [{ pageId: page.id, level: 'view' }] });
+    await expectStatus(reader.post('/api/v1/attachments/from-url', { url: `${siteUrl}/img/x.png`, pageId: page.id }), 403);
   });
 });

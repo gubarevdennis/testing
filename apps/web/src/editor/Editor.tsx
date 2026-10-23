@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { EditorContent, useEditor } from '@tiptap/react';
+import { useNavigate } from 'react-router-dom';
 import type { Editor as TEditor } from '@tiptap/core';
 import * as Y from 'yjs';
 import { ChevronDown, ChevronUp, X, Download } from 'lucide-react';
@@ -20,6 +21,8 @@ import { toast } from '../components/ui/Toast';
 import { post } from '../api/client';
 import { PagePicker } from './PagePicker';
 import { ImageUrlDialog } from './ImageUrlDialog';
+import { moveBlocksToPage } from './moveToPage';
+import { blockRangeKey } from './extensions/blockOps';
 import type { CommandContext } from './commands';
 import type { ConflictInfo } from './extensions/conflictGuard';
 import { copyWithFeedback, useCopyPageCommands } from './clipboard/copy';
@@ -180,6 +183,8 @@ function EditorInner(p: Props & { session: CollabSession }) {
   const titleRef = useRef<HTMLTextAreaElement>(null);
   const fileInput = useRef<HTMLInputElement>(null);
   const [pick, setPick] = useState<null | 'link' | 'synced'>(null);
+  const [moveRange, setMoveRange] = useState<{ from: number; to: number } | null>(null);
+  const navigate = useNavigate();
   const [embed, setEmbed] = useState(false);
   const [imageUrl, setImageUrl] = useState(false);
   const [math, setMath] = useState<{ kind: 'inline' | 'block'; pos: number; latex: string } | null>(null);
@@ -451,7 +456,20 @@ function EditorInner(p: Props & { session: CollabSession }) {
           {p.canEdit && <BubbleToolbar editor={editor} onComment={() => requestComment()} />}
           {p.canEdit && <TableToolbar editor={editor} />}
           {p.canEdit && <PasteOptionsMenu editor={editor} />}
-          {p.canEdit && <BlockHandle editor={editor} pageId={p.pageId} onComment={(id) => requestComment(id)} />}
+          {p.canEdit && (
+            <BlockHandle
+              editor={editor}
+              pageId={p.pageId}
+              onComment={(id) => requestComment(id)}
+              onMoveToPage={(pos) => {
+                // several selected blocks (Esc, Shift+↑/↓) move together; otherwise the block under the handle
+                const range = blockRangeKey.getState(editor.state);
+                const node = editor.state.doc.nodeAt(pos);
+                if (range && pos >= range.from && pos < range.to) setMoveRange(range);
+                else if (node) setMoveRange({ from: pos, to: pos + node.nodeSize });
+              }}
+            />
+          )}
           {!p.canEdit && <ReadOnlyCommentButton editor={editor} onComment={() => requestComment()} />}
           {p.canEdit && <TouchInsertButton editor={editor} />}
         </>
@@ -477,6 +495,20 @@ function EditorInner(p: Props & { session: CollabSession }) {
             if (pick === 'link') editor?.chain().focus().insertContent({ type: 'pageLink', attrs: { pageId: page.id, title: page.title } }).run();
             else editor?.chain().focus().insertContent({ type: 'syncedBlock', attrs: { sourcePageId: page.id, sourceBlockId: blockId } }).run();
             setPick(null);
+          }}
+        />
+      )}
+      {moveRange && editor && (
+        <PagePicker
+          title="Переместить на страницу"
+          onClose={() => setMoveRange(null)}
+          onPick={async (target) => {
+            const range = moveRange;
+            setMoveRange(null);
+            if (target.id === p.pageId) return;
+            const r = await moveBlocksToPage(editor, range.from, range.to, target.id, p.user.id);
+            if (r.ok) toast.success(`Перенесено на страницу «${target.title || 'Без названия'}»`, { label: 'Открыть', run: () => navigate('/p/' + target.id) });
+            else toast.error(r.message);
           }}
         />
       )}

@@ -1,7 +1,9 @@
 import { test, expect, type Page } from '@playwright/test';
-import { ensureOwner, newPage, editor, expectSaved, apiContent, caretIn } from './helpers';
+import { ensureOwner, editor, expectSaved, apiContent, caretIn } from './helpers';
+import { newPage, cleanupCreatedPages, settle } from './editor-p0-helpers';
 
 test.describe.configure({ mode: 'serial' });
+cleanupCreatedPages();
 
 const selectionText = (page: Page) => page.evaluate(() => window.getSelection()?.toString() ?? '');
 
@@ -95,6 +97,7 @@ test('selection modes: word, paragraph, Shift+arrows, across blocks, Ctrl+A bloc
   expect(across.startsWith('1')).toBe(true);
   // Ctrl+A: first the current block, then the whole article
   await caretIn(page, 'Строка 2');
+  await settle(page);
   await page.keyboard.press('Control+a');
   expect(await selectionText(page)).toBe('Строка 2');
   await page.keyboard.press('Control+a');
@@ -103,6 +106,7 @@ test('selection modes: word, paragraph, Shift+arrows, across blocks, Ctrl+A bloc
   expect(all).toContain('Строка 4');
   // Esc: text → block; Shift+↓ extends by whole blocks
   await caretIn(page, 'Строка 2');
+  await settle(page);
   await page.keyboard.press('Escape');
   await expect(ed.locator('.ProseMirror-selectednode')).toHaveCount(1);
   await page.keyboard.press('Shift+ArrowDown');
@@ -133,6 +137,7 @@ test('formatting keeps the selection: bold, italic and toolbar underline apply t
   for (let i = 0; i < 7; i++) await page.keyboard.press('ArrowLeft'); // before " текста"
   for (let i = 0; i < 15; i++) await page.keyboard.press('Shift+ArrowLeft');
   expect(await selectionText(page)).toBe('важный фрагмент');
+  await settle(page);
   await page.keyboard.press('Control+b');
   expect(await selectionText(page)).toBe('важный фрагмент');
   await page.keyboard.press('Control+i');
@@ -151,7 +156,7 @@ test('formatting keeps the selection: bold, italic and toolbar underline apply t
   await expect(ed.locator('p').first()).toHaveText('Обычный ключевой текста');
 });
 
-test('moving blocks: one block by keyboard and block menu, several selected blocks together — order and ids kept (E213, UX21-186)', async ({ page }) => {
+test('moving blocks: one block by keyboard and block menu, several selected blocks together — order and ids kept (E213, UX21-186, R-EDITOR-049)', async ({ page }) => {
   await ensureOwner(page);
   const id = await newPage(page, 'Перенос блоков');
   await lines(page, 5, 'Блок');
@@ -160,6 +165,7 @@ test('moving blocks: one block by keyboard and block menu, several selected bloc
   const before = await idsOf();
   // keyboard: Alt+Shift+↑ moves the current block up
   await caretIn(page, 'Блок 3');
+  await settle(page);
   await page.keyboard.press('Alt+Shift+ArrowUp');
   expect(await topTexts(page)).toEqual(['Блок 1', 'Блок 3', 'Блок 2', 'Блок 4', 'Блок 5']);
   // the caret stays in the moved block
@@ -173,6 +179,7 @@ test('moving blocks: one block by keyboard and block menu, several selected bloc
   expect(await topTexts(page)).toEqual(['Блок 3', 'Блок 1', 'Блок 2', 'Блок 4', 'Блок 5']);
   // several blocks: Esc, Shift+↓, then Alt+Shift+↓ moves "Блок 1" and "Блок 2" below "Блок 4" together
   await caretIn(page, 'Блок 1');
+  await settle(page);
   await page.keyboard.press('Escape');
   await page.keyboard.press('Shift+ArrowDown');
   await expect(editor(page).locator('.kb-block-in-range')).toHaveCount(2);

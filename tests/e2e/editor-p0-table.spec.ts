@@ -1,7 +1,9 @@
 import { test, expect, type Page } from '@playwright/test';
-import { ensureOwner, newPage, editor, expectSaved, apiContent, paste, createUser, login_ } from './helpers';
+import { ensureOwner, editor, expectSaved, apiContent, paste, createUser, login_ } from './helpers';
+import { newPage, cleanupCreatedPages, settle } from './editor-p0-helpers';
 
 test.describe.configure({ mode: 'serial' });
+cleanupCreatedPages();
 
 const toolbar = (page: Page) => page.getByRole('toolbar', { name: 'Таблица' });
 const grid = (page: Page) =>
@@ -16,6 +18,7 @@ const grid = (page: Page) =>
 const cell = (page: Page, text: string) => editor(page).locator('td, th').filter({ hasText: new RegExp('^' + text + '$') }).first();
 
 async function tableMenu(page: Page, item: string) {
+  await expect(toolbar(page)).toBeVisible();
   await toolbar(page).getByRole('button', { name: 'Таблица', exact: true }).click();
   await page.getByRole('menuitem', { name: item }).click();
 }
@@ -56,8 +59,7 @@ test('table structure: insert/delete rows and columns, header row/column, merge 
   await editor(page).locator('th').filter({ hasText: /^$/ }).first().click(); // a new, empty column
   await tableMenu(page, 'Удалить столбец');
   expect((await grid(page))[0].length).toBe(4);
-  await cell(page, 'Болт').click();
-  await page.keyboard.press('ArrowUp');
+  await editor(page).locator('table tr').nth(1).locator('td').first().click(); // the empty row added above «Болт»
   await tableMenu(page, 'Удалить строку');
   expect((await grid(page)).length).toBe(4);
   // header column on / off
@@ -129,15 +131,18 @@ test('table data: copy a cell range as TSV, paste a range from Excel, move rows 
   expect((await grid(page)).map((r) => r[0])).toEqual(['#Имя', 'анна', 'Борис', 'Вера', 'Ёлка']);
   // move rows: keyboard and menu
   await cell(page, 'Вера').click();
+  await settle(page);
   await page.keyboard.press('Alt+Shift+ArrowUp');
   expect((await grid(page)).map((r) => r[0])).toEqual(['#Имя', 'анна', 'Вера', 'Борис', 'Ёлка']);
   await tableMenu(page, 'Переместить строку вниз');
   expect((await grid(page)).map((r) => r[0])).toEqual(['#Имя', 'анна', 'Борис', 'Вера', 'Ёлка']);
   // move columns: keyboard and menu; the whole column moves with its header text
   await cell(page, 'Вера').click();
+  await settle(page);
   await page.keyboard.press('Alt+Shift+ArrowRight');
   expect((await grid(page))[0]).toEqual(['#Отдел', '#Имя', '#Стаж']);
   expect((await grid(page))[3]).toEqual(['Склад', 'Вера', '']);
+  await page.waitForTimeout(700); // a separate undo step (changes within 0.5 s are one step)
   await tableMenu(page, 'Переместить столбец влево');
   expect((await grid(page))[0]).toEqual(['#Имя', '#Отдел', '#Стаж']);
   // one undo reverts exactly one operation (the menu gives the focus back to the table)

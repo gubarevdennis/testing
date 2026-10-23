@@ -1,7 +1,9 @@
 import { test, expect, type Page } from '@playwright/test';
-import { ensureOwner, newPage, editor, expectSaved, apiContent } from './helpers';
+import { ensureOwner, editor, expectSaved, apiContent } from './helpers';
+import { newPage, cleanupCreatedPages } from './editor-p0-helpers';
 
 test.describe.configure({ mode: 'serial' });
+cleanupCreatedPages();
 
 // 8x8 PNG
 const PNG_B64 = 'iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAIAAABLbSncAAAAEklEQVR4nGP8z4AATAxkCAEAJ9cBD8JfOs4AAAAASUVORK5CYII=';
@@ -85,8 +87,10 @@ test('closing the tab during an image upload: the block and the file are restore
   await page.route('**/api/v1/attachments', () => undefined);
   await pasteImage(page, 'image.png');
   await expect(editor(page).locator('.kb-upload.is-image')).toBeVisible();
-  await expectSaved(page);
-  expect(images((await apiContent(page.request, id)).content)[0].uploadId).toBeTruthy();
+  // the indicator does not claim «Сохранено» while the file is still uploading…
+  await expect(page.locator('.sync-status')).toHaveText(/Загрузка файлов/);
+  // …but the block itself is already stored on the server
+  await expect.poll(async () => images((await apiContent(page.request, id)).content)[0]?.uploadId ?? null, { timeout: 15_000 }).toBeTruthy();
   await page.close();
 
   const p2 = await context.newPage();
@@ -119,4 +123,72 @@ test('cancelling an upload removes only that block (R-MEDIA-006)', async ({ page
   const c = await apiContent(page.request, id);
   expect(images(c.content)).toHaveLength(0);
   expect(JSON.stringify(c.content)).toContain('Текст остаётся');
+});
+
+test('image by URL: dialog with preview, internal addresses refused, the image is stored as an attachment of the page (R-MEDIA-009)', async ({ page }) => {
+  await ensureOwner(page);
+  const id = await newPage(page, 'Картинка по ссылке');
+  await page.keyboard.type('/изображ');
+  await page.getByRole('option', { name: /Изображение по ссылке/ }).click();
+  const dlg = page.getByRole('dialog', { name: 'Изображение по ссылке' });
+  await expect(dlg).toBeVisible();
+  const input = dlg.getByLabel('Адрес изображения');
+  await input.fill('не ссылка');
+  await expect(dlg.getByRole('button', { name: 'Вставить' })).toBeDisabled();
+  // an address inside the company network is refused by the server (SSRF guard), the dialog stays open
+  await input.fill('http://169.254.169.254/latest/meta-data/logo.png');
+  await dlg.getByRole('button', { name: 'Вставить' }).click();
+  await expect(dlg.getByRole('alert')).toContainText('внутренней сети');
+  await expect(dlg).toBeVisible();
+  // success path: the server answers with the stored attachment (the e2e server has no Internet access)
+  const csrf = (await page.context().storageState()).cookies.find((c) => c.name === 'kb_csrf')?.value ?? '';
+  const up = await page.request.post('/api/v1/attachments', { multipart: { pageId: id, file: { name: 'logo.png', mimeType: 'image/png', buffer: Buffer.from(PNG_B64, 'base64') } }, headers: { 'x-csrf-token': csrf } });
+  expect(up.ok()).toBeTruthy();
+  const att = (await up.json()).attachments[0];
+  let sent: any = null;
+  await page.route('**/api/v1/attachments/from-url', async (route) => {
+    sent = route.request().postDataJSON();
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ attachment: att }) });
+  });
+  await input.fill('https://cdn.example.com/brand/Логотип_компании.png');
+  await expect(dlg.locator('.image-url-preview')).toBeVisible();
+  await dlg.getByRole('button', { name: 'Вставить' }).click();
+  await expect(dlg).toBeHidden();
+  expect(sent).toEqual({ url: 'https://cdn.example.com/brand/Логотип_компании.png', pageId: id });
+  await expect(editor(page).locator('.kb-image-block img')).toHaveAttribute('src', new RegExp(`/api/v1/attachments/${att.id}/content`));
+  await expectSaved(page);
+  const imgs = images((await apiContent(page.request, id)).content);
+  expect(imgs).toHaveLength(1);
+  expect(imgs[0]).toMatchObject({ attachmentId: att.id, alt: 'Логотип компании' });
+});
+
+test('an image file dropped onto the page appears at once with a local preview and is stored as an attachment (R-MEDIA-009)', async ({ page }) => {
+  await ensureOwner(page);
+  const id = await newPage(page, 'Перетаскивание файла');
+  await page.keyboard.type('Текст над картинкой');
+  await page.route('**/api/v1/attachments', async (route) => {
+    await new Promise((r) => setTimeout(r, 800)); // a slow network: the preview must not wait for it
+    await route.continue();
+  });
+  const box = (await editor(page).locator('p').first().boundingBox())!;
+  await page.evaluate(
+    ({ b64, x, y }) => {
+      const bin = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+      const dt = new DataTransfer();
+      dt.items.add(new File([bin], 'Перетащенная схема.png', { type: 'image/png' }));
+      document.querySelector('.kb-editor')!.dispatchEvent(new DragEvent('drop', { dataTransfer: dt, clientX: x, clientY: y, bubbles: true, cancelable: true }));
+    },
+    { b64: PNG_B64, x: box.x + box.width / 2, y: box.y + box.height - 2 },
+  );
+  // instant: the block with the local preview and progress is there before the server answered
+  const ph = editor(page).locator('.kb-upload.is-image');
+  await expect(ph).toBeVisible({ timeout: 700 });
+  await expect(ph.locator('img')).toHaveAttribute('src', /^blob:/);
+  await expect(ph.getByRole('status')).toContainText(/Загрузка/);
+  await expect(editor(page).locator('.kb-image-block img')).toHaveAttribute('src', /\/api\/v1\/attachments\/[0-9a-f-]{36}\/content/, { timeout: 20_000 });
+  await expectSaved(page);
+  const imgs = images((await apiContent(page.request, id)).content);
+  expect(imgs).toHaveLength(1);
+  expect(imgs[0]).toMatchObject({ alt: 'Перетащенная схема' });
+  expect(imgs[0].attachmentId).toMatch(/^[0-9a-f-]{36}$/);
 });

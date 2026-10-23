@@ -2,11 +2,11 @@ import DragHandle from '@tiptap/extension-drag-handle-react';
 import type { Editor } from '@tiptap/core';
 import { NodeSelection, TextSelection } from '@tiptap/pm/state';
 import { useRef, useState } from 'react';
-import { GripVertical, Plus, Copy, Trash2, Link2, ArrowUp, ArrowDown, MessageSquarePlus, FileDown, Repeat2, Palette, ClipboardCopy } from 'lucide-react';
+import { GripVertical, Plus, Copy, Trash2, Link2, ArrowUp, ArrowDown, MessageSquarePlus, FileDown, Repeat2, Palette, ClipboardCopy, FileInput } from 'lucide-react';
 import { loadMarkdown } from '../../lib/markdown';
 import { Menu } from '../../components/ui/Menu';
 import { Tooltip } from '../../components/ui/Tooltip';
-import { duplicateBlock, deleteBlock, moveBlock } from '../extensions/blockOps';
+import { duplicateBlock, deleteBlock, moveBlock, blockRangeKey } from '../extensions/blockOps';
 import { turnIntoItems } from './BubbleToolbar';
 import { TEXT_COLORS } from '../palette';
 import { copyWithFeedback, copyBlocks } from '../clipboard/copy';
@@ -16,7 +16,7 @@ import { sectionRange } from '../clipboard/section';
 const POSITION = { placement: 'left-start' as const, strategy: 'absolute' as const };
 
 /** Block controls on hover: "+" inserts a block below (opens the "/" menu), the grip drags or opens block actions. */
-export function BlockHandle({ editor, pageId, onComment }: { editor: Editor; pageId: string; onComment(blockId: string | null): void }) {
+export function BlockHandle({ editor, pageId, onComment, onMoveToPage }: { editor: Editor; pageId: string; onComment(blockId: string | null): void; onMoveToPage?(pos: number): void }) {
   const current = useRef<{ pos: number; node: any } | null>(null);
   const [, setTick] = useState(0);
   const selectCurrent = () => {
@@ -79,6 +79,7 @@ export function BlockHandle({ editor, pageId, onComment }: { editor: Editor; pag
       { id: 'dup', label: 'Дублировать', icon: <Copy size={15} />, shortcut: 'Mod+D', onSelect: () => c && duplicateBlock(editor, c.pos) },
       { id: 'up', label: 'Переместить вверх', icon: <ArrowUp size={15} />, shortcut: 'Alt+Shift+↑', onSelect: () => c && moveBlock(editor, -1, c.pos) },
       { id: 'down', label: 'Переместить вниз', icon: <ArrowDown size={15} />, shortcut: 'Alt+Shift+↓', onSelect: () => c && moveBlock(editor, 1, c.pos) },
+      ...(onMoveToPage ? [{ id: 'move-page', label: 'Переместить на страницу…', icon: <FileInput size={15} />, onSelect: () => c && onMoveToPage(c.pos) }] : []),
       { separator: true as const },
       // R-CLIPBOARD-001: a block / a heading's section with formatting (text/html + text/plain)
       { id: 'copy', label: 'Копировать блок', icon: <ClipboardCopy size={15} />, onSelect: () => c && void copyBlocks(editor, c.pos, c.pos + c.node.nodeSize, 'Блок скопирован') },
@@ -141,7 +142,8 @@ export function BlockHandle({ editor, pageId, onComment }: { editor: Editor; pag
           label="Действия с блоком"
           items={items()}
           placement="left-start"
-          onOpenChange={(o) => o && selectCurrent()}
+          // with several blocks selected (Esc, Shift+↑/↓) the selection is kept: «Переместить на страницу…» moves them all
+          onOpenChange={(o) => o && !blockRangeKey.getState(editor.state) && selectCurrent()}
           trigger={({ ref, props }) => (
             <button ref={ref} className="icon-btn sm block-grip" aria-label="Перетащите или нажмите для действий" {...props} onMouseDown={(e) => e.stopPropagation()}>
               <GripVertical size={16} />

@@ -22,7 +22,7 @@ export function ImageView(props: NodeViewProps) {
   const { node, editor, selected } = props;
   if (node.attrs.uploadId && !node.attrs.attachmentId)
     return (
-      <NodeViewWrapper as="figure" className={`kb-image-block align-${node.attrs.align}${selected ? ' is-selected' : ''}`} data-drag-handle="" data-block-id={node.attrs.id}>
+      <NodeViewWrapper as="figure" className={`kb-image-pending${selected ? ' is-selected' : ''}`} data-drag-handle="" data-block-id={node.attrs.id}>
         <UploadPlaceholder editor={editor} uploadId={node.attrs.uploadId} name={node.attrs.alt} kind="image" />
       </NodeViewWrapper>
     );

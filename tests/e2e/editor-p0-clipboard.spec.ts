@@ -1,7 +1,9 @@
 import { test, expect, type Page } from '@playwright/test';
-import { ensureOwner, newPage, editor, expectSaved, apiContent, paste, caretIn } from './helpers';
+import { ensureOwner, editor, expectSaved, apiContent, paste, caretIn } from './helpers';
+import { newPage, cleanupCreatedPages, settle } from './editor-p0-helpers';
 
 test.describe.configure({ mode: 'serial' });
+cleanupCreatedPages();
 
 async function grantClipboard(page: Page) {
   await page.context().grantPermissions(['clipboard-read', 'clipboard-write'], { origin: new URL(page.url()).origin });
@@ -102,6 +104,7 @@ test('copy: a text selection, a block and a section of a heading go to the clipb
 
   // 1. Ctrl+C of a text selection
   await caretIn(page, 'Пересчитать места');
+  await settle(page);
   await page.keyboard.press('Control+a');
   await page.keyboard.press('Control+c');
   let clip = await readClipboard(page);
@@ -140,4 +143,52 @@ test('copy: a text selection, a block and a section of a heading go to the clipb
   await expect(editor(page).locator('strong', { hasText: 'накладную' })).toHaveCount(1);
   await expectSaved(page);
   expect(JSON.stringify((await apiContent(page.request, id2)).content)).toContain('Пересчитать места');
+});
+
+const PNG_URI = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAIAAABLbSncAAAAEklEQVR4nGP8z4AATAxkCAEAJ9cBD8JfOs4AAAAASUVORK5CYII=';
+
+test('a multi-page document with tables, images and links is pasted with its structure, and one Undo returns the page to its original state (V17-F01)', async ({ page }) => {
+  await ensureOwner(page);
+  const id = await newPage(page, 'Многостраничная вставка');
+  await page.keyboard.type('Исходный текст');
+  await page.keyboard.press('Enter');
+  await expectSaved(page);
+  const original = (await apiContent(page.request, id)).content;
+  const sections = Array.from({ length: 30 }, (_, i) => {
+    const paras = Array.from({ length: 6 }, (_, j) => `<p>Раздел ${i + 1}, абзац ${j + 1}: требования к приёмке и хранению, см. <a href="https://example.com/norm/${i}-${j}">норматив ${i + 1}.${j + 1}</a>.</p>`).join('');
+    const table = `<table><tr><th>Позиция</th><th>Кол-во</th></tr><tr><td>Товар ${i + 1}</td><td>${(i + 1) * 10}</td></tr></table>`;
+    const img = i % 15 === 0 ? `<p><img src="${PNG_URI}" alt="Схема ${i + 1}"></p>` : '';
+    return `<h2>Раздел ${i + 1}</h2>${paras}${table}${img}`;
+  }).join('');
+  const html = `<meta charset="utf-8">${sections}`;
+  const text = sections.replace(/<[^>]+>/g, ' ');
+  expect(text.length).toBeGreaterThan(9000); // ~ 4–5 pages
+  await paste(page, { 'text/html': html, 'text/plain': text });
+  const ed = editor(page);
+  await expect(ed.locator('h2')).toHaveCount(30, { timeout: 20_000 });
+  await expect(ed.locator('table')).toHaveCount(30);
+  await expect(ed.locator('a[href^="https://example.com/norm/"]')).toHaveCount(180);
+  // embedded images become attachments of the page
+  await expect(ed.locator('.kb-image-block img[src*="/api/v1/attachments/"]')).toHaveCount(2, { timeout: 20_000 });
+  await expect(ed.locator('p').first()).toHaveText('Исходный текст');
+  await expectSaved(page);
+  const pasted = JSON.stringify((await apiContent(page.request, id)).content);
+  expect(pasted).toContain('Раздел 30, абзац 6');
+  expect(pasted.match(/"type":"table"/g)).toHaveLength(30);
+  expect(pasted.match(/"attachmentId":"[0-9a-f-]{36}"/g)).toHaveLength(2);
+  // one Undo: exactly the state before the paste
+  await editor(page).focus();
+  await page.keyboard.press('Control+z');
+  await expect(ed.locator('h2')).toHaveCount(0);
+  await expect(ed.locator('table')).toHaveCount(0);
+  await expect(ed.locator('.kb-image-block')).toHaveCount(0);
+  await expect(ed.locator('p').first()).toHaveText('Исходный текст');
+  await expectSaved(page);
+  const after = (await apiContent(page.request, id)).content;
+  const text0 = (d: any) => JSON.stringify(d.content.map((n: any) => [n.type, (n.content ?? []).map((x: any) => x.text ?? '').join('')]));
+  expect(text0(after)).toBe(text0(original));
+  // and Redo brings the whole paste back
+  await page.keyboard.press('Control+Shift+z');
+  await expect(ed.locator('h2')).toHaveCount(30);
+  await expect(ed.locator('table')).toHaveCount(30);
 });
