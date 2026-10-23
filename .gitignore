@@ -16,3 +16,5 @@ __pycache__/
 .soak-data*/
 .load-data/
 *.tsbuildinfo
+deploy/certs/*.crt
+backups/
