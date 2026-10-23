@@ -36,6 +36,16 @@ CLAMAV_HOST=clamav docker compose --profile antivirus up -d   # с антиви�
 DEBIAN_MIRROR=mirror.yandex.ru docker compose up -d --build   # если сборка падает на загрузке пакетов Debian
 ```
 
+**Обновление без потери данных** (после `git pull` или если я прислал исправления):
+
+```bash
+scripts/docker/update.sh          # копия базы+файлов → git pull → пересборка → перезапуск → проверка готовности
+scripts/docker/backup.sh          # ручная копия в backups/<дата-время>
+scripts/docker/restore.sh backups/<дата-время>   # вернуть копию (текущее состояние тоже сохраняется)
+```
+
+Данные живут в томах Docker (`pgdata`, `kb-data`, `secrets`) и при пересборке не затираются. **Не запускайте `docker compose down -v`** — эта команда удаляет данные.
+
 Секреты (ключ приложения, пароль БД) генерируются при первом запуске и хранятся в томе `secrets`. Развёртывание на сервере (HTTPS, резервные копии, обновления, откат) — [`docs/DOCKER.md`](docs/DOCKER.md).
 
 ## Требования к окружению
