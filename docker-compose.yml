@@ -17,6 +17,7 @@ services:
   # Генерирует секреты один раз (если их ещё нет) и завершается.
   secrets:
     image: ${KB_IMAGE:-kb:local}
+    pull_policy: build # образ собирается локально, не скачивается
     build:
       context: .
       args:
@@ -57,6 +58,7 @@ services:
 
   app:
     image: ${KB_IMAGE:-kb:local}
+    pull_policy: never
     restart: unless-stopped
     depends_on:
       postgres:
@@ -94,6 +96,7 @@ services:
   # Демо-данные (один раз; повторный запуск ничего не меняет). Отключить: KB_DEMO=0.
   demo:
     image: ${KB_IMAGE:-kb:local}
+    pull_policy: never
     depends_on:
       app:
         condition: service_healthy
